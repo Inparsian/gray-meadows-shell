@@ -27,27 +27,29 @@ pub fn get_styles_directory() -> String {
 }
 
 pub fn bundle_apply_scss() {
-    let styles_path = get_styles_directory();
-
-    // Run sass
-    let output = std::process::Command::new("sass")
-        .arg(format!("-I {}", styles_path))
-        .arg(format!("{}/main.scss", styles_path))
-        .arg(format!("{}/output.css", styles_path))
-        .output()
-        .expect("Failed to run sass command");
-
-    if !output.status.success() {
-        eprintln!("Error running sass: {}", String::from_utf8_lossy(&output.stderr));
-        return;
-    }
-
-    // Load the generated CSS into the provider
-    let app = &APP.lock().unwrap();
-    let css = std::fs::read_to_string(format!("{}/output.css", styles_path))
-        .expect("Failed to read output.css");
-
-    app.provider.load_from_data(&css);
+    gtk4::glib::MainContext::default().invoke(|| {
+        let styles_path = get_styles_directory();
+        
+        // Run sass
+        let output = std::process::Command::new("sass")
+            .arg(format!("-I {}", styles_path))
+            .arg(format!("{}/main.scss", styles_path))
+            .arg(format!("{}/output.css", styles_path))
+            .output()
+            .expect("Failed to run sass command");
+        
+        if !output.status.success() {
+            eprintln!("Error running sass: {}", String::from_utf8_lossy(&output.stderr));
+            return;
+        }
+    
+        // Load the generated CSS into the provider
+        let app = &APP.lock().unwrap();
+        let css = std::fs::read_to_string(format!("{}/output.css", styles_path))
+            .expect("Failed to read output.css");
+    
+        app.provider.load_from_data(&css); 
+    });
 }
 
 fn activate(application: &gtk4::Application) {
@@ -151,9 +153,7 @@ async fn main() {
                         println!("Styles changed: {:?}", event.paths);
 
                         // Yell at the main thread to reapply the styles
-                        gtk4::glib::MainContext::default().invoke(|| {
-                            bundle_apply_scss();
-                        });
+                        bundle_apply_scss();
                     }
                 },
 
