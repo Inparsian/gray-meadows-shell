@@ -1,4 +1,5 @@
 mod ffi;
+mod helpers;
 mod reactivity;
 mod singletons;
 
@@ -20,23 +21,9 @@ pub static APP: Lazy<Mutex<GrayMeadows>> = Lazy::new(|| {
     })
 });
 
-pub fn get_styles_directory() -> String {
-    // Get directory relative to the closest Cargo.toml file
-    let mut path = std::env::current_exe().expect("Failed to get current executable path");
-    while let Some(parent) = path.parent() {
-        if parent.join("Cargo.toml").exists() {
-            // Found the Cargo.toml, return the styles directory
-            return format!("{}/styles", parent.display());
-        }
-        path = parent.to_path_buf();
-    }
-
-    panic!("Cargo.toml not found in the path hierarchy");
-}
-
 pub fn bundle_apply_scss() {
     gtk4::glib::MainContext::default().invoke(|| {
-        let styles_path = get_styles_directory();
+        let styles_path = helpers::cargo::get_styles_directory();
         
         // Run sass
         let output = std::process::Command::new("sass")
@@ -139,7 +126,7 @@ async fn main() {
 
     // Watch the styles directory for changes
     std::thread::spawn(|| {
-        let styles_path = get_styles_directory();
+        let styles_path = helpers::cargo::get_styles_directory();
         let (tx, rx) = std::sync::mpsc::channel();
 
         println!("Watching styles directory: {}", styles_path);

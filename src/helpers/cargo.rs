@@ -1,0 +1,23 @@
+pub fn get_project_directory() -> String {
+    // Get directory relative to the closest Cargo.toml file
+    let mut path = std::env::current_exe().expect("Failed to get current executable path");
+    while let Some(parent) = path.parent() {
+        if parent.join("Cargo.toml").exists() {
+            // Found the Cargo.toml, return the project directory
+            return parent.display().to_string();
+        }
+        path = parent.to_path_buf();
+    }
+
+    panic!("Cargo.toml not found in the path hierarchy");
+}
+
+pub fn get_styles_directory() -> String {
+    let project_dir = get_project_directory();
+    let styles_dir = format!("{}/styles", project_dir);
+    if !std::path::Path::new(&styles_dir).exists() {
+        panic!("Styles directory does not exist: {}", styles_dir);
+    }
+    
+    styles_dir
+}
