@@ -21,9 +21,17 @@ pub static APP: Lazy<Mutex<GrayMeadows>> = Lazy::new(|| {
 });
 
 pub fn get_styles_directory() -> String {
-    // Get the path to the Cargo manifest dir/styles
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
-    format!("{}/styles", manifest_dir)
+    // Get directory relative to the closest Cargo.toml file
+    let mut path = std::env::current_exe().expect("Failed to get current executable path");
+    while let Some(parent) = path.parent() {
+        if parent.join("Cargo.toml").exists() {
+            // Found the Cargo.toml, return the styles directory
+            return format!("{}/styles", parent.display());
+        }
+        path = parent.to_path_buf();
+    }
+
+    panic!("Cargo.toml not found in the path hierarchy");
 }
 
 pub fn bundle_apply_scss() {
