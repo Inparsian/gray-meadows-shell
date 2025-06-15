@@ -49,19 +49,7 @@ pub fn bundle_apply_scss() {
 
 fn activate(application: &gtk4::Application) {
     // Get all monitors
-    let monitors = gdk4::Display::monitors(
-        &gdk4::Display::default().expect("Failed to get default display"),
-    );
-
-    for result in monitors.iter() {
-        let monitor: gdk4::Monitor = match result {
-            Ok(m) => m,
-            Err(e) => {
-                eprintln!("Error iterating monitors: {:?}", e);
-                continue;
-            }
-        };
-
+    for monitor in helpers::display::get_all_monitors(&gdk4::Display::default().expect("Failed to get default display")) {
         relm4_macros::view! {
             window = gtk4::ApplicationWindow {
                 set_application: Some(application),
