@@ -1,7 +1,7 @@
+mod modules;
+
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, Layer, LayerShell};
-
-use crate::{reactivity, singletons};
 
 pub struct Bar {
     pub window: gtk4::ApplicationWindow,
@@ -10,6 +10,23 @@ pub struct Bar {
 impl Bar {
     pub fn new(application: &gtk4::Application, monitor: &gdk4::Monitor) -> Self {
         relm4_macros::view! {
+            left_box = gtk4::Box {
+                set_orientation: gtk4::Orientation::Horizontal,
+                set_spacing: 1
+            },
+
+            center_box = gtk4::Box {
+                set_orientation: gtk4::Orientation::Horizontal,
+                set_spacing: 1,
+
+                append: &modules::clock::new()
+            },
+
+            right_box = gtk4::Box {
+                set_orientation: gtk4::Orientation::Horizontal,
+                set_spacing: 1
+            },
+
             window = gtk4::ApplicationWindow {
                 set_application: Some(application),
                 init_layer_shell: (),
@@ -21,30 +38,17 @@ impl Bar {
                 set_anchor: (Edge::Top, true),
                 auto_exclusive_zone_enable: (),
 
-                gtk4::Box {
+                gtk4::CenterBox {
                     set_css_classes: &["bar"],
-                    set_spacing: 1,
 
-                    gtk4::Box {
-                        set_css_classes: &["bar-widget"],
-                        set_halign: gtk4::Align::Start,
+                    // Left side widgets
+                    set_start_widget: Some(&left_box),
 
-                        gtk4::Label {
-                            set_label: "Gray Meadows Shell",
-                            set_hexpand: true,
-                            set_xalign: 0.5
-                        }
-                    },
+                    // Center widgets
+                    set_center_widget: Some(&center_box),
 
-                    gtk4::Box {
-                        set_css_classes: &["bar-widget"],
-                        set_halign: gtk4::Align::End,
-
-                        reactivity::reactive_label(singletons::date_time::DATE_TIME.time.clone()) {
-                            set_hexpand: true,
-                            set_xalign: 0.5
-                        }
-                    }
+                    // Right side widgets
+                    set_end_widget: Some(&right_box),
                 }
             }
         }
