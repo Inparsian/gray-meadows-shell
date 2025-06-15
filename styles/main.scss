@@ -1,4 +1,4 @@
-// Change these variables to customize the look of the bar
+// Change these variables to customize the look of the bar globally
 $background-color-primary: #131313;
 $foreground-color-primary: #e2e2e2;
 $font-family-normal: "Cozette";
@@ -8,6 +8,7 @@ $font-family-big: "GohuFont uni14 Nerd Font";
 .bar {
     background: transparent;
     font-family: $font-family-normal;
+    letter-spacing: 0.033em;
 
     .bar-widget {
         background: $background-color-primary;
