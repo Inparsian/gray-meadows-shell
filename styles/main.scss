@@ -1,0 +1,34 @@
+// Change these variables to customize the look of the bar
+$background-color-primary: #131313;
+$foreground-color-primary: #e2e2e2;
+$font-family-normal: "Cozette";
+$font-family-small: "GohuFont uni11 Nerd Font";
+$font-family-big: "GohuFont uni14 Nerd Font";
+
+.bar {
+    background: transparent;
+    font-family: $font-family-normal;
+
+    .bar-widget {
+        background: $background-color-primary;
+        color: $foreground-color-primary;
+        
+        padding-top: 4px;
+        padding-bottom: 4px;
+        padding-left: 6px;
+        padding-right: 6px;
+
+        margin-top: 5px;
+        margin-bottom: 5px;
+        margin-left: 2px;
+        margin-right: 2px;
+
+        &:first-child {
+            margin-left: 5px;
+        }
+
+        &:last-child {
+            margin-right: 5px;
+        }
+    }
+}
