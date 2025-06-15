@@ -47,10 +47,43 @@ pub fn bundle_apply_scss() {
     });
 }
 
+fn watch_scss() {
+    tokio::spawn(async move {
+        let (tx, rx) = std::sync::mpsc::channel();
+        let styles_path = helpers::cargo::get_styles_directory();
+
+        let mut watcher = notify::recommended_watcher(tx).unwrap();
+        let result = watcher.watch(
+            Path::new(&styles_path),
+            notify::RecursiveMode::Recursive,
+        );
+
+        if result.is_ok() {
+            println!("Watching styles directory: {}", styles_path);
+
+            for res in rx {
+                match res {
+                    Ok(event) => {
+                        // If the event kind is Access(Close(Write)), it means the file is done being written to
+                        if event.paths.iter().any(|p| p.extension() == Some("scss".as_ref()) && matches!(event.kind, notify::EventKind::Access(AccessKind::Close(notify::event::AccessMode::Write)))) {
+                            println!("Styles changed: {:?}", event.paths);
+                            bundle_apply_scss();
+                        }
+                    },
+
+                    Err(e) => {
+                        eprintln!("Error watching styles directory: {}", e);
+                    }
+                }
+            }
+        } else {
+            eprintln!("Failed to watch styles directory: {}", result.unwrap_err());
+        }
+    });
+}
+
 fn activate(application: &gtk4::Application) {
-    // Get all monitors
     for monitor in helpers::display::get_all_monitors(&gdk4::Display::default().expect("Failed to get default display")) {
-        // Create a new bar for each monitor
         let bar = widgets::bar::Bar::new(application, &monitor);
         bar.window.show();
     }
@@ -70,45 +103,11 @@ async fn main() {
         gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
 
-    // Bundle and apply the SCSS
+    // Bundle and apply the SCSS, then watch for changes
     bundle_apply_scss();
+    watch_scss();
 
-    // Watch the styles directory for changes
-    std::thread::spawn(|| {
-        let styles_path = helpers::cargo::get_styles_directory();
-        let (tx, rx) = std::sync::mpsc::channel();
-
-        println!("Watching styles directory: {}", styles_path);
-
-        let mut watcher = notify::recommended_watcher(
-            move |res: Result<notify::Event, notify::Error>| tx.send(res).unwrap()
-        ).unwrap();
-
-        watcher.watch(
-            Path::new(&styles_path),
-            notify::RecursiveMode::Recursive,
-        ).expect("Failed to watch styles directory");
-
-        for res in rx {
-            match res {
-                Ok(event) => {
-                    // If the event kind is Access(Close(Write)), it means the file is done being written to
-                    if event.paths.iter().any(|p| p.extension() == Some("scss".as_ref()) && matches!(event.kind, notify::EventKind::Access(AccessKind::Close(notify::event::AccessMode::Write)))) {
-                        println!("Styles changed: {:?}", event.paths);
-
-                        // Yell at the main thread to reapply the styles
-                        bundle_apply_scss();
-                    }
-                },
-
-                Err(e) => {
-                    eprintln!("Failed to watch desktop files: {}", e);
-                }
-            }
-        }
-    });
-
-    // Initialize the application
+    // Initialize and run the application
     let application = gtk4::Application::new(
         Some("sn.inpr.gray_meadows_shell"),
         Default::default(),
@@ -118,6 +117,5 @@ async fn main() {
         activate(app);
     });
 
-    // Run the application
     application.run();
 }
