@@ -5,6 +5,14 @@ $font-family-normal: "Cozette";
 $font-family-small: "GohuFont uni11 Nerd Font";
 $font-family-big: "GohuFont uni14 Nerd Font";
 
+.dot-separator {
+    background: $foreground-color-primary;
+    min-height: 2px;
+    min-width: 2px;
+    margin-left: 6px;
+    margin-right: 6px;
+}
+
 .bar {
     background: transparent;
     font-family: $font-family-normal;

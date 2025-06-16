@@ -2,7 +2,7 @@ use futures_signals::signal::Mutable;
 use once_cell::sync::Lazy;
 
 const DATE_FORMAT: &str = "%a, %m/%d";
-const TIME_FORMAT: &str = "%I:%M:%S %p";
+const TIME_FORMAT: &str = "%I:%M %p";
 
 pub struct DateTime {
     pub date: futures_signals::signal::Mutable<String>,
