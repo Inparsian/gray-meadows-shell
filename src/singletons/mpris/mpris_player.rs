@@ -1,4 +1,5 @@
 use dbus::Message;
+use internment::Intern;
 
 #[derive(Debug, Clone, Copy)]
 pub enum PlaybackStatus {
@@ -10,8 +11,8 @@ pub enum PlaybackStatus {
 
 #[derive(Debug, Clone, Copy)]
 pub struct MprisPlayer {
-    pub bus: internment::Intern<String>,
-    pub owner: internment::Intern<String>,
+    pub bus: Intern<String>,
+    pub owner: Intern<String>,
     pub position: i64, // this is in microseconds (1e-6 seconds)
     pub playback_status: PlaybackStatus,
     pub volume: f64
@@ -20,8 +21,8 @@ pub struct MprisPlayer {
 impl MprisPlayer {
     pub fn new(bus: String, owner: String) -> Self {
         MprisPlayer {
-            bus: internment::Intern::new(bus),
-            owner: internment::Intern::new(owner),
+            bus: Intern::new(bus),
+            owner: Intern::new(owner),
             position: 0,
             playback_status: PlaybackStatus::Unknown,
             volume: 0.5,
