@@ -1,1 +1,1 @@
-pub(crate) mod libqalculate;
+pub mod libqalculate;

@@ -1,2 +1,2 @@
-pub(crate) mod bar;
-pub(crate) mod dot_separator;
+pub mod bar;
+pub mod dot_separator;

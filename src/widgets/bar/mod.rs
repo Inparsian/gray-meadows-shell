@@ -1,4 +1,6 @@
-mod modules;
+mod modules {
+    pub mod clock;
+}
 
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, Layer, LayerShell};
