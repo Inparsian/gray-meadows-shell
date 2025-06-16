@@ -95,6 +95,7 @@ async fn main() {
 
     // Activate singletons
     singletons::date_time::activate();
+    singletons::mpris::activate();
 
     // Add the CSS provider to the default display
     gtk4::style_context_add_provider_for_display(
