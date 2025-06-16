@@ -1,4 +1,4 @@
-#include <libqalculate_ffi.h>
+#include <libqalculate.h>
 #include <libqalculate/qalculate.h>
 #include <rust/cxx.h>
 #include <memory>
