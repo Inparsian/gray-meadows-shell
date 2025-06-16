@@ -2,6 +2,7 @@ mod mpris_player;
 
 use std::time::Duration;
 use dbus::{channel::MatchingReceiver, message::MatchRule, strings::BusName, Message};
+use futures_signals::signal_vec::{SignalVecExt, VecDiff};
 use once_cell::sync::Lazy;
 
 const MPRIS_DBUS_PREFIX: &str = "org.mpris.MediaPlayer2";
@@ -10,7 +11,7 @@ const MPRIS_DBUS_PATH: &str = "/org/mpris/MediaPlayer2";
 #[derive(Clone)]
 pub struct Mpris {
     pub players: futures_signals::signal_vec::MutableVec<mpris_player::MprisPlayer>,
-    pub default_player: futures_signals::signal::Mutable<u16>
+    pub default_player: futures_signals::signal::Mutable<usize>
 }
 
 pub static MPRIS: Lazy<Mpris> = Lazy::new(|| {
@@ -19,6 +20,27 @@ pub static MPRIS: Lazy<Mpris> = Lazy::new(|| {
         default_player: futures_signals::signal::Mutable::new(0)
     }
 });
+
+fn assert_default_player() {
+    if MPRIS.default_player.get() >= MPRIS.players.lock_ref().len() {
+        MPRIS.default_player.set(0);
+    }
+}
+
+#[allow(dead_code)]
+pub fn get_default_player() -> Option<mpris_player::MprisPlayer> {
+    assert_default_player();
+    MPRIS.players.lock_ref().get(MPRIS.default_player.get()).cloned()
+}
+
+#[allow(dead_code)]
+pub fn set_default_player(index: usize) {
+    if index < MPRIS.players.lock_ref().len() {
+        MPRIS.default_player.set(index);
+    } else {
+        eprintln!("Attempted to set default player to index {}, but only {} players are available.", index, MPRIS.players.lock_ref().len());
+    }
+}
 
 fn handle_message(msg: &Message) {
     if let Some(member) = msg.member() {
@@ -123,4 +145,39 @@ pub fn activate() {
             connection.process(Duration::from_millis(1000)).unwrap();
         }
     });
+
+    // Monitor the MPRIS players for changes
+    let future = MPRIS.players.signal_vec().for_each(|change| {
+        match change {
+            VecDiff::InsertAt { index, value } => {
+                println!("New MPRIS player added at index {}: {}", index, value.bus);
+            },
+
+            VecDiff::UpdateAt { index, value } => {
+                println!("MPRIS player at index {} updated: {}", index, value.bus);
+            },
+
+            VecDiff::RemoveAt { index } => {
+                assert_default_player();
+                println!("MPRIS player removed at index {}", index);
+            },
+
+            VecDiff::Push { value } => {
+                println!("New MPRIS player pushed to the end of the list: {}", value.bus);
+            },
+
+            VecDiff::Pop {} => {
+                assert_default_player();
+                println!("MPRIS player popped from the end of the list.");
+            },
+
+            _ => {
+                println!("Unknown MPRIS player change: {:?}", change);
+            }
+        }
+
+        async {}
+    });
+
+    tokio::spawn(future);
 }

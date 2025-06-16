@@ -1,6 +1,6 @@
 use dbus::Message;
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct MprisPlayer {
     pub bus: internment::Intern<String>,
     pub owner: internment::Intern<String>,
@@ -9,8 +9,6 @@ pub struct MprisPlayer {
 
 impl MprisPlayer {
     pub fn new(bus: String, owner: String) -> Self {
-        println!("Creating MprisPlayer for bus: {} (owner: {})", bus, owner);
-
         MprisPlayer {
             bus: internment::Intern::new(bus),
             owner: internment::Intern::new(owner),
