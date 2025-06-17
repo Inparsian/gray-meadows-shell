@@ -5,16 +5,14 @@ use internment::Intern;
 pub enum PlaybackStatus {
     Playing,
     Paused,
-    Stopped,
-    Unknown // A catch-all for initialization or unrecognized states
+    Stopped
 }
 
 #[derive(Debug, Clone, Copy)]
 pub enum LoopStatus {
     None,
     Track,
-    Playlist,
-    Unknown // A catch-all for initialization or unrecognized states
+    Playlist
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -42,8 +40,8 @@ impl MprisPlayer {
         let player = MprisPlayer {
             bus: Intern::new(bus),
             owner: Intern::new(owner),
-            playback_status: PlaybackStatus::Unknown,
-            loop_status: LoopStatus::Unknown,
+            playback_status: PlaybackStatus::Stopped,
+            loop_status: LoopStatus::None,
             rate: 1.0,
             shuffle: false,
             volume: 1.0,
@@ -81,15 +79,14 @@ impl MprisPlayer {
                 ("MinimumRate", &mut self.minimum_rate),
                 ("MaximumRate", &mut self.maximum_rate),
             ];
-            
+
             if let Some(playback_status) = props.get("PlaybackStatus") {
                 let deref = playback_status.0.as_str().unwrap_or("Unknown");
 
                 self.playback_status = match deref {
                     "Playing" => PlaybackStatus::Playing,
                     "Paused" => PlaybackStatus::Paused,
-                    "Stopped" => PlaybackStatus::Stopped,
-                    _ => PlaybackStatus::Unknown,
+                    _ => PlaybackStatus::Stopped,
                 };
             }
 
@@ -97,10 +94,9 @@ impl MprisPlayer {
                 let deref = loop_status.0.as_str().unwrap_or("Unknown");
 
                 self.loop_status = match deref {
-                    "None" => LoopStatus::None,
                     "Track" => LoopStatus::Track,
                     "Playlist" => LoopStatus::Playlist,
-                    _ => LoopStatus::Unknown,
+                    _ => LoopStatus::None,
                 };
             }
 
