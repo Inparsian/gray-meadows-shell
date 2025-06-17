@@ -39,5 +39,9 @@ $font-family-big: "GohuFont uni14 Nerd Font";
         &:last-child {
             margin-right: 5px;
         }
+
+        &.bar-mpris {
+            min-width: 250px;
+        }
     }
 }
