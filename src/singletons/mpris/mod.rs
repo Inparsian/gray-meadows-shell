@@ -1,8 +1,9 @@
 mod mpris_player;
 mod mpris_metadata;
+mod mpris_dbus;
 
 use std::time::Duration;
-use dbus::{channel::MatchingReceiver, message::MatchRule, strings::BusName, Message};
+use dbus::{channel::MatchingReceiver, message::MatchRule};
 use futures_signals::signal_vec::{SignalVecExt, VecDiff};
 use once_cell::sync::Lazy;
 
@@ -40,58 +41,6 @@ pub fn set_default_player(index: usize) {
         MPRIS.default_player.set(index);
     } else {
         eprintln!("Attempted to set default player to index {}, but only {} players are available.", index, MPRIS.players.lock_ref().len());
-    }
-}
-
-fn handle_message(msg: &Message) {
-    if let Some(member) = msg.member() {
-        let member = member.trim();
-
-        if &member == &"NameOwnerChanged" {
-            let (bus, _, new_owner) = msg.get3::<String, String, String>();
-
-            if let (Some(bus), Some(new_owner)) = (bus, new_owner) {
-                if bus.starts_with(MPRIS_DBUS_PREFIX) {
-                    MPRIS.players.lock_mut().retain(|player| player.bus != bus.clone().into());
-
-                    if !new_owner.is_empty() {
-                        let player = mpris_player::MprisPlayer::new(bus.clone(), new_owner.clone());
-                        MPRIS.players.lock_mut().push(player);
-                    }
-                }
-            } else {
-                eprintln!("Failed to parse NameOwnerChanged message: {:?}", msg);
-            }
-        }
-
-        else if let Some(path) = msg.path() {
-            if path.starts_with(MPRIS_DBUS_PATH) && msg.msg_type() == dbus::message::MessageType::Signal {
-                let sender: Option<BusName> = msg.sender();
-
-                if let Some(sender) = sender {
-                    let mut players_mut = MPRIS.players.lock_mut();
-                    let player_index = players_mut.iter().position(|p| sender == p.owner.as_ref().into());
-
-                    if let Some(player_index) = player_index {
-                        let player = players_mut.get(player_index);
-
-                        if let Some(player) = player {
-                            let player = &mut player.clone();
-                            
-                            match member {
-                                "PropertiesChanged" => player.properties_changed(msg),
-                                "Seeked" => player.seeked(msg),
-                                _ => eprintln!("Unknown MPRIS signal member: {}", member),
-                            }
-
-                            players_mut.set(player_index, *player);
-                        } else {
-                            eprintln!("Failed to find MPRIS player for owner: {}", sender);
-                        }
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -134,7 +83,7 @@ pub fn activate() {
 
                 // Listen for signals
                 connection.start_receive(rule, Box::new(|msg, _| {
-                    handle_message(&msg);
+                    mpris_dbus::handle_master_message(&msg);
                     true
                 }));
             },

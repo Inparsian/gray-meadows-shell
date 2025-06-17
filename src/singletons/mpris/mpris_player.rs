@@ -1,7 +1,7 @@
-use dbus::Message;
+use dbus::{Error, Message};
 use internment::Intern;
 
-use crate::singletons::mpris::mpris_metadata;
+use crate::singletons::mpris::{mpris_dbus, mpris_metadata};
 
 #[derive(Debug, Clone, Copy)]
 pub enum PlaybackStatus {
@@ -187,5 +187,33 @@ impl MprisPlayer {
         self.position = nanos;
 
         println!("{}::Seeked - {}", self.bus, self.position);
+    }
+
+    pub fn next(&self) -> Result<Message, Error> {
+        mpris_dbus::run_dbus_method(&self, "Next")
+    }
+
+    pub fn previous(&self) -> Result<Message, Error> {
+        mpris_dbus::run_dbus_method(&self, "Previous")
+    }
+
+    pub fn play(&self) -> Result<Message, Error> {
+        mpris_dbus::run_dbus_method(&self, "Play")
+    }
+
+    pub fn pause(&self) -> Result<Message, Error> {
+        mpris_dbus::run_dbus_method(&self, "Pause")
+    }
+
+    pub fn play_pause(&self) -> Result<Message, Error> {
+        mpris_dbus::run_dbus_method(&self, "PlayPause")
+    }
+
+    pub fn stop(&self) -> Result<Message, Error> {
+        mpris_dbus::run_dbus_method(&self, "Stop")
+    }
+
+    pub fn seek(&self, position: i64) -> Result<Message, Error> {
+        mpris_dbus::run_dbus_method_i64(&self, "Seek", &[position])
     }
 }
