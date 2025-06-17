@@ -10,11 +10,31 @@ pub enum PlaybackStatus {
     Stopped
 }
 
+impl PlaybackStatus {
+    pub fn infer_from_string(status: &str) -> Self {
+        match status {
+            "Playing" => PlaybackStatus::Playing,
+            "Paused" => PlaybackStatus::Paused,
+            _ => PlaybackStatus::Stopped
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum LoopStatus {
     None,
     Track,
     Playlist
+}
+
+impl LoopStatus {
+    pub fn infer_from_string(status: &str) -> Self {
+        match status {
+            "Track" => LoopStatus::Track,
+            "Playlist" => LoopStatus::Playlist,
+            _ => LoopStatus::None
+        }
+    }
 }
 
 // The common xesam and mpris metadata properties should be enough for most use cases,
@@ -206,21 +226,8 @@ impl MprisPlayer {
                 });
 
             match *key {
-                "PlaybackStatus" => {
-                    self.playback_status = match prop.as_str() {
-                        "Playing" => PlaybackStatus::Playing,
-                        "Paused" => PlaybackStatus::Paused,
-                        _ => PlaybackStatus::Stopped,
-                    };
-                },
-
-                "LoopStatus" => {
-                    self.loop_status = match prop.as_str() {
-                        "Track" => LoopStatus::Track,
-                        "Playlist" => LoopStatus::Playlist,
-                        _ => LoopStatus::None,
-                    };
-                },
+                "PlaybackStatus" => self.playback_status = PlaybackStatus::infer_from_string(&prop),
+                "LoopStatus" => self.loop_status = LoopStatus::infer_from_string(&prop),
                 _ => {}
             }
         }
@@ -257,23 +264,11 @@ impl MprisPlayer {
             ];
 
             if let Some(playback_status) = props.get("PlaybackStatus") {
-                let deref = playback_status.0.as_str().unwrap_or("Unknown");
-
-                self.playback_status = match deref {
-                    "Playing" => PlaybackStatus::Playing,
-                    "Paused" => PlaybackStatus::Paused,
-                    _ => PlaybackStatus::Stopped,
-                };
+                self.playback_status = PlaybackStatus::infer_from_string(playback_status.0.as_str().unwrap_or("Stopped"));
             }
 
             if let Some(loop_status) = props.get("LoopStatus") {
-                let deref = loop_status.0.as_str().unwrap_or("Unknown");
-
-                self.loop_status = match deref {
-                    "Track" => LoopStatus::Track,
-                    "Playlist" => LoopStatus::Playlist,
-                    _ => LoopStatus::None,
-                };
+                self.loop_status = LoopStatus::infer_from_string(loop_status.0.as_str().unwrap_or("Stopped"));
             }
 
             if let Some(position) = props.get("Position") {
