@@ -44,6 +44,27 @@ pub fn set_default_player(index: usize) {
     }
 }
 
+pub fn subscribe_to_default_player_changes<F>(callback: F)
+where
+    F: Fn(usize) + 'static,
+{
+    let future = MPRIS.players.signal_vec().for_each(move |change| {
+        match change {
+            VecDiff::UpdateAt { index, value } => {
+                if index == MPRIS.default_player.get() {
+                    callback(index);
+                }
+            },
+            
+            _ => {}
+        }
+
+        async {}
+    });
+
+    gtk4::glib::MainContext::default().spawn_local(future);
+}
+
 pub fn activate() {
     std::thread::spawn(|| {
         // Monitor dbus for appearing and disappearing MPRIS players
@@ -99,31 +120,15 @@ pub fn activate() {
     // Monitor the MPRIS players for changes
     let future = MPRIS.players.signal_vec().for_each(|change| {
         match change {
-            VecDiff::InsertAt { index, value } => {
-                println!("New MPRIS player added at index {}: {}", index, value.bus);
-            },
-
-            VecDiff::UpdateAt { index, value } => {
-                println!("MPRIS player at index {} updated: {}", index, value.bus);
-            },
-
             VecDiff::RemoveAt { index } => {
                 assert_default_player();
-                println!("MPRIS player removed at index {}", index);
-            },
-
-            VecDiff::Push { value } => {
-                println!("New MPRIS player pushed to the end of the list: {}", value.bus);
             },
 
             VecDiff::Pop {} => {
                 assert_default_player();
-                println!("MPRIS player popped from the end of the list.");
             },
 
-            _ => {
-                println!("Unknown MPRIS player change: {:?}", change);
-            }
+            _ => {}
         }
 
         async {}

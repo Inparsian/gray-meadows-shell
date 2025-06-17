@@ -1,5 +1,6 @@
 mod modules {
     pub mod clock;
+    pub mod mpris;
 }
 
 use gtk4::prelude::*;
@@ -21,6 +22,7 @@ impl Bar {
                 set_orientation: gtk4::Orientation::Horizontal,
                 set_spacing: 1,
 
+                append: &modules::mpris::new(),
                 append: &modules::clock::new()
             },
 

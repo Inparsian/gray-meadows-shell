@@ -172,10 +172,6 @@ impl MprisPlayer {
                     }
                 }
             }
-
-            println!("{}::PropertiesChanged - meta:{:?}",
-                self.bus, self.metadata
-            );
         } else {
             eprintln!("PropertiesChanged message did not contain properties: {:?}", msg);
         }
@@ -185,8 +181,6 @@ impl MprisPlayer {
         let nanos = msg.get1::<i64>().unwrap_or(0);
 
         self.position = nanos;
-
-        println!("{}::Seeked - {}", self.bus, self.position);
     }
 
     pub fn next(&self) -> Result<Message, Error> {
