@@ -6,33 +6,82 @@ pub enum PlaybackStatus {
     Playing,
     Paused,
     Stopped,
-    Unknown
+    Unknown // A catch-all for initialization or unrecognized states
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum LoopStatus {
+    None,
+    Track,
+    Playlist,
+    Unknown // A catch-all for initialization or unrecognized states
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct MprisPlayer {
     pub bus: Intern<String>,
     pub owner: Intern<String>,
-    pub position: i64, // this is in microseconds (1e-6 seconds)
     pub playback_status: PlaybackStatus,
-    pub volume: f64
+    pub loop_status: LoopStatus,
+    pub rate: f64,
+    pub shuffle: bool,
+    pub volume: f64,
+    pub position: i64, // Time_In_Us (time in microseconds)
+    pub minimum_rate: f64,
+    pub maximum_rate: f64,
+    pub can_go_next: bool,
+    pub can_go_previous: bool,
+    pub can_play: bool,
+    pub can_pause: bool,
+    pub can_seek: bool,
+    pub can_control: bool
 }
 
 impl MprisPlayer {
     pub fn new(bus: String, owner: String) -> Self {
-        MprisPlayer {
+        let player = MprisPlayer {
             bus: Intern::new(bus),
             owner: Intern::new(owner),
-            position: 0,
             playback_status: PlaybackStatus::Unknown,
-            volume: 0.5,
-        }
+            loop_status: LoopStatus::Unknown,
+            rate: 1.0,
+            shuffle: false,
+            volume: 1.0,
+            position: 0,
+            minimum_rate: 0.5,
+            maximum_rate: 2.0,
+            can_go_next: false,
+            can_go_previous: false,
+            can_play: false,
+            can_pause: false,
+            can_seek: false,
+            can_control: false
+        };
+
+        player
     }
 
     pub fn properties_changed(&mut self, msg: &Message) {
         let (_, props) = msg.get2::<String, dbus::arg::PropMap>();
 
         if let Some(props) = props {
+            let mut booleans = [
+                ("Shuffle", &mut self.shuffle),
+                ("CanGoNext", &mut self.can_go_next),
+                ("CanGoPrevious", &mut self.can_go_previous),
+                ("CanPlay", &mut self.can_play),
+                ("CanPause", &mut self.can_pause),
+                ("CanSeek", &mut self.can_seek),
+                ("CanControl", &mut self.can_control),
+            ];
+
+            let mut f64s = [
+                ("Rate", &mut self.rate),
+                ("Volume", &mut self.volume),
+                ("MinimumRate", &mut self.minimum_rate),
+                ("MaximumRate", &mut self.maximum_rate),
+            ];
+            
             if let Some(playback_status) = props.get("PlaybackStatus") {
                 let deref = playback_status.0.as_str().unwrap_or("Unknown");
 
@@ -44,15 +93,50 @@ impl MprisPlayer {
                 };
             }
 
-            if let Some(volume) = props.get("Volume") {
-                if let Some(vol) = volume.0.as_f64() {
-                    self.volume = vol;
+            if let Some(loop_status) = props.get("LoopStatus") {
+                let deref = loop_status.0.as_str().unwrap_or("Unknown");
+
+                self.loop_status = match deref {
+                    "None" => LoopStatus::None,
+                    "Track" => LoopStatus::Track,
+                    "Playlist" => LoopStatus::Playlist,
+                    _ => LoopStatus::Unknown,
+                };
+            }
+
+            if let Some(position) = props.get("Position") {
+                if let Some(pos) = position.0.as_i64() {
+                    self.position = pos;
                 } else {
-                    eprintln!("Failed to parse Volume property: {:?}", volume);
+                    eprintln!("Failed to parse Position property: {:?}", position);
                 }
             }
-            
-            println!("{}::PropertiesChanged - {:?}", self.bus, msg);
+
+            for (key, flag) in booleans.iter_mut() {
+                if let Some(value) = props.get(*key) {
+                    if let Some(b) = value.0.as_i64() {
+                        **flag = b != 0;
+                    } else {
+                        eprintln!("Failed to parse {} property: {:?}", key, value);
+                    }
+                }
+            }
+
+            for (key, value) in f64s.iter_mut() {
+                if let Some(prop) = props.get(*key) {
+                    if let Some(v) = prop.0.as_f64() {
+                        **value = v;
+                    } else {
+                        eprintln!("Failed to parse {} property: {:?}", key, prop);
+                    }
+                }
+            }
+
+            println!("{}::PropertiesChanged - playing:{} loop:{} rate:{} shuffle:{} vol:{} pos:{} min_rate:{} max_rate:{} can_go_next:{} can_go_previous:{} can_play:{} can_pause:{} can_seek:{} can_control:{}",
+                self.bus, self.playback_status as u8, self.loop_status as u8,
+                self.rate, self.shuffle, self.volume, self.position, self.minimum_rate,
+                self.maximum_rate, self.can_go_next, self.can_go_previous,
+                self.can_play, self.can_pause, self.can_seek, self.can_control);
         } else {
             eprintln!("PropertiesChanged message did not contain properties: {:?}", msg);
         }
@@ -63,6 +147,6 @@ impl MprisPlayer {
 
         self.position = nanos;
 
-        println!("[{}] {}::Seeked", self.position, self.bus);
+        println!("{}::Seeked - {}", self.bus, self.position);
     }
 }
