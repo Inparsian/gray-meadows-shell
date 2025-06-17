@@ -17,7 +17,7 @@ pub fn new() -> gtk4::Box {
         }
     }
 
-    mpris::subscribe_to_default_player_changes(move |_| {
+    mpris::subscribe_to_default_player_changes(move || {
         current_track.set_label(&mpris::get_default_player()
             .map_or_else(|| "No player".to_string(), |player| player.metadata.title.unwrap_or_default().to_string()));
     });

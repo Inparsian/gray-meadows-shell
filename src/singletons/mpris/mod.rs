@@ -46,14 +46,24 @@ pub fn set_default_player(index: usize) {
 
 pub fn subscribe_to_default_player_changes<F>(callback: F)
 where
-    F: Fn(usize) + 'static,
+    F: Fn() + 'static,
 {
     let future = MPRIS.players.signal_vec().for_each(move |change| {
         match change {
             VecDiff::UpdateAt { index, value: _ } => {
                 if index == MPRIS.default_player.get() {
-                    callback(index);
+                    callback();
                 }
+            },
+
+            VecDiff::RemoveAt { index: _ } => {
+                assert_default_player();
+                callback();
+            },
+
+            VecDiff::Pop {} => {
+                assert_default_player();
+                callback();
             },
             
             _ => {}
