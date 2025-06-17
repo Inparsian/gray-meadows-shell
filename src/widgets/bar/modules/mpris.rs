@@ -23,9 +23,38 @@ pub fn new() -> gtk4::Box {
             set_xalign: 0.5
         },
 
+        widget_middle_click_gesture = &gtk4::GestureClick::new() {
+            set_button: gdk4::ffi::GDK_BUTTON_MIDDLE.try_into().unwrap(), // ?????
+            connect_pressed: |_, _, _, _| {
+                if let Some(player) = mpris::get_default_player() {
+                    if let Err(e) = player.play_pause() {
+                        eprintln!("Failed to toggle play/pause: {}", e);
+                    }
+                } else {
+                    eprintln!("No MPRIS player available to toggle play/pause.");
+                }
+            }
+        },
+
+        widget_right_click_gesture = &gtk4::GestureClick::new() {
+            set_button: gdk4::ffi::GDK_BUTTON_SECONDARY.try_into().unwrap(), // ?????
+            connect_pressed: |_, _, _, _| {
+                if let Some(player) = mpris::get_default_player() {
+                    if let Err(e) = player.next() {
+                        eprintln!("Failed to skip to next track: {}", e);
+                    }
+                } else {
+                    eprintln!("No MPRIS player available to skip to next track.");
+                }
+            }
+        },
+
         widget = gtk4::Box {
             set_css_classes: &["bar-widget", "bar-mpris"],
             set_hexpand: false,
+
+            add_controller: widget_middle_click_gesture,
+            add_controller: widget_right_click_gesture,
 
             append: &current_track,
         }
