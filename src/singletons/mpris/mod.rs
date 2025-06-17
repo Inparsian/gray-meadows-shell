@@ -50,7 +50,7 @@ where
 {
     let future = MPRIS.players.signal_vec().for_each(move |change| {
         match change {
-            VecDiff::UpdateAt { index, value } => {
+            VecDiff::UpdateAt { index, value: _ } => {
                 if index == MPRIS.default_player.get() {
                     callback(index);
                 }
@@ -120,7 +120,7 @@ pub fn activate() {
     // Monitor the MPRIS players for changes
     let future = MPRIS.players.signal_vec().for_each(|change| {
         match change {
-            VecDiff::RemoveAt { index } => {
+            VecDiff::RemoveAt { index: _ } => {
                 assert_default_player();
             },
 

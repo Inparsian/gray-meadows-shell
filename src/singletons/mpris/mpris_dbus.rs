@@ -1,5 +1,11 @@
 use std::time::Duration;
-use dbus::{arg::IterAppend, blocking::{BlockingSender, Connection}, strings::BusName, Error, Message};
+use dbus::{
+    arg::{self, Append, IterAppend},
+    blocking::{stdintf::org_freedesktop_dbus::Properties, BlockingSender, Connection},
+    strings::BusName,
+    Error,
+    Message
+};
 
 use crate::singletons::mpris::{mpris_player::{self, MprisPlayer}, MPRIS, MPRIS_DBUS_PATH, MPRIS_DBUS_PREFIX};
 
@@ -55,6 +61,7 @@ pub fn handle_master_message(msg: &Message) {
     }
 }
 
+#[allow(dead_code)]
 fn ready_dbus_message(player: &MprisPlayer, method: &str) -> Result<(Connection, Message), Error> {
     let message = Message::new_method_call(
         &*player.bus,
@@ -73,6 +80,28 @@ fn ready_dbus_message(player: &MprisPlayer, method: &str) -> Result<(Connection,
     }
 }
 
+#[allow(dead_code)]
+pub fn get_dbus_property<T: dbus::arg::RefArg>(player: &MprisPlayer, property: &str) -> Result<T, Error>
+where
+    T: for<'b> arg::Get<'b> + 'static
+{
+    let connection = Connection::new_session()?;
+    let proxy = connection.with_proxy(
+        player.bus.to_string(),
+        "/org/mpris/MediaPlayer2",
+        Duration::from_secs(5)
+    );
+
+    let prop: Result<T, Error> = proxy.get("org.mpris.MediaPlayer2.Player", property);
+
+    if let Ok(prop) = prop {
+        Ok(prop)
+    } else {
+        Err(Error::new_failed(&format!("Failed to get D-Bus property '{}': {}", property, prop.err().unwrap())))
+    }
+}
+
+#[allow(dead_code)]
 pub fn run_dbus_method(player: &MprisPlayer, method: &str) -> Result<Message, Error> {
     let result = ready_dbus_message(player, method);
 
@@ -84,7 +113,11 @@ pub fn run_dbus_method(player: &MprisPlayer, method: &str) -> Result<Message, Er
     }
 }
 
-pub fn run_dbus_method_i64(player: &MprisPlayer, method: &str, args: &[i64]) -> Result<Message, Error> {
+#[allow(dead_code)]
+pub fn run_dbus_method_w_args<T>(player: &MprisPlayer, method: &str, args: &[T]) -> Result<Message, Error>
+where
+    T: Append,
+{
     let (connection, mut message) = ready_dbus_message(player, method)?;
 
     let mut iter = IterAppend::new(&mut message);

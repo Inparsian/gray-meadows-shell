@@ -1,4 +1,4 @@
-use dbus::{Error, Message};
+use dbus::{arg, Error, Message};
 use internment::Intern;
 
 use crate::singletons::mpris::{mpris_dbus, mpris_metadata};
@@ -64,7 +64,7 @@ impl MprisPlayer {
             title: None
         };
 
-        let player = MprisPlayer {
+        let mut player = MprisPlayer {
             bus: Intern::new(bus),
             owner: Intern::new(owner),
             playback_status: PlaybackStatus::Stopped,
@@ -84,11 +84,159 @@ impl MprisPlayer {
             can_control: false
         };
 
+        // perform initial property sync
+        player.sync_properties();
+
         player
     }
 
+    fn get_metadata_property<T: arg::RefArg>(&self, key: &str) -> Result<T, Error> 
+    where
+        T: 'static + Clone,
+    {
+        let metadata: Result<arg::PropMap, Error> = mpris_dbus::get_dbus_property::<arg::PropMap>(&self, "Metadata");
+
+        if let Ok(metadata) = metadata {
+            let prop: Option<&T> = arg::prop_cast(&metadata, key);
+
+            if let Some(value) = prop {
+                Ok(value.clone())
+            } else {
+                Err(Error::new_failed(&format!("Property '{}' not found in metadata", key)))
+            }
+        } else {
+            Err(Error::new_failed(&format!("Failed to get metadata property '{}': {:?}", key, metadata.err())))
+        }
+    }
+
+    pub fn sync_properties(&mut self) {
+        macro_rules! set_metadata_property {
+            ($type:ty, $key:expr, $field:ident) => {
+                if let Ok(value) = self.get_metadata_property::<$type>($key) {
+                    self.metadata.$field = Some(value);
+                }
+            };
+
+            (intern - $type:ty, $key:expr, $field:ident) => {
+                if let Ok(value) = self.get_metadata_property::<$type>($key) {
+                    self.metadata.$field = Some(Intern::new(value));
+                }
+            };
+        }
+
+        let mut booleans = [
+            "Shuffle",
+            "CanGoNext",
+            "CanGoPrevious",
+            "CanPlay",
+            "CanPause",
+            "CanSeek",
+            "CanControl"
+        ];
+
+        let mut f64s = [
+            "Rate",
+            "Volume",
+            "MinimumRate",
+            "MaximumRate"
+        ];
+
+        let mut i64s = [
+            "Position"
+        ];
+
+        let mut strings = [
+            "PlaybackStatus",
+            "LoopStatus",
+        ];
+
+        for key in booleans.iter_mut() {
+            let prop: bool = mpris_dbus::get_dbus_property::<bool>(&self, key)
+                .unwrap_or_else(|_| {
+                    eprintln!("Failed to get {} property", key);
+                    false
+                });
+
+            match *key {
+                "Shuffle" => self.shuffle = prop,
+                "CanGoNext" => self.can_go_next = prop,
+                "CanGoPrevious" => self.can_go_previous = prop,
+                "CanPlay" => self.can_play = prop,
+                "CanPause" => self.can_pause = prop,
+                "CanSeek" => self.can_seek = prop,
+                "CanControl" => self.can_control = prop,
+                _ => {}
+            }
+        }
+
+        for key in f64s.iter_mut() {
+            let prop: f64 = mpris_dbus::get_dbus_property::<f64>(&self, key)
+                .unwrap_or_else(|_| {
+                    eprintln!("Failed to get {} property", key);
+                    0.0
+                });
+
+            match *key {
+                "Rate" => self.rate = prop,
+                "Volume" => self.volume = prop,
+                "MinimumRate" => self.minimum_rate = prop,
+                "MaximumRate" => self.maximum_rate = prop,
+                _ => {}
+            }
+        }
+
+        for key in i64s.iter_mut() {
+            let prop: i64 = mpris_dbus::get_dbus_property::<i64>(&self, key)
+                .unwrap_or_else(|_| {
+                    eprintln!("Failed to get {} property", key);
+                    0
+                });
+
+            match *key {
+                "Position" => self.position = prop,
+                _ => {}
+            }
+        }
+
+        for key in strings.iter_mut() {
+            let prop: String = mpris_dbus::get_dbus_property::<String>(&self, key)
+                .unwrap_or_else(|_| {
+                    eprintln!("Failed to get {} property", key);
+                    String::new()
+                });
+
+            match *key {
+                "PlaybackStatus" => {
+                    self.playback_status = match prop.as_str() {
+                        "Playing" => PlaybackStatus::Playing,
+                        "Paused" => PlaybackStatus::Paused,
+                        _ => PlaybackStatus::Stopped,
+                    };
+                },
+
+                "LoopStatus" => {
+                    self.loop_status = match prop.as_str() {
+                        "Track" => LoopStatus::Track,
+                        "Playlist" => LoopStatus::Playlist,
+                        _ => LoopStatus::None,
+                    };
+                },
+                _ => {}
+            }
+        }
+
+        // Set metadata properties
+        set_metadata_property!(intern - String, "mpris:trackid", track_id);
+        set_metadata_property!(i64, "mpris:length", length);
+        set_metadata_property!(intern - String, "mpris:artUrl", art_url);
+        set_metadata_property!(intern - String, "xesam:album", album);
+        set_metadata_property!(intern - Vec<String>, "xesam:artist", artist);
+        set_metadata_property!(intern - String, "xesam:contentCreated", content_created);
+        set_metadata_property!(intern - String, "xesam:title", title);
+    }
+
     pub fn properties_changed(&mut self, msg: &Message) {
-        let (_, props) = msg.get2::<String, dbus::arg::PropMap>();
+        let (_, props) = msg.get2::<String, arg::PropMap>();
         
         if let Some(props) = props {
             let mut booleans = [
@@ -183,31 +331,38 @@ impl MprisPlayer {
         self.position = nanos;
     }
 
+    #[allow(dead_code)]
     pub fn next(&self) -> Result<Message, Error> {
         mpris_dbus::run_dbus_method(&self, "Next")
     }
 
+    #[allow(dead_code)]
     pub fn previous(&self) -> Result<Message, Error> {
         mpris_dbus::run_dbus_method(&self, "Previous")
     }
 
+    #[allow(dead_code)]
     pub fn play(&self) -> Result<Message, Error> {
         mpris_dbus::run_dbus_method(&self, "Play")
     }
 
+    #[allow(dead_code)]
     pub fn pause(&self) -> Result<Message, Error> {
         mpris_dbus::run_dbus_method(&self, "Pause")
     }
 
+    #[allow(dead_code)]
     pub fn play_pause(&self) -> Result<Message, Error> {
         mpris_dbus::run_dbus_method(&self, "PlayPause")
     }
 
+    #[allow(dead_code)]
     pub fn stop(&self) -> Result<Message, Error> {
         mpris_dbus::run_dbus_method(&self, "Stop")
     }
 
+    #[allow(dead_code)]
     pub fn seek(&self, position: i64) -> Result<Message, Error> {
-        mpris_dbus::run_dbus_method_i64(&self, "Seek", &[position])
+        mpris_dbus::run_dbus_method_w_args::<i64>(&self, "Seek", &[position])
     }
 }
