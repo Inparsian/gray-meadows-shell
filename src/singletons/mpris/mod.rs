@@ -25,7 +25,7 @@ pub static MPRIS: Lazy<Mpris> = Lazy::new(|| {
 
 fn assert_default_player() {
     if MPRIS.default_player.get() >= MPRIS.players.lock_ref().len() {
-        MPRIS.default_player.set(0);
+        set_default_player(0);
     }
 }
 
@@ -35,12 +35,14 @@ pub fn get_default_player() -> Option<mpris_player::MprisPlayer> {
     MPRIS.players.lock_ref().get(MPRIS.default_player.get()).cloned()
 }
 
-#[allow(dead_code)]
 pub fn set_default_player(index: usize) {
     if index < MPRIS.players.lock_ref().len() {
         MPRIS.default_player.set(index);
-    } else {
+    } else if MPRIS.players.lock_ref().len() > 0 {
         eprintln!("Attempted to set default player to index {}, but only {} players are available.", index, MPRIS.players.lock_ref().len());
+    } else {
+        // None are available, just fallback to 0
+        MPRIS.default_player.set(0);
     }
 }
 
@@ -50,21 +52,22 @@ where
 {
     let future = MPRIS.players.signal_vec().for_each(move |change| {
         match change {
+            VecDiff::Push { value: _ } => {
+                // Do nothing if there's already more than one player
+                if MPRIS.players.lock_ref().len() == 1 {
+                    callback();
+                }
+            },
+
             VecDiff::UpdateAt { index, value: _ } => {
                 if index == MPRIS.default_player.get() {
                     callback();
                 }
             },
 
-            VecDiff::RemoveAt { index: _ } => {
-                assert_default_player();
-                callback();
-            },
-
-            VecDiff::Pop {} => {
-                assert_default_player();
-                callback();
-            },
+            VecDiff::RemoveAt { index: _ } => callback(),
+            VecDiff::Pop {} => callback(),
+            VecDiff::Clear {} => callback(),
             
             _ => {}
         }
@@ -130,13 +133,9 @@ pub fn activate() {
     // Monitor the MPRIS players for changes
     let future = MPRIS.players.signal_vec().for_each(|change| {
         match change {
-            VecDiff::RemoveAt { index: _ } => {
-                assert_default_player();
-            },
-
-            VecDiff::Pop {} => {
-                assert_default_player();
-            },
+            VecDiff::RemoveAt { index: _ } => assert_default_player(),
+            VecDiff::Pop {} => assert_default_player(),
+            VecDiff::Clear {} => assert_default_player(),
 
             _ => {}
         }
