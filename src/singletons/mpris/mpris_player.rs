@@ -1,6 +1,8 @@
 use dbus::Message;
 use internment::Intern;
 
+use crate::singletons::mpris::mpris_metadata;
+
 #[derive(Debug, Clone, Copy)]
 pub enum PlaybackStatus {
     Playing,
@@ -15,6 +17,20 @@ pub enum LoopStatus {
     Playlist
 }
 
+// The common xesam and mpris metadata properties should be enough for most use cases,
+// so this struct is here as an easy way to read metadata from the player. Paths are
+// casted to strings for simplicity's sake.
+#[derive(Debug, Clone, Copy)]
+pub struct Metadata {
+    pub track_id: Option<Intern<String>>, // mpris:trackid
+    pub length: Option<i64>, // mpris:length - in microseconds
+    pub art_url: Option<Intern<String>>, // mpris:artUrl
+    pub album: Option<Intern<String>>, // xesam:album
+    pub artist: Option<Intern<Vec<String>>>, // xesam:artist
+    pub content_created: Option<Intern<String>>, // xesam:contentCreated
+    pub title: Option<Intern<String>>, // xesam:title
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct MprisPlayer {
     pub bus: Intern<String>,
@@ -23,6 +39,7 @@ pub struct MprisPlayer {
     pub loop_status: LoopStatus,
     pub rate: f64,
     pub shuffle: bool,
+    pub metadata: Metadata,
     pub volume: f64,
     pub position: i64, // Time_In_Us (time in microseconds)
     pub minimum_rate: f64,
@@ -37,6 +54,16 @@ pub struct MprisPlayer {
 
 impl MprisPlayer {
     pub fn new(bus: String, owner: String) -> Self {
+        let metadata = Metadata {
+            track_id: None,
+            length: None,
+            art_url: None,
+            album: None,
+            artist: None,
+            content_created: None,
+            title: None
+        };
+
         let player = MprisPlayer {
             bus: Intern::new(bus),
             owner: Intern::new(owner),
@@ -44,6 +71,7 @@ impl MprisPlayer {
             loop_status: LoopStatus::None,
             rate: 1.0,
             shuffle: false,
+            metadata,
             volume: 1.0,
             position: 0,
             minimum_rate: 0.5,
@@ -61,7 +89,7 @@ impl MprisPlayer {
 
     pub fn properties_changed(&mut self, msg: &Message) {
         let (_, props) = msg.get2::<String, dbus::arg::PropMap>();
-
+        
         if let Some(props) = props {
             let mut booleans = [
                 ("Shuffle", &mut self.shuffle),
@@ -108,6 +136,23 @@ impl MprisPlayer {
                 }
             }
 
+            if let Some(metadata) = props.get("Metadata") {
+                let kv = mpris_metadata::make_key_value_pairs(metadata);
+
+                for (key, value) in kv {
+                    match key.as_str() {
+                        "mpris:trackid" => self.metadata.track_id = Some(Intern::new(mpris_metadata::as_str(&value).unwrap_or_default())),
+                        "mpris:length" => self.metadata.length = Some(mpris_metadata::as_i64(&value).unwrap_or(0)),
+                        "mpris:artUrl" => self.metadata.art_url = Some(Intern::new(mpris_metadata::as_str(&value).unwrap_or_default())),
+                        "xesam:album" => self.metadata.album = Some(Intern::new(mpris_metadata::as_str(&value).unwrap_or_default())),
+                        "xesam:artist" => self.metadata.artist = Some(Intern::new(mpris_metadata::as_str_vec(&value).unwrap_or_default())),
+                        "xesam:contentCreated" => self.metadata.content_created = Some(Intern::new(mpris_metadata::as_str(&value).unwrap_or_default())),
+                        "xesam:title" => self.metadata.title = Some(Intern::new(mpris_metadata::as_str(&value).unwrap_or_default())),
+                        _ => {}
+                    }
+                }
+            }
+
             for (key, flag) in booleans.iter_mut() {
                 if let Some(value) = props.get(*key) {
                     if let Some(b) = value.0.as_i64() {
@@ -128,11 +173,9 @@ impl MprisPlayer {
                 }
             }
 
-            println!("{}::PropertiesChanged - playing:{} loop:{} rate:{} shuffle:{} vol:{} pos:{} min_rate:{} max_rate:{} can_go_next:{} can_go_previous:{} can_play:{} can_pause:{} can_seek:{} can_control:{}",
-                self.bus, self.playback_status as u8, self.loop_status as u8,
-                self.rate, self.shuffle, self.volume, self.position, self.minimum_rate,
-                self.maximum_rate, self.can_go_next, self.can_go_previous,
-                self.can_play, self.can_pause, self.can_seek, self.can_control);
+            println!("{}::PropertiesChanged - meta:{:?}",
+                self.bus, self.metadata
+            );
         } else {
             eprintln!("PropertiesChanged message did not contain properties: {:?}", msg);
         }
