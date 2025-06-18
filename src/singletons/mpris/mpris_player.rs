@@ -333,36 +333,64 @@ impl MprisPlayer {
 
     #[allow(dead_code)]
     pub fn next(&self) -> Result<Message, Error> {
+        if !self.can_go_next {
+            return Err(Error::new_failed("Cannot go to next track, player does not support it"));
+        }
+
         mpris_dbus::run_dbus_method(&self, "Next")
     }
 
     #[allow(dead_code)]
     pub fn previous(&self) -> Result<Message, Error> {
+        if !self.can_go_previous {
+            return Err(Error::new_failed("Cannot go to previous track, player does not support it"));
+        }
+
         mpris_dbus::run_dbus_method(&self, "Previous")
     }
 
     #[allow(dead_code)]
     pub fn play(&self) -> Result<Message, Error> {
+        if !self.can_play {
+            return Err(Error::new_failed("Cannot play, player does not support it"));
+        }
+
         mpris_dbus::run_dbus_method(&self, "Play")
     }
 
     #[allow(dead_code)]
     pub fn pause(&self) -> Result<Message, Error> {
+        if !self.can_pause {
+            return Err(Error::new_failed("Cannot pause, player does not support it"));
+        }
+
         mpris_dbus::run_dbus_method(&self, "Pause")
     }
 
     #[allow(dead_code)]
     pub fn play_pause(&self) -> Result<Message, Error> {
+        if !self.can_pause {
+            return Err(Error::new_failed("Cannot play/pause, player does not support it"));
+        }
+
         mpris_dbus::run_dbus_method(&self, "PlayPause")
     }
 
     #[allow(dead_code)]
     pub fn stop(&self) -> Result<Message, Error> {
+        if !self.can_control {
+            return Err(Error::new_failed("Cannot stop, player does not support it"));
+        }
+
         mpris_dbus::run_dbus_method(&self, "Stop")
     }
 
     #[allow(dead_code)]
     pub fn seek(&self, position: i64) -> Result<Message, Error> {
+        if !self.can_seek {
+            return Err(Error::new_failed("Cannot seek, player does not support it"));
+        }
+
         mpris_dbus::run_dbus_method_w_args::<i64>(&self, "Seek", &[position])
     }
 }
