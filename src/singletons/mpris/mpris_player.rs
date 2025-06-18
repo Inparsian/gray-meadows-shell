@@ -282,6 +282,17 @@ impl MprisPlayer {
             if let Some(metadata) = props.get("Metadata") {
                 let kv = mpris_metadata::make_key_value_pairs(metadata);
 
+                // Clear metadata before updating
+                self.metadata = Metadata {
+                    track_id: None,
+                    length: None,
+                    art_url: None,
+                    album: None,
+                    artist: None,
+                    content_created: None,
+                    title: None
+                };
+
                 for (key, value) in kv {
                     match key.as_str() {
                         "mpris:trackid" => self.metadata.track_id = Some(Intern::new(mpris_metadata::as_str(&value).unwrap_or_default())),
