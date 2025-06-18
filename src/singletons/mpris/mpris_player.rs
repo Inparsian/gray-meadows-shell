@@ -51,6 +51,16 @@ pub struct Metadata {
     pub title: Option<Intern<String>>, // xesam:title
 }
 
+const EMPTY_METADATA: Metadata = Metadata {
+    track_id: None,
+    length: None,
+    art_url: None,
+    album: None,
+    artist: None,
+    content_created: None,
+    title: None
+};
+
 #[derive(Debug, Clone, Copy)]
 pub struct MprisPlayer {
     pub bus: Intern<String>,
@@ -74,15 +84,7 @@ pub struct MprisPlayer {
 
 impl MprisPlayer {
     pub fn new(bus: String, owner: String) -> Self {
-        let metadata = Metadata {
-            track_id: None,
-            length: None,
-            art_url: None,
-            album: None,
-            artist: None,
-            content_created: None,
-            title: None
-        };
+        let metadata = EMPTY_METADATA;
 
         let mut player = MprisPlayer {
             bus: Intern::new(bus),
@@ -283,15 +285,7 @@ impl MprisPlayer {
                 let kv = mpris_metadata::make_key_value_pairs(metadata);
 
                 // Clear metadata before updating
-                self.metadata = Metadata {
-                    track_id: None,
-                    length: None,
-                    art_url: None,
-                    album: None,
-                    artist: None,
-                    content_created: None,
-                    title: None
-                };
+                self.metadata = EMPTY_METADATA;
 
                 for (key, value) in kv {
                     match key.as_str() {
