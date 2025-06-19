@@ -29,7 +29,6 @@ fn assert_default_player() {
     }
 }
 
-#[allow(dead_code)]
 pub fn get_default_player() -> Option<mpris_player::MprisPlayer> {
     assert_default_player();
     MPRIS.players.lock_ref().get(MPRIS.default_player.get()).cloned()

@@ -331,7 +331,6 @@ impl MprisPlayer {
         self.position = nanos;
     }
 
-    #[allow(dead_code)]
     pub fn next(&self) -> Result<Message, Error> {
         if !self.can_go_next {
             return Err(Error::new_failed("Cannot go to next track, player does not support it"));
@@ -367,7 +366,6 @@ impl MprisPlayer {
         mpris_dbus::run_dbus_method(&self, "Pause")
     }
 
-    #[allow(dead_code)]
     pub fn play_pause(&self) -> Result<Message, Error> {
         if !self.can_pause {
             return Err(Error::new_failed("Cannot play/pause, player does not support it"));
