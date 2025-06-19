@@ -1,13 +1,16 @@
-use std::time::Duration;
+use std::{time::Duration, usize};
 use dbus::{
-    arg::{self, Append, IterAppend},
+    arg::{self, Append, IterAppend, RefArg},
     blocking::{stdintf::org_freedesktop_dbus::Properties, BlockingSender, Connection},
     strings::BusName,
     Error,
-    Message
+    Message, MessageType
 };
 
-use crate::singletons::mpris::{mpris_player::{self, MprisPlayer}, MPRIS, MPRIS_DBUS_PATH, MPRIS_DBUS_PREFIX};
+use crate::singletons::mpris::{
+    mpris_player::{self, MprisPlayer},
+    MPRIS, MPRIS_DBUS_PATH, MPRIS_DBUS_PREFIX
+};
 
 pub fn handle_master_message(msg: &Message) {
     if let Some(member) = msg.member() {
@@ -31,29 +34,29 @@ pub fn handle_master_message(msg: &Message) {
         }
 
         else if let Some(path) = msg.path() {
-            if path.starts_with(MPRIS_DBUS_PATH) && msg.msg_type() == dbus::message::MessageType::Signal {
+            if path.starts_with(MPRIS_DBUS_PATH) && msg.msg_type() == MessageType::Signal {
                 let sender: Option<BusName> = msg.sender();
 
                 if let Some(sender) = sender {
                     let mut players_mut = MPRIS.players.lock_mut();
-                    let player_index = players_mut.iter().position(|p| sender == p.owner.as_ref().into());
 
-                    if let Some(player_index) = player_index {
-                        let player = players_mut.get(player_index);
+                    let player_index = players_mut.iter().position(|p| sender == p.owner.as_ref().into())
+                        .unwrap_or_else(|| usize::MAX); // Default to an impossible index if not found
 
-                        if let Some(player) = player {
-                            let player = &mut player.clone();
-                            
-                            match member {
-                                "PropertiesChanged" => player.properties_changed(msg),
-                                "Seeked" => player.seeked(msg),
-                                _ => eprintln!("Unknown MPRIS signal member: {}", member),
-                            }
+                    let player = players_mut.get(player_index);
 
-                            players_mut.set(player_index, *player);
-                        } else {
-                            eprintln!("Failed to find MPRIS player for owner: {}", sender);
+                    if let Some(player) = player {
+                        let player = &mut player.clone();
+
+                        match member {
+                            "PropertiesChanged" => player.properties_changed(msg),
+                            "Seeked" => player.seeked(msg),
+                            _ => eprintln!("Unknown MPRIS signal member: {}", member),
                         }
+
+                        players_mut.set(player_index, *player);
+                    } else {
+                        eprintln!("Failed to find MPRIS player for owner: {}", sender);
                     }
                 }
             }
@@ -71,7 +74,7 @@ fn ready_dbus_message(player: &MprisPlayer, method: &str) -> Result<(Connection,
     );
 
     if let Ok(message) = message {
-        let connection = dbus::blocking::Connection::new_session()
+        let connection = Connection::new_session()
             .map_err(|e| Error::new_failed(&format!("Failed to connect to D-Bus: {}", e)))?;
 
         Ok((connection, message))
@@ -81,7 +84,7 @@ fn ready_dbus_message(player: &MprisPlayer, method: &str) -> Result<(Connection,
 }
 
 #[allow(dead_code)]
-pub fn get_dbus_property<T: dbus::arg::RefArg>(player: &MprisPlayer, property: &str) -> Result<T, Error>
+pub fn get_dbus_property<T: RefArg>(player: &MprisPlayer, property: &str) -> Result<T, Error>
 where
     T: for<'b> arg::Get<'b> + 'static
 {
@@ -103,14 +106,10 @@ where
 
 #[allow(dead_code)]
 pub fn run_dbus_method(player: &MprisPlayer, method: &str) -> Result<Message, Error> {
-    let result = ready_dbus_message(player, method);
+    let (connection, message) = ready_dbus_message(player, method)?;
 
-    if let Ok((connection, message)) = result {
-        connection.send_with_reply_and_block(message, Duration::from_secs(5))
-            .map_err(|e| Error::new_failed(&format!("Failed to send D-Bus message: {}", e)))
-    } else {
-        Err(Error::new_failed(&format!("Failed to connect to D-Bus: {}", result.err().unwrap())))
-    }
+    connection.send_with_reply_and_block(message, Duration::from_secs(5))
+        .map_err(|e| Error::new_failed(&format!("Failed to send D-Bus message: {}", e)))
 }
 
 #[allow(dead_code)]
