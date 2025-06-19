@@ -64,7 +64,6 @@ pub fn handle_master_message(msg: &Message) {
     }
 }
 
-#[allow(dead_code)]
 fn ready_dbus_message(player: &MprisPlayer, method: &str) -> Result<(Connection, Message), Error> {
     let message = Message::new_method_call(
         &*player.bus,
@@ -83,7 +82,6 @@ fn ready_dbus_message(player: &MprisPlayer, method: &str) -> Result<(Connection,
     }
 }
 
-#[allow(dead_code)]
 pub fn get_dbus_property<T: RefArg>(player: &MprisPlayer, property: &str) -> Result<T, Error>
 where
     T: for<'b> arg::Get<'b> + 'static
@@ -104,7 +102,6 @@ where
     }
 }
 
-#[allow(dead_code)]
 pub fn run_dbus_method(player: &MprisPlayer, method: &str) -> Result<Message, Error> {
     let (connection, message) = ready_dbus_message(player, method)?;
 
@@ -112,7 +109,6 @@ pub fn run_dbus_method(player: &MprisPlayer, method: &str) -> Result<Message, Er
         .map_err(|e| Error::new_failed(&format!("Failed to send D-Bus message: {}", e)))
 }
 
-#[allow(dead_code)]
 pub fn run_dbus_method_w_args<T>(player: &MprisPlayer, method: &str, args: &[T]) -> Result<Message, Error>
 where
     T: Append,
