@@ -60,7 +60,7 @@ pub fn new() -> gtk4::Box {
         }
     }
 
-    mpris::subscribe_to_default_player_changes(move || {
+    mpris::subscribe_to_default_player_changes(move |_| {
         current_track.set_label(&get_mpris_player_label_text());
     });
 

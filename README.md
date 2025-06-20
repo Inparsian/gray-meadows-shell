@@ -6,8 +6,8 @@ My personal desktop shell using gtk4 and gtk4-layer-shell, re-written from scrat
 
 Currently far from ready for daily use. This list of things to do may not be exhaustive and is subject to change.
 
-- [ ] IPC
-- [ ] Libraries
+- [ ] IPC (so the compositor can communicate with the shell)
+- [ ] Library/singleton services
     - [x] libqalculate (Thin C++ shim)
     - [x] Mpris (dbus)
     - [ ] Cava?
@@ -17,6 +17,9 @@ Currently far from ready for daily use. This list of things to do may not be exh
     - [ ] Apps
     - [ ] WirePlumber
     - [ ] NetworkManager
+    - [ ] System resource monitoring
+    - [ ] Timers
+    - [ ] Weather
 - [ ] Bar
     - [ ] Workspaces
     - [ ] Active client

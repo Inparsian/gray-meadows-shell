@@ -2,9 +2,9 @@ mod mpris_player;
 mod mpris_metadata;
 mod mpris_dbus;
 
-use std::time::Duration;
+use std::{rc::Rc, time::Duration};
 use dbus::{channel::MatchingReceiver, message::MatchRule};
-use futures_signals::signal_vec::{SignalVecExt, VecDiff};
+use futures_signals::{signal::SignalExt, signal_vec::{SignalVecExt, VecDiff}};
 use once_cell::sync::Lazy;
 
 const MPRIS_DBUS_PREFIX: &str = "org.mpris.MediaPlayer2";
@@ -47,34 +47,66 @@ pub fn set_default_player(index: usize) {
 
 pub fn subscribe_to_default_player_changes<F>(callback: F)
 where
-    F: Fn() + 'static,
+    F: Fn(usize) + 'static,
 {
-    let future = MPRIS.players.signal_vec().for_each(move |change| {
-        match change {
-            VecDiff::Push { value: _ } => {
-                // Do nothing if there's already more than one player
-                if MPRIS.players.lock_ref().len() == 1 {
-                    callback();
-                }
-            },
+    let callback_rc = Rc::new(callback);
 
-            VecDiff::UpdateAt { index, value: _ } => {
-                if index == MPRIS.default_player.get() {
-                    callback();
-                }
-            },
+    let players_future = {
+        let callback = callback_rc.clone();
 
-            VecDiff::RemoveAt { index: _ } => callback(),
-            VecDiff::Pop {} => callback(),
-            VecDiff::Clear {} => callback(),
-            
-            _ => {}
-        }
+        MPRIS.players.signal_vec().for_each(move |change| {
+            let run_callback = |index: usize| {
+                let callback = callback.clone();
+                gtk4::glib::source::idle_add_local(move || {
+                    callback(index);
 
-        async {}
-    });
+                    gtk4::glib::ControlFlow::Break
+                });
+            };
 
-    gtk4::glib::MainContext::default().spawn_local(future);
+            match change {
+                VecDiff::Push { value: _ } => {
+                    // Do nothing if there's already more than one player
+                    if MPRIS.players.lock_ref().len() == 1 {
+                        run_callback(MPRIS.default_player.get());
+                    }
+                },
+
+                VecDiff::UpdateAt { index, value: _ } => {
+                    if index == MPRIS.default_player.get() {
+                        run_callback(MPRIS.default_player.get());
+                    }
+                },
+
+                VecDiff::RemoveAt { index: _ } => run_callback(MPRIS.default_player.get()),
+                VecDiff::Pop {} => run_callback(MPRIS.default_player.get()),
+                VecDiff::Clear {} => run_callback(MPRIS.default_player.get()),
+
+                _ => {}
+            }
+
+            async {}
+        })
+    };
+
+    let default_player_future = {
+        let callback = callback_rc.clone();
+
+        MPRIS.default_player.signal().for_each(move |index| {
+            let callback = callback.clone();
+
+            gtk4::glib::source::idle_add_local(move || {
+                callback(index);
+
+                gtk4::glib::ControlFlow::Break
+            });
+
+            async {}
+        })
+    };
+
+    gtk4::glib::MainContext::default().spawn_local(players_future);
+    gtk4::glib::MainContext::default().spawn_local(default_player_future);
 }
 
 pub fn activate() {
