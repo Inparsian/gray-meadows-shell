@@ -17,12 +17,6 @@ fn get_mpris_player_label_text() -> String {
 
 pub fn new() -> gtk4::Box {
     relm4_macros::view! {
-        current_track = gtk4::Label {
-            set_label: &get_mpris_player_label_text(),
-            set_hexpand: true,
-            set_xalign: 0.5
-        },
-
         widget_middle_click_gesture = &gtk4::GestureClick::new() {
             set_button: gdk4::ffi::GDK_BUTTON_MIDDLE.try_into().unwrap(), // ?????
             connect_pressed: |_, _, _, _| {
@@ -50,13 +44,28 @@ pub fn new() -> gtk4::Box {
         },
 
         no_players_widget = gtk4::Label {
+            set_css_classes: &["bar-mpris-track"],
             set_label: "No MPRIS players",
             set_hexpand: true,
             set_xalign: 0.5
         },
 
+        current_track = gtk4::Label {
+            set_css_classes: &["bar-mpris-track"],
+            set_label: &get_mpris_player_label_text(),
+            set_hexpand: true,
+            set_xalign: 0.5
+        },
+
+        current_album_art = gtk4::Image {
+            set_width_request: 23,
+            set_height_request: 23
+        },
+
         players_widget = gtk4::Box {
             set_hexpand: true,
+
+            append: &current_album_art,
             append: &current_track,
         },
 
@@ -72,17 +81,65 @@ pub fn new() -> gtk4::Box {
         },
     }
 
-    if mpris::get_default_player().is_none() {
-        players_widget.hide();
-    } else {
-        no_players_widget.hide();
-    }
-
     mpris::subscribe_to_default_player_changes(move |_| {
-        if mpris::get_default_player().is_some() {
+        if let Some(default_player) = mpris::get_default_player() {
             no_players_widget.hide();
             players_widget.show();
+
             current_track.set_label(&get_mpris_player_label_text());
+
+            let make_blank_art = || {
+                // Create blank pixbuf filled with color #0D0D0D
+                let blank_pixbuf = gtk4::gdk_pixbuf::Pixbuf::new(
+                    gtk4::gdk_pixbuf::Colorspace::Rgb,
+                    true, // has alpha
+                    8, // bits per sample
+                    23, // width
+                    23 // height
+                );
+
+                if let Some(blank_pixbuf) = blank_pixbuf {
+                    blank_pixbuf.fill(0x0D0D0DFF);
+                    current_album_art.set_from_pixbuf(Some(&blank_pixbuf));
+                } else {
+                    eprintln!("Failed to create blank pixbuf for album art! :O");
+                }
+            };
+
+            if let Some(art_url) = default_player.metadata.art_url {
+                // URL-decode the album art URL
+                let art_url = match urlencoding::decode(&art_url.replace("file://", "")) {
+                    Ok(decoded) => decoded.into_owned(),
+                    Err(e) => {
+                        eprintln!("Failed to decode album art URL: {}", e);
+                        return;
+                    }
+                };
+
+                // Make pixbuf from album art
+                let pixbuf = gtk4::gdk_pixbuf::Pixbuf::from_file(&*art_url);
+
+                if let Ok(pixbuf) = pixbuf {
+                    let scaled_pixbuf = pixbuf.scale_simple(23, 23, gtk4::gdk_pixbuf::InterpType::Tiles);
+                    if let Some(scaled_pixbuf) = scaled_pixbuf {
+                        scaled_pixbuf.saturate_and_pixelate(
+                            &scaled_pixbuf,
+                            0.0,
+                            false
+                        );
+
+                        current_album_art.set_from_pixbuf(Some(&scaled_pixbuf));
+                    } else {
+                        eprintln!("Failed to scale album art from file: {}", art_url);
+                        make_blank_art();
+                    }
+                } else {
+                    eprintln!("Failed to load album art from file: {}", art_url);
+                    make_blank_art();
+                }
+            } else {
+                make_blank_art();
+            }
         } else {
             players_widget.hide();
             no_players_widget.show();

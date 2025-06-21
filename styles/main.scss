@@ -16,7 +16,7 @@ $font-family-big: "GohuFont uni14 Nerd Font";
 .bar {
     background: transparent;
     font-family: $font-family-normal;
-    letter-spacing: 0.033em;
+    letter-spacing: 0.05em;
 
     .bar-widget {
         background: $background-color-primary;
@@ -41,7 +41,15 @@ $font-family-big: "GohuFont uni14 Nerd Font";
         }
 
         &.bar-mpris {
+            padding: 0px;
             min-width: 250px;
+
+            .bar-mpris-track {
+                padding-top: 4px;
+                padding-bottom: 4px;
+                padding-left: 6px;
+                padding-right: 6px;
+            }
         }
     }
 }
