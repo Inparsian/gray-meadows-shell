@@ -4,6 +4,9 @@ use once_cell::sync::Lazy;
 
 use crate::singletons::mpris;
 
+static WIDTH: i32 = 23; // Expected width of the album art image
+static HEIGHT: i32 = 23; // Expected height of the album art image
+
 static NO_ARTIST: Lazy<Intern<Vec<String>>> = Lazy::new(|| Intern::new(vec!["No artist".to_string()]));
 static NO_TITLE: Lazy<Intern<String>> = Lazy::new(|| Intern::new("No title".to_string()));
 
@@ -58,8 +61,8 @@ pub fn new() -> gtk4::Box {
         },
 
         current_album_art = gtk4::Image {
-            set_width_request: 23,
-            set_height_request: 23
+            set_width_request: WIDTH,
+            set_height_request: HEIGHT
         },
 
         players_widget = gtk4::Box {
@@ -92,10 +95,10 @@ pub fn new() -> gtk4::Box {
                 // Create blank pixbuf filled with color #0D0D0D
                 let blank_pixbuf = gtk4::gdk_pixbuf::Pixbuf::new(
                     gtk4::gdk_pixbuf::Colorspace::Rgb,
-                    true, // has alpha
-                    8, // bits per sample
-                    23, // width
-                    23 // height
+                    true,
+                    8,
+                    WIDTH,
+                    HEIGHT
                 );
 
                 if let Some(blank_pixbuf) = blank_pixbuf {
@@ -120,7 +123,7 @@ pub fn new() -> gtk4::Box {
                 let pixbuf = gtk4::gdk_pixbuf::Pixbuf::from_file(&*art_url);
 
                 if let Ok(pixbuf) = pixbuf {
-                    let scaled_pixbuf = pixbuf.scale_simple(23, 23, gtk4::gdk_pixbuf::InterpType::Tiles);
+                    let scaled_pixbuf = pixbuf.scale_simple(WIDTH, HEIGHT, gtk4::gdk_pixbuf::InterpType::Tiles);
                     if let Some(scaled_pixbuf) = scaled_pixbuf {
                         scaled_pixbuf.saturate_and_pixelate(
                             &scaled_pixbuf,
