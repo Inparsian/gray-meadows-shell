@@ -13,42 +13,44 @@ $font-family-big: "GohuFont uni14 Nerd Font";
     margin-right: 6px;
 }
 
-.bar {
+.bar-window {
     background: transparent;
-    font-family: $font-family-normal;
-    letter-spacing: 0.05em;
 
-    .bar-widget {
-        background: $background-color-primary;
-        color: $foreground-color-primary;
-        
-        padding-top: 4px;
-        padding-bottom: 4px;
-        padding-left: 6px;
-        padding-right: 6px;
+    .bar {
+        font-family: $font-family-normal;
+        letter-spacing: 0.05em;
 
-        margin-top: 5px;
-        margin-bottom: 5px;
-        margin-left: 2px;
-        margin-right: 2px;
+        .bar-widget {
+            background: $background-color-primary;
+            color: $foreground-color-primary;
 
-        &:first-child {
-            margin-left: 5px;
-        }
+            padding-top: 4px;
+            padding-bottom: 4px;
+            padding-left: 6px;
+            padding-right: 6px;
 
-        &:last-child {
-            margin-right: 5px;
-        }
+            margin-top: 5px;
+            margin-bottom: 5px;
+            margin-left: 2px;
+            margin-right: 2px;
 
-        &.bar-mpris {
-            padding: 0px;
-            min-width: 250px;
+            &:first-child {
+                margin-left: 5px;
+            }
 
-            .bar-mpris-track {
-                padding-top: 4px;
-                padding-bottom: 4px;
-                padding-left: 6px;
-                padding-right: 6px;
+            &:last-child {
+                margin-right: 5px;
+            }
+
+            &.bar-mpris {
+                padding: 0px;
+
+                .bar-mpris-track {
+                    padding-top: 4px;
+                    padding-bottom: 4px;
+                    padding-left: 6px;
+                    padding-right: 6px;
+                }
             }
         }
     }

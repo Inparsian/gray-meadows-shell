@@ -5,8 +5,10 @@ use once_cell::sync::Lazy;
 
 use crate::singletons::mpris;
 
-const WIDTH: i32 = 23; // Expected width of the album art image
-const HEIGHT: i32 = 23; // Expected height of the album art image
+const ALBUM_ART_WIDTH: i32 = 23; // Expected width of the album art image
+const ALBUM_ART_HEIGHT: i32 = 23; // Expected height of the album art image
+const WIDGET_WIDTH: i32 = 250;
+const MAX_TRACK_WIDTH: i32 = WIDGET_WIDTH - ALBUM_ART_WIDTH;
 
 static NO_ARTIST: Lazy<Intern<Vec<String>>> = Lazy::new(|| Intern::new(vec!["No artist".to_string()]));
 static NO_TITLE: Lazy<Intern<String>> = Lazy::new(|| Intern::new("No title".to_string()));
@@ -60,24 +62,32 @@ pub fn new() -> gtk4::Box {
             set_css_classes: &["bar-mpris-track"],
             set_label: &get_mpris_player_label_text(),
             set_hexpand: true,
-            set_xalign: 0.5
+            set_xalign: 0.5,
+            set_ellipsize: gtk4::pango::EllipsizeMode::End
         },
 
         current_album_art = gtk4::Image {
-            set_width_request: WIDTH,
-            set_height_request: HEIGHT
+            set_width_request: ALBUM_ART_WIDTH,
+            set_height_request: ALBUM_ART_HEIGHT
         },
 
         players_widget = gtk4::Box {
-            set_hexpand: true,
+            set_hexpand: false,
 
             append: &current_album_art,
-            append: &current_track,
+
+            libadwaita::Clamp {
+                set_child: Some(&current_track),
+                set_width_request: MAX_TRACK_WIDTH,
+                set_maximum_size: MAX_TRACK_WIDTH,
+                set_unit: libadwaita::LengthUnit::Px
+            }
         },
 
         widget = gtk4::Box {
             set_css_classes: &["bar-widget", "bar-mpris"],
             set_hexpand: false,
+            set_width_request: WIDGET_WIDTH,
 
             add_controller: widget_middle_click_gesture,
             add_controller: widget_right_click_gesture,
@@ -100,8 +110,8 @@ pub fn new() -> gtk4::Box {
                     gtk4::gdk_pixbuf::Colorspace::Rgb,
                     true,
                     8,
-                    WIDTH,
-                    HEIGHT
+                    ALBUM_ART_WIDTH,
+                    ALBUM_ART_HEIGHT
                 );
 
                 if let Some(blank_pixbuf) = blank_pixbuf {
@@ -129,7 +139,7 @@ pub fn new() -> gtk4::Box {
                     let pixbuf = gtk4::gdk_pixbuf::Pixbuf::from_file(&*art_url);
 
                     if let Ok(pixbuf) = pixbuf {
-                        let scaled_pixbuf = pixbuf.scale_simple(WIDTH, HEIGHT, gtk4::gdk_pixbuf::InterpType::Tiles);
+                        let scaled_pixbuf = pixbuf.scale_simple(ALBUM_ART_WIDTH, ALBUM_ART_HEIGHT, gtk4::gdk_pixbuf::InterpType::Tiles);
                         if let Some(scaled_pixbuf) = scaled_pixbuf {
                             scaled_pixbuf.saturate_and_pixelate(
                                 &scaled_pixbuf,

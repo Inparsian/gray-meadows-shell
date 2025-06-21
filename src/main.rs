@@ -5,6 +5,7 @@ mod singletons;
 mod widgets;
 
 use gtk4::prelude::*;
+use libadwaita::Application;
 use notify::{event::AccessKind, Watcher};
 use once_cell::sync::Lazy;
 use std::{path::Path, sync::Mutex};
@@ -82,7 +83,7 @@ fn watch_scss() {
     });
 }
 
-fn activate(application: &gtk4::Application) {
+fn activate(application: &Application) {
     for monitor in helpers::display::get_all_monitors(&gdk4::Display::default().expect("Failed to get default display")) {
         let bar = widgets::bar::Bar::new(application, &monitor);
         bar.window.show();
@@ -109,7 +110,7 @@ async fn main() {
     watch_scss();
 
     // Initialize and run the application
-    let application = gtk4::Application::new(
+    let application = Application::new(
         Some("sn.inpr.gray_meadows_shell"),
         Default::default(),
     );

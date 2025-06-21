@@ -11,7 +11,7 @@ pub struct Bar {
 }
 
 impl Bar {
-    pub fn new(application: &gtk4::Application, monitor: &gdk4::Monitor) -> Self {
+    pub fn new(application: &libadwaita::Application, monitor: &gdk4::Monitor) -> Self {
         relm4_macros::view! {
             left_box = gtk4::Box {
                 set_orientation: gtk4::Orientation::Horizontal,
@@ -32,6 +32,7 @@ impl Bar {
             },
 
             window = gtk4::ApplicationWindow {
+                set_css_classes: &["bar-window"],
                 set_application: Some(application),
                 init_layer_shell: (),
                 set_monitor: Some(&monitor),
