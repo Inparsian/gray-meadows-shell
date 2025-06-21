@@ -102,6 +102,27 @@ where
     }
 }
 
+#[allow(dead_code)]
+pub fn set_dbus_property<T: dbus::arg::RefArg>(player: &MprisPlayer, property: &str, value: T) -> Result<(), Error>
+where
+    T: arg::Arg + arg::Append
+{
+    let connection = Connection::new_session()?;
+    let proxy = connection.with_proxy(
+        player.bus.to_string(),
+        "/org/mpris/MediaPlayer2",
+        Duration::from_secs(5)
+    );
+
+    let result = proxy.set("org.mpris.MediaPlayer2.Player", property, value);
+
+    if result.is_ok() {
+        Ok(())
+    } else {
+        Err(Error::new_failed(&format!("Failed to set D-Bus property '{}': {}", property, result.err().unwrap())))
+    }
+}
+
 pub fn run_dbus_method(player: &MprisPlayer, method: &str) -> Result<Message, Error> {
     let (connection, message) = ready_dbus_message(player, method)?;
 

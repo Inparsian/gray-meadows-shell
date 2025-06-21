@@ -1,10 +1,11 @@
 use std::cell::RefCell;
-use gtk4::prelude::*;
+use gtk4::{prelude::*, EventControllerScrollFlags};
 use internment::Intern;
 use once_cell::sync::Lazy;
 
 use crate::singletons::mpris;
 
+const VOLUME_STEP: f64 = 0.05;
 const ALBUM_ART_WIDTH: i32 = 23; // Expected width of the album art image
 const ALBUM_ART_HEIGHT: i32 = 23; // Expected height of the album art image
 const WIDGET_WIDTH: i32 = 250;
@@ -51,6 +52,26 @@ pub fn new() -> gtk4::Box {
             }
         },
 
+        widget_scroll_controller = &gtk4::EventControllerScroll::new(EventControllerScrollFlags::VERTICAL) {
+            connect_scroll: |_, _, delta_y| {
+                if let Some(player) = mpris::get_default_player() {
+                    let step = if delta_y < 0.0 {
+                        VOLUME_STEP
+                    } else {
+                        -VOLUME_STEP
+                    };
+
+                    player.adjust_volume(step).unwrap_or_else(|e| {
+                        eprintln!("Failed to adjust volume: {}", e);
+                    });
+                } else {
+                    eprintln!("No MPRIS player available to adjust volume.");
+                }
+
+                gtk4::glib::Propagation::Stop
+            }
+        },
+
         no_players_widget = gtk4::Label {
             set_css_classes: &["bar-mpris-track"],
             set_label: "No MPRIS players",
@@ -91,6 +112,7 @@ pub fn new() -> gtk4::Box {
 
             add_controller: widget_middle_click_gesture,
             add_controller: widget_right_click_gesture,
+            add_controller: widget_scroll_controller,
 
             append: &no_players_widget,
             append: &players_widget

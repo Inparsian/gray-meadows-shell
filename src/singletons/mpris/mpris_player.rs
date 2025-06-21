@@ -391,4 +391,16 @@ impl MprisPlayer {
 
         mpris_dbus::run_dbus_method_w_args::<i64>(&self, "Seek", &[position])
     }
+
+    pub fn adjust_volume(&self, delta: f64) -> Result<(), Error> {
+        if !self.can_control {
+            return Err(Error::new_failed("Cannot adjust volume, player does not support it"));
+        }
+
+        // 1.0 is only a sensible max, some players allow more than this
+        // 1.5 is the true max limit for pulse/pipewire servers
+        let new_volume = (self.volume + delta).clamp(0.0, 1.5);
+
+        mpris_dbus::set_dbus_property(&self, "Volume", new_volume)
+    }
 }
