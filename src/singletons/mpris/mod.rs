@@ -55,10 +55,12 @@ where
         let callback = callback_rc.clone();
 
         MPRIS.players.signal_vec().for_each(move |change| {
-            let run_callback = |index: usize| {
+            let run_callback = || {
                 let callback = callback.clone();
+
                 gtk4::glib::source::idle_add_local(move || {
-                    callback(index);
+                    assert_default_player();
+                    callback(MPRIS.default_player.get());
 
                     gtk4::glib::ControlFlow::Break
                 });
@@ -67,20 +69,26 @@ where
             match change {
                 VecDiff::Push { value: _ } => {
                     // Do nothing if there's already more than one player
+                    // This is for if a player is instantiated when there's no players
                     if MPRIS.players.lock_ref().len() == 1 {
-                        run_callback(MPRIS.default_player.get());
+                        run_callback();
                     }
                 },
 
                 VecDiff::UpdateAt { index, value: _ } => {
                     if index == MPRIS.default_player.get() {
-                        run_callback(index);
+                        run_callback();
                     }
                 },
 
-                VecDiff::RemoveAt { index: _ } => run_callback(MPRIS.default_player.get()),
-                VecDiff::Pop {} => run_callback(MPRIS.default_player.get()),
-                VecDiff::Clear {} => run_callback(MPRIS.default_player.get()),
+                VecDiff::RemoveAt { index } => {
+                    if index == MPRIS.default_player.get() {
+                        run_callback();
+                    }
+                },
+                
+                VecDiff::Pop {} => run_callback(),
+                VecDiff::Clear {} => run_callback(),
 
                 _ => {}
             }
