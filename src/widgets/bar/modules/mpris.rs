@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use gtk4::prelude::*;
 use internment::Intern;
 use once_cell::sync::Lazy;
@@ -19,6 +20,8 @@ fn get_mpris_player_label_text() -> String {
 }
 
 pub fn new() -> gtk4::Box {
+    let current_art_url = RefCell::new(String::new());
+    
     relm4_macros::view! {
         widget_middle_click_gesture = &gtk4::GestureClick::new() {
             set_button: gdk4::ffi::GDK_BUTTON_MIDDLE.try_into().unwrap(), // ?????
@@ -110,37 +113,42 @@ pub fn new() -> gtk4::Box {
             };
 
             if let Some(art_url) = default_player.metadata.art_url {
-                // URL-decode the album art URL
-                let art_url = match urlencoding::decode(&art_url.replace("file://", "")) {
-                    Ok(decoded) => decoded.into_owned(),
-                    Err(e) => {
-                        eprintln!("Failed to decode album art URL: {}", e);
-                        return;
-                    }
-                };
+                if *current_art_url.borrow() != *art_url {
+                    *current_art_url.borrow_mut() = art_url.to_string();
 
-                // Make pixbuf from album art
-                let pixbuf = gtk4::gdk_pixbuf::Pixbuf::from_file(&*art_url);
+                    // URL-decode the album art URL
+                    let art_url = match urlencoding::decode(&art_url.replace("file://", "")) {
+                        Ok(decoded) => decoded.into_owned(),
+                        Err(e) => {
+                            eprintln!("Failed to decode album art URL: {}", e);
+                            return;
+                        }
+                    };
 
-                if let Ok(pixbuf) = pixbuf {
-                    let scaled_pixbuf = pixbuf.scale_simple(WIDTH, HEIGHT, gtk4::gdk_pixbuf::InterpType::Tiles);
-                    if let Some(scaled_pixbuf) = scaled_pixbuf {
-                        scaled_pixbuf.saturate_and_pixelate(
-                            &scaled_pixbuf,
-                            0.0,
-                            false
-                        );
+                    // Make pixbuf from album art
+                    let pixbuf = gtk4::gdk_pixbuf::Pixbuf::from_file(&*art_url);
 
-                        current_album_art.set_from_pixbuf(Some(&scaled_pixbuf));
+                    if let Ok(pixbuf) = pixbuf {
+                        let scaled_pixbuf = pixbuf.scale_simple(WIDTH, HEIGHT, gtk4::gdk_pixbuf::InterpType::Tiles);
+                        if let Some(scaled_pixbuf) = scaled_pixbuf {
+                            scaled_pixbuf.saturate_and_pixelate(
+                                &scaled_pixbuf,
+                                0.0,
+                                false
+                            );
+
+                            current_album_art.set_from_pixbuf(Some(&scaled_pixbuf));
+                        } else {
+                            eprintln!("Failed to scale album art from file: {}", art_url);
+                            make_blank_art();
+                        }
                     } else {
-                        eprintln!("Failed to scale album art from file: {}", art_url);
+                        eprintln!("Failed to load album art from file: {}", art_url);
                         make_blank_art();
                     }
-                } else {
-                    eprintln!("Failed to load album art from file: {}", art_url);
-                    make_blank_art();
                 }
-            } else {
+            } else if *current_art_url.borrow() != "" {
+                current_art_url.borrow_mut().clear();
                 make_blank_art();
             }
         } else {
