@@ -5,8 +5,8 @@ use once_cell::sync::Lazy;
 
 use crate::singletons::mpris;
 
-static WIDTH: i32 = 23; // Expected width of the album art image
-static HEIGHT: i32 = 23; // Expected height of the album art image
+const WIDTH: i32 = 23; // Expected width of the album art image
+const HEIGHT: i32 = 23; // Expected height of the album art image
 
 static NO_ARTIST: Lazy<Intern<Vec<String>>> = Lazy::new(|| Intern::new(vec!["No artist".to_string()]));
 static NO_TITLE: Lazy<Intern<String>> = Lazy::new(|| Intern::new("No title".to_string()));
