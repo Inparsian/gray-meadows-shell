@@ -74,7 +74,7 @@ where
 
                 VecDiff::UpdateAt { index, value: _ } => {
                     if index == MPRIS.default_player.get() {
-                        run_callback(MPRIS.default_player.get());
+                        run_callback(index);
                     }
                 },
 

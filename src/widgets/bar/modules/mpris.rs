@@ -49,6 +49,17 @@ pub fn new() -> gtk4::Box {
             }
         },
 
+        no_players_widget = gtk4::Label {
+            set_label: "No MPRIS players",
+            set_hexpand: true,
+            set_xalign: 0.5
+        },
+
+        players_widget = gtk4::Box {
+            set_hexpand: true,
+            append: &current_track,
+        },
+
         widget = gtk4::Box {
             set_css_classes: &["bar-widget", "bar-mpris"],
             set_hexpand: false,
@@ -56,12 +67,26 @@ pub fn new() -> gtk4::Box {
             add_controller: widget_middle_click_gesture,
             add_controller: widget_right_click_gesture,
 
-            append: &current_track,
-        }
+            append: &no_players_widget,
+            append: &players_widget
+        },
+    }
+
+    if mpris::get_default_player().is_none() {
+        players_widget.hide();
+    } else {
+        no_players_widget.hide();
     }
 
     mpris::subscribe_to_default_player_changes(move |_| {
-        current_track.set_label(&get_mpris_player_label_text());
+        if mpris::get_default_player().is_some() {
+            no_players_widget.hide();
+            players_widget.show();
+            current_track.set_label(&get_mpris_player_label_text());
+        } else {
+            players_widget.hide();
+            no_players_widget.show();
+        }
     });
 
     widget
