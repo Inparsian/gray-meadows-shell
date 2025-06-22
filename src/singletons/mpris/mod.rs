@@ -24,7 +24,7 @@ pub static MPRIS: Lazy<Mpris> = Lazy::new(|| {
 });
 
 fn assert_default_player() {
-    if MPRIS.default_player.get() >= MPRIS.players.lock_ref().len() {
+    if MPRIS.default_player.get() >= MPRIS.players.lock_ref().len() + 1 {
         set_default_player(0);
     }
 }
