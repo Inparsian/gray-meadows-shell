@@ -17,13 +17,13 @@ Currently far from ready for daily use. This list of things to do may not be exh
     - [ ] Apps
     - [ ] WirePlumber
     - [ ] NetworkManager
-    - [ ] System resource monitoring
+    - [x] System resource monitoring
     - [ ] Timers
     - [ ] Weather
 - [ ] Bar
     - [ ] Workspaces
     - [ ] Active client
-    - [ ] Resources
+    - [ ] Resources (partially done)
     - [ ] Mpris (partially done)
     - [x] Clock
     - [ ] System tray

@@ -1,5 +1,6 @@
 // Change these variables to customize the look of the bar globally
 $background-color-primary: #131313;
+$background-color-secondary: #1b1b1b;
 $foreground-color-primary: #e2e2e2;
 $font-family-normal: "Cozette";
 $font-family-small: "GohuFont uni11 Nerd Font";
@@ -50,6 +51,20 @@ $font-family-big: "GohuFont uni14 Nerd Font";
                     padding-bottom: 4px;
                     padding-left: 6px;
                     padding-right: 6px;
+                }
+            }
+
+            &.bar-sysstats {
+                padding: 2px;
+                padding-right: 0px;
+
+                .bar-sysstats-item {
+                    background: $background-color-secondary;
+                    padding-top: 2px;
+                    padding-bottom: 2px;
+                    padding-left: 6px;
+                    padding-right: 6px;
+                    margin-right: 2px;
                 }
             }
         }
