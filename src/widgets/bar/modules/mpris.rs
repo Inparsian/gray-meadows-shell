@@ -23,8 +23,8 @@ fn get_mpris_player_label_text() -> String {
 }
 
 pub fn new() -> gtk4::Box {
-    let current_art_url = RefCell::new(String::new());
-    
+    let current_art_url = RefCell::new(" ".to_string());
+
     relm4_macros::view! {
         widget_middle_click_gesture = &gtk4::GestureClick::new() {
             set_button: gdk4::ffi::GDK_BUTTON_MIDDLE.try_into().unwrap(), // ?????
