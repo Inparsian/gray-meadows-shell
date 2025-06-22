@@ -7,10 +7,8 @@ const SWAP_SHOW_THRESHOLD: f64 = 5.0; // Show swap usage only if it's above this
                                       // indicating that the system is under memory pressure.
 
 fn format_percentage(percentage: f64) -> String {
-    if percentage < 10.0 {
-        format!("0{:.0}%", percentage)
-    } else if percentage < 100.0 {
-        format!("{:.0}%", percentage)
+    if percentage <= 100.0 {
+        format!("{:02.0}%", percentage)
     } else {
         "</3".to_string() // we show brokey heart cause rip in ripperoni
     }
@@ -23,6 +21,11 @@ fn get_ram_usage_label_text() -> String {
 
 fn get_swap_usage_label_text() -> String {
     let usage = singletons::sysstats::SYS_STATS.lock().unwrap().swap_usage_percentage();
+    format_percentage(usage)
+}
+
+fn get_cpu_usage_label_text() -> String {
+    let usage = singletons::sysstats::SYS_STATS.lock().unwrap().global_cpu_usage.get();
     format_percentage(usage)
 }
 
@@ -47,6 +50,11 @@ pub fn new() -> gtk4::Box {
             set_halign: gtk4::Align::Start,
         },
 
+        cpu_usage_label = gtk4::Label {
+            set_label: &get_cpu_usage_label_text(),
+            set_halign: gtk4::Align::Start,
+        },
+
         // Rationale behind var binding: see SWAP_SHOW_THRESHOLD const.
         swap_usage_box = create_sysstats_item("", &swap_usage_label),
 
@@ -55,7 +63,8 @@ pub fn new() -> gtk4::Box {
             set_hexpand: false,
 
             create_sysstats_item("󰍛", &ram_usage_label) {},
-            append: &swap_usage_box
+            append: &swap_usage_box,
+            create_sysstats_item("󰻠", &cpu_usage_label) {},
         }
     }
 
@@ -72,8 +81,15 @@ pub fn new() -> gtk4::Box {
         async {}
     });
 
+    let cpu_usage_future = singletons::sysstats::SYS_STATS.lock().unwrap().global_cpu_usage.signal().for_each(move |_| {
+        cpu_usage_label.set_label(&get_cpu_usage_label_text());
+
+        async {}
+    });
+
     gtk4::glib::MainContext::default().spawn_local(ram_usage_future);
     gtk4::glib::MainContext::default().spawn_local(swap_usage_future);
+    gtk4::glib::MainContext::default().spawn_local(cpu_usage_future);
 
     widget
 }
