@@ -3,7 +3,7 @@ mod mpris_metadata;
 mod mpris_dbus;
 
 use std::{rc::Rc, time::Duration};
-use dbus::{channel::MatchingReceiver, message::MatchRule};
+use dbus::{channel::MatchingReceiver, message::{MatchRule, MessageType}};
 use futures_signals::{signal::SignalExt, signal_vec::{SignalVecExt, VecDiff}};
 use once_cell::sync::Lazy;
 
@@ -146,7 +146,9 @@ pub fn activate() {
         }
 
         // Start monitoring dbus for new MPRIS players + MPRIS player changes
-        let rule = MatchRule::new();
+        let rule = MatchRule::new()
+            .with_type(MessageType::Signal);
+
         let become_monitor_result: Result<(), dbus::Error> =
             proxy.method_call("org.freedesktop.DBus.Monitoring", "BecomeMonitor", (vec![rule.match_str()], 0u32));
 

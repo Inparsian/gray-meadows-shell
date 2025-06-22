@@ -4,7 +4,7 @@ use dbus::{
     blocking::{stdintf::org_freedesktop_dbus::Properties, BlockingSender, Connection},
     strings::BusName,
     Error,
-    Message, MessageType
+    Message
 };
 
 use crate::singletons::mpris::{
@@ -34,7 +34,7 @@ pub fn handle_master_message(msg: &Message) {
         }
 
         else if let Some(path) = msg.path() {
-            if path.starts_with(MPRIS_DBUS_PATH) && msg.msg_type() == MessageType::Signal {
+            if path.starts_with(MPRIS_DBUS_PATH) {
                 let sender: Option<BusName> = msg.sender();
 
                 if let Some(sender) = sender {
