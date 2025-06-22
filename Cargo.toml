@@ -17,6 +17,7 @@ notify = "8.0.0"
 once_cell = "1.21.3"
 relm4 = "0.9.1"
 relm4-macros = "0.9.1"
+sysinfo = "0.35.2"
 tokio = { version = "1.45.1", features = ["full"] }
 urlencoding = "2.1.3"
 
