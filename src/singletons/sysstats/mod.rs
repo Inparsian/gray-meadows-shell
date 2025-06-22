@@ -1,12 +1,12 @@
 use futures_signals::signal::Mutable;
 use once_cell::sync::Lazy;
-use std::sync::Mutex;
+use std::{time::Duration, sync::Mutex};
 
 const BYTE_DIVISOR: f64 = 1024.0;
-const REFRESH_INTERVAL: std::time::Duration = std::time::Duration::from_secs(1);
+const REFRESH_INTERVAL: Duration = Duration::from_secs(1);
 
 static SYS: Lazy<Mutex<sysinfo::System>> = Lazy::new(|| {
-    Mutex::new(sysinfo::System::new_all())
+    Mutex::new(sysinfo::System::new_with_specifics(sysinfo::RefreshKind::nothing()))
 });
 
 pub static SYS_STATS: Lazy<Mutex<SysStats>> = Lazy::new(|| {
