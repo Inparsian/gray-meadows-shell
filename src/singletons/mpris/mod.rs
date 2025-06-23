@@ -1,4 +1,4 @@
-mod mpris_player;
+pub mod mpris_player;
 mod mpris_metadata;
 mod mpris_dbus;
 

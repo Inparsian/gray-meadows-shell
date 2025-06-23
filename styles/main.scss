@@ -1,4 +1,5 @@
 // Change these variables to customize the look of the bar globally
+$background-black-semi-trans: #00000088;
 $background-color-primary: #131313;
 $background-color-secondary: #1b1b1b;
 $foreground-color-primary: #e2e2e2;
@@ -53,6 +54,10 @@ $font-family-big: "GohuFont uni14 Nerd Font";
                     padding-bottom: 4px;
                     padding-left: 6px;
                     padding-right: 6px;
+                }
+
+                .bar-mpris-paused-overlay {
+                    background: $background-black-semi-trans;
                 }
             }
 

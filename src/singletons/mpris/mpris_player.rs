@@ -3,7 +3,7 @@ use internment::Intern;
 
 use crate::singletons::mpris::{mpris_dbus, mpris_metadata};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PlaybackStatus {
     Playing,
     Paused,
@@ -20,7 +20,7 @@ impl PlaybackStatus {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum LoopStatus {
     None,
     Track,

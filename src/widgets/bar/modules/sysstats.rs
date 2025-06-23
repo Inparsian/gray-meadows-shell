@@ -73,7 +73,7 @@ pub fn new() -> gtk4::Box {
 
         let detailed_reveal = gtk4::Revealer::new();
         detailed_reveal.set_transition_type(gtk4::RevealerTransitionType::SlideRight);
-        detailed_reveal.set_transition_duration(150);
+        detailed_reveal.set_transition_duration(200);
         detailed_reveal.set_reveal_child(DETAILED.get());
         detailed_reveal.set_child(Some(detail_label));
 
