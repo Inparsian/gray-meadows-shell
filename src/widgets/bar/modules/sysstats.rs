@@ -50,6 +50,19 @@ fn get_cpu_usage_label_text() -> String {
     format_percentage(usage)
 }
 
+fn get_gpu_usage_label_text() -> String {
+    let sys_stats = singletons::sysstats::SYS_STATS.lock().unwrap();
+    format_percentage(sys_stats.gpu_utilization.get())
+}
+
+fn get_gpu_temperature_label_text() -> String {
+    let sys_stats = singletons::sysstats::SYS_STATS.lock().unwrap();
+    format!(
+        "({:.1}°C)",
+        sys_stats.gpu_temperature.get()
+    )
+}
+
 pub fn new() -> gtk4::Box {
     let create_sysstats_item = |icon: &str, label: &gtk4::Label| -> gtk4::Box {
         let box_ = gtk4::Box::new(gtk4::Orientation::Horizontal, 6);
@@ -121,6 +134,17 @@ pub fn new() -> gtk4::Box {
             set_halign: gtk4::Align::Start,
         },
 
+        gpu_usage_label = gtk4::Label {
+            set_label: &get_gpu_usage_label_text(),
+            set_halign: gtk4::Align::Start,
+        },
+
+        gpu_temperature_label = gtk4::Label {
+            set_css_classes: &["bar-sysstats-detailed-label"],
+            set_label: &get_gpu_temperature_label_text(),
+            set_halign: gtk4::Align::Start,
+        },
+
         // Rationale behind var binding: see SWAP_SHOW_THRESHOLD const.
         swap_usage_box = create_detailed_sysstats_item("", &swap_usage_label, &detailed_swap_usage_label),
 
@@ -132,6 +156,7 @@ pub fn new() -> gtk4::Box {
             create_detailed_sysstats_item("󰍛", &ram_usage_label, &detailed_ram_usage_label) {},
             append: &swap_usage_box,
             create_sysstats_item("󰻠", &cpu_usage_label) {},
+            create_detailed_sysstats_item("󰢮", &gpu_usage_label, &gpu_temperature_label) {}
         }
     }
 
@@ -156,9 +181,23 @@ pub fn new() -> gtk4::Box {
         async {}
     });
 
+    let gpu_util_future = singletons::sysstats::SYS_STATS.lock().unwrap().gpu_utilization.signal().for_each(move |_| {
+        gpu_usage_label.set_label(&get_gpu_usage_label_text());
+
+        async {}
+    });
+
+    let gpu_temp_future = singletons::sysstats::SYS_STATS.lock().unwrap().gpu_temperature.signal().for_each(move |_| {
+        gpu_temperature_label.set_label(&get_gpu_temperature_label_text());
+
+        async {}
+    });
+
     gtk4::glib::MainContext::default().spawn_local(ram_usage_future);
     gtk4::glib::MainContext::default().spawn_local(swap_usage_future);
     gtk4::glib::MainContext::default().spawn_local(cpu_usage_future);
+    gtk4::glib::MainContext::default().spawn_local(gpu_util_future);
+    gtk4::glib::MainContext::default().spawn_local(gpu_temp_future);
 
     widget
 }

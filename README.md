@@ -19,8 +19,8 @@ Currently far from ready for daily use. This list of things to do may not be exh
     - [ ] NetworkManager
     - [ ] System resource monitoring
         - [x] Built-in (CPU, RAM)
-        - [ ] Temps
-        - [ ] GPU
+        - [ ] CPU Temp (and maybe other temp sensors)
+        - [x] GPU
     - [ ] Timers
     - [ ] Weather
 - [ ] Bar

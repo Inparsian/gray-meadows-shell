@@ -1,7 +1,14 @@
+mod gpu {
+    pub mod nvidia;
+}
+
 use futures_signals::signal::Mutable;
+use nvml_wrapper::enum_wrappers::device::TemperatureSensor;
 use once_cell::sync::Lazy;
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind};
 use std::{time::Duration, sync::Mutex};
+
+use crate::singletons;
 
 const REFRESH_INTERVAL: Duration = Duration::from_secs(1);
 
@@ -21,10 +28,13 @@ pub static SYS_STATS: Lazy<Mutex<SysStats>> = Lazy::new(|| {
         total_swap: Mutable::new(0),
         free_swap: Mutable::new(0),
         global_cpu_usage: Mutable::new(0.0),
+        gpu_utilization: Mutable::new(0.0),
+        gpu_temperature: Mutable::new(0.0)
     })
 });
 
 pub struct SysStats {
+    // sysstats
     pub used_memory: Mutable<u64>,
     pub total_memory: Mutable<u64>,
     pub free_memory: Mutable<u64>,
@@ -32,6 +42,10 @@ pub struct SysStats {
     pub total_swap: Mutable<u64>,
     pub free_swap: Mutable<u64>,
     pub global_cpu_usage: Mutable<f64>,
+
+    // nvml
+    pub gpu_utilization: Mutable<f64>,
+    pub gpu_temperature: Mutable<f64>
 }
 
 impl SysStats {
@@ -47,6 +61,23 @@ impl SysStats {
         self.total_swap.set(sys.total_swap());
         self.free_swap.set(sys.free_swap());
         self.global_cpu_usage.set(sys.global_cpu_usage() as f64);
+
+        // Refresh GPU stats if NVML is initialized
+        if let Some(device) = singletons::sysstats::gpu::nvidia::NVML_DEVICE.lock().unwrap().as_ref() {
+            let util = device.utilization_rates();
+            if let Ok(util) = util {
+                self.gpu_utilization.set(util.gpu as f64);
+            } else {
+                eprintln!("Failed to get GPU utilization: {:?}", util);
+            }
+
+            let temp = device.temperature(TemperatureSensor::Gpu);
+            if let Ok(temp) = temp {
+                self.gpu_temperature.set(temp as f64);
+            } else {
+                eprintln!("Failed to get GPU temperature: {:?}", temp);
+            }
+        }
     }
 
     pub fn memory_usage_percentage(&self) -> f64 {
@@ -67,6 +98,9 @@ impl SysStats {
 }
 
 pub fn activate() {
+    // TODO: Add support for other GPU vendors
+    let _ = singletons::sysstats::gpu::nvidia::init_nvml();
+
     std::thread::spawn(|| {
         loop {
             std::thread::sleep(REFRESH_INTERVAL);
