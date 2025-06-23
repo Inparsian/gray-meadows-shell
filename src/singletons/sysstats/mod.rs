@@ -3,7 +3,6 @@ use once_cell::sync::Lazy;
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind};
 use std::{time::Duration, sync::Mutex};
 
-const BYTE_DIVISOR: f64 = 1024.0;
 const REFRESH_INTERVAL: Duration = Duration::from_secs(1);
 
 static SYS: Lazy<Mutex<sysinfo::System>> = Lazy::new(|| {
@@ -65,10 +64,6 @@ impl SysStats {
             (self.used_swap.get() as f64 / self.total_swap.get() as f64) * 100.0
         }
     }
-}
-
-pub fn bytes_to_gib(bytes: u64) -> f64 {
-    bytes as f64 / BYTE_DIVISOR.powf(3.0)
 }
 
 pub fn activate() {

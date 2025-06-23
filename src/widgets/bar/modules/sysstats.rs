@@ -2,7 +2,7 @@ use futures_signals::signal::{Mutable, SignalExt};
 use gtk4::prelude::*;
 use once_cell::sync::Lazy;
 
-use crate::singletons;
+use crate::{helpers, singletons};
 
 const SWAP_SHOW_THRESHOLD: f64 = 5.0; // Show swap usage only if it's above this threshold, 
                                       // indicating that the system is under memory pressure.
@@ -26,8 +26,8 @@ fn get_detailed_ram_usage_label_text() -> String {
     let sys_stats = singletons::sysstats::SYS_STATS.lock().unwrap();
     format!(
         "({:.1}/{:.1}GiB)",
-        singletons::sysstats::bytes_to_gib(sys_stats.used_memory.get()),
-        singletons::sysstats::bytes_to_gib(sys_stats.total_memory.get())
+        helpers::unit::bytes_to_gib(sys_stats.used_memory.get()),
+        helpers::unit::bytes_to_gib(sys_stats.total_memory.get())
     )
 }
 
@@ -40,8 +40,8 @@ fn get_detailed_swap_usage_label_text() -> String {
     let sys_stats = singletons::sysstats::SYS_STATS.lock().unwrap();
     format!(
         "({:.1}/{:.1}GiB)",
-        singletons::sysstats::bytes_to_gib(sys_stats.used_swap.get()),
-        singletons::sysstats::bytes_to_gib(sys_stats.total_swap.get())
+        helpers::unit::bytes_to_gib(sys_stats.used_swap.get()),
+        helpers::unit::bytes_to_gib(sys_stats.total_swap.get())
     )
 }
 
