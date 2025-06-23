@@ -2,6 +2,7 @@
 $background-color-primary: #131313;
 $background-color-secondary: #1b1b1b;
 $foreground-color-primary: #e2e2e2;
+$foreground-color-secondary: #999;
 $font-family-normal: "Cozette";
 $font-family-small: "GohuFont uni11 Nerd Font";
 $font-family-big: "GohuFont uni14 Nerd Font";
@@ -66,6 +67,15 @@ $font-family-big: "GohuFont uni14 Nerd Font";
                     padding-left: 6px;
                     padding-right: 6px;
                     margin-right: 2px;
+
+                    .bar-sysstats-icon {
+                        margin-right: 6px;
+                    }
+
+                    .bar-sysstats-detailed-label {
+                        margin-left: 6px;
+                        color: $foreground-color-secondary;
+                    }
                 }
             }
         }

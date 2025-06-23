@@ -1,10 +1,13 @@
-use futures_signals::signal::SignalExt;
+use futures_signals::signal::{Mutable, SignalExt};
 use gtk4::prelude::*;
+use once_cell::sync::Lazy;
 
 use crate::singletons;
 
 const SWAP_SHOW_THRESHOLD: f64 = 5.0; // Show swap usage only if it's above this threshold, 
                                       // indicating that the system is under memory pressure.
+
+static DETAILED: Lazy<Mutable<bool>> = Lazy::new(|| Mutable::new(false));                                      
 
 fn format_percentage(percentage: f64) -> String {
     if percentage <= 100.0 {
@@ -19,9 +22,27 @@ fn get_ram_usage_label_text() -> String {
     format_percentage(usage)
 }
 
+fn get_detailed_ram_usage_label_text() -> String {
+    let sys_stats = singletons::sysstats::SYS_STATS.lock().unwrap();
+    format!(
+        "({:.1}/{:.1}GiB)",
+        singletons::sysstats::bytes_to_gib(sys_stats.used_memory.get()),
+        singletons::sysstats::bytes_to_gib(sys_stats.total_memory.get())
+    )
+}
+
 fn get_swap_usage_label_text() -> String {
     let usage = singletons::sysstats::SYS_STATS.lock().unwrap().swap_usage_percentage();
     format_percentage(usage)
+}
+
+fn get_detailed_swap_usage_label_text() -> String {
+    let sys_stats = singletons::sysstats::SYS_STATS.lock().unwrap();
+    format!(
+        "({:.1}/{:.1}GiB)",
+        singletons::sysstats::bytes_to_gib(sys_stats.used_swap.get()),
+        singletons::sysstats::bytes_to_gib(sys_stats.total_swap.get())
+    )
 }
 
 fn get_cpu_usage_label_text() -> String {
@@ -30,23 +51,68 @@ fn get_cpu_usage_label_text() -> String {
 }
 
 pub fn new() -> gtk4::Box {
-    fn create_sysstats_item(icon: &str, label: &gtk4::Label) -> gtk4::Box {
+    let create_sysstats_item = |icon: &str, label: &gtk4::Label| -> gtk4::Box {
         let box_ = gtk4::Box::new(gtk4::Orientation::Horizontal, 6);
         box_.set_css_classes(&["bar-sysstats-item"]);
         box_.append(&gtk4::Label::new(Some(icon)));
         box_.append(label);
 
         box_
-    }
+    };
+
+    let create_detailed_sysstats_item = |icon: &str, label: &gtk4::Label, detail_label: &gtk4::Label| -> gtk4::Box {
+        let box_ = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+
+        let detailed_reveal = gtk4::Revealer::new();
+        detailed_reveal.set_transition_type(gtk4::RevealerTransitionType::SlideRight);
+        detailed_reveal.set_transition_duration(150);
+        detailed_reveal.set_reveal_child(DETAILED.get());
+        detailed_reveal.set_child(Some(detail_label));
+
+        let icon_label = gtk4::Label::new(Some(icon));
+        icon_label.set_css_classes(&["bar-sysstats-icon"]);
+
+        box_.set_css_classes(&["bar-sysstats-item"]);
+        box_.append(&icon_label);
+        box_.append(label);
+        box_.append(&detailed_reveal);
+
+        gtk4::glib::MainContext::default().spawn_local(DETAILED.signal().for_each(move |detailed| {
+            detailed_reveal.set_reveal_child(detailed);
+
+            async {}
+        }));
+
+        box_
+    };
 
     relm4_macros::view! {
+        detailed_toggle_gesture = gtk4::GestureClick {
+            set_button: gdk4::ffi::GDK_BUTTON_PRIMARY.try_into().unwrap(), // ?????
+            connect_pressed: |_, _, _, _| {
+                DETAILED.set(!DETAILED.get());
+            }
+        },
+
         ram_usage_label = gtk4::Label {
             set_label: &get_ram_usage_label_text(),
             set_halign: gtk4::Align::Start,
         },
 
+        detailed_ram_usage_label = gtk4::Label {
+            set_css_classes: &["bar-sysstats-detailed-label"],
+            set_label: &get_detailed_ram_usage_label_text(),
+            set_halign: gtk4::Align::Start,
+        },
+
         swap_usage_label = gtk4::Label {
             set_label: &get_swap_usage_label_text(),
+            set_halign: gtk4::Align::Start,
+        },
+
+        detailed_swap_usage_label = gtk4::Label {
+            set_css_classes: &["bar-sysstats-detailed-label"],
+            set_label: &get_detailed_swap_usage_label_text(),
             set_halign: gtk4::Align::Start,
         },
 
@@ -56,13 +122,14 @@ pub fn new() -> gtk4::Box {
         },
 
         // Rationale behind var binding: see SWAP_SHOW_THRESHOLD const.
-        swap_usage_box = create_sysstats_item("", &swap_usage_label),
+        swap_usage_box = create_detailed_sysstats_item("", &swap_usage_label, &detailed_swap_usage_label),
 
         widget = gtk4::Box {
             set_css_classes: &["bar-widget", "bar-sysstats"],
             set_hexpand: false,
+            add_controller: detailed_toggle_gesture,
 
-            create_sysstats_item("󰍛", &ram_usage_label) {},
+            create_detailed_sysstats_item("󰍛", &ram_usage_label, &detailed_ram_usage_label) {},
             append: &swap_usage_box,
             create_sysstats_item("󰻠", &cpu_usage_label) {},
         }
@@ -70,12 +137,14 @@ pub fn new() -> gtk4::Box {
 
     let ram_usage_future = singletons::sysstats::SYS_STATS.lock().unwrap().used_memory.signal().for_each(move |_| {
         ram_usage_label.set_label(&get_ram_usage_label_text());
+        detailed_ram_usage_label.set_label(&get_detailed_ram_usage_label_text());
 
         async {}
     });
 
     let swap_usage_future = singletons::sysstats::SYS_STATS.lock().unwrap().used_swap.signal().for_each(move |_| {
         swap_usage_label.set_label(&get_swap_usage_label_text());
+        detailed_swap_usage_label.set_label(&get_detailed_swap_usage_label_text());
         swap_usage_box.set_visible(singletons::sysstats::SYS_STATS.lock().unwrap().swap_usage_percentage() > SWAP_SHOW_THRESHOLD);
 
         async {}

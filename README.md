@@ -17,7 +17,10 @@ Currently far from ready for daily use. This list of things to do may not be exh
     - [ ] Apps
     - [ ] WirePlumber
     - [ ] NetworkManager
-    - [x] System resource monitoring
+    - [ ] System resource monitoring
+        - [x] Built-in (CPU, RAM)
+        - [ ] Temps
+        - [ ] GPU
     - [ ] Timers
     - [ ] Weather
 - [ ] Bar
