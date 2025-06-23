@@ -1,3 +1,4 @@
+pub mod sensors;
 mod gpu {
     pub mod nvidia;
 }
@@ -100,6 +101,7 @@ impl SysStats {
 pub fn activate() {
     // TODO: Add support for other GPU vendors
     let _ = singletons::sysstats::gpu::nvidia::init_nvml();
+    singletons::sysstats::sensors::init_sensors();
 
     std::thread::spawn(|| {
         loop {

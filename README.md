@@ -17,16 +17,16 @@ Currently far from ready for daily use. This list of things to do may not be exh
     - [ ] Apps
     - [ ] WirePlumber
     - [ ] NetworkManager
-    - [ ] System resource monitoring
+    - [x] System resource monitoring
         - [x] Built-in (CPU, RAM)
-        - [ ] CPU Temp (and maybe other temp sensors)
+        - [x] CPU Temp (and maybe other temp sensors)
         - [x] GPU
     - [ ] Timers
     - [ ] Weather
 - [ ] Bar
     - [ ] Workspaces
     - [ ] Active client
-    - [ ] Resources (partially done)
+    - [x] Resources
     - [ ] Mpris (partially done)
     - [x] Clock
     - [ ] System tray
