@@ -3,11 +3,11 @@ use internment::Intern;
 
 use crate::singletons::mpris::{mpris_dbus, mpris_metadata};
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum PlaybackStatus {
     Playing,
     Paused,
-    Stopped
+    #[default] Stopped
 }
 
 impl PlaybackStatus {
@@ -20,9 +20,9 @@ impl PlaybackStatus {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum LoopStatus {
-    None,
+    #[default] None,
     Track,
     Playlist
 }
@@ -40,7 +40,7 @@ impl LoopStatus {
 // The common xesam and mpris metadata properties should be enough for most use cases,
 // so this struct is here as an easy way to read metadata from the player. Paths are
 // casted to strings for simplicity's sake.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct Metadata {
     pub track_id: Option<Intern<String>>, // mpris:trackid
     pub length: Option<i64>, // mpris:length - in microseconds
@@ -51,17 +51,7 @@ pub struct Metadata {
     pub title: Option<Intern<String>>, // xesam:title
 }
 
-const EMPTY_METADATA: Metadata = Metadata {
-    track_id: None,
-    length: None,
-    art_url: None,
-    album: None,
-    artist: None,
-    content_created: None,
-    title: None
-};
-
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct MprisPlayer {
     pub bus: Intern<String>,
     pub owner: Intern<String>,
@@ -84,28 +74,10 @@ pub struct MprisPlayer {
 
 impl MprisPlayer {
     pub fn new(bus: String, owner: String) -> Self {
-        let metadata = EMPTY_METADATA;
-
-        let mut player = MprisPlayer {
-            bus: Intern::new(bus),
-            owner: Intern::new(owner),
-            playback_status: PlaybackStatus::Stopped,
-            loop_status: LoopStatus::None,
-            rate: 1.0,
-            shuffle: false,
-            metadata,
-            volume: 1.0,
-            position: 0,
-            minimum_rate: 0.5,
-            maximum_rate: 2.0,
-            can_go_next: false,
-            can_go_previous: false,
-            can_play: false,
-            can_pause: false,
-            can_seek: false,
-            can_control: false
-        };
-
+        let mut player = MprisPlayer::default();
+        player.bus = Intern::new(bus);
+        player.owner = Intern::new(owner);
+        
         // perform initial property sync
         player.sync_properties();
 
@@ -285,7 +257,7 @@ impl MprisPlayer {
                 let kv = mpris_metadata::make_key_value_pairs(metadata);
 
                 // Clear metadata before updating
-                self.metadata = EMPTY_METADATA;
+                self.metadata = Metadata::default();
 
                 for (key, value) in kv {
                     match key.as_str() {
