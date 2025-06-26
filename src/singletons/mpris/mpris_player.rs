@@ -75,8 +75,8 @@ pub struct MprisPlayer {
 impl MprisPlayer {
     pub fn new(bus: String, owner: String) -> Self {
         let mut player = MprisPlayer {
-            bus: Intern::new(bus.clone()),
-            owner: Intern::new(owner.clone()),
+            bus: Intern::new(bus),
+            owner: Intern::new(owner),
             ..MprisPlayer::default()
         };
         
