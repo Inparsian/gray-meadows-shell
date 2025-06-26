@@ -1,4 +1,4 @@
-use std::{time::Duration, usize};
+use std::time::Duration;
 use dbus::{
     arg::{self, Append, IterAppend, RefArg},
     blocking::{stdintf::org_freedesktop_dbus::Properties, BlockingSender, Connection},
@@ -16,7 +16,7 @@ pub fn handle_master_message(msg: &Message) {
     if let Some(member) = msg.member() {
         let member = member.trim();
 
-        if &member == &"NameOwnerChanged" {
+        if member == "NameOwnerChanged" {
             let (bus, _, new_owner) = msg.get3::<String, String, String>();
 
             if let (Some(bus), Some(new_owner)) = (bus, new_owner) {
@@ -41,7 +41,7 @@ pub fn handle_master_message(msg: &Message) {
                     let mut players_mut = MPRIS.players.lock_mut();
 
                     let player_index = players_mut.iter().position(|p| sender == p.owner.as_ref().into())
-                        .unwrap_or_else(|| usize::MAX); // Default to an impossible index if not found
+                        .unwrap_or(usize::MAX); // Default to an impossible index if not found
 
                     let player = players_mut.get(player_index);
 
@@ -82,9 +82,9 @@ fn ready_dbus_message(player: &MprisPlayer, method: &str) -> Result<(Connection,
     }
 }
 
-pub fn get_dbus_property<T: RefArg>(player: &MprisPlayer, property: &str) -> Result<T, Error>
+pub fn get_dbus_property<T>(player: &MprisPlayer, property: &str) -> Result<T, Error>
 where
-    T: for<'b> arg::Get<'b> + 'static
+    T: for<'b> arg::Get<'b> + 'static + RefArg
 {
     let connection = Connection::new_session()?;
     let proxy = connection.with_proxy(
@@ -103,9 +103,9 @@ where
 }
 
 #[allow(dead_code)]
-pub fn set_dbus_property<T: dbus::arg::RefArg>(player: &MprisPlayer, property: &str, value: T) -> Result<(), Error>
+pub fn set_dbus_property<T>(player: &MprisPlayer, property: &str, value: T) -> Result<(), Error>
 where
-    T: arg::Arg + arg::Append
+    T: arg::Arg + arg::Append + RefArg
 {
     let connection = Connection::new_session()?;
     let proxy = connection.with_proxy(

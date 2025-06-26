@@ -37,7 +37,7 @@ pub fn get_default_player() -> Option<mpris_player::MprisPlayer> {
 pub fn set_default_player(index: usize) {
     if index < MPRIS.players.lock_ref().len() {
         MPRIS.default_player.set(index);
-    } else if MPRIS.players.lock_ref().len() > 0 {
+    } else if !MPRIS.players.lock_ref().is_empty() {
         eprintln!("Attempted to set default player to index {}, but only {} players are available.", index, MPRIS.players.lock_ref().len());
     } else {
         // None are available, just fallback to 0

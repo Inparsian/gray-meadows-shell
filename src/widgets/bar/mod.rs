@@ -37,7 +37,7 @@ impl Bar {
                 set_css_classes: &["bar-window"],
                 set_application: Some(application),
                 init_layer_shell: (),
-                set_monitor: Some(&monitor),
+                set_monitor: Some(monitor),
                 set_default_height: 33,
                 set_layer: Layer::Top,
                 set_anchor: (Edge::Left, true),

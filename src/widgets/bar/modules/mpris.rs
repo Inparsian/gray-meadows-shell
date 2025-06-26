@@ -17,8 +17,8 @@ static NO_TITLE: Lazy<Intern<String>> = Lazy::new(|| Intern::new("No title".to_s
 fn get_mpris_player_label_text() -> String {
     mpris::get_default_player()
         .map_or_else(|| "No MPRIS players".to_string(), |player| format!("{} - {}",
-            player.metadata.artist.unwrap_or(NO_ARTIST.clone()).join(", "),
-            player.metadata.title.unwrap_or(NO_TITLE.clone()).to_string()
+            player.metadata.artist.unwrap_or(*NO_ARTIST).join(", "),
+            player.metadata.title.unwrap_or(*NO_TITLE)
         ))
 }
 
@@ -95,7 +95,7 @@ pub fn new() -> gtk4::Box {
         paused_overlay = gtk4::CenterBox {
             set_css_classes: &["bar-mpris-paused-overlay"],
             set_center_widget: Some(&gtk4::Label::new(Some("▶"))),
-            set_visible: mpris::get_default_player().map_or(false, |p| p.playback_status != mpris::mpris_player::PlaybackStatus::Playing),
+            set_visible: mpris::get_default_player().is_some_and(|p| p.playback_status != mpris::mpris_player::PlaybackStatus::Playing),
         },
 
         album_overlay = gtk4::Overlay {
@@ -191,7 +191,7 @@ pub fn new() -> gtk4::Box {
                         make_blank_art();
                     }
                 }
-            } else if *current_art_url.borrow() != "" {
+            } else if !(*current_art_url.borrow()).is_empty() {
                 current_art_url.borrow_mut().clear();
                 make_blank_art();
             }

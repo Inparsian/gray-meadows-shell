@@ -1,4 +1,4 @@
-use dbus::{arg, Error, Message};
+use dbus::{arg::{self, RefArg}, Error, Message};
 use internment::Intern;
 
 use crate::singletons::mpris::{mpris_dbus, mpris_metadata};
@@ -74,9 +74,11 @@ pub struct MprisPlayer {
 
 impl MprisPlayer {
     pub fn new(bus: String, owner: String) -> Self {
-        let mut player = MprisPlayer::default();
-        player.bus = Intern::new(bus);
-        player.owner = Intern::new(owner);
+        let mut player = MprisPlayer {
+            bus: Intern::new(bus.clone()),
+            owner: Intern::new(owner.clone()),
+            ..MprisPlayer::default()
+        };
         
         // perform initial property sync
         player.sync_properties();
@@ -84,11 +86,11 @@ impl MprisPlayer {
         player
     }
 
-    fn get_metadata_property<T: arg::RefArg>(&self, key: &str) -> Result<T, Error> 
+    fn get_metadata_property<T>(&self, key: &str) -> Result<T, Error> 
     where
-        T: 'static + Clone,
+        T: 'static + Clone + RefArg,
     {
-        let metadata: Result<arg::PropMap, Error> = mpris_dbus::get_dbus_property::<arg::PropMap>(&self, "Metadata");
+        let metadata: Result<arg::PropMap, Error> = mpris_dbus::get_dbus_property::<arg::PropMap>(self, "Metadata");
 
         if let Ok(metadata) = metadata {
             let prop: Option<&T> = arg::prop_cast(&metadata, key);
@@ -145,7 +147,7 @@ impl MprisPlayer {
         ];
 
         for key in booleans.iter_mut() {
-            let prop: bool = mpris_dbus::get_dbus_property::<bool>(&self, key)
+            let prop: bool = mpris_dbus::get_dbus_property::<bool>(self, key)
                 .unwrap_or_else(|_| {
                     eprintln!("Failed to get {} property", key);
                     false
@@ -164,7 +166,7 @@ impl MprisPlayer {
         }
 
         for key in f64s.iter_mut() {
-            let prop: f64 = mpris_dbus::get_dbus_property::<f64>(&self, key)
+            let prop: f64 = mpris_dbus::get_dbus_property::<f64>(self, key)
                 .unwrap_or_else(|_| {
                     eprintln!("Failed to get {} property", key);
                     0.0
@@ -180,20 +182,17 @@ impl MprisPlayer {
         }
 
         for key in i64s.iter_mut() {
-            let prop: i64 = mpris_dbus::get_dbus_property::<i64>(&self, key)
+            let prop: i64 = mpris_dbus::get_dbus_property::<i64>(self, key)
                 .unwrap_or_else(|_| {
                     eprintln!("Failed to get {} property", key);
                     0
                 });
 
-            match *key {
-                "Position" => self.position = prop,
-                _ => {}
-            }
+            if *key == "Position" { self.position = prop }
         }
 
         for key in strings.iter_mut() {
-            let prop: String = mpris_dbus::get_dbus_property::<String>(&self, key)
+            let prop: String = mpris_dbus::get_dbus_property::<String>(self, key)
                 .unwrap_or_else(|_| {
                     eprintln!("Failed to get {} property", key);
                     String::new()
@@ -308,7 +307,7 @@ impl MprisPlayer {
             return Err(Error::new_failed("Cannot go to next track, player does not support it"));
         }
 
-        mpris_dbus::run_dbus_method(&self, "Next")
+        mpris_dbus::run_dbus_method(self, "Next")
     }
 
     #[allow(dead_code)]
@@ -317,7 +316,7 @@ impl MprisPlayer {
             return Err(Error::new_failed("Cannot go to previous track, player does not support it"));
         }
 
-        mpris_dbus::run_dbus_method(&self, "Previous")
+        mpris_dbus::run_dbus_method(self, "Previous")
     }
 
     #[allow(dead_code)]
@@ -326,7 +325,7 @@ impl MprisPlayer {
             return Err(Error::new_failed("Cannot play, player does not support it"));
         }
 
-        mpris_dbus::run_dbus_method(&self, "Play")
+        mpris_dbus::run_dbus_method(self, "Play")
     }
 
     #[allow(dead_code)]
@@ -335,7 +334,7 @@ impl MprisPlayer {
             return Err(Error::new_failed("Cannot pause, player does not support it"));
         }
 
-        mpris_dbus::run_dbus_method(&self, "Pause")
+        mpris_dbus::run_dbus_method(self, "Pause")
     }
 
     pub fn play_pause(&self) -> Result<Message, Error> {
@@ -343,7 +342,7 @@ impl MprisPlayer {
             return Err(Error::new_failed("Cannot play/pause, player does not support it"));
         }
 
-        mpris_dbus::run_dbus_method(&self, "PlayPause")
+        mpris_dbus::run_dbus_method(self, "PlayPause")
     }
 
     #[allow(dead_code)]
@@ -352,7 +351,7 @@ impl MprisPlayer {
             return Err(Error::new_failed("Cannot stop, player does not support it"));
         }
 
-        mpris_dbus::run_dbus_method(&self, "Stop")
+        mpris_dbus::run_dbus_method(self, "Stop")
     }
 
     #[allow(dead_code)]
@@ -361,7 +360,7 @@ impl MprisPlayer {
             return Err(Error::new_failed("Cannot seek, player does not support it"));
         }
 
-        mpris_dbus::run_dbus_method_w_args::<i64>(&self, "Seek", &[position])
+        mpris_dbus::run_dbus_method_w_args::<i64>(self, "Seek", &[position])
     }
 
     pub fn adjust_volume(&self, delta: f64) -> Result<(), Error> {
@@ -373,6 +372,6 @@ impl MprisPlayer {
         // 1.5 is the true max limit for pulse/pipewire servers
         let new_volume = (self.volume + delta).clamp(0.0, 1.5);
 
-        mpris_dbus::set_dbus_property(&self, "Volume", new_volume)
+        mpris_dbus::set_dbus_property(self, "Volume", new_volume)
     }
 }
