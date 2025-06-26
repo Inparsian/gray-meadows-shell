@@ -12,6 +12,7 @@ use std::{path::Path, sync::Mutex};
 
 pub struct GrayMeadows {
     provider: gtk4::CssProvider,
+    icon_theme: gtk4::IconTheme,
 }
 
 unsafe impl Send for GrayMeadows {}
@@ -19,6 +20,7 @@ unsafe impl Send for GrayMeadows {}
 pub static APP: Lazy<Mutex<GrayMeadows>> = Lazy::new(|| {
     Mutex::new(GrayMeadows {
         provider: gtk4::CssProvider::new(),
+        icon_theme: gtk4::IconTheme::default()
     })
 });
 

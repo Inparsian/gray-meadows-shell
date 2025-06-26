@@ -83,6 +83,18 @@ $font-family-big: "GohuFont uni14 Nerd Font";
                     }
                 }
             }
+
+            &.bar-client {
+                .bar-client-title {
+                    margin-top: -1px;
+                    margin-bottom: -1px;
+                }
+            
+                .bar-client-icon {
+                    margin-right: 6px;
+                    font-size: 14px;
+                }
+            }
         }
     }
 }

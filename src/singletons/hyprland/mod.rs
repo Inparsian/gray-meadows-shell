@@ -1,7 +1,10 @@
 use futures_signals::signal::Mutable;
 use once_cell::sync::Lazy;
 use hyprland::{
-    async_closure, data::{Client, Workspace}, event_listener::AsyncEventListener, shared::{HyprDataActive, HyprDataActiveOptional}
+    async_closure,
+    event_listener::AsyncEventListener,
+    data::{Client, Workspace},
+    shared::{HyprDataActive, HyprDataActiveOptional}
 };
 
 // Wrapper structs to work with Hyprland data reactively

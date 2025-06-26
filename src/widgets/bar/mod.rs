@@ -1,7 +1,8 @@
 mod modules {
-    pub mod clock;
-    pub mod mpris;
+    pub mod client;
     pub mod sysstats;
+    pub mod mpris;
+    pub mod clock;
 }
 
 use gtk4::prelude::*;
@@ -16,7 +17,9 @@ impl Bar {
         relm4_macros::view! {
             left_box = gtk4::Box {
                 set_orientation: gtk4::Orientation::Horizontal,
-                set_spacing: 1
+                set_spacing: 1,
+
+                append: &modules::client::new()
             },
 
             center_box = gtk4::Box {
