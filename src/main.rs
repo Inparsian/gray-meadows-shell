@@ -98,6 +98,7 @@ async fn main() {
     singletons::date_time::activate();
     singletons::mpris::activate();
     singletons::sysstats::activate();
+    singletons::hyprland::activate();
 
     // Add the CSS provider to the default display
     gtk4::style_context_add_provider_for_display(
