@@ -13,7 +13,7 @@ Currently far from ready for daily use. This list of things to do may not be exh
     - [ ] Cava?
     - [ ] Notifications (dbus)
     - [ ] System tray (dbus)
-    - [ ] Hyprland (IPC)
+    - [x] Hyprland (IPC)
     - [ ] Apps
     - [ ] WirePlumber
     - [ ] NetworkManager
@@ -25,7 +25,7 @@ Currently far from ready for daily use. This list of things to do may not be exh
     - [ ] Weather
 - [ ] Bar
     - [ ] Workspaces
-    - [ ] Active client
+    - [ ] Active client (partially done)
     - [x] Resources
     - [ ] Mpris (partially done)
     - [x] Clock
