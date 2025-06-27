@@ -1,10 +1,14 @@
-use std::sync::{Arc, Mutex};
+use std::{sync::{Arc, Mutex}, time::Duration};
 use futures_signals::signal::SignalExt;
 use gtk4::prelude::*;
 
 use crate::singletons::hyprland;
 
 const SHOWN_WORKSPACES: usize = 10;
+const WORKSPACE_WIDTH: i32 = 13;
+const WORKSPACE_HEIGHT: i32 = 13;
+const WORKSPACE_Y: i32 = 5;
+const WORKSPACE_PADDING: i32 = 1;
 
 #[derive(Clone)]
 struct WorkspaceMask {
@@ -41,21 +45,45 @@ impl WorkspaceMask {
 }
 
 pub fn new() -> gtk4::Box {
+    let style_provider = gtk4::CssProvider::new();
     let workspace_mask: Arc<Mutex<WorkspaceMask>> = Arc::new(Mutex::new(WorkspaceMask::new()));
 
     relm4_macros::view! {
+        workspaces_drawing_area = gtk4::DrawingArea {
+            set_css_classes: &["bar-workspaces-drawingarea"],
+            set_draw_func: {
+                let workspace_mask = workspace_mask.clone();
+                move |area, cr, _, _| {
+                    area.set_size_request((SHOWN_WORKSPACES as i32 + 1) * WORKSPACE_WIDTH, 16);
+
+                    let style_ctx = area.style_context();
+                    let active_ws: f64 = if let Some(font_desc) = area.pango_context().font_description() {
+                        font_desc.size() as f64 / gtk4::pango::SCALE as f64
+                    } else {
+                        1.0 // fallback to workspace 1
+                    };
+                }
+            }
+        },
+
         workspaces_box = gtk4::Box {
             set_orientation: gtk4::Orientation::Horizontal,
-            set_spacing: 1,
+            set_spacing: 0,
             set_css_classes: &["bar-widget", "bar-workspaces"],
+
+            append: &workspaces_drawing_area
         }
     }
 
+    workspaces_drawing_area.style_context().add_provider(&style_provider, gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION);
+
     let workspaces_future = hyprland::HYPRLAND.workspaces.signal_cloned().for_each({
         let workspace_mask = workspace_mask.clone();
+        let workspaces_drawing_area = workspaces_drawing_area.clone();
         move |_| {
             let mut mutex = workspace_mask.lock().unwrap();
             mutex.update();
+            workspaces_drawing_area.queue_draw();
 
             async {}
         }
@@ -63,9 +91,19 @@ pub fn new() -> gtk4::Box {
 
     let active_workspace_future = hyprland::HYPRLAND.active_workspace.signal_cloned().for_each({
         let workspace_mask = workspace_mask.clone();
-        move |_| {
+        let workspaces_drawing_area = workspaces_drawing_area.clone();
+        move |active| {
             let mut mutex = workspace_mask.lock().unwrap();
             mutex.update();
+            
+            if let Some(active) = active {
+                style_provider.load_from_data(&format!(
+                    ".bar-workspaces-drawingarea {{ font-size: {}px; }}",
+                    ((active.id - 1) % SHOWN_WORKSPACES as i32) + 1
+                ));
+            }
+
+            workspaces_drawing_area.queue_draw();
 
             async {}
         }
