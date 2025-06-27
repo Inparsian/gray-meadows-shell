@@ -41,7 +41,7 @@ pub fn new() -> gtk4::Box {
         },
 
         icon = gtk4::Image {
-            set_icon_name: icon_or(Some("go-next-symbolic")),
+            set_icon_name: Some("emote-love"),
             set_pixel_size: 16,
             set_css_classes: &["bar-client-icon"],
         },
@@ -100,17 +100,14 @@ pub fn new() -> gtk4::Box {
             icon.set_icon_name(icon_or(Some(&client.class.to_lowercase())));
 
             // I hate GTK4
-            class.set_ellipsize(if client.class.len() < MAX_CLASS_WIDTH as usize {
+            let get_ellipsize = |s: String, max_len: i32| if s.chars().count() as i32 <= max_len {
                 gtk4::pango::EllipsizeMode::None
             } else {
                 gtk4::pango::EllipsizeMode::End
-            });
-            
-            title.set_ellipsize(if client.title.len() < MAX_TITLE_WIDTH as usize {
-                gtk4::pango::EllipsizeMode::None
-            } else {
-                gtk4::pango::EllipsizeMode::End
-            });
+            };
+
+            class.set_ellipsize(get_ellipsize(client.class, MAX_CLASS_WIDTH));
+            title.set_ellipsize(get_ellipsize(client.title, MAX_TITLE_WIDTH));
         } else {
             class.set_label("No active client");
             icon.set_icon_name(icon_or(None));
@@ -120,13 +117,9 @@ pub fn new() -> gtk4::Box {
     });
 
     let reveal_title_future = reveal_title.signal().for_each(move |reveal| {
-        if reveal {
-            title_revealer.set_reveal_child(true);
-            class_revealer.set_reveal_child(false);
-        } else {
-            title_revealer.set_reveal_child(false);
-            class_revealer.set_reveal_child(true);
-        }
+        title_revealer.set_reveal_child(reveal);
+        class_revealer.set_reveal_child(!reveal);
+        
         async {}
     });
 
