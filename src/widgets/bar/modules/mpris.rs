@@ -1,9 +1,9 @@
 use std::cell::RefCell;
-use gtk4::{prelude::*, EventControllerScrollFlags};
+use gtk4::prelude::*;
 use internment::Intern;
 use once_cell::sync::Lazy;
 
-use crate::singletons::mpris;
+use crate::{helpers::gesture, singletons::mpris};
 
 const VOLUME_STEP: f64 = 0.05;
 const ALBUM_ART_WIDTH: i32 = 23; // Expected width of the album art image
@@ -26,51 +26,41 @@ pub fn new() -> gtk4::Box {
     let current_art_url = RefCell::new(" ".to_string());
 
     relm4_macros::view! {
-        widget_middle_click_gesture = &gtk4::GestureClick::new() {
-            set_button: gdk4::ffi::GDK_BUTTON_MIDDLE.try_into().unwrap(), // ?????
-            connect_pressed: |_, _, _, _| {
-                if let Some(player) = mpris::get_default_player() {
-                    if let Err(e) = player.play_pause() {
-                        eprintln!("Failed to toggle play/pause: {}", e);
-                    }
-                } else {
-                    eprintln!("No MPRIS player available to toggle play/pause.");
+        widget_middle_click_gesture = gesture::on_middle_click(|_, _, _| {
+            if let Some(player) = mpris::get_default_player() {
+                if let Err(e) = player.play_pause() {
+                    eprintln!("Failed to toggle play/pause: {}", e);
                 }
+            } else {
+                eprintln!("No MPRIS player available to toggle play/pause.");
             }
-        },
+        }),
 
-        widget_right_click_gesture = &gtk4::GestureClick::new() {
-            set_button: gdk4::ffi::GDK_BUTTON_SECONDARY.try_into().unwrap(), // ?????
-            connect_pressed: |_, _, _, _| {
-                if let Some(player) = mpris::get_default_player() {
-                    if let Err(e) = player.next() {
-                        eprintln!("Failed to skip to next track: {}", e);
-                    }
-                } else {
-                    eprintln!("No MPRIS player available to skip to next track.");
+        widget_right_click_gesture = gesture::on_secondary_click(|_, _, _| {
+            if let Some(player) = mpris::get_default_player() {
+                if let Err(e) = player.next() {
+                    eprintln!("Failed to skip to next track: {}", e);
                 }
+            } else {
+                eprintln!("No MPRIS player available to skip to next track.");
             }
-        },
+        }),
 
-        widget_scroll_controller = &gtk4::EventControllerScroll::new(EventControllerScrollFlags::VERTICAL) {
-            connect_scroll: |_, _, delta_y| {
-                if let Some(player) = mpris::get_default_player() {
-                    let step = if delta_y < 0.0 {
-                        VOLUME_STEP
-                    } else {
-                        -VOLUME_STEP
-                    };
-
-                    player.adjust_volume(step).unwrap_or_else(|e| {
-                        eprintln!("Failed to adjust volume: {}", e);
-                    });
+        widget_scroll_controller = gesture::on_vertical_scroll(|delta_y| {
+            if let Some(player) = mpris::get_default_player() {
+                let step = if delta_y < 0.0 {
+                    VOLUME_STEP
                 } else {
-                    eprintln!("No MPRIS player available to adjust volume.");
-                }
-
-                gtk4::glib::Propagation::Stop
+                    -VOLUME_STEP
+                };
+                
+                player.adjust_volume(step).unwrap_or_else(|e| {
+                    eprintln!("Failed to adjust volume: {}", e);
+                });
+            } else {
+                eprintln!("No MPRIS player available to adjust volume.");
             }
-        },
+        }),
 
         no_players_widget = gtk4::Label {
             set_css_classes: &["bar-mpris-track"],

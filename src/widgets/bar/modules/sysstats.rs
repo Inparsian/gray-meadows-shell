@@ -2,7 +2,7 @@ use futures_signals::signal::{Mutable, SignalExt};
 use gtk4::prelude::*;
 use once_cell::sync::Lazy;
 
-use crate::{helpers, singletons};
+use crate::{helpers::{unit, gesture}, singletons};
 
 const SWAP_SHOW_THRESHOLD: f64 = 5.0; // Show swap usage only if it's above this threshold, 
                                       // indicating that the system is under memory pressure.
@@ -26,8 +26,8 @@ fn get_detailed_ram_usage_label_text() -> String {
     let sys_stats = singletons::sysstats::SYS_STATS.lock().unwrap();
     format!(
         "({:.1}/{:.1}GiB)",
-        helpers::unit::bytes_to_gib(sys_stats.used_memory.get()),
-        helpers::unit::bytes_to_gib(sys_stats.total_memory.get())
+        unit::bytes_to_gib(sys_stats.used_memory.get()),
+        unit::bytes_to_gib(sys_stats.total_memory.get())
     )
 }
 
@@ -40,8 +40,8 @@ fn get_detailed_swap_usage_label_text() -> String {
     let sys_stats = singletons::sysstats::SYS_STATS.lock().unwrap();
     format!(
         "({:.1}/{:.1}GiB)",
-        helpers::unit::bytes_to_gib(sys_stats.used_swap.get()),
-        helpers::unit::bytes_to_gib(sys_stats.total_swap.get())
+        unit::bytes_to_gib(sys_stats.used_swap.get()),
+        unit::bytes_to_gib(sys_stats.total_swap.get())
     )
 }
 
@@ -95,13 +95,8 @@ pub fn new() -> gtk4::Box {
     };
 
     relm4_macros::view! {
-        detailed_toggle_gesture = gtk4::GestureClick {
-            set_button: gdk4::ffi::GDK_BUTTON_PRIMARY.try_into().unwrap(), // ?????
-            connect_pressed: |_, _, _, _| {
-                DETAILED.set(!DETAILED.get());
-            }
-        },
-
+        detailed_toggle_gesture = gesture::on_primary_click(|_, _, _| DETAILED.set(!DETAILED.get())),
+        
         ram_usage_label = gtk4::Label {
             set_label: &get_ram_usage_label_text(),
             set_halign: gtk4::Align::Start,

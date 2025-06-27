@@ -1,4 +1,5 @@
 mod modules {
+    pub mod workspaces;
     pub mod client;
     pub mod sysstats;
     pub mod mpris;
@@ -19,6 +20,7 @@ impl Bar {
                 set_orientation: gtk4::Orientation::Horizontal,
                 set_spacing: 1,
 
+                append: &modules::workspaces::new(),
                 append: &modules::client::new()
             },
 
