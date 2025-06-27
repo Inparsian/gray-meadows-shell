@@ -61,6 +61,7 @@ pub fn activate() {
         event_listener.add_workspace_deleted_handler(async_closure! { |_| refresh_workspaces() });
         event_listener.add_workspace_moved_handler(async_closure! { |_| refresh_workspaces() });
         event_listener.add_workspace_changed_handler(async_closure! { |_| refresh_active_workspace() });
+        event_listener.add_active_monitor_changed_handler(async_closure! { |_| refresh_active_workspace() });
 
         let _ = event_listener.start_listener_async().await;
     });
