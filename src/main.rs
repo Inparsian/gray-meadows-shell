@@ -109,6 +109,10 @@ async fn main() {
         gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
 
+    // Add your manual search paths here
+    // TODO: Replace this with an automatic search for the currently equipped icon theme
+    APP.lock().unwrap().icon_theme.add_search_path(Path::new("/home/inparsian/.icons/besgnulinux-mono-grey/apps/scalable"));
+
     // Bundle and apply the SCSS, then watch for changes
     bundle_apply_scss();
     watch_scss();
