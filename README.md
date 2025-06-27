@@ -25,7 +25,7 @@ Currently far from ready for daily use. This list of things to do may not be exh
     - [ ] Weather
 - [ ] Bar
     - [ ] Workspaces
-    - [ ] Active client (partially done)
+    - [x] Active client
     - [x] Resources
     - [ ] Mpris (partially done)
     - [x] Clock
