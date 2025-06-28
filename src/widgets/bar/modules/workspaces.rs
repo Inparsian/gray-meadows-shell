@@ -1,9 +1,11 @@
 use std::sync::{Arc, Mutex};
 use futures_signals::signal::SignalExt;
 use gtk4::prelude::*;
+use ::hyprland::dispatch;
+use ::hyprland::dispatch::{Dispatch, DispatchType, WorkspaceIdentifierWithSpecial};
 
 use crate::singletons::hyprland;
-use crate::helpers::scss;
+use crate::helpers::{scss, gesture};
 
 const SHOWN_WORKSPACES: usize = 10;
 const WORKSPACE_WIDTH: f64 = 13.0;
@@ -49,8 +51,28 @@ pub fn new() -> gtk4::Box {
     let workspace_mask: Arc<Mutex<WorkspaceMask>> = Arc::new(Mutex::new(WorkspaceMask::new()));
 
     relm4_macros::view! {
+        workspaces_click_gesture = gesture::on_primary_click(|_, x, _| {
+            let ws = (((x - 5.0 - WORKSPACE_PADDING) / (WORKSPACE_WIDTH + WORKSPACE_PADDING)) + 1.0).floor() as i32;
+
+            if ws >= 1 && ws <= SHOWN_WORKSPACES as i32 {
+                if let Some(active_workspace) = hyprland::HYPRLAND.active_workspace.get_cloned() {
+                    let clamped = ((active_workspace.id - 1) / 10) * 10 + ws;
+                    let _ = dispatch!(Workspace, WorkspaceIdentifierWithSpecial::Id(clamped));
+                }
+            }
+        }),
+
+        workspaces_scroll_gesture = gesture::on_vertical_scroll(|dy| {
+            let delta = if dy < 0.0 { -1 } else { 1 };
+            let _ = dispatch!(Workspace, WorkspaceIdentifierWithSpecial::Relative(delta));
+        }),
+
         workspaces_drawing_area = gtk4::DrawingArea {
             set_css_classes: &["bar-workspaces-drawingarea"],
+
+            add_controller: workspaces_click_gesture,
+            add_controller: workspaces_scroll_gesture,
+
             set_draw_func: {
                 let workspace_mask = workspace_mask.clone();
                 move |area, cr, _, _| {
