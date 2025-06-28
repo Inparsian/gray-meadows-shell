@@ -80,21 +80,39 @@ pub fn new() -> gtk4::Box {
             set_child: Some(&title)
         },
 
+        client_box = gtk4::Box {
+            set_orientation: gtk4::Orientation::Horizontal,
+            set_spacing: 0,
+
+            append: &icon,
+            append: &title_revealer,
+            append: &class_revealer
+        },
+
+        workspace_label = gtk4::Label {
+            set_css_classes: &["bar-client-workspace"],
+            set_label: "Workspace 1",
+            set_xalign: 0.0,
+            set_hexpand: false
+        },
+
         widget = gtk4::Box {
             set_css_classes: &["bar-widget", "bar-client"],
             set_hexpand: false,
 
             add_controller: reveal_title_gesture,
 
-            append: &icon,
-            append: &class_revealer,
-            append: &title_revealer
+            append: &client_box,
+            append: &workspace_label
         }
     }
 
     // Subscribe to Hyprland signals to update the client information
-    let hyprland_future = hyprland::HYPRLAND.active_client.signal_cloned().for_each(move |client| {
+    let hyprland_active_client_future = hyprland::HYPRLAND.active_client.signal_cloned().for_each(move |client| {
         if let Some(client) = client {
+            client_box.set_visible(true);
+            workspace_label.set_visible(false);
+
             class.set_label(&client.class);
             title.set_label(&client.title);
             icon.set_icon_name(icon_or(Some(&client.class.to_lowercase())));
@@ -109,8 +127,16 @@ pub fn new() -> gtk4::Box {
             class.set_ellipsize(get_ellipsize(client.class, MAX_CLASS_WIDTH));
             title.set_ellipsize(get_ellipsize(client.title, MAX_TITLE_WIDTH));
         } else {
-            class.set_label("No active client");
-            icon.set_icon_name(icon_or(None));
+            let active_workspace = hyprland::HYPRLAND.active_workspace.get_cloned();
+
+            client_box.set_visible(false);
+            workspace_label.set_visible(true);
+            
+            if let Some(active_workspace) = active_workspace {
+                workspace_label.set_label(&format!("Workspace {}", active_workspace.id));
+            } else {
+                workspace_label.set_label("No active workspace");
+            }
         }
 
         async {}
@@ -123,7 +149,7 @@ pub fn new() -> gtk4::Box {
         async {}
     });
 
-    gtk4::glib::MainContext::default().spawn_local(hyprland_future);
+    gtk4::glib::MainContext::default().spawn_local(hyprland_active_client_future);
     gtk4::glib::MainContext::default().spawn_local(reveal_title_future);
 
     widget

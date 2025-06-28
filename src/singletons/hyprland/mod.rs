@@ -33,6 +33,8 @@ pub fn refresh_active_workspace() {
     } else {
         HYPRLAND.active_workspace.set(None);
     }
+
+    refresh_active_client();
 }
 
 pub fn refresh_workspaces() {
