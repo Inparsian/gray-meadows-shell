@@ -858,6 +858,7 @@ dependencies = [
  "notify",
  "nvml-wrapper",
  "once_cell",
+ "regex",
  "relm4",
  "relm4-macros",
  "sysinfo",
