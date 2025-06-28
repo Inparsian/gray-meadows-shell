@@ -1,6 +1,5 @@
 use std::sync::Mutex;
 use once_cell::sync::Lazy;
-
 use regex::Regex;
 
 use crate::helpers::{color, cargo};

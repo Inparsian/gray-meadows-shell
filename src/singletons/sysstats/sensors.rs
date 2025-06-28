@@ -5,15 +5,12 @@ use once_cell::sync::Lazy;
 // The LM sensors wrapper I'm using is FUNNI - it doesn't implement Send + Sync,
 // so it can't be used in multi-threaded contexts. To work around this, I'm using a custom
 // struct and creating a once_cell that holds it instead of a LMSensors lib instance.
+#[derive(Default)]
 pub struct Sensors {
     pub cpu_temp: Mutable<f64>,
 }
 
-pub static SENSORS: Lazy<Sensors> = Lazy::new(|| {
-    Sensors {
-        cpu_temp: Mutable::new(0.0)
-    }
-});
+pub static SENSORS: Lazy<Sensors> = Lazy::new(Sensors::default);
 
 pub fn init_sensors() {
     // Spawn in a separate thread to run LM sensors on for the lifetime of the app

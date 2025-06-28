@@ -13,8 +13,7 @@ pub fn get_project_directory() -> String {
 }
 
 pub fn get_styles_directory() -> String {
-    let project_dir = get_project_directory();
-    let styles_dir = format!("{}/styles", project_dir);
+    let styles_dir = format!("{}/styles", get_project_directory());
     if !std::path::Path::new(&styles_dir).exists() {
         panic!("Styles directory does not exist: {}", styles_dir);
     }

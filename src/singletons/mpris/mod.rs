@@ -10,18 +10,13 @@ use once_cell::sync::Lazy;
 const MPRIS_DBUS_PREFIX: &str = "org.mpris.MediaPlayer2";
 const MPRIS_DBUS_PATH: &str = "/org/mpris/MediaPlayer2";
 
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct Mpris {
     pub players: futures_signals::signal_vec::MutableVec<mpris_player::MprisPlayer>,
     pub default_player: futures_signals::signal::Mutable<usize>
 }
 
-pub static MPRIS: Lazy<Mpris> = Lazy::new(|| {
-    Mpris {
-        players: futures_signals::signal_vec::MutableVec::new(),
-        default_player: futures_signals::signal::Mutable::new(0)
-    }
-});
+pub static MPRIS: Lazy<Mpris> = Lazy::new(Mpris::default);
 
 fn assert_default_player() {
     if MPRIS.default_player.get() > MPRIS.players.lock_ref().len() {

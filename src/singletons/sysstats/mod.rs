@@ -20,20 +20,9 @@ static SYS: Lazy<Mutex<sysinfo::System>> = Lazy::new(|| {
     ))
 });
 
-pub static SYS_STATS: Lazy<Mutex<SysStats>> = Lazy::new(|| {
-    Mutex::new(SysStats {
-        used_memory: Mutable::new(0),
-        total_memory: Mutable::new(0),
-        free_memory: Mutable::new(0),
-        used_swap: Mutable::new(0),
-        total_swap: Mutable::new(0),
-        free_swap: Mutable::new(0),
-        global_cpu_usage: Mutable::new(0.0),
-        gpu_utilization: Mutable::new(0.0),
-        gpu_temperature: Mutable::new(0.0)
-    })
-});
+pub static SYS_STATS: Lazy<Mutex<SysStats>> = Lazy::new(|| Mutex::new(SysStats::default()));
 
+#[derive(Default)]
 pub struct SysStats {
     // sysstats
     pub used_memory: Mutable<u64>,

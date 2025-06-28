@@ -10,33 +10,27 @@ impl Rgba {
     pub fn from_hex(hex: &str) -> Self {
         let hex = hex.trim_start_matches('#');
         let len = hex.len();
-        let (r, g, b, a) = if len == 6 {
+        let (r, g, b, a) = if len == 6 || len == 8 {
             (
                 u8::from_str_radix(&hex[0..2], 16).unwrap(),
                 u8::from_str_radix(&hex[2..4], 16).unwrap(),
                 u8::from_str_radix(&hex[4..6], 16).unwrap(),
-                255,
+                if len == 8 {
+                    u8::from_str_radix(&hex[6..8], 16).unwrap()
+                } else {
+                    255
+                },
             )
-        } else if len == 8 {
-            (
-                u8::from_str_radix(&hex[0..2], 16).unwrap(),
-                u8::from_str_radix(&hex[2..4], 16).unwrap(),
-                u8::from_str_radix(&hex[4..6], 16).unwrap(),
-                u8::from_str_radix(&hex[6..8], 16).unwrap(),
-            )
-        } else if len == 3 {
+        } else if len == 3 || len == 4 {
             (
                 u8::from_str_radix(&hex[0..1].repeat(2), 16).unwrap(),
                 u8::from_str_radix(&hex[1..2].repeat(2), 16).unwrap(),
                 u8::from_str_radix(&hex[2..3].repeat(2), 16).unwrap(),
-                255,
-            )
-        } else if len == 4 {
-            (
-                u8::from_str_radix(&hex[0..1].repeat(2), 16).unwrap(),
-                u8::from_str_radix(&hex[1..2].repeat(2), 16).unwrap(),
-                u8::from_str_radix(&hex[2..3].repeat(2), 16).unwrap(),
-                u8::from_str_radix(&hex[3..4].repeat(2), 16).unwrap(),
+                if len == 4 {
+                    u8::from_str_radix(&hex[3..4].repeat(2), 16).unwrap()
+                } else {
+                    255
+                },
             )
         } else {
             return Self { red: 0.0, green: 0.0, blue: 0.0, alpha: 1.0 };
