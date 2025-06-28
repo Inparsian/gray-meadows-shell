@@ -1,12 +1,4 @@
-// Change these variables to customize the look of the bar globally
-$background-black-semi-trans: #00000088;
-$background-color-primary: #131313;
-$background-color-secondary: #1b1b1b;
-$foreground-color-primary: #e2e2e2;
-$foreground-color-secondary: #999;
-$font-family-normal: "Cozette";
-$font-family-small: "GohuFont uni11 Nerd Font";
-$font-family-big: "GohuFont uni14 Nerd Font";
+@import "user.scss";
 
 .dot-separator {
     background: $foreground-color-primary;
