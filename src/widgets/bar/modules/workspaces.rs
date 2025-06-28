@@ -84,6 +84,22 @@ pub fn new() -> gtk4::Box {
                             let _ = cr.fill();
                         }
                     }
+
+                    // draw active workspace
+                    if let Some(color) = scss::get_color("foreground-color-primary") {
+                        let active_workspace_x = (active_ws - 1.0) * (WORKSPACE_WIDTH + WORKSPACE_PADDING) + WORKSPACE_PADDING + 1.0;
+
+                        cr.set_source_rgba(color.red, color.green, color.blue, color.alpha);
+
+                        cr.rectangle(
+                            ((active_workspace_x + (WORKSPACE_WIDTH / 4.0)) - 1.0).ceil(),
+                            ((WORKSPACE_Y + (WORKSPACE_HEIGHT / 4.0)) - 1.0).ceil(),
+                            (WORKSPACE_WIDTH / 2.0).ceil(),
+                            (WORKSPACE_HEIGHT / 2.0).ceil()
+                        );
+
+                        let _ = cr.fill();
+                    }
                 }
             }
         },

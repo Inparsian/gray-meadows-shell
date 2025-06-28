@@ -1,5 +1,3 @@
-pub const HEX_REGEX: &str = r"^#([a-fA-F0-9]{6}|[a-fA-F0-9]{8}|[a-fA-F0-9]{3,4})$";
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Rgba {
     pub red: f64,
