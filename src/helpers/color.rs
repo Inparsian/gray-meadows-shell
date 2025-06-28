@@ -2,10 +2,10 @@ pub const HEX_REGEX: &str = r"^#([a-fA-F0-9]{6}|[a-fA-F0-9]{8}|[a-fA-F0-9]{3,4})
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Rgba {
-    pub red: f32,
-    pub green: f32,
-    pub blue: f32,
-    pub alpha: f32,
+    pub red: f64,
+    pub green: f64,
+    pub blue: f64,
+    pub alpha: f64,
 }
 
 impl Rgba {
@@ -45,10 +45,10 @@ impl Rgba {
         };
 
         Self {
-            red: r as f32 / 255.0,
-            green: g as f32 / 255.0,
-            blue: b as f32 / 255.0,
-            alpha: a as f32 / 255.0,
+            red: r as f64 / 255.0,
+            green: g as f64 / 255.0,
+            blue: b as f64 / 255.0,
+            alpha: a as f64 / 255.0,
         }
     }
 }

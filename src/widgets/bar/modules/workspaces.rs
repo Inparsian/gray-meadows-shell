@@ -3,12 +3,13 @@ use futures_signals::signal::SignalExt;
 use gtk4::prelude::*;
 
 use crate::singletons::hyprland;
+use crate::helpers::scss;
 
 const SHOWN_WORKSPACES: usize = 10;
-const WORKSPACE_WIDTH: i32 = 13;
-const WORKSPACE_HEIGHT: i32 = 13;
-const WORKSPACE_Y: i32 = 5;
-const WORKSPACE_PADDING: i32 = 1;
+const WORKSPACE_WIDTH: f64 = 13.0;
+const WORKSPACE_HEIGHT: f64 = 13.0;
+const WORKSPACE_Y: f64 = 5.0;
+const WORKSPACE_PADDING: f64 = 1.0;
 
 #[derive(Clone)]
 struct WorkspaceMask {
@@ -27,8 +28,7 @@ impl WorkspaceMask {
         let active_workspace = hyprland::HYPRLAND.active_workspace.get_cloned();
         
         self.mask = if let (Some(workspaces), Some(active_workspace)) = (workspaces, active_workspace) {
-            let active_workspace_id = active_workspace.id;
-            let offset = ((active_workspace_id as f64 / SHOWN_WORKSPACES as f64).floor() * SHOWN_WORKSPACES as f64) as i32;
+            let offset = (((active_workspace.id - 1) as f64 / SHOWN_WORKSPACES as f64).floor() * SHOWN_WORKSPACES as f64) as i32;
             let mut mask = 0;
 
             for workspace in workspaces.iter() {
@@ -54,14 +54,36 @@ pub fn new() -> gtk4::Box {
             set_draw_func: {
                 let workspace_mask = workspace_mask.clone();
                 move |area, cr, _, _| {
-                    area.set_size_request((SHOWN_WORKSPACES as i32 + 1) * WORKSPACE_WIDTH, 16);
+                    area.set_size_request((SHOWN_WORKSPACES as i32 + 1) * WORKSPACE_WIDTH as i32, 16);
 
-                    let style_ctx = area.style_context();
                     let active_ws: f64 = if let Some(font_desc) = area.pango_context().font_description() {
                         font_desc.size() as f64 / gtk4::pango::SCALE as f64
                     } else {
                         1.0 // fallback to workspace 1
                     };
+
+                    // draw workspace squares
+                    for i in 0..SHOWN_WORKSPACES+1 {
+                        let workspace_x = (i as f64 - 1.0) * (WORKSPACE_WIDTH + WORKSPACE_PADDING) + WORKSPACE_PADDING;
+                        let color_variable_name = if workspace_mask.lock().unwrap().mask & (1 << i) != 0 {
+                            "foreground-color-primary"
+                        } else {
+                            "foreground-color-third"
+                        };
+
+                        if let Some(color) = scss::get_color(color_variable_name) {
+                            cr.set_source_rgba(color.red, color.green, color.blue, color.alpha);
+
+                            cr.rectangle(
+                                ((workspace_x + (WORKSPACE_WIDTH / 4.0)) + 2.0).ceil(),
+                                ((WORKSPACE_Y + (WORKSPACE_HEIGHT / 4.0)) + 1.0).ceil(),
+                                ((WORKSPACE_WIDTH / 2.0) - 4.0).ceil(),
+                                ((WORKSPACE_HEIGHT / 2.0) - 4.0).ceil()
+                            );
+
+                            let _ = cr.fill();
+                        }
+                    }
                 }
             }
         },
