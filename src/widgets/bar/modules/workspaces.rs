@@ -1,8 +1,9 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 use futures_signals::signal::SignalExt;
 use gtk4::prelude::*;
 use ::hyprland::dispatch;
 use ::hyprland::dispatch::{Dispatch, DispatchType, WorkspaceIdentifierWithSpecial};
+use once_cell::sync::Lazy;
 
 use crate::singletons::hyprland;
 use crate::helpers::{scss, gesture};
@@ -13,18 +14,14 @@ const WORKSPACE_HEIGHT: f64 = 13.0;
 const WORKSPACE_Y: f64 = 5.0;
 const WORKSPACE_PADDING: f64 = 1.0;
 
-#[derive(Clone)]
+static WORKSPACE_MASK: Lazy<Mutex<WorkspaceMask>> = Lazy::new(|| Mutex::new(WorkspaceMask::default()));
+
+#[derive(Clone, Default)]
 struct WorkspaceMask {
     pub mask: u32
 }
 
 impl WorkspaceMask {
-    pub fn new() -> Self {
-        Self {
-            mask: 0
-        }
-    }
-
     pub fn update(&mut self) {
         let workspaces = hyprland::HYPRLAND.workspaces.get_cloned();
         let active_workspace = hyprland::HYPRLAND.active_workspace.get_cloned();
@@ -48,7 +45,6 @@ impl WorkspaceMask {
 
 pub fn new() -> gtk4::Box {
     let style_provider = gtk4::CssProvider::new();
-    let workspace_mask: Arc<Mutex<WorkspaceMask>> = Arc::new(Mutex::new(WorkspaceMask::new()));
 
     relm4_macros::view! {
         workspaces_click_gesture = gesture::on_primary_click(|_, x, _| {
@@ -74,7 +70,6 @@ pub fn new() -> gtk4::Box {
             add_controller: workspaces_scroll_gesture,
 
             set_draw_func: {
-                let workspace_mask = workspace_mask.clone();
                 move |area, cr, _, _| {
                     area.set_size_request((SHOWN_WORKSPACES as i32 + 1) * WORKSPACE_WIDTH as i32, 16);
 
@@ -87,7 +82,7 @@ pub fn new() -> gtk4::Box {
                     // draw workspace squares
                     for i in 0..SHOWN_WORKSPACES+1 {
                         let workspace_x = (i as f64 - 1.0) * (WORKSPACE_WIDTH + WORKSPACE_PADDING) + WORKSPACE_PADDING;
-                        let color_variable_name = if workspace_mask.lock().unwrap().mask & (1 << i) != 0 {
+                        let color_variable_name = if WORKSPACE_MASK.lock().unwrap().mask & (1 << i) != 0 {
                             "foreground-color-primary"
                         } else {
                             "foreground-color-third"
@@ -138,11 +133,9 @@ pub fn new() -> gtk4::Box {
     workspaces_drawing_area.style_context().add_provider(&style_provider, gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION);
 
     let workspaces_future = hyprland::HYPRLAND.workspaces.signal_cloned().for_each({
-        let workspace_mask = workspace_mask.clone();
         let workspaces_drawing_area = workspaces_drawing_area.clone();
         move |_| {
-            let mut mutex = workspace_mask.lock().unwrap();
-            mutex.update();
+            WORKSPACE_MASK.lock().unwrap().update();
             workspaces_drawing_area.queue_draw();
 
             async {}
@@ -150,11 +143,9 @@ pub fn new() -> gtk4::Box {
     });
 
     let active_workspace_future = hyprland::HYPRLAND.active_workspace.signal_cloned().for_each({
-        let workspace_mask = workspace_mask.clone();
         let workspaces_drawing_area = workspaces_drawing_area.clone();
         move |active| {
-            let mut mutex = workspace_mask.lock().unwrap();
-            mutex.update();
+            WORKSPACE_MASK.lock().unwrap().update();
             
             if let Some(active) = active {
                 style_provider.load_from_data(&format!(
