@@ -39,13 +39,10 @@ pub fn handle_master_message(msg: &Message) {
 
                 if let Some(sender) = sender {
                     let mut players_mut = MPRIS.players.lock_mut();
-
                     let player_index = players_mut.iter().position(|p| sender == p.owner.as_ref().into())
                         .unwrap_or(usize::MAX); // Default to an impossible index if not found
 
-                    let player = players_mut.get(player_index);
-
-                    if let Some(player) = player {
+                    if let Some(player) = players_mut.get(player_index) {
                         let player = &mut player.clone();
 
                         match member {

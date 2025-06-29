@@ -104,6 +104,7 @@ async fn main() {
     singletons::mpris::activate();
     singletons::sysstats::activate();
     singletons::hyprland::activate();
+    singletons::tray::activate();
 
     // Add the CSS provider to the default display
     gtk4::style_context_add_provider_for_display(
