@@ -1,4 +1,5 @@
 @import "user.scss";
+@import "mixins.scss";
 
 .dot-separator {
     background: $foreground-color-primary;
@@ -12,9 +13,7 @@
     background: transparent;
 
     .bar {
-        font-family: $font-family-normal;
-        font-size: 12px;
-        letter-spacing: 0.05em;
+        @include normal-text;
 
         .bar-widget {
             background: $background-color-primary;

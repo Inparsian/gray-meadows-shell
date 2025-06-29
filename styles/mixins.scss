@@ -1,0 +1,15 @@
+@mixin tiny-text {
+    font-size: 11px;
+    font-family: "GohuFont uni11 Nerd Font", "Terminus", monospace;
+}
+
+@mixin normal-text {
+    font-size: 13px;
+    font-family: "Cozette", monospace;
+    letter-spacing: 0.05em;
+}
+
+@mixin large-text {
+    font-size: 14px;
+    font-family: "GohuFont uni14 Nerd Font", "Terminus", monospace;
+}
