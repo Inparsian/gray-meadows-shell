@@ -1,7 +1,8 @@
 use futures_signals::signal_vec::SignalVecExt;
 use gtk4::prelude::*;
+use system_tray::client::ActivateRequest;
 
-use crate::singletons::tray;
+use crate::{helpers::gesture, singletons::tray};
 
 #[derive(Clone)]
 struct SystemTrayItem {
@@ -16,12 +17,28 @@ impl SystemTrayItem {
 
     pub fn build(&mut self) {
         println!("Building SystemTrayItem for owner: {}", self.owner);
+
+        let address = self.owner.clone();
+        let pc = gesture::on_primary_click(move |_, x, y| {
+            if let Some(client) = tray::TRAY_CLIENT.get() {
+                let request = ActivateRequest::Default {
+                    address: address.clone(),
+                    x: x as i32,
+                    y: y as i32
+                };
+
+                tokio::spawn(client.activate(request));
+            }
+        });
+
         if let Some(item) = tray::get_tray_item(&self.owner) {            
             relm4_macros::view! {
                 new_widget = gtk4::Image {
                     set_css_classes: &["bar-tray-item"],
                     set_from_pixbuf: Some(&tray::make_icon_pixbuf(item)),
-                    set_pixel_size: 14
+                    set_pixel_size: 14,
+
+                    add_controller: pc,
                 }
             };
 

@@ -1,6 +1,6 @@
 use futures_signals::signal_vec::MutableVec;
 use gdk4::glib::Bytes;
-use once_cell::sync::Lazy;
+use once_cell::sync::{Lazy, OnceCell};
 use system_tray::{client::{Client, Event, UpdateEvent}, item::{IconPixmap, StatusNotifierItem}};
 
 // Rationale: Some icons have the possibility of being absurdly large (e.g. 1024x1024). This may not seem like an
@@ -12,6 +12,7 @@ use system_tray::{client::{Client, Event, UpdateEvent}, item::{IconPixmap, Statu
 const C_WIDTH: u32 = 32;
 const C_HEIGHT: u32 = 32;
 
+pub static TRAY_CLIENT: OnceCell<Client> = OnceCell::new();
 pub static TRAY_ITEMS: Lazy<MutableVec<(String, StatusNotifierItem)>> = Lazy::new(MutableVec::new);
 
 pub fn get_tray_item(owner: &str) -> Option<StatusNotifierItem> {
@@ -144,10 +145,11 @@ pub fn activate() {
     tokio::spawn(async move {
         let client = Client::new().await.unwrap();
         let mut tray_rx = client.subscribe();
-
         let initial_items = client.items();
         
         println!("Initial tray items: {:?}", initial_items);
+
+        let _ = TRAY_CLIENT.set(client);
         
         while let Ok(event) = tray_rx.recv().await {
             match event {
