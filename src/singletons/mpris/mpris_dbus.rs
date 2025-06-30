@@ -21,11 +21,11 @@ pub fn handle_master_message(msg: &Message) {
 
             if let (Some(bus), Some(new_owner)) = (bus, new_owner) {
                 if bus.starts_with(MPRIS_DBUS_PREFIX) {
-                    MPRIS.players.lock_mut().retain(|player| player.bus != bus.clone().into());
+                    MPRIS.players.lock_mut().retain(|player| player.bus != bus);
 
                     if !new_owner.is_empty() {
-                        let player = mpris_player::MprisPlayer::new(bus.clone(), new_owner.clone());
-                        MPRIS.players.lock_mut().push(player);
+                        let player = mpris_player::MprisPlayer::new(bus, new_owner);
+                        MPRIS.players.lock_mut().push_cloned(player);
                     }
                 }
             } else {
@@ -39,11 +39,11 @@ pub fn handle_master_message(msg: &Message) {
 
                 if let Some(sender) = sender {
                     let mut players_mut = MPRIS.players.lock_mut();
-                    let player_index = players_mut.iter().position(|p| sender == p.owner.as_ref().into())
+                    let player_index = players_mut.iter().position(|p| sender == (&p.owner).into())
                         .unwrap_or(usize::MAX); // Default to an impossible index if not found
 
                     if let Some(player) = players_mut.get(player_index) {
-                        let player = &mut player.clone();
+                        let mut player = player.clone();
 
                         match member {
                             "PropertiesChanged" => player.properties_changed(msg),
@@ -51,7 +51,7 @@ pub fn handle_master_message(msg: &Message) {
                             _ => eprintln!("Unknown MPRIS signal member: {}", member),
                         }
 
-                        players_mut.set(player_index, *player);
+                        players_mut.set_cloned(player_index, player);
                     } else {
                         eprintln!("Failed to find MPRIS player for owner: {}", sender);
                     }

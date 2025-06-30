@@ -1,5 +1,4 @@
 use dbus::{arg::{self, RefArg}, Error, Message};
-use internment::Intern;
 
 use crate::singletons::mpris::{mpris_dbus, mpris_metadata};
 
@@ -40,21 +39,21 @@ impl LoopStatus {
 // The common xesam and mpris metadata properties should be enough for most use cases,
 // so this struct is here as an easy way to read metadata from the player. Paths are
 // casted to strings for simplicity's sake.
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct Metadata {
-    pub track_id: Option<Intern<String>>, // mpris:trackid
+    pub track_id: Option<String>, // mpris:trackid
     pub length: Option<i64>, // mpris:length - in microseconds
-    pub art_url: Option<Intern<String>>, // mpris:artUrl
-    pub album: Option<Intern<String>>, // xesam:album
-    pub artist: Option<Intern<Vec<String>>>, // xesam:artist
-    pub content_created: Option<Intern<String>>, // xesam:contentCreated
-    pub title: Option<Intern<String>>, // xesam:title
+    pub art_url: Option<String>, // mpris:artUrl
+    pub album: Option<String>, // xesam:album
+    pub artist: Option<Vec<String>>, // xesam:artist
+    pub content_created: Option<String>, // xesam:contentCreated
+    pub title: Option<String>, // xesam:title
 }
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct MprisPlayer {
-    pub bus: Intern<String>,
-    pub owner: Intern<String>,
+    pub bus: String,
+    pub owner: String,
     pub playback_status: PlaybackStatus,
     pub loop_status: LoopStatus,
     pub rate: f64,
@@ -75,8 +74,8 @@ pub struct MprisPlayer {
 impl MprisPlayer {
     pub fn new(bus: String, owner: String) -> Self {
         let mut player = MprisPlayer {
-            bus: Intern::new(bus),
-            owner: Intern::new(owner),
+            bus,
+            owner,
             ..MprisPlayer::default()
         };
         
@@ -111,13 +110,7 @@ impl MprisPlayer {
                 if let Ok(value) = self.get_metadata_property::<$type>($key) {
                     self.metadata.$field = Some(value);
                 }
-            };
-
-            (intern - $type:ty, $key:expr, $field:ident) => {
-                if let Ok(value) = self.get_metadata_property::<$type>($key) {
-                    self.metadata.$field = Some(Intern::new(value));
-                }
-            };
+            }
         }
 
         let mut booleans = [
@@ -206,13 +199,13 @@ impl MprisPlayer {
         }
 
         // Set metadata properties
-        set_metadata_property!(intern - String, "mpris:trackid", track_id);
+        set_metadata_property!(String, "mpris:trackid", track_id);
         set_metadata_property!(i64, "mpris:length", length);
-        set_metadata_property!(intern - String, "mpris:artUrl", art_url);
-        set_metadata_property!(intern - String, "xesam:album", album);
-        set_metadata_property!(intern - Vec<String>, "xesam:artist", artist);
-        set_metadata_property!(intern - String, "xesam:contentCreated", content_created);
-        set_metadata_property!(intern - String, "xesam:title", title);
+        set_metadata_property!(String, "mpris:artUrl", art_url);
+        set_metadata_property!(String, "xesam:album", album);
+        set_metadata_property!(Vec<String>, "xesam:artist", artist);
+        set_metadata_property!(String, "xesam:contentCreated", content_created);
+        set_metadata_property!(String, "xesam:title", title);
     }
 
     pub fn properties_changed(&mut self, msg: &Message) {
@@ -260,13 +253,13 @@ impl MprisPlayer {
 
                 for (key, value) in kv {
                     match key.as_str() {
-                        "mpris:trackid" => self.metadata.track_id = Some(Intern::new(mpris_metadata::as_str(&value).unwrap_or_default())),
+                        "mpris:trackid" => self.metadata.track_id = Some(mpris_metadata::as_str(&value).unwrap_or_default()),
                         "mpris:length" => self.metadata.length = Some(mpris_metadata::as_i64(&value).unwrap_or(0)),
-                        "mpris:artUrl" => self.metadata.art_url = Some(Intern::new(mpris_metadata::as_str(&value).unwrap_or_default())),
-                        "xesam:album" => self.metadata.album = Some(Intern::new(mpris_metadata::as_str(&value).unwrap_or_default())),
-                        "xesam:artist" => self.metadata.artist = Some(Intern::new(mpris_metadata::as_str_vec(&value).unwrap_or_default())),
-                        "xesam:contentCreated" => self.metadata.content_created = Some(Intern::new(mpris_metadata::as_str(&value).unwrap_or_default())),
-                        "xesam:title" => self.metadata.title = Some(Intern::new(mpris_metadata::as_str(&value).unwrap_or_default())),
+                        "mpris:artUrl" => self.metadata.art_url = Some(mpris_metadata::as_str(&value).unwrap_or_default()),
+                        "xesam:album" => self.metadata.album = Some(mpris_metadata::as_str(&value).unwrap_or_default()),
+                        "xesam:artist" => self.metadata.artist = Some(mpris_metadata::as_str_vec(&value).unwrap_or_default()),
+                        "xesam:contentCreated" => self.metadata.content_created = Some(mpris_metadata::as_str(&value).unwrap_or_default()),
+                        "xesam:title" => self.metadata.title = Some(mpris_metadata::as_str(&value).unwrap_or_default()),
                         _ => {}
                     }
                 }

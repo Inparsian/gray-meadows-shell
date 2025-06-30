@@ -49,7 +49,7 @@ where
     let players_future = {
         let callback = callback_rc.clone();
 
-        MPRIS.players.signal_vec().for_each(move |change| {
+        MPRIS.players.signal_vec_cloned().for_each(move |change| {
             let run_callback = || {
                 let callback = callback.clone();
 
@@ -135,7 +135,7 @@ pub fn activate() {
                 if let Some(owner) = owner_opt {
                     let player = mpris_player::MprisPlayer::new(name, owner);
 
-                    MPRIS.players.lock_mut().push(player);
+                    MPRIS.players.lock_mut().push_cloned(player);
                 }
             }
         }
@@ -167,7 +167,7 @@ pub fn activate() {
     });
 
     // Monitor the MPRIS players for changes
-    let future = MPRIS.players.signal_vec().for_each(|change| {
+    let future = MPRIS.players.signal_vec_cloned().for_each(|change| {
         match change {
             VecDiff::RemoveAt { index: _ } => assert_default_player(),
             VecDiff::Pop {} => assert_default_player(),

@@ -1,6 +1,5 @@
 use std::cell::RefCell;
 use gtk4::prelude::*;
-use internment::Intern;
 use once_cell::sync::Lazy;
 
 use crate::{helpers::gesture, singletons::mpris};
@@ -11,14 +10,14 @@ const ALBUM_ART_HEIGHT: i32 = 23; // Expected height of the album art image
 const WIDGET_WIDTH: i32 = 250;
 const MAX_TRACK_WIDTH: i32 = WIDGET_WIDTH - ALBUM_ART_WIDTH;
 
-static NO_ARTIST: Lazy<Intern<Vec<String>>> = Lazy::new(|| Intern::new(vec!["No artist".to_string()]));
-static NO_TITLE: Lazy<Intern<String>> = Lazy::new(|| Intern::new("No title".to_string()));
+static NO_ARTIST: Lazy<Vec<String>> = Lazy::new(|| vec!["No artist".to_string()]);
+static NO_TITLE: Lazy<String> = Lazy::new(|| "No title".to_string());
 
 fn get_mpris_player_label_text() -> String {
     mpris::get_default_player()
         .map_or_else(|| "No MPRIS players".to_string(), |player| format!("{} - {}",
-            player.metadata.artist.unwrap_or(*NO_ARTIST).join(", "),
-            player.metadata.title.unwrap_or(*NO_TITLE)
+            player.metadata.artist.unwrap_or(NO_ARTIST.to_vec()).join(", "),
+            player.metadata.title.unwrap_or(NO_TITLE.to_string())
         ))
 }
 
