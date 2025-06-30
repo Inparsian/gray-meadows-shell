@@ -11,9 +11,9 @@ const MAX_TRACK_WIDTH: i32 = WIDGET_WIDTH - ALBUM_ART_WIDTH;
 
 fn get_mpris_player_label_text() -> String {
     mpris::get_default_player()
-        .map_or_else(|| "No MPRIS players".to_owned(), |player| format!("{} - {}",
-            player.metadata.artist.unwrap_or(vec!["No artist".to_owned()]).join(", "),
-            player.metadata.title.unwrap_or("No title".to_owned())
+        .map_or_else(|| "No MPRIS players".to_string(), |player| format!("{} - {}",
+            player.metadata.artist.unwrap_or(vec!["No artist".to_string()]).join(", "),
+            player.metadata.title.unwrap_or("No title".to_string())
         ))
 }
 
