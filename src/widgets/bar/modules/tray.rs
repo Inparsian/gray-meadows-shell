@@ -16,14 +16,12 @@ impl SystemTrayItem {
 
     pub fn build(&mut self) {
         println!("Building SystemTrayItem for owner: {}", self.owner);
-        if let Some(item) = tray::get_tray_item(&self.owner) {
-            println!("icon: {}", item.icon_name.clone().unwrap_or_default());
-            
+        if let Some(item) = tray::get_tray_item(&self.owner) {            
             relm4_macros::view! {
                 new_widget = gtk4::Image {
                     set_css_classes: &["bar-tray-item"],
-                    set_icon_name: Some(&item.icon_name.clone().unwrap_or_default()),
-                    set_pixel_size: 12
+                    set_from_pixbuf: Some(&tray::make_icon_pixbuf(item)),
+                    set_pixel_size: 14
                 }
             };
 
@@ -35,7 +33,7 @@ impl SystemTrayItem {
         println!("Updating SystemTrayItem for owner: {}", self.owner);
         if let Some(widget) = &self.widget {
             if let Some(item) = tray::get_tray_item(&self.owner) {
-                widget.set_icon_name(Some(&item.icon_name.clone().unwrap_or_default()));
+                widget.set_from_pixbuf(Some(&tray::make_icon_pixbuf(item)));
             }
         }
     }
@@ -53,9 +51,21 @@ impl SystemTray {
         box_.set_css_classes(&["bar-widget", "bar-tray"]);
         box_.set_hexpand(false);
 
+        let mut items = Vec::new();
+
+        // add existing tray items
+        for item in tray::TRAY_ITEMS.lock_ref().iter() {
+            let mut tray_item = SystemTrayItem::new(item.0.clone());
+            tray_item.build();
+            if let Some(ref widget) = tray_item.widget {
+                box_.append(widget);
+            }
+            items.push(tray_item);
+        }
+
         Self {
             box_,
-            items: Vec::new(),
+            items,
         }
     }
 
@@ -64,6 +74,8 @@ impl SystemTray {
         if self.items.iter().any(|item| item.owner == owner) {
             println!("Item with owner '{}' already exists, skipping addition.", owner);
             return;
+        } else {
+            println!("Adding SystemTrayItem for owner: {}", owner);
         }
 
         let mut item = SystemTrayItem::new(owner);
