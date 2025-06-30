@@ -101,6 +101,21 @@
                     min-height: 0px;
                 }
             }
+
+            &.bar-tray {
+                .bar-tray-item {
+                    padding-left: 2px;
+                    padding-right: 2px;
+
+                    &:first-child {
+                        padding-left: 0px;
+                    }
+
+                    &:last-child {
+                        padding-right: 0px;
+                    }
+                }
+            }
         }
     }
 }

@@ -7,8 +7,8 @@ use system_tray::{client::{Client, Event, UpdateEvent}, item::StatusNotifierItem
 // several issues - large icons consume a ton of memory, take literally forever to render, and take
 // lots of processing power to render as well. Nothing much I can do about the memory consumption,
 // but I can at least compress the icon data before rendering it to a pixbuf.
-const C_WIDTH: u32 = 64;
-const C_HEIGHT: u32 = 64;
+const C_WIDTH: u32 = 32;
+const C_HEIGHT: u32 = 32;
 
 pub static TRAY_ITEMS: Lazy<MutableVec<(String, StatusNotifierItem)>> = Lazy::new(MutableVec::new);
 
