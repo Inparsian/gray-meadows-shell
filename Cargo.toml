@@ -7,6 +7,7 @@ edition = "2021"
 chrono = "0.4.41"
 cxx = "1.0.158"
 dbus = "0.9.7"
+futures-lite = "2.6.0"
 futures-signals = "0.3.34"
 gdk4 = "0.9.6"
 gtk4 = "0.9.6"
@@ -23,7 +24,7 @@ relm4-macros = "0.9.1"
 sysinfo = "0.35.2"
 tokio = { version = "1.45.1", features = ["full"] }
 urlencoding = "2.1.3"
-zbus = "5.7.1"
+zbus = { version = "5.7.1", default-features = false, features = ["tokio"] }
 
 [build-dependencies]
 cxx-build = "1.0.158"
