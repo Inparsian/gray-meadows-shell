@@ -31,7 +31,7 @@ Currently far from ready for daily use. This list of things to do may not be exh
     - [x] Resources
     - [ ] Mpris (partially done)
     - [x] Clock
-    - [ ] System tray ⚠️ 1
+    - [ ] System tray
     - [ ] Default output volume
     - [ ] Indicators
 - [ ] OSD
@@ -58,4 +58,4 @@ Currently far from ready for daily use. This list of things to do may not be exh
     - [ ] Color picker
 
 ### ⚠️ Known issues
-None.
+1. Only NVIDIA GPUs are supported. I don't have any AMD or Intel GPUs to test with, so I can't implement support for them. If you have an AMD or Intel GPU and want to help, please open an issue or PR.
