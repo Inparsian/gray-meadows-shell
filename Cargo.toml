@@ -21,7 +21,6 @@ regex = "1.11.1"
 relm4 = "0.9.1"
 relm4-macros = "0.9.1"
 sysinfo = "0.35.2"
-system-tray = "0.8.1"
 tokio = { version = "1.45.1", features = ["full"] }
 urlencoding = "2.1.3"
 

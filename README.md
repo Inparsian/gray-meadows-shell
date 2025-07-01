@@ -14,7 +14,7 @@ Currently far from ready for daily use. This list of things to do may not be exh
     - [x] Mpris (dbus)
     - [ ] Cava?
     - [ ] Notifications (dbus)
-    - [x] System tray (dbus) ⚠️ 1
+    - [ ] System tray (dbus) (being rewritten to not depend on system-tray crate)
     - [x] Hyprland (IPC)
     - [ ] Apps
     - [ ] WirePlumber
@@ -31,7 +31,7 @@ Currently far from ready for daily use. This list of things to do may not be exh
     - [x] Resources
     - [ ] Mpris (partially done)
     - [x] Clock
-    - [x] System tray ⚠️ 1
+    - [ ] System tray ⚠️ 1
     - [ ] Default output volume
     - [ ] Indicators
 - [ ] OSD
@@ -58,4 +58,4 @@ Currently far from ready for daily use. This list of things to do may not be exh
     - [ ] Color picker
 
 ### ⚠️ Known issues
-1. Tray menus for certain applications can break - VLC is a notable example. This is a known issue in the system-tray crate, which is what powers the tray singleton.
+None.
