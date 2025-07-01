@@ -2,7 +2,7 @@ use futures_signals::signal_vec::SignalVecExt;
 use gtk4::prelude::*;
 use system_tray::client::ActivateRequest;
 
-use crate::{helpers::gesture, singletons::tray};
+use crate::{helpers::gesture, singletons::tray::{self, tray_icon}};
 
 #[derive(Clone)]
 struct SystemTrayItem {
@@ -35,7 +35,7 @@ impl SystemTrayItem {
             relm4_macros::view! {
                 new_widget = gtk4::Image {
                     set_css_classes: &["bar-tray-item"],
-                    set_from_pixbuf: Some(&tray::make_icon_pixbuf(item)),
+                    set_from_pixbuf: Some(&tray_icon::make_icon_pixbuf(item)),
                     set_pixel_size: 14,
 
                     add_controller: pc,
@@ -50,7 +50,7 @@ impl SystemTrayItem {
         println!("Updating SystemTrayItem for owner: {}", self.owner);
         if let Some(widget) = &self.widget {
             if let Some(item) = tray::get_tray_item(&self.owner) {
-                widget.set_from_pixbuf(Some(&tray::make_icon_pixbuf(item)));
+                widget.set_from_pixbuf(Some(&tray_icon::make_icon_pixbuf(item)));
             }
         }
     }
