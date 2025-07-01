@@ -115,6 +115,27 @@
                         padding-right: 0px;
                     }
                 }
+
+                popover.bar-tray-popover-menu {
+                    contents {
+                        background: $background-color-primary;
+
+                        border-radius: 0px;
+                        box-shadow: none;
+
+                        modelbutton {
+                            padding: 6px;
+
+                            &:hover, &:focus {
+                                background: $background-color-secondary;
+                            }
+
+                            &:active {
+                                background: $background-color-third;
+                            }
+                        }
+                    }
+                }
             }
         }
     }

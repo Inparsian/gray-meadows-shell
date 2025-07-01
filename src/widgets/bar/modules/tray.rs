@@ -1,33 +1,62 @@
 use futures_signals::signal_vec::SignalVecExt;
-use gtk4::prelude::*;
+use gtk4::{gio, prelude::*};
 use system_tray::client::ActivateRequest;
 
-use crate::{helpers::gesture, singletons::tray::{self, tray_icon}};
+use crate::{helpers::gesture, singletons::tray::{self, tray_icon, tray_menu}};
 
-#[derive(Clone)]
+#[derive(Default, Clone)]
 struct SystemTrayItem {
     pub owner: String,
-    pub widget: Option<gtk4::Image>
+    pub widget: Option<gtk4::Image>,
+    popover_menu: Option<gtk4::PopoverMenu>
 }
 
 impl SystemTrayItem {
     pub fn new(owner: String) -> Self {
-        Self { owner, widget: None }
+        Self {
+            owner,
+            ..Self::default()
+        }
     }
 
     pub fn build(&mut self) {
         println!("Building SystemTrayItem for owner: {}", self.owner);
 
-        let address = self.owner.clone();
-        let pc = gesture::on_primary_click(move |_, x, y| {
-            if let Some(client) = tray::TRAY_CLIENT.get() {
-                let request = ActivateRequest::Default {
-                    address: address.clone(),
-                    x: x as i32,
-                    y: y as i32
-                };
+        let empty_model: gio::MenuModel = gio::Menu::new().into();
+        let popover_menu = gtk4::PopoverMenu::from_model(Some(&empty_model));
+        if let Some((model, actions)) = tray_menu::build_gio_tray_menu_model(self.owner.clone()) {
+            popover_menu.set_menu_model(Some(&model));
+            popover_menu.insert_action_group("dbusmenu", Some(&actions));
+        }
+        popover_menu.set_css_classes(&["bar-tray-popover-menu"]);
 
-                tokio::spawn(client.activate(request));
+        self.popover_menu = Some(popover_menu);
+
+        let default_activate = gesture::on_primary_click({
+            let address = self.owner.clone();
+
+            move |_, x, y| {
+                if let Some(client) = tray::TRAY_CLIENT.get() {
+                    let request = ActivateRequest::Default {
+                        address: address.clone(),
+                        x: x as i32,
+                        y: y as i32
+                    };
+
+                    tokio::spawn(client.activate(request));
+                }
+            }
+        });
+
+        let menus_activate = gesture::on_secondary_click({
+            let popover_menu = self.popover_menu.clone();
+
+            move |_, _, _| {
+                if tray::TRAY_CLIENT.get().is_some() {
+                    if let Some(popover_menu) = popover_menu.clone() {
+                        popover_menu.popup();
+                    }
+                }
             }
         });
 
@@ -38,19 +67,31 @@ impl SystemTrayItem {
                     set_from_pixbuf: Some(&tray_icon::make_icon_pixbuf(item)),
                     set_pixel_size: 14,
 
-                    add_controller: pc,
+                    add_controller: default_activate,
+                    add_controller: menus_activate,
                 }
             };
 
+            self.popover_menu.as_ref().unwrap().set_parent(&new_widget);
             self.widget = Some(new_widget);
         }
     }
 
     pub fn update(&mut self) {
         println!("Updating SystemTrayItem for owner: {}", self.owner);
+
         if let Some(widget) = &self.widget {
             if let Some(item) = tray::get_tray_item(&self.owner) {
                 widget.set_from_pixbuf(Some(&tray_icon::make_icon_pixbuf(item)));
+
+                // Update the menu
+                if let (Some((model, actions)), Some(popover_menu)) = (
+                    tray_menu::build_gio_tray_menu_model(self.owner.clone()),
+                    self.popover_menu.clone()
+                ) {
+                    popover_menu.set_menu_model(Some(&model));
+                    popover_menu.insert_action_group("dbusmenu", Some(&actions));
+                }
             }
         }
     }

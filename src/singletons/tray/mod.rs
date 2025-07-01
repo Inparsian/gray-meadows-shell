@@ -1,14 +1,22 @@
 pub mod tray_icon;
+pub mod tray_menu;
 
 use futures_signals::signal_vec::MutableVec;
 use once_cell::sync::{Lazy, OnceCell};
-use system_tray::{client::{Client, Event, UpdateEvent}, item::StatusNotifierItem};
+use system_tray::{client::{Client, Event, UpdateEvent}, item::StatusNotifierItem, menu::TrayMenu};
 
 pub static TRAY_CLIENT: OnceCell<Client> = OnceCell::new();
 pub static TRAY_ITEMS: Lazy<MutableVec<(String, StatusNotifierItem)>> = Lazy::new(MutableVec::new);
 
 pub fn get_tray_item(owner: &str) -> Option<StatusNotifierItem> {
     TRAY_ITEMS.lock_ref().iter().find(|(o, _)| o == owner).map(|(_, item)| item.clone())
+}
+
+pub fn get_tray_menu(owner: &str) -> Option<TrayMenu> {
+    TRAY_CLIENT.get().unwrap().items().lock().unwrap().iter()
+        .find(|(o, _)| **o == owner)
+        .and_then(|(_, item)| item.1.as_ref())
+        .cloned()
 }
 
 pub fn activate() {

@@ -6,13 +6,15 @@ My personal desktop shell using gtk4 and gtk4-layer-shell, re-written from scrat
 
 Currently far from ready for daily use. This list of things to do may not be exhaustive and is subject to change.
 
+⚠️ = Known bugs exist.
+
 - [ ] IPC (so the compositor can communicate with the shell)
 - [ ] Library/singleton services
     - [x] libqalculate (Thin C++ shim)
     - [x] Mpris (dbus)
     - [ ] Cava?
     - [ ] Notifications (dbus)
-    - [ ] System tray (dbus)
+    - [x] System tray (dbus) ⚠️ 1
     - [x] Hyprland (IPC)
     - [ ] Apps
     - [ ] WirePlumber
@@ -29,7 +31,7 @@ Currently far from ready for daily use. This list of things to do may not be exh
     - [x] Resources
     - [ ] Mpris (partially done)
     - [x] Clock
-    - [ ] System tray
+    - [x] System tray ⚠️ 1
     - [ ] Default output volume
     - [ ] Indicators
 - [ ] OSD
@@ -54,3 +56,6 @@ Currently far from ready for daily use. This list of things to do may not be exh
 - [ ] Left sidebar
     - [ ] Google Translate
     - [ ] Color picker
+
+### ⚠️ Known issues
+1. Tray menus for certain applications can break - VLC is a notable example. This is a known issue in the system-tray crate, which is what powers the tray singleton.
