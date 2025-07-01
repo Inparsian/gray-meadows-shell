@@ -9,8 +9,6 @@ use once_cell::sync::Lazy;
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind};
 use std::{time::Duration, sync::Mutex};
 
-use crate::singletons;
-
 const REFRESH_INTERVAL: Duration = Duration::from_secs(1);
 
 static SYS: Lazy<Mutex<sysinfo::System>> = Lazy::new(|| {
@@ -53,14 +51,14 @@ impl SysStats {
         self.global_cpu_usage.set(sys.global_cpu_usage() as f64);
 
         // Refresh GPU stats if NVML is initialized
-        if let Some(device) = singletons::sysstats::gpu::nvidia::NVML_DEVICE.lock().unwrap().as_ref() {
+        if let Ok(device) = gpu::nvidia::get_device_by_index(0) {
             let util = device.utilization_rates();
             if let Ok(util) = util {
                 self.gpu_utilization.set(util.gpu as f64);
             } else {
                 eprintln!("Failed to get GPU utilization: {:?}", util);
             }
-
+        
             let temp = device.temperature(TemperatureSensor::Gpu);
             if let Ok(temp) = temp {
                 self.gpu_temperature.set(temp as f64);
@@ -89,8 +87,8 @@ impl SysStats {
 
 pub fn activate() {
     // TODO: Add support for other GPU vendors
-    let _ = singletons::sysstats::gpu::nvidia::init_nvml();
-    singletons::sysstats::sensors::init_sensors();
+    let _ = gpu::nvidia::init_nvml();
+    sensors::init_sensors();
 
     std::thread::spawn(|| {
         loop {

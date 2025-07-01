@@ -1,14 +1,16 @@
-use std::sync::Mutex;
-use nvml_wrapper::Nvml;
-use once_cell::sync::Lazy;
+use nvml_wrapper::{Nvml, error::NvmlError};
+use once_cell::sync::OnceCell;
 
-static NVML: Lazy<Nvml> = Lazy::new(|| Nvml::init().unwrap());
-pub static NVML_DEVICE: Lazy<Mutex<Option<nvml_wrapper::Device>>> = Lazy::new(|| Mutex::new(None));
+pub static NVML: OnceCell<Nvml> = OnceCell::new();
 
-pub fn init_nvml() -> Result<(), nvml_wrapper::error::NvmlError> {
-    // Get the first available GPU device - we'll get it once and use it throughout the application
-    let device = NVML.device_by_index(0)?;
-    *NVML_DEVICE.lock().unwrap() = Some(device);
+pub fn init_nvml() -> Result<(), NvmlError> {
+    let _ = NVML.set(Nvml::init()?);
 
     Ok(())
+}
+
+pub fn get_device_by_index<'a>(index: u32) -> Result<nvml_wrapper::Device<'a>, NvmlError> {
+    let nvml = NVML.get().ok_or(NvmlError::Uninitialized)?;
+
+    nvml.device_by_index(index)
 }
