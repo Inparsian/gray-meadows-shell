@@ -3,7 +3,6 @@ use futures_lite::stream::StreamExt;
 
 use crate::singletons::tray::{
     proxies::notifier_watcher_proxy::StatusNotifierWatcherProxy,
-    wrappers::status_notifier_item::StatusNotifierItem,
     TRAY_CONNECTION
 };
 
@@ -11,7 +10,8 @@ use crate::singletons::tray::{
 pub struct StatusNotifierWatcher {
     is_status_notifier_host_registered: bool,
     protocol_version: i32,
-    registered_status_notifier_items: Vec<(String, StatusNotifierItem)>,
+    // this will be internal
+    registered_status_notifier_items: Vec<String>,
 }
 
 #[interface(name = "org.kde.StatusNotifierWatcher")]
@@ -26,10 +26,7 @@ impl StatusNotifierWatcher {
     ) {
         let item_path = &format!("{service}/StatusNotifierItem");
 
-        self.registered_status_notifier_items.push((
-            item_path.to_owned(),
-            StatusNotifierItem::new(service.to_owned())
-        ));
+        self.registered_status_notifier_items.push(service.to_owned());
 
         emitter.status_notifier_item_registered(item_path).await.unwrap_or_else(|e| {
             eprintln!("Failed to emit status_notifier_item_registered signal: {}", e);
@@ -46,7 +43,7 @@ impl StatusNotifierWatcher {
     ) {
         let item_path = &format!("{service}/StatusNotifierItem");
 
-        self.registered_status_notifier_items.retain(|(s, _)| s != item_path);
+        self.registered_status_notifier_items.retain(|owner| owner != item_path);
 
         emitter.status_notifier_item_unregistered(item_path).await.unwrap_or_else(|e| {
             eprintln!("Failed to emit status_notifier_item_unregistered signal: {}", e);
@@ -77,11 +74,7 @@ impl StatusNotifierWatcher {
 
     #[zbus(property)]
     fn registered_status_notifier_items(&self) -> Vec<String> {
-        // Dbus clients will expect Strings containing the owners of
-        // the registered items, not the full items.
-        self.registered_status_notifier_items.clone().into_iter()
-            .map(|(service, _)| service)
-            .collect()
+        self.registered_status_notifier_items.clone()
     }
 }
 
@@ -99,14 +92,6 @@ impl StatusNotifierWatcher {
 pub async fn obtain_proxy<'a>() -> Result<StatusNotifierWatcherProxy<'a>> {
     if let Some(connection) = TRAY_CONNECTION.get() {
         StatusNotifierWatcherProxy::new(connection).await
-    } else {
-        Err(Error::Failure("Not initialized".into()))
-    }
-}
-
-pub async fn obtain_emitter<'a>() -> Result<SignalEmitter<'a>> {
-    if let Some(connection) = TRAY_CONNECTION.get() {
-        SignalEmitter::new(connection, "/StatusNotifierWatcher")
     } else {
         Err(Error::Failure("Not initialized".into()))
     }
