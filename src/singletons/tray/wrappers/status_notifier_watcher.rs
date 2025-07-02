@@ -1,15 +1,17 @@
 use zbus::{fdo::DBusProxy, interface, object_server::SignalEmitter, Connection, Error, Result};
 use futures_lite::stream::StreamExt;
 
-use crate::singletons::tray::{proxies::{
-    notifier_watcher_proxy::StatusNotifierWatcherProxy
-}, TRAY_CONNECTION};
+use crate::singletons::tray::{
+    proxies::notifier_watcher_proxy::StatusNotifierWatcherProxy,
+    wrappers::status_notifier_item::StatusNotifierItem,
+    TRAY_CONNECTION
+};
 
 #[derive(Debug, Clone, Default)]
 pub struct StatusNotifierWatcher {
     is_status_notifier_host_registered: bool,
     protocol_version: i32,
-    registered_status_notifier_items: Vec<String>,
+    registered_status_notifier_items: Vec<(String, StatusNotifierItem)>,
 }
 
 #[interface(name = "org.kde.StatusNotifierWatcher")]
@@ -24,13 +26,31 @@ impl StatusNotifierWatcher {
     ) {
         let item_path = &format!("{service}/StatusNotifierItem");
 
-        println!("Registering status notifier item: {}", service);
+        self.registered_status_notifier_items.push((
+            item_path.to_owned(),
+            StatusNotifierItem::new(service.to_owned())
+        ));
 
         emitter.status_notifier_item_registered(item_path).await.unwrap_or_else(|e| {
             eprintln!("Failed to emit status_notifier_item_registered signal: {}", e);
         });
 
         tokio::spawn(watch_item_owner(service.to_owned()));
+    }
+
+    pub async fn unregister_status_notifier_item(
+        &mut self,
+        service: &str,
+        #[zbus(signal_emitter)]
+        emitter: SignalEmitter<'_>
+    ) {
+        let item_path = &format!("{service}/StatusNotifierItem");
+
+        self.registered_status_notifier_items.retain(|(s, _)| s != item_path);
+
+        emitter.status_notifier_item_unregistered(item_path).await.unwrap_or_else(|e| {
+            eprintln!("Failed to emit status_notifier_item_unregistered signal: {}", e);
+        });
     }
 
     #[zbus(signal)]
@@ -57,7 +77,11 @@ impl StatusNotifierWatcher {
 
     #[zbus(property)]
     fn registered_status_notifier_items(&self) -> Vec<String> {
-        self.registered_status_notifier_items.clone()
+        // Dbus clients will expect Strings containing the owners of
+        // the registered items, not the full items.
+        self.registered_status_notifier_items.clone().into_iter()
+            .map(|(service, _)| service)
+            .collect()
     }
 }
 
@@ -100,13 +124,9 @@ async fn watch_item_owner(service: String) -> Result<()> {
 
             if let (Some(old_owner), None) = (old_owner, new_owner) {
                 if **old_owner == service {
-                    println!("StatusNotifierItem disappeared: {}", service);
-
-                    if let Ok(emitter) = obtain_emitter().await {
-                        let item_path = &format!("{service}/StatusNotifierItem");
-
-                        emitter.status_notifier_item_unregistered(item_path).await.unwrap_or_else(|e| {
-                            eprintln!("Failed to emit status_notifier_item_unregistered signal: {}", e);
+                    if let Ok(proxy) = obtain_proxy().await {
+                        proxy.unregister_status_notifier_item(&service).await.unwrap_or_else(|e| {
+                            eprintln!("Failed to unregister status notifier item: {}", e);
                         });
                     }
 

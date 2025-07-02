@@ -9,6 +9,7 @@ mod proxies {
 
 mod wrappers {
     pub mod status_notifier_watcher;
+    pub mod status_notifier_item;
 }
 
 use crate::singletons::tray::wrappers::status_notifier_watcher::StatusNotifierWatcher;

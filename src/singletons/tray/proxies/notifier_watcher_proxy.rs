@@ -33,6 +33,9 @@ pub trait StatusNotifierWatcher {
     /// RegisterStatusNotifierItem method
     fn register_status_notifier_item(&self, service: &str) -> zbus::Result<()>;
 
+    // UnregisterStatusNotifierItem method
+    fn unregister_status_notifier_item(&self, service: &str) -> zbus::Result<()>;
+
     /// StatusNotifierHostRegistered signal
     #[zbus(signal)]
     fn status_notifier_host_registered(&self) -> zbus::Result<()>;
