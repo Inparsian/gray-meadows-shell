@@ -1,7 +1,9 @@
-use zbus::{fdo::DBusProxy, interface, object_server::SignalEmitter, Connection, Result};
+use zbus::{fdo::DBusProxy, interface, object_server::SignalEmitter, Connection, Error, Result};
 use futures_lite::stream::StreamExt;
 
-use crate::singletons::tray::proxies::notifier_item_proxy::StatusNotifierItemProxy;
+use crate::singletons::tray::{proxies::{
+    notifier_watcher_proxy::StatusNotifierWatcherProxy
+}, TRAY_CONNECTION};
 
 #[derive(Debug, Clone, Default)]
 pub struct StatusNotifierWatcher {
@@ -12,57 +14,23 @@ pub struct StatusNotifierWatcher {
 
 #[interface(name = "org.kde.StatusNotifierWatcher")]
 impl StatusNotifierWatcher {
-    pub async fn register_status_notifier_host(&self, _service: &str) {
-        // Host processing is not required for our implementation, due to setting
-        // is_status_notifier_host_registered to true by default.
-    }
+    pub async fn register_status_notifier_host(&self, _service: &str) {}
 
-    pub async fn register_status_notifier_item(&mut self, service: &str) {
-        let service_owned = service.to_string();
-        println!("Registering status notifier item: {}", service_owned);
+    pub async fn register_status_notifier_item(
+        &mut self,
+        service: &str,
+        #[zbus(signal_emitter)]
+        emitter: SignalEmitter<'_>
+    ) {
+        let item_path = &format!("{service}/StatusNotifierItem");
 
-        // Watch the bus for the disappearance of this item.
-        tokio::spawn({
-            let service = service_owned.clone();
+        println!("Registering status notifier item: {}", service);
 
-            async move {
-                let connection = Connection::session().await.expect("Failed to connect to session bus");
-                let dbus_proxy = DBusProxy::new(&connection).await;
-
-                if let Ok(proxy) = dbus_proxy {
-                    if let Ok(mut stream) = proxy.receive_name_owner_changed().await {
-                        while let Some(next) = stream.next().await {
-                            if let Ok(args) = next.args() {
-                                let old_owner = args.old_owner();
-                                let new_owner = args.new_owner();
-
-                                if let (Some(old_owner), None) = (old_owner.as_ref(), new_owner.as_ref()) {
-                                    if **old_owner == service {
-                                        // The item has disappeared
-                                        println!("StatusNotifierItem disappeared: {}", service);
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    eprintln!("Failed to obtain DBusProxy for service: {}", service);
-                }
-            }
+        emitter.status_notifier_item_registered(item_path).await.unwrap_or_else(|e| {
+            eprintln!("Failed to emit status_notifier_item_registered signal: {}", e);
         });
 
-        // Test code
-        let proxy = obtain_status_notifier_item_proxy(&service_owned).await;
-        if let Ok(proxy) = proxy {
-            if let Ok(title) = proxy.title().await {
-                println!("Title for {}: {}", service_owned, title);
-            } else {
-                eprintln!("Failed to get title for service: {}", service_owned);
-            }
-        } else {
-            eprintln!("Failed to obtain StatusNotifierItemProxy for service: {}", service_owned);
-        }
+        tokio::spawn(watch_item_owner(service.to_owned()));
     }
 
     #[zbus(signal)]
@@ -104,13 +72,49 @@ impl StatusNotifierWatcher {
     }
 }
 
-// temporary test function, this will be moved to a proper place later
-async fn obtain_status_notifier_item_proxy(service: &str) -> Result<StatusNotifierItemProxy> {
+pub async fn obtain_proxy<'a>() -> Result<StatusNotifierWatcherProxy<'a>> {
+    if let Some(connection) = TRAY_CONNECTION.get() {
+        StatusNotifierWatcherProxy::new(connection).await
+    } else {
+        Err(Error::Failure("Not initialized".into()))
+    }
+}
+
+pub async fn obtain_emitter<'a>() -> Result<SignalEmitter<'a>> {
+    if let Some(connection) = TRAY_CONNECTION.get() {
+        SignalEmitter::new(connection, "/StatusNotifierWatcher")
+    } else {
+        Err(Error::Failure("Not initialized".into()))
+    }
+}
+
+async fn watch_item_owner(service: String) -> Result<()> {
     let connection = Connection::session().await?;
-    
-    StatusNotifierItemProxy::builder(&connection)
-        .destination(service)?
-        .path("/StatusNotifierItem")?
-        .build()
-        .await
+    let dbus_proxy = DBusProxy::new(&connection).await?;
+    let mut stream = dbus_proxy.receive_name_owner_changed().await?;
+
+    while let Some(next) = stream.next().await {
+        if let Ok(args) = next.args() {
+            let old_owner = args.old_owner().as_ref();
+            let new_owner = args.new_owner().as_ref();
+
+            if let (Some(old_owner), None) = (old_owner, new_owner) {
+                if **old_owner == service {
+                    println!("StatusNotifierItem disappeared: {}", service);
+
+                    if let Ok(emitter) = obtain_emitter().await {
+                        let item_path = &format!("{service}/StatusNotifierItem");
+
+                        emitter.status_notifier_item_unregistered(item_path).await.unwrap_or_else(|e| {
+                            eprintln!("Failed to emit status_notifier_item_unregistered signal: {}", e);
+                        });
+                    }
+
+                    break;
+                }
+            }
+        }
+    }
+
+    Ok(())
 }

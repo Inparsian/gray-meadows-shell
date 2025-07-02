@@ -22,7 +22,7 @@ Currently far from ready for daily use. This list of things to do may not be exh
     - [x] System resource monitoring
         - [x] Built-in (CPU, RAM)
         - [x] CPU Temp (and maybe other temp sensors)
-        - [x] GPU
+        - [x] GPU ⚠️ 1
     - [ ] Timers
     - [ ] Weather
 - [ ] Bar
