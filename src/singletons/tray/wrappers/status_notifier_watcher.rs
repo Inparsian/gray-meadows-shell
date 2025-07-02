@@ -1,8 +1,9 @@
-use zbus::{fdo::DBusProxy, interface, object_server::SignalEmitter, Connection, Error, Result};
+use zbus::{fdo::DBusProxy, interface, names::MemberName, object_server::SignalEmitter, Connection, Error, Result};
 use futures_lite::stream::StreamExt;
 
 use crate::singletons::tray::{
     proxies::notifier_watcher_proxy::StatusNotifierWatcherProxy,
+    wrappers::status_notifier_item::{get_raw_owner, obtain_status_notifier_item_proxy},
     TRAY_CONNECTION
 };
 
@@ -10,7 +11,6 @@ use crate::singletons::tray::{
 pub struct StatusNotifierWatcher {
     is_status_notifier_host_registered: bool,
     protocol_version: i32,
-    // this will be internal
     registered_status_notifier_items: Vec<String>,
 }
 
@@ -33,6 +33,7 @@ impl StatusNotifierWatcher {
         });
 
         tokio::spawn(watch_item_owner(service.to_owned()));
+        tokio::spawn(watch_item_props(get_raw_owner(item_path)));
     }
 
     pub async fn unregister_status_notifier_item(
@@ -43,10 +44,23 @@ impl StatusNotifierWatcher {
     ) {
         let item_path = &format!("{service}/StatusNotifierItem");
 
-        self.registered_status_notifier_items.retain(|owner| owner != item_path);
+        self.registered_status_notifier_items.retain(|owner| *owner != get_raw_owner(item_path));
+        self.registered_status_notifier_items.shrink_to_fit();
 
         emitter.status_notifier_item_unregistered(item_path).await.unwrap_or_else(|e| {
             eprintln!("Failed to emit status_notifier_item_unregistered signal: {}", e);
+        });
+    }
+
+    pub async fn update_status_notifier_item(
+        &self,
+        service: &str,
+        member: &str,
+        #[zbus(signal_emitter)]
+        emitter: SignalEmitter<'_>
+    ) {
+        emitter.status_notifier_item_updated(service, member).await.unwrap_or_else(|e| {
+            eprintln!("Failed to emit status_notifier_item_updated signal: {}", e);
         });
     }
 
@@ -58,6 +72,9 @@ impl StatusNotifierWatcher {
 
     #[zbus(signal)]
     async fn status_notifier_item_registered(emitter: &SignalEmitter<'_>, service: &str) -> Result<()>;
+
+    #[zbus(signal)]
+    async fn status_notifier_item_updated(emitter: &SignalEmitter<'_>, service: &str, member: &str) -> Result<()>;
 
     #[zbus(signal)]
     async fn status_notifier_item_unregistered(emitter: &SignalEmitter<'_>, service: &str) -> Result<()>;
@@ -73,7 +90,7 @@ impl StatusNotifierWatcher {
     }
 
     #[zbus(property)]
-    fn registered_status_notifier_items(&self) -> Vec<String> {
+    pub fn registered_status_notifier_items(&self) -> Vec<String> {
         self.registered_status_notifier_items.clone()
     }
 }
@@ -94,6 +111,35 @@ pub async fn obtain_proxy<'a>() -> Result<StatusNotifierWatcherProxy<'a>> {
         StatusNotifierWatcherProxy::new(connection).await
     } else {
         Err(Error::Failure("Not initialized".into()))
+    }
+}
+
+async fn watch_item_props(owner: String) -> Result<()> {
+    let watcher_proxy = obtain_proxy().await?;
+    let item_proxy = obtain_status_notifier_item_proxy(&owner).await?;
+
+    let mut unregistered_receiver = watcher_proxy.receive_status_notifier_item_unregistered().await?;
+    let mut props_receiver = item_proxy.inner().receive_all_signals().await?;
+
+    loop {
+        tokio::select! {
+            Some(change) = props_receiver.next() => {
+                watcher_proxy.update_status_notifier_item(
+                    &owner,
+                    change.header().member().unwrap_or(&MemberName::try_from("unknown").unwrap()).as_str(),
+                ).await.unwrap_or_else(|e| {
+                    eprintln!("Failed to update status notifier item: {}", e);
+                });
+            },
+
+            Some(signal) = unregistered_receiver.next() => {
+                let service = signal.args().unwrap().service;
+
+                if service == format!("{owner}/StatusNotifierItem") {
+                    break Ok(());
+                }
+            }
+        }
     }
 }
 

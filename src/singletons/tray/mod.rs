@@ -1,4 +1,4 @@
-use std::sync::Mutex;
+use tokio::sync::broadcast;
 use once_cell::sync::{OnceCell, Lazy};
 use zbus::{Connection, Result};
 use futures_lite::stream::StreamExt;
@@ -14,12 +14,21 @@ mod wrappers {
     pub mod status_notifier_item;
 }
 
-use crate::singletons::tray::wrappers::{status_notifier_item::{get_raw_owner, obtain_status_notifier_item_proxy}, status_notifier_watcher::{obtain_proxy, StatusNotifierWatcher}};
+use crate::singletons::tray::{wrappers::{
+    status_notifier_watcher::{obtain_proxy, StatusNotifierWatcher}
+}};
 
 pub static TRAY_CONNECTION: OnceCell<Connection> = OnceCell::new();
+static SENDER: Lazy<broadcast::Sender<TrayEvent>> = Lazy::new(|| {
+    broadcast::channel(1).0
+});
 
-// this is the list of items that will be exposed to the UI
-pub static ITEMS: Lazy<Mutex<Vec<wrappers::status_notifier_item::StatusNotifierItem>>> = Lazy::new(|| Mutex::new(Vec::new()));
+#[derive(Debug, Clone)]
+pub enum TrayEvent {
+    Register(String),
+    Update(String, String),
+    Unregister(String),
+}
 
 pub async fn activate() -> Result<()> {
     let watcher = StatusNotifierWatcher::new();
@@ -33,60 +42,50 @@ pub async fn activate() -> Result<()> {
 
     TRAY_CONNECTION.set(connection).unwrap();
 
-    // Watch for items being registered and unregistered
+    // Watch for items being registered, updated and unregistered
     let watcher_proxy = obtain_proxy().await?;
     let mut register_receiver = watcher_proxy.receive_status_notifier_item_registered().await?;
+    let mut update_receiver = watcher_proxy.receive_status_notifier_item_updated().await?;
     let mut unregister_receiver = watcher_proxy.receive_status_notifier_item_unregistered().await?;
 
-    loop {
+    tokio::spawn(async move { loop {
         tokio::select! {
             Some(signal) = register_receiver.next() => {
                 let service = signal.args().unwrap().service.to_owned();
 
-                println!("Item {service} registered");
-                let item = wrappers::status_notifier_item::StatusNotifierItem::new(service.clone());
-                ITEMS.lock().unwrap().push(item);
-                
-                // Watch this item for property update signal emissions
-                tokio::spawn(watch_item(get_raw_owner(service)));
+                emit(TrayEvent::Register(service.clone())).await;
+            },
+
+            Some(signal) = update_receiver.next() => {
+                let args = signal.args().unwrap();
+                let service = args.service.to_owned();
+                let member = args.member.to_owned();
+
+                emit(TrayEvent::Update(service, member)).await;
             },
 
             Some(signal) = unregister_receiver.next() => {
-                let service = signal.args().unwrap().service;
+                let service = signal.args().unwrap().service.to_owned();
 
-                println!("Item {service} unregistered");
-                ITEMS.lock().unwrap().retain(|item| item.owner != service);
+                emit(TrayEvent::Unregister(service)).await;
             }
         }
-    }
-}
-
-pub async fn watch_item(owner: String) -> Result<()> {
-    let watcher_proxy = obtain_proxy().await?;
-    let item_proxy = obtain_status_notifier_item_proxy(&owner).await?;
-
-    let mut unregistered_receiver = watcher_proxy.receive_status_notifier_item_unregistered().await?;
-    let mut props_receiver = item_proxy.inner().receive_all_signals().await?;
-
-    println!("Now watching {owner}");
-
-    loop {
-        tokio::select! {
-            Some(change) = props_receiver.next() => {
-                println!("change: {:?}", change);
-            },
-
-            Some(signal) = unregistered_receiver.next() => {
-                let service = signal.args().unwrap().service;
-
-                if service == format!("{owner}/StatusNotifierItem") {
-                    break;
-                }
-            }
-        }
-    }
-
-    println!("No longer watching {owner}");
+    }});
 
     Ok(())
+}
+
+pub async fn get_items() -> Result<Vec<String>> {
+    let watcher_proxy = obtain_proxy().await?;
+    let items = watcher_proxy.registered_status_notifier_items().await?;
+
+    Ok(items)
+}
+
+pub async fn subscribe() -> broadcast::Receiver<TrayEvent> {
+    SENDER.subscribe()
+}
+
+async fn emit(event: TrayEvent) {
+    let _ = SENDER.send(event);
 }

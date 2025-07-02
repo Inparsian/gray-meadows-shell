@@ -21,6 +21,9 @@
 //! [D-Bus standard interfaces]: https://dbus.freedesktop.org/doc/dbus-specification.html#standard-interfaces,
 use zbus::proxy;
 
+#[allow(dead_code)]
+pub type RawPixmap = (i32, i32, Vec<u8>);
+
 #[proxy(
     interface = "org.kde.StatusNotifierItem",
     assume_defaults = true
@@ -72,7 +75,7 @@ pub trait StatusNotifierItem {
 
     /// AttentionIconPixmap property
     #[zbus(property)]
-    fn attention_icon_pixmap(&self) -> zbus::Result<Vec<(i32, i32, Vec<u8>)>>;
+    fn attention_icon_pixmap(&self) -> zbus::Result<Vec<RawPixmap>>;
 
     /// AttentionMovieName property
     #[zbus(property)]
@@ -88,7 +91,7 @@ pub trait StatusNotifierItem {
 
     /// IconPixmap property
     #[zbus(property)]
-    fn icon_pixmap(&self) -> zbus::Result<Vec<(i32, i32, Vec<u8>)>>;
+    fn icon_pixmap(&self) -> zbus::Result<Vec<RawPixmap>>;
 
     /// IconThemePath property
     #[zbus(property)]
@@ -112,7 +115,7 @@ pub trait StatusNotifierItem {
 
     /// OverlayIconPixmap property
     #[zbus(property)]
-    fn overlay_icon_pixmap(&self) -> zbus::Result<Vec<(i32, i32, Vec<u8>)>>;
+    fn overlay_icon_pixmap(&self) -> zbus::Result<Vec<RawPixmap>>;
 
     /// Status property
     #[zbus(property)]
@@ -125,7 +128,7 @@ pub trait StatusNotifierItem {
     /// ToolTip property
     #[zbus(property)]
     #[allow(clippy::type_complexity)]
-    fn tool_tip(&self) -> zbus::Result<(String, Vec<(i32, i32, Vec<u8>)>, String, String)>;
+    fn tool_tip(&self) -> zbus::Result<(String, Vec<RawPixmap>, String, String)>;
 
     /// WindowId property
     #[zbus(property)]
