@@ -19,7 +19,7 @@ fn dbus_menu_item_to_gio_menu_item(item: dbus_menu::MenuItem) -> Option<gio::Men
     Some(menu_item)
 }
 
-fn build_gio_tray_submenu_model(
+fn build_gio_dbus_submenu_model(
     dbus_menu: &dbus_menu::DbusMenu,
     item: dbus_menu::MenuItem,
     action_entries: &mut Vec<gio::ActionEntry<gio::SimpleActionGroup>>,
@@ -32,12 +32,14 @@ fn build_gio_tray_submenu_model(
                 let dbus_menu = dbus_menu.clone();
                 let item = item.clone();
 
-                move |_: &gio::SimpleActionGroup, _, _| dbus_menu.activate(item.id).unwrap_or(())
+                move |_: &gio::SimpleActionGroup, _, _| if dbus_menu.activate(item.id).is_err() {
+                    eprintln!("Failed to activate menu item: {}", item.label);
+                }
             })
             .build();
 
         if !item.submenus.is_empty() {
-            let sub_menu_model = build_gio_tray_submenu_model(dbus_menu, item.clone(), action_entries).unwrap();
+            let sub_menu_model = build_gio_dbus_submenu_model(dbus_menu, item.clone(), action_entries).unwrap();
 
             sub_menu.append_submenu(Some(&item.label), &sub_menu_model);
         } else {
@@ -65,7 +67,7 @@ pub fn build_gio_dbus_menu_model(item: StatusNotifierItem) -> Option<(gio::MenuM
             }
 
             if !item.submenus.is_empty() {
-                let sub_menu_model = build_gio_tray_submenu_model(&dbus_menu, item.clone(), &mut action_entries).unwrap();
+                let sub_menu_model = build_gio_dbus_submenu_model(&dbus_menu, item.clone(), &mut action_entries).unwrap();
 
                 menu.insert_submenu(item.id as i32, Some(&item.label), &sub_menu_model);
             } else {
@@ -74,7 +76,9 @@ pub fn build_gio_dbus_menu_model(item: StatusNotifierItem) -> Option<(gio::MenuM
                         let dbus_menu = dbus_menu.clone();
                         let item = item.clone();
 
-                        move |_: &gio::SimpleActionGroup, _, _| dbus_menu.activate(item.id).unwrap_or(())
+                        move |_: &gio::SimpleActionGroup, _, _| if dbus_menu.activate(item.id).is_err() {
+                            eprintln!("Failed to activate menu item: {}", item.label);
+                        }
                     })
                     .build();
 
