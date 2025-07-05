@@ -1,3 +1,5 @@
+use gdk4::glib::Bytes;
+
 use crate::singletons::tray::proxy::item::RawPixmap;
 
 // Rationale: Some icons have the possibility of being absurdly large (e.g. 1024x1024). This may not seem like an
@@ -64,6 +66,44 @@ pub fn compress_icon_pixmap(pixmap: &Option<Vec<RawPixmap>>) -> Option<Vec<RawPi
 
                 compressed_pixels
             )])
+        } else {
+            None
+        }
+    } else {
+        None
+    }
+}
+
+pub fn make_icon_pixbuf(pixmap: Option<&Vec<RawPixmap>>) -> Option<gtk4::gdk_pixbuf::Pixbuf> {
+    if let Some(argb32_icon) = pixmap {
+        // Pick the icon that is closest to C_WIDTHxC_HEIGHT.
+        let closest_icon = argb32_icon.iter()
+            .min_by_key(|pixmap| {
+                let width = pixmap.0;
+                let height = pixmap.1;
+
+                (width - C_WIDTH as i32).abs() + (height - C_HEIGHT as i32).abs()
+            });
+
+        if let Some(icon) = closest_icon {
+            let pixbuf = gtk4::gdk_pixbuf::Pixbuf::from_mut_slice(
+                icon.2.clone(),
+                gtk4::gdk_pixbuf::Colorspace::Rgb,
+                true,
+                8,
+                icon.0,
+                icon.1,
+                icon.0 * 4
+            );
+
+            // aesthetic thing
+            pixbuf.saturate_and_pixelate(
+                &pixbuf,
+                0.0,
+                false
+            );
+
+            Some(pixbuf)
         } else {
             None
         }
