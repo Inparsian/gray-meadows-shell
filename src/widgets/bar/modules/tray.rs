@@ -92,9 +92,16 @@ pub fn new() -> gtk4::Box {
     gtk4::glib::spawn_future_local(async move {
         // We may have missed some items that were registered before we start listening.
         // Fetch the current items and register them.
-        let mut receiver = subscribe();
+        if let Some(items) = crate::singletons::tray::ITEMS.get() {
+            for item in items.lock().unwrap().iter() {
+                println!("[missed] Item registered: {}", item.service);
+                tray.add_item(item.service.clone());
+            }
+        } else {
+            eprintln!("Failed to fetch current tray items.");
+        }
 
-        while let Ok(event) = receiver.recv().await {
+        while let Ok(event) = subscribe().recv().await {
             match event {
                 BusEvent::ItemRegistered(item) => {
                     println!("Item registered: {}", item.service);
