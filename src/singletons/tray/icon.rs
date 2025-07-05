@@ -1,5 +1,3 @@
-use gdk4::glib::Bytes;
-
 use crate::singletons::tray::proxy::item::RawPixmap;
 
 // Rationale: Some icons have the possibility of being absurdly large (e.g. 1024x1024). This may not seem like an
@@ -12,7 +10,7 @@ use crate::singletons::tray::proxy::item::RawPixmap;
 const C_WIDTH: u32 = 32;
 const C_HEIGHT: u32 = 32;
 
-pub fn compress_icon_pixmap(pixmap: &Option<Vec<RawPixmap>>) -> Option<Vec<RawPixmap>> {
+pub fn compress_icon_pixmap(pixmap: Option<&Vec<RawPixmap>>) -> Option<Vec<RawPixmap>> {
     if let Some(argb32_icon) = pixmap {
         let closest_icon = argb32_icon.iter()
             .min_by_key(|pixmap| {

@@ -11,6 +11,7 @@ pub mod proxy;
 pub mod wrapper;
 pub mod bus;
 pub mod icon;
+pub mod tray_menu;
 
 static SENDER: Lazy<broadcast::Sender<BusEvent>> = Lazy::new(|| {
     broadcast::channel(1).0
@@ -43,5 +44,19 @@ pub fn get_item(service: &str) -> Option<StatusNotifierItem> {
         items.lock().unwrap().iter()
             .find(|item| item.service == service)
             .cloned()
+    })
+}
+
+pub fn try_get_item(service: &str) -> Option<StatusNotifierItem> {
+    ITEMS.get().and_then(|items| {
+        let lock = items.try_lock();
+        
+        if let Ok(items) = lock {
+            items.iter()
+                .find(|item| item.service == service)
+                .cloned()
+        } else {
+            None
+        }
     })
 }

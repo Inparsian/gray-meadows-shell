@@ -1,44 +1,89 @@
+use gdk4::gio;
 use gtk4::prelude::*;
 
-use crate::singletons::tray::{bus::BusEvent, get_item, icon::make_icon_pixbuf, subscribe, wrapper::sn_item::StatusNotifierItem};
+use crate::{helpers::gesture, singletons::tray::{bus::BusEvent, icon::make_icon_pixbuf, subscribe, tray_menu}};
 
 #[allow(dead_code)]
 #[derive(Default, Clone)]
 struct SystemTrayItem {
-    pub item: StatusNotifierItem,
+    pub service: String,
     pub widget: Option<gtk4::Image>,
     popover_menu: Option<gtk4::PopoverMenu>
 }
 
 #[allow(dead_code)]
 impl SystemTrayItem {
-    pub fn new(item: StatusNotifierItem) -> Self {
+    pub fn new(service: String) -> Self {
         Self {
-            item,
+            service,
             ..Self::default()
         }
     }
 
     pub fn build_widget(&mut self) {
+        let empty_model: gio::MenuModel = gio::Menu::new().into();
+        let popover_menu = gtk4::PopoverMenu::from_model(Some(&empty_model));
+
+        popover_menu.set_css_classes(&["bar-tray-popover-menu"]);
+
+        self.popover_menu = Some(popover_menu);
+
+        let default_activate = gesture::on_primary_click({
+            let service = self.service.clone();
+        
+            move |_, x, y| {
+                if let Some(item) = crate::singletons::tray::try_get_item(&service) {
+                    let _ = item.activate(x as i32, y as i32);
+                }
+            }
+        });
+
+        let menus_activate = gesture::on_secondary_click({
+            let service = self.service.clone();
+            let popover_menu = self.popover_menu.clone();
+
+            move |_, _, _| {
+                if let Some(popover_menu) = &popover_menu {
+                    if let Some(item) = crate::singletons::tray::try_get_item(&service) {
+                        if let Some((model, actions)) = tray_menu::build_gio_tray_menu_model(item) {
+                            popover_menu.set_menu_model(Some(&model));
+                            popover_menu.insert_action_group("dbusmenu", Some(&actions));
+                        }
+                    }
+
+                    popover_menu.popup();
+                }
+            }
+        });
+
+        let pixbuf = if let Some(item) = crate::singletons::tray::get_item(&self.service) {
+            make_icon_pixbuf(Some(&item.icon_pixmap))
+        } else {
+            None
+        };
+
         relm4_macros::view! {
             new_widget = gtk4::Image {
                 set_css_classes: &["bar-tray-item"],
-                set_pixel_size: 14
+                set_pixel_size: 14,
+                add_controller: default_activate,
+                add_controller: menus_activate
             }
         };
 
-        if let Some(pixbuf) = make_icon_pixbuf(Some(&self.item.icon_pixmap)) {
+        if let Some(pixbuf) = pixbuf {
             new_widget.set_from_pixbuf(Some(&pixbuf));
         } else {
             new_widget.set_icon_name(Some("emote-heart"));
         }
 
         // Set the widget
+        self.popover_menu.as_ref().unwrap().set_parent(&new_widget);
         self.widget = Some(new_widget);
     }
 
     pub fn update(&mut self, member: String) {
-        println!("Updating item: {} with member: {}", self.item.service, member);
+        println!("Updating item: {} with member: {}", self.service, member);
     }
 }
 
@@ -63,25 +108,30 @@ impl SystemTray {
         }
     }
 
-    fn add_item(&mut self, item: StatusNotifierItem) {
-        let mut item = SystemTrayItem::new(item);
-        item.build_widget();
-
-        if let Some(ref widget) = item.widget {
-            self.box_.append(widget);
-        }
+    fn add_item(&mut self, service: String) {
+        let item = SystemTrayItem::new(service);
 
         self.items.push(item);
     }
 
-    fn update_item(&mut self, service: String, member: String) {
-        if let Some(item) = self.items.iter_mut().find(|i| i.item.service == service) {
+    fn build_item(&mut self, service: String) {
+        if let Some(item) = self.items.iter_mut().find(|i| i.service == service) {
+            item.build_widget();
+
+            if let Some(widget) = &item.widget {
+                self.box_.append(widget);
+            }
+        }
+    }
+
+    fn update_item(&mut self, member: String, service: String) {
+        if let Some(item) = self.items.iter_mut().find(|i| i.service == service) {
             item.update(member);
         }
     }
 
     fn remove_item(&mut self, service: String) {
-        if let Some(pos) = self.items.iter().position(|i| i.item.service == service) {
+        if let Some(pos) = self.items.iter().position(|i| i.service == service) {
             let item = self.items.remove(pos);
             if let Some(widget) = item.widget {
                 self.box_.remove(&widget);
@@ -105,8 +155,16 @@ pub fn new() -> gtk4::Box {
         if let Some(items) = crate::singletons::tray::ITEMS.get() {
             for item in items.lock().unwrap().iter() {
                 println!("[missed] Item registered: {}", item.service);
-                tray.add_item(item.clone());
+                tray.add_item(item.service.clone());
             }
+
+            tray.items.iter_mut().for_each(|item| {
+                item.build_widget();
+                
+                if let Some(widget) = &item.widget {
+                    tray.box_.append(widget);
+                }
+            });
         } else {
             eprintln!("Failed to fetch current tray items.");
         }
@@ -115,20 +173,19 @@ pub fn new() -> gtk4::Box {
             match event {
                 BusEvent::ItemRegistered(item) => {
                     println!("Item registered: {}", item.service);
-                    tray.add_item(item);
+                    tray.add_item(item.service.clone());
+                    tray.build_item(item.service);
                 },
 
                 BusEvent::ItemUpdated(member, item) => {
                     println!("Item updated: {} - {}", item.service, member);
-                    tray.update_item(item.service, member);
+                    tray.update_item(member, item.service);
                 },
 
                 BusEvent::ItemUnregistered(item) => {
                     println!("Item unregistered: {}", item.service);
                     tray.remove_item(item.service);
-                },
-
-                _ => {}
+                }
             }
         }
     });

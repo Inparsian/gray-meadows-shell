@@ -2,6 +2,7 @@ use dbus::{arg, blocking, Path};
 
 use crate::singletons::tray::{icon::compress_icon_pixmap, bus, proxy::item::{RawPixmap, RawToolTip}};
 
+#[allow(dead_code)]
 #[derive(Default, Clone, Debug)]
 pub struct ToolTip {
     pub icon_name: String,
@@ -14,7 +15,7 @@ impl ToolTip {
     /// Creates a new `ToolTip` from a raw tooltip (tuple) given by the D-Bus service.
     pub fn from_tuple(tuple: RawToolTip) -> Self {
         // compress the pixmap!!!
-        let icon_pixmap = compress_icon_pixmap(&Some(tuple.1));
+        let icon_pixmap = compress_icon_pixmap(Some(&tuple.1));
 
         ToolTip {
             icon_name: tuple.0,
@@ -175,7 +176,7 @@ impl StatusNotifierItem {
     pub fn try_get_pixmap(&self, prop: &str) -> Result<Vec<RawPixmap>, dbus::MethodErr> {
         let icon = self.try_get_prop::<Vec<RawPixmap>>(prop)?;
         
-        if let Some(compressed) = compress_icon_pixmap(&Some(icon)) {
+        if let Some(compressed) = compress_icon_pixmap(Some(&icon)) {
             Ok(compressed)
         } else {
             Err(dbus::MethodErr::failed("Failed to compress icon pixmap"))
@@ -209,5 +210,20 @@ impl StatusNotifierItem {
 
             Err(dbus::MethodErr::failed(&err.message().unwrap_or_default()))
         }
+    }
+
+    /// Sends a primary activation request to the StatusNotifierItem.
+    pub fn activate(&self, x: i32, y: i32) -> Result<(), dbus::Error> {
+        let connection = blocking::Connection::new_session()?;
+        let proxy = connection.with_proxy(
+            self.service.clone(),
+            bus::ITEM_DBUS_OBJECT,
+            std::time::Duration::from_millis(5000),
+        );
+
+        // Call the Activate method
+        let _: Result<(), dbus::Error> = proxy.method_call(bus::ITEM_DBUS_BUS, "Activate", (x, y,));
+        
+        Ok(())
     }
 }

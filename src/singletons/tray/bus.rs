@@ -11,6 +11,7 @@ pub const DBUSMENU_BUS: &str = "com.canonical.dbusmenu";
 pub const FREEDESKTOP_DBUS_BUS: &str = "org.freedesktop.DBus";
 pub const FREEDESKTOP_DBUS_OBJECT: &str = "/org/freedesktop/DBus";
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Debug, Clone)]
 pub enum BusEvent {
     /// A StatusNotifierItem was registered on the D-Bus.
@@ -18,9 +19,6 @@ pub enum BusEvent {
 
     /// A StatusNotifierItem was updated on the D-Bus.
     ItemUpdated(String, StatusNotifierItem),
-
-    /// The menu layout was updated for a StatusNotifierItem.
-    MenuLayoutUpdated(StatusNotifierItem),
 
     /// A StatusNotifierItem was unregistered from the D-Bus.
     ItemUnregistered(StatusNotifierItem),

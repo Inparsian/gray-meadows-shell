@@ -5,7 +5,7 @@ use crate::singletons::tray::{bus::{self, make_key_value_pairs}, proxy::menu::Ra
 
 #[derive(Default, Debug, Clone)]
 pub struct Menu {
-    pub id: u32,
+    pub _id: u32,
     pub items: Vec<MenuItem>,
 }
 
@@ -92,7 +92,7 @@ impl Menu {
 
     pub fn from_raw(value: RawLayout) -> Self {
         let mut menu = Menu {
-            id: value.0,
+            _id: value.0,
             items: Vec::new()
         };
 
@@ -117,24 +117,15 @@ impl Menu {
 pub struct DbusMenu {
     pub service: String,
     pub object: String, // The object path depends on the application's implementation of dbusmenu.
-    pub menu: Menu
 }
 
 impl DbusMenu {
     /// Creates a new `DbusMenu` with the given object path.
     pub fn new(service: String, object: String) -> Self {
-        let mut menu = DbusMenu {
+        DbusMenu {
             service,
-            object,
-            ..Self::default()
-        };
-
-        // Attempt to update the layout immediately
-        if let Err(e) = menu.update_layout() {
-            eprintln!("Failed to update menu layout: {}", e);
+            object
         }
-
-        menu
     }
 
     /// Activates an item on this menu.
@@ -162,7 +153,7 @@ impl DbusMenu {
     }
 
     /// Updates the layout of the menu.
-    pub fn update_layout(&mut self) -> Result<(), dbus::Error> {
+    pub fn get_layout(&self) -> Result<Menu, dbus::Error> {
         let connection = blocking::Connection::new_session()?;
         let proxy = connection.with_proxy(
             self.service.clone(),
@@ -173,11 +164,10 @@ impl DbusMenu {
         let result = proxy.method_call(bus::DBUSMENU_BUS, "GetLayout", (0, 10, Vec::<String>::new(),));
 
         if let Ok(layout) = result {
-            self.menu = Menu::from_raw(layout);
+            Ok(Menu::from_raw(layout))
         } else {
             eprintln!("Failed to get menu layout: {:?}", result);
+            Err(dbus::Error::new_failed("Failed to get menu layout"))
         }
-
-        Ok(())
     }
 }

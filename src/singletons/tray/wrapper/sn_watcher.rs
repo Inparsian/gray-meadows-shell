@@ -167,26 +167,6 @@ impl StatusNotifierWatcher {
                                                     sender.send(BusEvent::ItemUpdated(member, item.clone())).unwrap();
                                                 },
 
-                                                Some(path) if path == Path::from(item.menu.object.clone()) => {
-                                                    match member.as_str() {
-                                                        "LayoutUpdated" => {
-                                                            // We will update the whole layout for now
-                                                            let _ = item.menu.update_layout();
-
-                                                            sender.send(BusEvent::MenuLayoutUpdated(item.clone())).unwrap();
-                                                        }
-
-                                                        "ItemsPropertiesUpdated" => {
-                                                            // Also update the layout for now, this can be handled more efficiently later
-                                                            let _ = item.menu.update_layout();
-
-                                                            sender.send(BusEvent::MenuLayoutUpdated(item.clone())).unwrap();
-                                                        }
-
-                                                        _ => {}
-                                                    }
-                                                },
-
                                                 _ => {}
                                             }
                                         }
