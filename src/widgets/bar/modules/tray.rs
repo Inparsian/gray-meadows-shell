@@ -45,7 +45,7 @@ impl SystemTrayItem {
             move |_, _, _| {
                 if let Some(popover_menu) = &popover_menu {
                     if let Some(item) = crate::singletons::tray::try_get_item(&service) {
-                        if let Some((model, actions)) = tray_menu::build_gio_tray_menu_model(item) {
+                        if let Some((model, actions)) = tray_menu::build_gio_dbus_menu_model(item) {
                             popover_menu.set_menu_model(Some(&model));
                             popover_menu.insert_action_group("dbusmenu", Some(&actions));
                         }
@@ -133,6 +133,11 @@ impl SystemTray {
     fn remove_item(&mut self, service: String) {
         if let Some(pos) = self.items.iter().position(|i| i.service == service) {
             let item = self.items.remove(pos);
+
+            if let Some(popover_menu) = item.popover_menu {
+                popover_menu.unparent();
+            }
+
             if let Some(widget) = item.widget {
                 self.box_.remove(&widget);
             }

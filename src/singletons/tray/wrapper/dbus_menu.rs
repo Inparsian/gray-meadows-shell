@@ -152,7 +152,7 @@ impl DbusMenu {
         Ok(())
     }
 
-    /// Updates the layout of the menu.
+    /// Gets the layout of the menu.
     pub fn get_layout(&self) -> Result<Menu, dbus::Error> {
         let connection = blocking::Connection::new_session()?;
         let proxy = connection.with_proxy(
