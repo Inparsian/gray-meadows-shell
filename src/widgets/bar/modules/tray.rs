@@ -1,6 +1,6 @@
 use gtk4::prelude::*;
 
-use crate::singletons::tray::{TrayEvent, subscribe};
+use crate::singletons::tray::{bus::BusEvent, subscribe};
 
 #[allow(dead_code)]
 #[derive(Default, Clone)]
@@ -92,33 +92,26 @@ pub fn new() -> gtk4::Box {
     gtk4::glib::spawn_future_local(async move {
         // We may have missed some items that were registered before we start listening.
         // Fetch the current items and register them.
-        if let Ok(items) = crate::singletons::tray::get_items().await {
-            for service in items {
-                let item_path = format!("{}/StatusNotifierItem", service);
-                println!("[missed] Item registered: {}", item_path);
-                tray.add_item(item_path);
-            }
-        } else {
-            eprintln!("Failed to fetch current tray items.");
-        }
+        let mut receiver = subscribe();
 
-        let mut receiver = subscribe().await;
         while let Ok(event) = receiver.recv().await {
             match event {
-                TrayEvent::Register(service) => {
-                    println!("Item registered: {}", service);
-                    tray.add_item(service);
+                BusEvent::ItemRegistered(item) => {
+                    println!("Item registered: {}", item.service);
+                    tray.add_item(item.service);
                 },
 
-                TrayEvent::Update(service, member) => {
-                    println!("Item updated: {} - {:?}", service, member);
-                    tray.update_item(service, member);
+                BusEvent::ItemUpdated(member, item) => {
+                    println!("Item updated: {} - {}", item.service, member);
+                    tray.update_item(item.service, member);
                 },
 
-                TrayEvent::Unregister(service) => {
-                    println!("Item unregistered: {}", service);
-                    tray.remove_item(service);
-                }
+                BusEvent::ItemUnregistered(item) => {
+                    println!("Item unregistered: {}", item.service);
+                    tray.remove_item(item.service);
+                },
+
+                _ => {}
             }
         }
     });
