@@ -99,12 +99,7 @@ fn activate(application: &Application) {
 async fn main() {
     let _ = gtk4::init();
 
-    // Activate singletons
-    singletons::date_time::activate();
-    singletons::mpris::activate();
-    singletons::sysstats::activate();
-    singletons::hyprland::activate();
-    singletons::tray::activate();
+    singletons::activate_all();
 
     // Add the CSS provider to the default display
     gtk4::style_context_add_provider_for_display(
