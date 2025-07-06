@@ -49,12 +49,12 @@ impl Menu {
                                 .collect::<Vec<u8>>()
                                 .into();
                         } else {
-                            println!("Icon data is not in the expected format.");
+                            eprintln!("Icon data is not in the expected format.");
                         }
                     },
 
                     _ => {
-                        println!("Unexpected property: {} with value: {:?}", key, value);
+                        eprintln!("Unexpected property: {} with value: {:?}", key, value);
                     }
                 }
             }
@@ -71,13 +71,13 @@ impl Menu {
                             if let Some(subitem) = subitem {
                                 item.submenus.push(subitem);
                             } else {
-                                println!("Failed to unpack submenu item.");
+                                eprintln!("Failed to unpack submenu item.");
                             }
                         } else {
-                            println!("Unexpected variant type: {:?}", variant.arg_type());
+                            eprintln!("Unexpected variant type: {:?}", variant.arg_type());
                         }
                     } else {
-                        println!("Unexpected submenu type: {:?}", submenu.arg_type());
+                        eprintln!("Unexpected submenu type: {:?}", submenu.arg_type());
                     }
                 }
             }

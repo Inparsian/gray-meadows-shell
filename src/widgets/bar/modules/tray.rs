@@ -56,12 +56,6 @@ impl SystemTrayItem {
             }
         });
 
-        let pixbuf = if let Some(item) = crate::singletons::tray::get_item(&self.service) {
-            make_icon_pixbuf(Some(&item.icon_pixmap))
-        } else {
-            None
-        };
-
         relm4_macros::view! {
             new_widget = gtk4::Image {
                 set_css_classes: &["bar-tray-item"],
@@ -71,10 +65,12 @@ impl SystemTrayItem {
             }
         };
 
-        if let Some(pixbuf) = pixbuf {
-            new_widget.set_from_pixbuf(Some(&pixbuf));
-        } else {
-            new_widget.set_icon_name(Some("emote-heart"));
+        if let Some(item) = crate::singletons::tray::get_item(&self.service) {
+            new_widget.set_from_pixbuf(make_icon_pixbuf(Some(&item.icon_pixmap)).as_ref());
+            
+            if !item.tool_tip.title.is_empty() {
+                new_widget.set_tooltip_text(Some(&item.tool_tip.title));
+            }
         }
 
         // Set the widget
@@ -83,7 +79,21 @@ impl SystemTrayItem {
     }
 
     pub fn update(&mut self, member: String) {
-        println!("Updating item: {} with member: {}", self.service, member);
+        if let (Some(widget), Some(item)) = (&self.widget, crate::singletons::tray::get_item(&self.service)) {
+            match member.as_str() {
+                "NewToolTip" => {
+                    if !item.tool_tip.title.is_empty() {
+                        widget.set_tooltip_text(Some(&item.tool_tip.title));
+                    }
+                },
+
+                "NewIcon" => {
+                    widget.set_from_pixbuf(make_icon_pixbuf(Some(&item.icon_pixmap)).as_ref());
+                },
+
+                _ => {}
+            }
+        }
     }
 }
 
@@ -159,7 +169,6 @@ pub fn new() -> gtk4::Box {
         // Fetch the current items and register them.
         if let Some(items) = crate::singletons::tray::ITEMS.get() {
             for item in items.lock().unwrap().iter() {
-                println!("[missed] Item registered: {}", item.service);
                 tray.add_item(item.service.clone());
             }
 
@@ -177,18 +186,15 @@ pub fn new() -> gtk4::Box {
         while let Ok(event) = subscribe().recv().await {
             match event {
                 BusEvent::ItemRegistered(item) => {
-                    println!("Item registered: {}", item.service);
                     tray.add_item(item.service.clone());
                     tray.build_item(item.service);
                 },
 
                 BusEvent::ItemUpdated(member, item) => {
-                    println!("Item updated: {} - {}", item.service, member);
                     tray.update_item(member, item.service);
                 },
 
                 BusEvent::ItemUnregistered(item) => {
-                    println!("Item unregistered: {}", item.service);
                     tray.remove_item(item.service);
                 }
             }
