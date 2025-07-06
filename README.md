@@ -14,7 +14,7 @@ Currently far from ready for daily use. This list of things to do may not be exh
     - [x] Mpris (dbus)
     - [ ] Cava?
     - [ ] Notifications (dbus)
-    - [ ] System tray (dbus) (being rewritten to not depend on system-tray crate)
+    - [x] System tray (dbus)
     - [x] Hyprland (IPC)
     - [ ] Apps
     - [ ] WirePlumber
@@ -31,7 +31,7 @@ Currently far from ready for daily use. This list of things to do may not be exh
     - [x] Resources
     - [ ] Mpris (partially done)
     - [x] Clock
-    - [ ] System tray
+    - [x] System tray
     - [ ] Default output volume
     - [ ] Indicators
 - [ ] OSD
