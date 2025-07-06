@@ -1,102 +1,103 @@
-use futures_signals::signal_vec::SignalVecExt;
-use gtk4::{gio, prelude::*};
-use system_tray::client::ActivateRequest;
+use gdk4::gio;
+use gtk4::prelude::*;
 
-use crate::{helpers::gesture, singletons::tray::{self, tray_icon, tray_menu}};
+use crate::{helpers::gesture, singletons::tray::{bus::BusEvent, icon::make_icon_pixbuf, subscribe, tray_menu}};
 
+#[allow(dead_code)]
 #[derive(Default, Clone)]
 struct SystemTrayItem {
-    pub owner: String,
+    pub service: String,
     pub widget: Option<gtk4::Image>,
     popover_menu: Option<gtk4::PopoverMenu>
 }
 
+#[allow(dead_code)]
 impl SystemTrayItem {
-    pub fn new(owner: String) -> Self {
+    pub fn new(service: String) -> Self {
         Self {
-            owner,
+            service,
             ..Self::default()
         }
     }
 
-    pub fn build(&mut self) {
-        println!("Building SystemTrayItem for owner: {}", self.owner);
-
+    pub fn build_widget(&mut self) {
         let empty_model: gio::MenuModel = gio::Menu::new().into();
         let popover_menu = gtk4::PopoverMenu::from_model(Some(&empty_model));
-        if let Some((model, actions)) = tray_menu::build_gio_tray_menu_model(self.owner.clone()) {
-            popover_menu.set_menu_model(Some(&model));
-            popover_menu.insert_action_group("dbusmenu", Some(&actions));
-        }
+
         popover_menu.set_css_classes(&["bar-tray-popover-menu"]);
 
         self.popover_menu = Some(popover_menu);
 
         let default_activate = gesture::on_primary_click({
-            let address = self.owner.clone();
-
+            let service = self.service.clone();
+        
             move |_, x, y| {
-                if let Some(client) = tray::TRAY_CLIENT.get() {
-                    let request = ActivateRequest::Default {
-                        address: address.clone(),
-                        x: x as i32,
-                        y: y as i32
-                    };
-
-                    tokio::spawn(client.activate(request));
+                if let Some(item) = crate::singletons::tray::try_get_item(&service) {
+                    let _ = item.activate(x as i32, y as i32);
                 }
             }
         });
 
         let menus_activate = gesture::on_secondary_click({
+            let service = self.service.clone();
             let popover_menu = self.popover_menu.clone();
 
             move |_, _, _| {
-                if tray::TRAY_CLIENT.get().is_some() {
-                    if let Some(popover_menu) = popover_menu.clone() {
-                        popover_menu.popup();
+                if let Some(popover_menu) = &popover_menu {
+                    if let Some(item) = crate::singletons::tray::try_get_item(&service) {
+                        if let Some((model, actions)) = tray_menu::build_gio_dbus_menu_model(item) {
+                            popover_menu.set_menu_model(Some(&model));
+                            popover_menu.insert_action_group("dbusmenu", Some(&actions));
+                        }
                     }
+
+                    popover_menu.popup();
                 }
             }
         });
 
-        if let Some(item) = tray::get_tray_item(&self.owner) {            
-            relm4_macros::view! {
-                new_widget = gtk4::Image {
-                    set_css_classes: &["bar-tray-item"],
-                    set_from_pixbuf: Some(&tray_icon::make_icon_pixbuf(item)),
-                    set_pixel_size: 14,
+        relm4_macros::view! {
+            new_widget = gtk4::Image {
+                set_css_classes: &["bar-tray-item"],
+                set_pixel_size: 14,
+                add_controller: default_activate,
+                add_controller: menus_activate
+            }
+        };
 
-                    add_controller: default_activate,
-                    add_controller: menus_activate,
-                }
-            };
-
-            self.popover_menu.as_ref().unwrap().set_parent(&new_widget);
-            self.widget = Some(new_widget);
+        if let Some(item) = crate::singletons::tray::get_item(&self.service) {
+            new_widget.set_from_pixbuf(make_icon_pixbuf(Some(&item.icon_pixmap)).as_ref());
+            
+            if !item.tool_tip.title.is_empty() {
+                new_widget.set_tooltip_text(Some(&item.tool_tip.title));
+            }
         }
+
+        // Set the widget
+        self.popover_menu.as_ref().unwrap().set_parent(&new_widget);
+        self.widget = Some(new_widget);
     }
 
-    pub fn update(&mut self) {
-        println!("Updating SystemTrayItem for owner: {}", self.owner);
+    pub fn update(&mut self, member: String) {
+        if let (Some(widget), Some(item)) = (&self.widget, crate::singletons::tray::get_item(&self.service)) {
+            match member.as_str() {
+                "NewToolTip" => {
+                    if !item.tool_tip.title.is_empty() {
+                        widget.set_tooltip_text(Some(&item.tool_tip.title));
+                    }
+                },
 
-        if let Some(widget) = &self.widget {
-            if let Some(item) = tray::get_tray_item(&self.owner) {
-                widget.set_from_pixbuf(Some(&tray_icon::make_icon_pixbuf(item)));
+                "NewIcon" => {
+                    widget.set_from_pixbuf(make_icon_pixbuf(Some(&item.icon_pixmap)).as_ref());
+                },
 
-                // Update the menu
-                if let (Some((model, actions)), Some(popover_menu)) = (
-                    tray_menu::build_gio_tray_menu_model(self.owner.clone()),
-                    self.popover_menu.clone()
-                ) {
-                    popover_menu.set_menu_model(Some(&model));
-                    popover_menu.insert_action_group("dbusmenu", Some(&actions));
-                }
+                _ => {}
             }
         }
     }
 }
 
+#[allow(dead_code)]
 #[derive(Clone)]
 struct SystemTray {
     box_: gtk4::Box,
@@ -109,17 +110,7 @@ impl SystemTray {
         box_.set_css_classes(&["bar-widget", "bar-tray"]);
         box_.set_hexpand(false);
 
-        let mut items = Vec::new();
-
-        // add existing tray items
-        for item in tray::TRAY_ITEMS.lock_ref().iter() {
-            let mut tray_item = SystemTrayItem::new(item.0.clone());
-            tray_item.build();
-            if let Some(ref widget) = tray_item.widget {
-                box_.append(widget);
-            }
-            items.push(tray_item);
-        }
+        let items = Vec::new();
 
         Self {
             box_,
@@ -127,52 +118,39 @@ impl SystemTray {
         }
     }
 
-    fn add_item(&mut self, owner: String) {
-        // assert that the item does not already exist
-        if self.items.iter().any(|item| item.owner == owner) {
-            println!("Item with owner '{}' already exists, skipping addition.", owner);
-            return;
-        } else {
-            println!("Adding SystemTrayItem for owner: {}", owner);
-        }
-
-        let mut item = SystemTrayItem::new(owner);
-
-        item.build();
-        if let Some(ref widget) = item.widget {
-            self.box_.append(widget);
-        }
+    fn add_item(&mut self, service: String) {
+        let item = SystemTrayItem::new(service);
 
         self.items.push(item);
     }
 
-    fn remove_item(&mut self, owner: &str) {
-        if let Some(pos) = self.items.iter().position(|item| item.owner == owner) {
+    fn build_item(&mut self, service: String) {
+        if let Some(item) = self.items.iter_mut().find(|i| i.service == service) {
+            item.build_widget();
+
+            if let Some(widget) = &item.widget {
+                self.box_.append(widget);
+            }
+        }
+    }
+
+    fn update_item(&mut self, member: String, service: String) {
+        if let Some(item) = self.items.iter_mut().find(|i| i.service == service) {
+            item.update(member);
+        }
+    }
+
+    fn remove_item(&mut self, service: String) {
+        if let Some(pos) = self.items.iter().position(|i| i.service == service) {
             let item = self.items.remove(pos);
 
+            if let Some(popover_menu) = item.popover_menu {
+                popover_menu.unparent();
+            }
+
             if let Some(widget) = item.widget {
                 self.box_.remove(&widget);
             }
-        }
-    }
-
-    fn remove_item_index(&mut self, index: &usize) {
-        if let Some(owner) = self.items.get(*index).map(|item| item.owner.clone()) {
-            self.remove_item(&owner);
-        }
-    }
-
-    fn pop_item(&mut self) {
-        if let Some(item) = self.items.pop() {
-            if let Some(widget) = item.widget {
-                self.box_.remove(&widget);
-            }
-        }
-    }
-
-    fn update_item(&mut self, owner: &str) {
-        if let Some(item) = self.items.iter_mut().find(|item| item.owner == owner) {
-            item.update();
         }
     }
 
@@ -185,37 +163,43 @@ pub fn new() -> gtk4::Box {
     let mut tray = SystemTray::new();
     let widget = tray.get_widget();
 
-    // Subscribe to tray item changes
-    let tray_items = tray::TRAY_ITEMS.clone();
-    let tray_items_future = tray_items.signal_vec_cloned().for_each(move |diff| {
-        match diff {
-            futures_signals::signal_vec::VecDiff::RemoveAt { index } => {
-                tray.remove_item_index(&index);
+    // Watch for tray events
+    gtk4::glib::spawn_future_local(async move {
+        // We may have missed some items that were registered before we start listening.
+        // Fetch the current items and register them.
+        if let Some(items) = crate::singletons::tray::ITEMS.get() {
+            for item in items.lock().unwrap().iter() {
+                tray.add_item(item.service.clone());
             }
 
-            futures_signals::signal_vec::VecDiff::InsertAt { index: _, value } => {
-                tray.add_item(value.0.clone());
-            }
-
-            futures_signals::signal_vec::VecDiff::Push { value } => {
-                tray.add_item(value.0.clone());
-            }
-
-            futures_signals::signal_vec::VecDiff::Pop {} => {
-                tray.pop_item();
-            }
-
-            futures_signals::signal_vec::VecDiff::UpdateAt { index: _, value } => {
-                tray.update_item(&value.0);
-            }
-
-            _ => {}
+            tray.items.iter_mut().for_each(|item| {
+                item.build_widget();
+                
+                if let Some(widget) = &item.widget {
+                    tray.box_.append(widget);
+                }
+            });
+        } else {
+            eprintln!("Failed to fetch current tray items.");
         }
 
-        async {}
-    });
+        while let Ok(event) = subscribe().recv().await {
+            match event {
+                BusEvent::ItemRegistered(item) => {
+                    tray.add_item(item.service.clone());
+                    tray.build_item(item.service);
+                },
 
-    gtk4::glib::MainContext::default().spawn_local(tray_items_future);
+                BusEvent::ItemUpdated(member, item) => {
+                    tray.update_item(member, item.service);
+                },
+
+                BusEvent::ItemUnregistered(item) => {
+                    tray.remove_item(item.service);
+                }
+            }
+        }
+    });
 
     widget
 }

@@ -1,106 +1,62 @@
-pub mod tray_icon;
+use once_cell::sync::{Lazy, OnceCell};
+use tokio::sync::broadcast;
+use std::sync::{Arc, Mutex};
+
+use crate::singletons::tray::{bus::BusEvent, wrapper::{
+    sn_item::StatusNotifierItem,
+    sn_watcher::StatusNotifierWatcher
+}};
+
+pub mod proxy;
+pub mod wrapper;
+pub mod bus;
+pub mod icon;
 pub mod tray_menu;
 
-use futures_signals::signal_vec::MutableVec;
-use once_cell::sync::{Lazy, OnceCell};
-use system_tray::{client::{Client, Event, UpdateEvent}, item::StatusNotifierItem, menu::TrayMenu};
+static SENDER: Lazy<broadcast::Sender<BusEvent>> = Lazy::new(|| {
+    broadcast::channel(1).0
+});
 
-pub static TRAY_CLIENT: OnceCell<Client> = OnceCell::new();
-pub static TRAY_ITEMS: Lazy<MutableVec<(String, StatusNotifierItem)>> = Lazy::new(MutableVec::new);
-
-pub fn get_tray_item(owner: &str) -> Option<StatusNotifierItem> {
-    TRAY_ITEMS.lock_ref().iter().find(|(o, _)| o == owner).map(|(_, item)| item.clone())
-}
-
-pub fn get_tray_menu(owner: &str) -> Option<TrayMenu> {
-    TRAY_CLIENT.get().unwrap().items().lock().unwrap().iter()
-        .find(|(o, _)| **o == owner)
-        .and_then(|(_, item)| item.1.as_ref())
-        .cloned()
-}
+pub static ITEMS: OnceCell<Arc<Mutex<Vec<StatusNotifierItem>>>> = OnceCell::new();
 
 pub fn activate() {
+    let watcher = StatusNotifierWatcher::new();
+    let mut receiver = watcher.subscribe();
+
+    ITEMS.set(watcher.items())
+        .expect("Failed to set the items for tray watcher");
+
     tokio::spawn(async move {
-        let client = Client::new().await.unwrap();
-        let mut tray_rx = client.subscribe();
-        let initial_items = client.items();
-        
-        println!("Initial tray items: {:?}", initial_items);
-
-        let _ = TRAY_CLIENT.set(client);
-        
-        while let Ok(event) = tray_rx.recv().await {
-            match event {
-                Event::Add(owner, item) => {
-                    println!("Tray item added: {:?}", owner);
-                    let mut item = *item;
-                    tray_icon::compress_icon(&mut item);
-                    TRAY_ITEMS.lock_mut().push_cloned((owner, item));
-                },
-
-                Event::Update(owner, update_event) => {
-                    let mut items_mut = TRAY_ITEMS.lock_mut();
-                    let existing_index = items_mut.iter().position(|i| i.0 == owner)
-                        .unwrap_or(usize::MAX); // Default to an impossible index if not found
-
-                    if let Some(existing) = items_mut.get(existing_index) {
-                        let mut item = existing.1.clone();
-
-                        match update_event {
-                            UpdateEvent::AttentionIcon(icon) => {
-                                println!("Updating attention icon for item: {:?}", owner);
-                                item.attention_icon_name = icon;
-                            },
-
-                            UpdateEvent::OverlayIcon(icon) => {
-                                println!("Updating overlay icon for item: {:?}", owner);
-                                item.overlay_icon_name = icon;
-                            },
-
-                            UpdateEvent::Icon { icon_name, icon_pixmap } => {
-                                println!("Updating icon for item: {:?}", owner);
-                                item.icon_name = icon_name;
-                                item.icon_pixmap = tray_icon::compress_icon_pixmap(&icon_pixmap);
-                            },
-
-                            UpdateEvent::Tooltip(tooltip) => {
-                                println!("Updating tooltip for item: {:?}", owner);
-                                item.tool_tip = tooltip;
-                            },
-
-                            UpdateEvent::Status(status) => {
-                                println!("Updating status for item: {:?} to {:?}", owner, status);
-                                item.status = status;
-                            },
-
-                            UpdateEvent::Title(title) => {
-                                println!("Updating title for item: {:?}", owner);
-                                item.title = title;
-                            },
-
-                            // TODO: Handle tray item menus
-                            UpdateEvent::Menu(_) => {
-                                println!("Updating menu for item: {:?}", owner);
-                            },
-
-                            UpdateEvent::MenuConnect(_) => {
-                                println!("New menu connected to item: {:?}", owner);
-                            },
-
-                            UpdateEvent::MenuDiff(_) => {
-                                println!("Menu props have changed for item: {:?}", owner);
-                            }
-                        }
-
-                        items_mut.set_cloned(existing_index, (owner, item));
-                    }
-                },
-
-                Event::Remove(owner) => {
-                    println!("Tray item removed: {:?}", owner);
-                    TRAY_ITEMS.lock_mut().retain(|i| i.0 != owner);
-                }
-            }
+        while let Ok(event) = receiver.recv().await {
+            let _ = SENDER.send(event);
         }
     });
+
+    std::thread::spawn(move || watcher.serve());
+}
+
+pub fn subscribe() -> tokio::sync::broadcast::Receiver<bus::BusEvent> {
+    SENDER.subscribe()
+}
+
+pub fn get_item(service: &str) -> Option<StatusNotifierItem> {
+    ITEMS.get().and_then(|items| {
+        items.lock().unwrap().iter()
+            .find(|item| item.service == service)
+            .cloned()
+    })
+}
+
+pub fn try_get_item(service: &str) -> Option<StatusNotifierItem> {
+    ITEMS.get().and_then(|items| {
+        let lock = items.try_lock();
+        
+        if let Ok(items) = lock {
+            items.iter()
+                .find(|item| item.service == service)
+                .cloned()
+        } else {
+            None
+        }
+    })
 }

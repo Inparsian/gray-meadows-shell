@@ -1,102 +1,96 @@
 use gdk4::gio::{self, prelude::ActionMapExtManual};
-use system_tray::{client::ActivateRequest, menu};
 
-use crate::singletons::tray;
+use crate::singletons::tray::wrapper::{dbus_menu, sn_item::StatusNotifierItem};
 
-fn label_to_action(label: Option<&str>) -> Option<String> {
-    label.map(|l| {
-        l.chars()
-            .filter(|c| c.is_alphanumeric() || *c == '_')
-            .collect::<String>()
-            .to_lowercase()
-    })
+fn label_to_action(label: String) -> Option<String> {
+    Some(label.chars()
+        .filter(|c| c.is_alphanumeric() || *c == '_')
+        .collect::<String>()
+        .to_lowercase())
 }
 
-fn label_to_prefixed_action(label: Option<&str>) -> Option<String> {
-    label.map(|l| format!("dbusmenu.{}", label_to_action(Some(l)).unwrap_or_default()))
+fn label_to_prefixed_action(label: String) -> Option<String> {
+    Some(format!("dbusmenu.{}", label_to_action(label).unwrap_or_default()))
 }
 
-fn tray_menu_item_to_gio_menu_item(item: menu::MenuItem) -> Option<gio::MenuItem> {
-    let menu_item = gio::MenuItem::new(item.label.as_deref(), label_to_prefixed_action(item.label.as_deref()).as_deref());
+fn dbus_menu_item_to_gio_menu_item(item: dbus_menu::MenuItem) -> Option<gio::MenuItem> {
+    let menu_item = gio::MenuItem::new(Some(&item.label), label_to_prefixed_action(item.label.clone()).as_deref());
 
     Some(menu_item)
 }
 
-fn activate_item(owner: String, id: i32) {
-    println!("Activating item: {} with id: {}", owner, id);
+fn build_gio_dbus_submenu_model(
+    dbus_menu: &dbus_menu::DbusMenu,
+    item: dbus_menu::MenuItem,
+    action_entries: &mut Vec<gio::ActionEntry<gio::SimpleActionGroup>>,
+) -> Option<gio::MenuModel> {
+    let sub_menu = gio::Menu::new();
 
-    if let (Some(client), Some(tray_item)) = (tray::TRAY_CLIENT.get(), tray::get_tray_item(&owner)) {
-        let request = ActivateRequest::MenuItem {
-            address: owner,
-            menu_path: tray_item.menu.unwrap_or_default(),
-            submenu_id: id
-        };
+    item.submenus.iter().for_each(|item| {
+        let action = gio::ActionEntry::builder(label_to_action(item.label.clone()).as_deref().unwrap_or_default())
+            .activate({
+                let dbus_menu = dbus_menu.clone();
+                let item = item.clone();
 
-        tokio::spawn(client.activate(request));
-    }
+                move |_: &gio::SimpleActionGroup, _, _| if dbus_menu.activate(item.id).is_err() {
+                    eprintln!("Failed to activate menu item: {}", item.label);
+                }
+            })
+            .build();
+
+        if !item.submenus.is_empty() {
+            let sub_menu_model = build_gio_dbus_submenu_model(dbus_menu, item.clone(), action_entries).unwrap();
+
+            sub_menu.append_submenu(Some(&item.label), &sub_menu_model);
+        } else {
+            let menu_item = dbus_menu_item_to_gio_menu_item(item.clone()).unwrap();
+            
+            sub_menu.append_item(&menu_item);
+        }
+        
+        action_entries.push(action);
+    });
+
+    Some(sub_menu.into())
 }
 
-pub fn build_gio_tray_menu_model(owner: String) -> Option<(gio::MenuModel, gio::SimpleActionGroup)> {
-    if let Some(tray_menu) = tray::get_tray_menu(&owner) {
-        let menu = gio::Menu::new();
-        let action_group = gio::SimpleActionGroup::new();
-        let mut action_entries = vec![];
+pub fn build_gio_dbus_menu_model(item: StatusNotifierItem) -> Option<(gio::MenuModel, gio::SimpleActionGroup)> {
+    let dbus_menu = item.menu;
+    let menu = gio::Menu::new();
+    let action_group = gio::SimpleActionGroup::new();
+    let mut action_entries = vec![];
 
-        tray_menu.submenus.iter().for_each({
-            let owner = owner.clone();
-            let menu = &menu;
-            let action_entries = &mut action_entries;
-
-            move |submenu| {
-                // TODO: Empty labels indicate the end of a section.
-                if submenu.label.is_none() || submenu.label.as_ref().unwrap().is_empty() {
-                    return;
-                }
-
-                if !submenu.submenu.is_empty() {
-                    // i'm not nesting deeper than this
-                    let sub_menu = gio::Menu::new();
-
-                    submenu.submenu.iter().for_each(|item| {
-                        let action = gio::ActionEntry::builder(label_to_action(item.label.as_deref()).as_deref().unwrap_or_default())
-                            .activate({
-                                let owner = owner.clone();
-                                let item = item.clone();
-                                move |_: &gio::SimpleActionGroup, _, _| {
-                                    activate_item(owner.clone(), item.id);
-                                }
-                            })
-                            .build();
-
-                        sub_menu.append_item(&tray_menu_item_to_gio_menu_item(item.clone()).unwrap());
-                        action_entries.push(action);
-                    });
-
-                    let sub_menu_model: gio::MenuModel = sub_menu.into();
-
-                    menu.insert_submenu(submenu.id, submenu.label.as_deref(), &sub_menu_model);
-                } else {
-                    let action = gio::ActionEntry::builder(label_to_action(submenu.label.as_deref()).as_deref().unwrap_or_default())
-                        .activate({
-                            let owner = owner.clone();
-                            let item = submenu.clone();
-                            move |_: &gio::SimpleActionGroup, _, _| {
-                                activate_item(owner.clone(), item.id);
-                            }
-                        })
-                        .build();
-
-                    menu.insert_item(submenu.id, &tray_menu_item_to_gio_menu_item(submenu.clone()).unwrap());
-                    action_entries.push(action);
-                }
+    if let Ok(menu_layout) = dbus_menu.get_layout() {
+        for item in menu_layout.items.iter() {
+            if item.type_ == "separator" {
+                continue;
             }
-        });
+
+            if !item.submenus.is_empty() {
+                let sub_menu_model = build_gio_dbus_submenu_model(&dbus_menu, item.clone(), &mut action_entries).unwrap();
+
+                menu.insert_submenu(item.id as i32, Some(&item.label), &sub_menu_model);
+            } else {
+                let action = gio::ActionEntry::builder(label_to_action(item.label.clone()).as_deref().unwrap_or_default())
+                    .activate({
+                        let dbus_menu = dbus_menu.clone();
+                        let item = item.clone();
+
+                        move |_: &gio::SimpleActionGroup, _, _| if dbus_menu.activate(item.id).is_err() {
+                            eprintln!("Failed to activate menu item: {}", item.label);
+                        }
+                    })
+                    .build();
+
+                menu.insert_item(item.id as i32, &dbus_menu_item_to_gio_menu_item(item.clone()).unwrap());
+                action_entries.push(action);
+            }
+        }
 
         action_group.add_action_entries(action_entries);
 
         Some((menu.into(), action_group))
     } else {
-        println!("No tray menu found for owner: {}", owner);
         None
     }
 }
