@@ -2,7 +2,11 @@ use futures_signals::signal::{Mutable, SignalExt};
 use gtk4::prelude::*;
 use once_cell::sync::Lazy;
 
-use crate::{helpers::{unit, gesture}, singletons};
+use crate::{
+    helpers::{gesture, unit},
+    singletons,
+    widgets::bar::wrapper::BarModuleWrapper
+};
 
 const SWAP_SHOW_THRESHOLD: f64 = 5.0; // Show swap usage only if it's above this threshold, 
                                       // indicating that the system is under memory pressure.
@@ -147,7 +151,6 @@ pub fn new() -> gtk4::Box {
         widget = gtk4::Box {
             set_css_classes: &["bar-widget", "bar-sysstats"],
             set_hexpand: false,
-            add_controller: detailed_toggle_gesture,
 
             create_sysstats_item("󰍛", &ram_usage_label, &detailed_ram_usage_label) {},
             append: &swap_usage_box,
@@ -202,5 +205,7 @@ pub fn new() -> gtk4::Box {
     gtk4::glib::MainContext::default().spawn_local(gpu_util_future);
     gtk4::glib::MainContext::default().spawn_local(gpu_temp_future);
 
-    widget
+    BarModuleWrapper::new(widget)
+        .add_controller(detailed_toggle_gesture)
+        .get_widget()
 }

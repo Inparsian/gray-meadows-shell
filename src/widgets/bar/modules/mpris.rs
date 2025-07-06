@@ -1,7 +1,11 @@
 use std::cell::RefCell;
 use gtk4::prelude::*;
 
-use crate::{helpers::gesture, singletons::mpris};
+use crate::{
+    helpers::gesture,
+    singletons::mpris,
+    widgets::bar::wrapper::BarModuleWrapper
+};
 
 const VOLUME_STEP: f64 = 0.05;
 const ALBUM_ART_WIDTH: i32 = 23; // Expected width of the album art image
@@ -106,10 +110,6 @@ pub fn new() -> gtk4::Box {
             set_hexpand: false,
             set_width_request: WIDGET_WIDTH,
 
-            add_controller: widget_middle_click_gesture,
-            add_controller: widget_right_click_gesture,
-            add_controller: widget_scroll_controller,
-
             append: &no_players_widget,
             append: &players_widget
         },
@@ -186,5 +186,9 @@ pub fn new() -> gtk4::Box {
         }
     });
 
-    widget
+    BarModuleWrapper::new(widget)
+        .add_controller(widget_middle_click_gesture)
+        .add_controller(widget_right_click_gesture)
+        .add_controller(widget_scroll_controller)
+        .get_widget()
 }

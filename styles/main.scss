@@ -15,6 +15,21 @@
     .bar {
         @include normal-text;
 
+        .bar-widget-wrapper {
+            padding-top: 5px;
+            padding-bottom: 5px;
+            padding-left: 2px;
+            padding-right: 2px;
+
+            &:first-child {
+                padding-left: 5px;
+            }
+
+            &:last-child {
+                padding-right: 5px;
+            }
+        }
+
         .bar-widget {
             background: $background-color-primary;
             color: $foreground-color-primary;
@@ -23,19 +38,6 @@
             padding-bottom: 4px;
             padding-left: 6px;
             padding-right: 6px;
-
-            margin-top: 5px;
-            margin-bottom: 5px;
-            margin-left: 2px;
-            margin-right: 2px;
-
-            &:first-child {
-                margin-left: 5px;
-            }
-
-            &:last-child {
-                margin-right: 5px;
-            }
 
             &.bar-mpris {
                 padding: 0px;

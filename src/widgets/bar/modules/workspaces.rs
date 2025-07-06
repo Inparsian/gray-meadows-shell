@@ -5,8 +5,11 @@ use ::hyprland::dispatch;
 use ::hyprland::dispatch::{Dispatch, DispatchType, WorkspaceIdentifierWithSpecial};
 use once_cell::sync::Lazy;
 
-use crate::singletons::hyprland;
-use crate::helpers::{scss, gesture};
+use crate::{
+    singletons::hyprland,
+    helpers::{scss, gesture},
+    widgets::bar::wrapper::BarModuleWrapper
+};
 
 const SHOWN_WORKSPACES: usize = 10;
 const WORKSPACE_WIDTH: f64 = 13.0;
@@ -65,9 +68,6 @@ pub fn new() -> gtk4::Box {
 
         workspaces_drawing_area = gtk4::DrawingArea {
             set_css_classes: &["bar-workspaces-drawingarea"],
-
-            add_controller: workspaces_click_gesture,
-            add_controller: workspaces_scroll_gesture,
 
             set_draw_func: {
                 move |area, cr, _, _| {
@@ -163,5 +163,8 @@ pub fn new() -> gtk4::Box {
     gtk4::glib::MainContext::default().spawn_local(workspaces_future);
     gtk4::glib::MainContext::default().spawn_local(active_workspace_future);
 
-    workspaces_box
+    BarModuleWrapper::new(workspaces_box)
+        .add_controller(workspaces_click_gesture)
+        .add_controller(workspaces_scroll_gesture)
+        .get_widget()
 }

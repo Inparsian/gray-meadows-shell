@@ -1,7 +1,11 @@
 use futures_signals::signal::{Mutable, SignalExt};
 use gtk4::prelude::*;
 
-use crate::{APP, singletons::hyprland};
+use crate::{
+    singletons::hyprland,
+    widgets::bar::wrapper::BarModuleWrapper,
+    APP
+};
 
 const MAX_CLASS_WIDTH: i32 = 29;
 const MAX_TITLE_WIDTH: i32 = 54;
@@ -100,8 +104,6 @@ pub fn new() -> gtk4::Box {
             set_css_classes: &["bar-widget", "bar-client"],
             set_hexpand: false,
 
-            add_controller: reveal_title_gesture,
-
             append: &client_box,
             append: &workspace_label
         }
@@ -152,5 +154,7 @@ pub fn new() -> gtk4::Box {
     gtk4::glib::MainContext::default().spawn_local(hyprland_active_client_future);
     gtk4::glib::MainContext::default().spawn_local(reveal_title_future);
 
-    widget
+    BarModuleWrapper::new(widget)
+        .add_controller(reveal_title_gesture)
+        .get_widget()
 }

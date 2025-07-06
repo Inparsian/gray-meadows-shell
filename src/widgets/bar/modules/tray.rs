@@ -1,7 +1,11 @@
 use gdk4::gio;
 use gtk4::prelude::*;
 
-use crate::{helpers::gesture, singletons::tray::{bus::BusEvent, icon::make_icon_pixbuf, subscribe, tray_menu}};
+use crate::{
+    helpers::gesture,
+    singletons::tray::{bus::BusEvent, icon::make_icon_pixbuf, subscribe, tray_menu},
+    widgets::bar::wrapper::BarModuleWrapper
+};
 
 #[allow(dead_code)]
 #[derive(Default, Clone)]
@@ -201,5 +205,5 @@ pub fn new() -> gtk4::Box {
         }
     });
 
-    widget
+    BarModuleWrapper::new(widget).get_widget()
 }

@@ -1,6 +1,10 @@
 use gtk4::prelude::*;
 
-use crate::{widgets, reactivity, singletons};
+use crate::{
+    reactivity,
+    singletons,
+    widgets::{self, bar::wrapper::BarModuleWrapper}
+};
 
 pub fn new() -> gtk4::Box {
     relm4_macros::view! {
@@ -14,5 +18,5 @@ pub fn new() -> gtk4::Box {
         }
     }
 
-    widget
+    BarModuleWrapper::new(widget).get_widget()
 }
