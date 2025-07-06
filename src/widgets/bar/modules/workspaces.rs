@@ -63,7 +63,7 @@ pub fn new() -> gtk4::Box {
 
         workspaces_scroll_gesture = gesture::on_vertical_scroll(|dy| {
             let delta = if dy < 0.0 { -1 } else { 1 };
-            let _ = dispatch!(Workspace, WorkspaceIdentifierWithSpecial::Relative(delta));
+            let _ = dispatch!(Workspace, WorkspaceIdentifierWithSpecial::RelativeMonitorIncludingEmpty(delta));
         }),
 
         workspaces_drawing_area = gtk4::DrawingArea {
