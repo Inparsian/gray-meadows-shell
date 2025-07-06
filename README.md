@@ -6,7 +6,8 @@ My personal desktop shell using gtk4 and gtk4-layer-shell, re-written from scrat
 
 Currently far from ready for daily use. This list of things to do may not be exhaustive and is subject to change.
 
-⚠️ = Known bugs exist.
+⚠️ = Known bugs/issues exist.
+❓ = This particular module will be a challenge.
 
 - [ ] IPC (so the compositor can communicate with the shell)
 - [ ] Library/singleton services
@@ -17,7 +18,7 @@ Currently far from ready for daily use. This list of things to do may not be exh
     - [x] System tray (dbus)
     - [x] Hyprland (IPC)
     - [ ] Apps
-    - [ ] WirePlumber
+    - [ ] WirePlumber ❓ 1
     - [ ] NetworkManager
     - [x] System resource monitoring
         - [x] Built-in (CPU, RAM)
@@ -59,3 +60,6 @@ Currently far from ready for daily use. This list of things to do may not be exh
 
 ### ⚠️ Known issues
 1. Only NVIDIA GPUs are supported. I don't have any AMD or Intel GPUs to test with, so I can't implement support for them. If you have an AMD or Intel GPU and want to help, please open an issue or PR.
+
+### ❓ Known challenges
+1. WirePlumber is a fairly complex service that will take me a while to actually implement. The existing Rust crates for WirePlumber do not seem to have any support for WirePlumber 0.5, and I'm not able to reliably generate GIR bindings for AstalWp, which would be the next best option. As such, I will most likely have to write my own wrapper library for WirePlumber in C++ to interoperate with the rest of the Rust codebase, which will introduce additional challenges (memory safety, etc.).
