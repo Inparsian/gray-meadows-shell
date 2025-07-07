@@ -11,14 +11,14 @@ Currently far from ready for daily use. This list of things to do may not be exh
 
 - [ ] IPC (so the compositor can communicate with the shell)
 - [ ] Library/singleton services
-    - [x] libqalculate (Thin C++ shim)
+    - [x] libqalculate (C++ FFI)
     - [x] Mpris (dbus)
     - [ ] Cava?
     - [ ] Notifications (dbus)
     - [x] System tray (dbus)
     - [x] Hyprland (IPC)
     - [ ] Apps
-    - [ ] WirePlumber (partially done)
+    - [x] WirePlumber (C++ FFI)
     - [ ] NetworkManager (dbus?)
     - [x] System resource monitoring
         - [x] Built-in (CPU, RAM)

@@ -6,10 +6,12 @@ pub static CHANNEL: Lazy<broadcast::Sender<WpEvent>> = Lazy::new(|| {
     sender
 });
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum WpEvent {
-    UpdateNode(ffi::Node, String),
-    UpdateEndpoint(ffi::Endpoint, String),
+    UpdateNode(i32, String),
+    UpdateEndpoint(i32, String),
+    UpdateDefaultMicrophone(i32),
+    UpdateDefaultSpeaker(i32),
     CreateStream(ffi::Node),
     RemoveStream(ffi::Node),
     CreateMicrophone(ffi::Endpoint),
@@ -21,13 +23,21 @@ pub enum WpEvent {
 #[allow(clippy::module_inception)]
 #[cxx::bridge]
 pub mod ffi {
-    #[derive(Clone)]
+    #[derive(Debug, Clone)]
+    pub enum EndpointType {
+        Microphone,
+        Speaker,
+        Unknown
+    }
+
+    #[derive(Debug, Clone)]
     struct Endpoint {
+        endpoint_type: EndpointType,
         is_default: bool,
         node: Node
     }
 
-    #[derive(Clone)]
+    #[derive(Debug, Clone)]
     struct Node {
         description: String,
         icon: String,
@@ -40,8 +50,9 @@ pub mod ffi {
     }
 
     extern "Rust" {
-        pub fn receive_update_node(node: Node, property_name: String);
-        pub fn receive_update_endpoint(endpoint: Endpoint, property_name: String);
+        pub fn receive_update_node(id: i32, property_name: String);
+        pub fn receive_update_microphone(id: i32, property_name: String);
+        pub fn receive_update_speaker(id: i32, property_name: String);
         pub fn receive_create_stream(node: Node);
         pub fn receive_remove_stream(node: Node);
         pub fn receive_create_microphone(endpoint: Endpoint);
@@ -71,18 +82,33 @@ pub mod ffi {
     }
 }
 
-pub fn receive_update_node(node: ffi::Node, property_name: String) {
+pub fn receive_update_node(id: i32, property_name: String) {
     let _ = CHANNEL.send(WpEvent::UpdateNode(
-        node,
+        id,
         property_name,
     ));
 }
 
-pub fn receive_update_endpoint(endpoint: ffi::Endpoint, property_name: String) {
+pub fn receive_update_microphone(id: i32, property_name: String) {
     let _ = CHANNEL.send(WpEvent::UpdateEndpoint(
-        endpoint,
-        property_name,
+        id,
+        property_name.clone(),
     ));
+
+    if property_name == "is-default" && ffi::endpoint_get_is_default(id) {
+        let _ = CHANNEL.send(WpEvent::UpdateDefaultMicrophone(id));
+    }
+}
+
+pub fn receive_update_speaker(id: i32, property_name: String) {
+    let _ = CHANNEL.send(WpEvent::UpdateEndpoint(
+        id,
+        property_name.clone(),
+    ));
+
+    if property_name == "is-default" && ffi::endpoint_get_is_default(id) {
+        let _ = CHANNEL.send(WpEvent::UpdateDefaultSpeaker(id));
+    }
 }
 
 pub fn receive_create_stream(node: ffi::Node) {

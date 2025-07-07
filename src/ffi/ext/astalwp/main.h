@@ -6,6 +6,7 @@
 #include <event.h>
 #include <rust/cxx.h>
 
+enum EndpointType;
 struct Node;
 struct Endpoint;
 
@@ -39,8 +40,9 @@ bool endpoint_get_is_default(rust::i32 id);
 void endpoint_set_is_default(rust::i32 id, bool is_default);
 
 // Extern Rust methods
-void receive_update_node(Node node, rust::String &property_name) noexcept;
-void receive_update_endpoint(Endpoint endpoint, rust::String &property_name) noexcept;
+void receive_update_node(rust::i32 id, rust::String &property_name) noexcept;
+void receive_update_microphone(rust::i32 id, rust::String &property_name) noexcept;
+void receive_update_speaker(rust::i32 id, rust::String &property_name) noexcept;
 void receive_create_stream(Node node) noexcept;
 void receive_remove_stream(Node node) noexcept;
 void receive_create_microphone(Endpoint endpoint) noexcept;

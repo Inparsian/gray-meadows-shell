@@ -24,6 +24,17 @@ Node make_node_data_from_node(AstalWpNode *node) {
 Endpoint make_endpoint_data_from_endpoint(AstalWpEndpoint *endpoint) {
     Endpoint data;
 
+    data.endpoint_type = EndpointType::Unknown;
+    data.is_default = astal_wp_endpoint_get_is_default(endpoint);
+    data.node = make_node_data_from_node(ASTAL_WP_NODE(endpoint));
+
+    return data;
+}
+
+Endpoint make_endpoint_data_from_endpoint(AstalWpEndpoint *endpoint, EndpointType type) {
+    Endpoint data;
+
+    data.endpoint_type = type;
     data.is_default = astal_wp_endpoint_get_is_default(endpoint);
     data.node = make_node_data_from_node(ASTAL_WP_NODE(endpoint));
 
