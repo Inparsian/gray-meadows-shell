@@ -18,8 +18,8 @@ Currently far from ready for daily use. This list of things to do may not be exh
     - [x] System tray (dbus)
     - [x] Hyprland (IPC)
     - [ ] Apps
-    - [ ] WirePlumber ❓ 1
-    - [ ] NetworkManager
+    - [ ] WirePlumber (partially done)
+    - [ ] NetworkManager (dbus?)
     - [x] System resource monitoring
         - [x] Built-in (CPU, RAM)
         - [x] CPU Temp (and maybe other temp sensors)
@@ -62,4 +62,4 @@ Currently far from ready for daily use. This list of things to do may not be exh
 1. Only NVIDIA GPUs are supported. I don't have any AMD or Intel GPUs to test with, so I can't implement support for them. If you have an AMD or Intel GPU and want to help, please open an issue or PR.
 
 ### ❓ Known challenges
-1. WirePlumber is a fairly complex service that will take me a while to actually implement. The existing Rust crates for WirePlumber do not seem to have any support for WirePlumber 0.5, but AstalWp does have C headers that I can use to create a C++ wrapper library for two-way communication.
+T.B.A.
