@@ -9,7 +9,7 @@
 #[cxx::bridge]
 pub mod ffi {
     unsafe extern "C++" {
-        include!("libqalculate.h");
+        include!("main.h");
 
         type Calculator;
 
