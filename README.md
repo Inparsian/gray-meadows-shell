@@ -62,4 +62,4 @@ Currently far from ready for daily use. This list of things to do may not be exh
 1. Only NVIDIA GPUs are supported. I don't have any AMD or Intel GPUs to test with, so I can't implement support for them. If you have an AMD or Intel GPU and want to help, please open an issue or PR.
 
 ### ❓ Known challenges
-1. WirePlumber is a fairly complex service that will take me a while to actually implement. The existing Rust crates for WirePlumber do not seem to have any support for WirePlumber 0.5, and I'm not able to reliably generate GIR bindings for AstalWp, which would be the next best option. As such, I will most likely have to write my own wrapper library for WirePlumber in C++ to interoperate with the rest of the Rust codebase, which will introduce additional challenges (memory safety, etc.).
+1. WirePlumber is a fairly complex service that will take me a while to actually implement. The existing Rust crates for WirePlumber do not seem to have any support for WirePlumber 0.5, but AstalWp does have C headers that I can use to create a C++ wrapper library for two-way communication.
