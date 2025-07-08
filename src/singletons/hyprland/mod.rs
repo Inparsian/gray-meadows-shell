@@ -1,11 +1,14 @@
 use futures_signals::signal::Mutable;
+use gdk4::prelude::MonitorExt;
 use once_cell::sync::Lazy;
 use hyprland::{
     async_closure,
-    data::{Client, Workspace, Workspaces},
+    data::{Client, Workspace, Workspaces, Monitor},
     event_listener::AsyncEventListener,
     shared::{HyprData, HyprDataActive, HyprDataActiveOptional}
 };
+
+use crate::helpers::display;
 
 // Wrapper structs to work with Hyprland data reactively
 #[derive(Default)]
@@ -17,7 +20,7 @@ pub struct Hyprland {
 
 pub static HYPRLAND: Lazy<Hyprland> = Lazy::new(Hyprland::default);
 
-pub fn refresh_active_client() {
+fn refresh_active_client() {
     let active_client = Client::get_active();
     if let Ok(active_client) = active_client {
         HYPRLAND.active_client.set(active_client);
@@ -26,7 +29,7 @@ pub fn refresh_active_client() {
     }
 }
 
-pub fn refresh_active_workspace() {
+fn refresh_active_workspace() {
     let active_workspace = Workspace::get_active();
     if let Ok(active_workspace) = active_workspace {
         HYPRLAND.active_workspace.set(Some(active_workspace));
@@ -37,7 +40,7 @@ pub fn refresh_active_workspace() {
     refresh_active_client();
 }
 
-pub fn refresh_workspaces() {
+fn refresh_workspaces() {
     let workspaces = Workspaces::get();
     if let Ok(workspaces) = workspaces {
         HYPRLAND.workspaces.set(Some(workspaces));
@@ -67,4 +70,27 @@ pub fn activate() {
 
         let _ = event_listener.start_listener_async().await;
     });
+}
+
+pub fn get_active_monitor() -> Option<gdk4::Monitor> {
+    let monitor = Monitor::get_active();
+
+    if let Ok(monitor) = monitor {
+        // Get the gdk4::Monitor from the display.
+        let monitors = display::get_all_monitors(&gdk4::Display::default()?);
+
+        for m in monitors {
+            let geometry = m.geometry();
+
+            if geometry.x() == monitor.x &&
+                geometry.y() == monitor.y &&
+                geometry.width() == monitor.width as i32 &&
+                geometry.height() == monitor.height as i32
+            {
+                return Some(m);
+            }
+        }
+    }
+
+    None
 }

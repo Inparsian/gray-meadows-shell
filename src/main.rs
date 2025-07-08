@@ -12,7 +12,7 @@ use std::{path::Path, sync::Mutex};
 
 pub struct GrayMeadows {
     provider: gtk4::CssProvider,
-    icon_theme: gtk4::IconTheme,
+    icon_theme: gtk4::IconTheme
 }
 
 unsafe impl Send for GrayMeadows {}
@@ -93,6 +93,8 @@ fn activate(application: &Application) {
         let bar = widgets::bar::Bar::new(application, &monitor);
         bar.window.show();
     }
+
+    let _overview = widgets::overview::Overview::new(application);
 }
 
 #[tokio::main]
