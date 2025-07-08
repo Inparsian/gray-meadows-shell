@@ -1,21 +1,21 @@
 fn main() {
     // Build FFI bindings for libqalculate
     cxx_build::bridge("src/ffi/libqalculate.rs")
-        .file("src/ffi/ext/libqalculate/main.cc")
-        .include("src/ffi/ext/libqalculate")
+        .file("src/ffi/libqalculate/main.cc")
+        .include("src/ffi/libqalculate")
         .compile("libqalculate_ffi");
 
     println!("cargo:rustc-link-lib=qalculate");
     println!("cargo:rerun-if-changed=src/ffi/libqalculate.rs");
-    println!("cargo:rerun-if-changed=src/ffi/ext/libqalculate/main.h");
-    println!("cargo:rerun-if-changed=src/ffi/ext/libqalculate/main.cc");
+    println!("cargo:rerun-if-changed=src/ffi/libqalculate/main.h");
+    println!("cargo:rerun-if-changed=src/ffi/libqalculate/main.cc");
 
     // Build FFI bindings for astal-wireplumber
     cxx_build::bridge("src/ffi/astalwp.rs")
-        .file("src/ffi/ext/astalwp/main.cc")
-        .file("src/ffi/ext/astalwp/data.cc")
-        .file("src/ffi/ext/astalwp/event.cc")
-        .include("src/ffi/ext/astalwp")
+        .file("src/ffi/astalwp/main.cc")
+        .file("src/ffi/astalwp/data.cc")
+        .file("src/ffi/astalwp/event.cc")
+        .include("src/ffi/astalwp")
         .include("/usr/include/astal")
         .include("/usr/include/wireplumber-0.5")
         .include("/usr/include/libmount")
@@ -32,10 +32,10 @@ fn main() {
     println!("cargo:rustc-link-lib=gobject-2.0");
     println!("cargo:rustc-link-lib=glib-2.0");
     println!("cargo:rerun-if-changed=src/ffi/astalwp.rs");
-    println!("cargo:rerun-if-changed=src/ffi/ext/astalwp/data.h");
-    println!("cargo:rerun-if-changed=src/ffi/ext/astalwp/data.cc");
-    println!("cargo:rerun-if-changed=src/ffi/ext/astalwp/event.h");
-    println!("cargo:rerun-if-changed=src/ffi/ext/astalwp/event.cc");
-    println!("cargo:rerun-if-changed=src/ffi/ext/astalwp/main.h");
-    println!("cargo:rerun-if-changed=src/ffi/ext/astalwp/main.cc");
+    println!("cargo:rerun-if-changed=src/ffi/astalwp/data.h");
+    println!("cargo:rerun-if-changed=src/ffi/astalwp/data.cc");
+    println!("cargo:rerun-if-changed=src/ffi/astalwp/event.h");
+    println!("cargo:rerun-if-changed=src/ffi/astalwp/event.cc");
+    println!("cargo:rerun-if-changed=src/ffi/astalwp/main.h");
+    println!("cargo:rerun-if-changed=src/ffi/astalwp/main.cc");
 }
