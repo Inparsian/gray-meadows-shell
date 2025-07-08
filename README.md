@@ -33,7 +33,7 @@ Currently far from ready for daily use. This list of things to do may not be exh
     - [ ] Mpris (partially done)
     - [x] Clock
     - [x] System tray
-    - [ ] Default output volume
+    - [x] Default output volume
     - [ ] Indicators
 - [ ] OSD
     - [ ] Mpris

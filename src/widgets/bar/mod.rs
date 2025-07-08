@@ -6,6 +6,7 @@ mod modules {
     pub mod mpris;
     pub mod clock;
     pub mod tray;
+    pub mod volume;
 }
 
 use gtk4::prelude::*;
@@ -39,7 +40,8 @@ impl Bar {
                 set_orientation: gtk4::Orientation::Horizontal,
                 set_spacing: 1,
 
-                append: &modules::tray::new()
+                append: &modules::tray::new(),
+                append: &modules::volume::new()
             },
 
             window = gtk4::ApplicationWindow {
