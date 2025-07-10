@@ -100,44 +100,59 @@ fn activate(application: &Application) {
 
 #[tokio::main]
 async fn main() {
-    // Ensure that another instance of gray-meadows-shell is not running.
-    if ipc::client::get_stream().is_some() {
-        eprintln!("Another instance of gray-meadows-shell is already running.");
-        std::process::exit(1);
+    let args: Vec<String> = std::env::args().collect();
+
+    // If no arguments are provided, assume that the user wants to run the shell.
+    // Otherwise, interpret the arguments as an IPC command.
+    if args.len() == 1 {
+        // Ensure that another instance of gray-meadows-shell is not running.
+        if ipc::client::get_stream().is_some() {
+            eprintln!("Another instance of gray-meadows-shell is already running.");
+            std::process::exit(1);
+        } else {
+            std::thread::spawn(|| {
+                if let Err(e) = ipc::server::start() {
+                    eprintln!("Failed to start IPC server: {}", e);
+                    std::process::exit(1);
+                }
+            });
+
+            let _ = gtk4::init();
+
+            singletons::activate_all();
+
+            gtk4::style_context_add_provider_for_display(
+                &gdk4::Display::default().expect("Failed to get default display"),
+                &APP.lock().unwrap().provider,
+                gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
+            );
+
+            // Add your manual search paths here
+            // TODO: Replace this with an automatic search for the currently equipped icon theme
+            APP.lock().unwrap().icon_theme.add_search_path(Path::new("/home/inparsian/.icons/besgnulinux-mono-grey/apps/scalable"));
+
+            bundle_apply_scss();
+            watch_scss();
+
+            let application = Application::new(
+                Some("sn.inpr.gray_meadows_shell"),
+                Default::default(),
+            );
+
+            application.connect_activate(|app| {
+                activate(app);
+            });
+
+            application.run();
+        }
     } else {
-        std::thread::spawn(|| {
-            if let Err(e) = ipc::server::start() {
-                eprintln!("Failed to start IPC server: {}", e);
-                std::process::exit(1);
-            }
-        });
+        let command = args[1..].join(" ");
+        let response = ipc::client::send_message(&command);
 
-        let _ = gtk4::init();
-
-        singletons::activate_all();
-
-        gtk4::style_context_add_provider_for_display(
-            &gdk4::Display::default().expect("Failed to get default display"),
-            &APP.lock().unwrap().provider,
-            gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
-        );
-
-        // Add your manual search paths here
-        // TODO: Replace this with an automatic search for the currently equipped icon theme
-        APP.lock().unwrap().icon_theme.add_search_path(Path::new("/home/inparsian/.icons/besgnulinux-mono-grey/apps/scalable"));
-
-        bundle_apply_scss();
-        watch_scss();
-
-        let application = Application::new(
-            Some("sn.inpr.gray_meadows_shell"),
-            Default::default(),
-        );
-
-        application.connect_activate(|app| {
-            activate(app);
-        });
-
-        application.run();
+        if let Ok(response) = response {
+            println!("Response from IPC server: {}", response);
+        } else {
+            eprintln!("Failed to send IPC command: {}", response.unwrap_err());
+        }
     }
 }

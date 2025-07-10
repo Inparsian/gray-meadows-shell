@@ -9,7 +9,7 @@ Currently far from ready for daily use. This list of things to do may not be exh
 ⚠️ = Known bugs/issues exist.<br>
 ❓ = This particular module will be a challenge.
 
-- [ ] IPC (so the compositor can communicate with the shell)
+- [x] IPC (so the compositor can communicate with the shell)
 - [ ] Library/singleton services
     - [x] libqalculate (C++ FFI)
     - [x] Mpris (dbus)
