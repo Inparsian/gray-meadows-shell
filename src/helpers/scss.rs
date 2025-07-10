@@ -2,7 +2,7 @@ use std::sync::Mutex;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use crate::helpers::{color, cargo};
+use crate::helpers::{color, filesystem};
 
 const VAR_REGEX: &str = r"^\$([a-zA-Z0-9_-]+):\s*([a-zA-Z0-9#() ,.-]+);$";
 
@@ -43,7 +43,7 @@ pub fn refresh_variables() {
     let mut vars = ScssVars::new();
     let regex = Regex::new(VAR_REGEX).unwrap();
 
-    let styles_dir = cargo::get_styles_directory();
+    let styles_dir = filesystem::get_styles_directory();
     let user_styles_path = format!("{}/user.scss", styles_dir);
     let content = std::fs::read_to_string(user_styles_path);
 
