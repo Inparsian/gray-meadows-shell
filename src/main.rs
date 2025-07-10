@@ -95,7 +95,7 @@ fn activate(application: &Application) {
         bar.window.show();
     }
 
-    let _overview = widgets::overview::Overview::new(application);
+    widgets::overview::new(application);
 }
 
 #[tokio::main]

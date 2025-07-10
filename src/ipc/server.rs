@@ -5,7 +5,7 @@ use tokio::sync::broadcast;
 
 use crate::ipc;
 
-pub static SENDER: OnceCell<broadcast::Sender<String>> = OnceCell::new();
+static SENDER: OnceCell<broadcast::Sender<String>> = OnceCell::new();
 
 pub fn drop_socket() {
     let _ = std::fs::remove_file(ipc::get_socket_path());
@@ -22,7 +22,7 @@ pub fn start() -> std::io::Result<()> {
 
     for stream in listener.incoming() {
         match stream {
-            Ok(mut stream) => {
+            Ok(stream) => {
                 std::thread::spawn(move || handle_client(stream));
             },
 
