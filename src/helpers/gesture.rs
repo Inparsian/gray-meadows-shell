@@ -1,4 +1,19 @@
+use gdk4::Key;
 use gtk4::{prelude::GestureSingleExt, EventControllerScrollFlags};
+
+pub fn on_key_press<F>(on_press: F) -> gtk4::EventControllerKey
+where
+    F: Fn(Key, u32) + 'static,
+{
+    let controller = gtk4::EventControllerKey::new();
+
+    controller.connect_key_pressed(move |_, keyval, keycode, _| {
+        on_press(keyval, keycode);
+        gtk4::glib::Propagation::Stop
+    });
+
+    controller
+}
 
 pub fn on_vertical_scroll<F>(on_scroll: F) -> gtk4::EventControllerScroll
 where

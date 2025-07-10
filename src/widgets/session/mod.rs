@@ -95,6 +95,16 @@ pub fn new(application: &libadwaita::Application) {
         }
     }));
 
+    window.add_controller(gesture::on_key_press({
+        let window = window.clone();
+
+        move |val, _| {
+            if val.name() == Some("Escape".into()) {
+                window.hide();
+            }
+        }
+    }));
+
     ipc::listen_for_messages_local(move |message| {
         if message.as_str() == "toggle_session" {
             let monitor = hyprland::get_active_monitor();
