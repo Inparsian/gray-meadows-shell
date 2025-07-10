@@ -1,28 +1,25 @@
 use std::os::unix::net::UnixStream;
-use std::io::{Read, Write};
+use std::io::{self, Read, Write};
+use std::time::Duration;
 
 use crate::ipc;
 
-pub fn get_stream() -> Option<UnixStream> {
-    match UnixStream::connect(ipc::get_socket_path()) {
-        Ok(stream) => Some(stream),
-        Err(e) => {
-            eprintln!("Failed to connect to IPC socket: {}", e);
-            None
-        }
-    }
+pub fn get_stream() -> io::Result<UnixStream> {
+    let stream = UnixStream::connect(ipc::get_socket_path())?;
+    stream.set_read_timeout(Some(Duration::from_secs(5)))?;
+    stream.set_write_timeout(Some(Duration::from_secs(5)))?;
+
+    Ok(stream)
 }
 
-pub fn send_message(message: &str) -> Result<String, std::io::Error> {
-    if let Some(mut stream) = get_stream() {
-        stream.write_all(message.as_bytes())?;
-        stream.shutdown(std::net::Shutdown::Write)?;
+pub fn send_message(message: &str) -> io::Result<String> {
+    let mut stream = get_stream()?;
+    let mut response = String::new();
 
-        let mut response = String::new();
-        stream.read_to_string(&mut response)?;
+    stream.write_all(message.as_bytes())?;
+    stream.flush()?;
+    stream.shutdown(std::net::Shutdown::Write)?;
+    stream.read_to_string(&mut response)?;
 
-        Ok(response)
-    } else {
-        Err(std::io::Error::other("Failed to get IPC stream"))
-    }
+    Ok(response)
 }

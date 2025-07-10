@@ -107,7 +107,7 @@ async fn main() {
     // Otherwise, interpret the arguments as an IPC command.
     if args.len() == 1 {
         // Ensure that another instance of gray-meadows-shell is not running.
-        if ipc::client::get_stream().is_some() {
+        if ipc::client::get_stream().is_ok() {
             eprintln!("Another instance of gray-meadows-shell is already running.");
             std::process::exit(1);
         } else {
