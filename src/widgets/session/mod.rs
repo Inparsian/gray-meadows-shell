@@ -6,7 +6,7 @@ use crate::{ipc, singletons::hyprland};
 pub fn new(application: &libadwaita::Application) {
     relm4_macros::view! {
         window = gtk4::ApplicationWindow {
-            set_css_classes: &["overview-window"],
+            set_css_classes: &["session-window"],
             set_application: Some(application),
             init_layer_shell: (),
             set_monitor: hyprland::get_active_monitor().as_ref(),
@@ -19,20 +19,20 @@ pub fn new(application: &libadwaita::Application) {
 
             gtk4::Box {
                 set_orientation: gtk4::Orientation::Vertical,
-                set_css_classes: &["overview"],
+                set_css_classes: &["session"],
                 set_spacing: 0,
 
-                // Placeholder for overview content
+                // Placeholder for session content
                 gtk4::Label {
-                    set_label: "Overview content goes here",
-                    set_css_classes: &["overview-content"]
+                    set_label: "Session content goes here",
+                    set_css_classes: &["session-content"]
                 }
             }
         }
     };
 
     ipc::listen_for_messages_local(move |message| {
-        if message.as_str() == "toggle_overview" {
+        if message.as_str() == "toggle_session" {
             let monitor = hyprland::get_active_monitor();
 
             if window.is_visible() {
