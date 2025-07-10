@@ -1,7 +1,7 @@
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
-use crate::{ipc, singletons::hyprland};
+use crate::{helpers::gesture, ipc, singletons::hyprland};
 
 pub fn session_button(icon: &str, command: &str) -> gtk4::Button {
     let icon = icon.to_string();
@@ -37,6 +37,37 @@ pub fn new(application: &libadwaita::Application) {
     let shutdown_button = session_button("power_settings_new", "systemctl poweroff || loginctl poweroff");
 
     relm4_macros::view! {
+        session_box = gtk4::Box {
+            set_orientation: gtk4::Orientation::Vertical,
+            set_css_classes: &["session-box"],
+            set_spacing: 12,
+            set_halign: gtk4::Align::Center,
+            set_valign: gtk4::Align::Center,
+            set_hexpand: true,
+
+            // First row
+            gtk4::Box {
+                set_orientation: gtk4::Orientation::Horizontal,
+                set_css_classes: &["session-box-row1"],
+                set_spacing: 12,
+
+                append: &lock_button,
+                append: &logout_button,
+                append: &suspend_button
+            },
+
+            // Second row
+            gtk4::Box {
+                set_orientation: gtk4::Orientation::Horizontal,
+                set_css_classes: &["session-box-row2"],
+                set_spacing: 12,
+
+                append: &hibernate_button,
+                append: &reboot_button,
+                append: &shutdown_button
+            }
+        },
+
         window = gtk4::ApplicationWindow {
             set_css_classes: &["session-window"],
             set_application: Some(application),
@@ -49,38 +80,20 @@ pub fn new(application: &libadwaita::Application) {
             set_anchor: (Edge::Top, true),
             set_anchor: (Edge::Bottom, true),
 
-            gtk4::Box {
-                set_orientation: gtk4::Orientation::Vertical,
-                set_css_classes: &["session-box"],
-                set_spacing: 12,
-                set_halign: gtk4::Align::Center,
-                set_valign: gtk4::Align::Center,
-                set_hexpand: true,
-
-                // First row
-                gtk4::Box {
-                    set_orientation: gtk4::Orientation::Horizontal,
-                    set_css_classes: &["session-box-row1"],
-                    set_spacing: 12,
-
-                    append: &lock_button,
-                    append: &logout_button,
-                    append: &suspend_button
-                },
-
-                // Second row
-                gtk4::Box {
-                    set_orientation: gtk4::Orientation::Horizontal,
-                    set_css_classes: &["session-box-row2"],
-                    set_spacing: 12,
-
-                    append: &hibernate_button,
-                    append: &reboot_button,
-                    append: &shutdown_button
-                }
-            }
+            set_child: Some(&session_box)
         }
     };
+
+    window.add_controller(gesture::on_primary_click({
+        let window = window.clone();
+        let session_box = session_box.clone();
+
+        move |_, x, y| {
+            if window.is_visible() && !session_box.allocation().contains_point(x as i32, y as i32) {
+                window.hide();
+            }
+        }
+    }));
 
     ipc::listen_for_messages_local(move |message| {
         if message.as_str() == "toggle_session" {

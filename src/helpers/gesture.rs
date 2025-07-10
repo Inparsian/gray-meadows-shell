@@ -21,7 +21,7 @@ where
 {
     let controller = gtk4::GestureClick::new();
     controller.set_button(button);
-    controller.connect_pressed(move |_, n_press, x, y| {
+    controller.connect_released(move |_, n_press, x, y| {
         on_click(n_press, x, y);
     });
 
