@@ -167,27 +167,34 @@ pub fn new() -> gtk4::Box {
     let mut tray = SystemTray::new();
     let widget = tray.get_widget();
 
-    // Watch for tray events
-    gtk4::glib::spawn_future_local(async move {
-        // We may have missed some items that were registered before we start listening.
-        // Fetch the current items and register them.
-        if let Some(items) = crate::singletons::tray::ITEMS.get() {
-            for item in items.lock().unwrap().iter() {
-                tray.add_item(item.service.clone());
-            }
-
-            tray.items.iter_mut().for_each(|item| {
-                item.build_widget();
-                
-                if let Some(widget) = &item.widget {
-                    tray.box_.append(widget);
-                }
-            });
-        } else {
-            eprintln!("Failed to fetch current tray items.");
+    // We may have missed some items that were registered before we start listening.
+    // Fetch the current items and register them.
+    if let Some(items) = crate::singletons::tray::ITEMS.get() {
+        for item in items.lock().unwrap().iter() {
+            tray.add_item(item.service.clone());
         }
 
+        tray.items.iter_mut().for_each(|item| {
+            item.build_widget();
+            
+            if let Some(widget) = &item.widget {
+                tray.box_.append(widget);
+            }
+        });
+    } else {
+        eprintln!("Failed to fetch current tray items.");
+    }
+
+    // Watch for tray events
+    let (tx, rx) = async_channel::bounded::<BusEvent>(1);
+    tokio::spawn(async move {
         while let Ok(event) = subscribe().recv().await {
+            tx.send(event).await.unwrap();
+        }
+    });
+
+    gtk4::glib::spawn_future_local(async move {
+        while let Ok(event) = rx.recv().await {
             match event {
                 BusEvent::ItemRegistered(item) => {
                     tray.add_item(item.service.clone());
