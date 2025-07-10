@@ -1,3 +1,20 @@
+@mixin material-icons {
+    font-family: "Material Symbols Rounded", "MaterialSymbolsRounded", "Material Symbols Outlined",
+        "Material Symbols Sharp", "Material Design Icons", "Material Icons";
+}
+
+@mixin material-icons-filled {
+    font-family: "Material Design Icons", "Material Icons";
+}
+
+.material-icons {
+    @include material-icons;
+}
+
+.material-icons-filled {
+    @include material-icons-filled;
+}
+
 @mixin tiny-text {
     font-size: 11px;
     font-family: "GohuFont uni11 Nerd Font", "Terminus", monospace;

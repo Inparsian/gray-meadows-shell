@@ -42,7 +42,7 @@ Currently far from ready for daily use. This list of things to do may not be exh
     - [ ] Notifications
 - [ ] Overview
     - [ ] Search
-- [ ] Power menu
+- [x] Power menu
 - [ ] Right sidebar
     - [ ] Header
     - [ ] Quick toggles
