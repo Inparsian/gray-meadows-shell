@@ -4,6 +4,7 @@ mod modules;
 use freedesktop_desktop_entry::get_languages_from_env;
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
+use once_cell::sync::Lazy;
 use relm4::RelmRemoveAllExt;
 use urlencoding::encode;
 
@@ -11,11 +12,28 @@ use crate::{
     helpers::gesture,
     ipc,
     singletons::{apps, hyprland},
-    widgets::overview::item::{OverviewSearchItem, OverviewSearchItemAction}
+    widgets::overview::{
+        item::{OverviewSearchItem, OverviewSearchItemAction},
+        modules::{OverviewSearchModule, validate_input, input_without_extensions}
+    }
 };
+
+static MODULES: Lazy<Vec<&(dyn OverviewSearchModule + Send + Sync)>> = Lazy::new(|| vec![
+    &modules::calculator::OverviewCalculatorModule
+]);
 
 fn generate_search_results(query: &str) -> Vec<OverviewSearchItem> {
     let mut results = Vec::new();
+
+    // Iterate through all modules and collect results
+    for module in MODULES.iter() {
+        if validate_input(*module, query) {
+            let input = input_without_extensions(*module, query);
+            for item in module.run(&input) {
+                results.push(item);
+            }
+        }
+    }
 
     // Filter and weigh the applications based on the query
     let locales = get_languages_from_env();

@@ -43,7 +43,7 @@ Currently not ready for daily use yet, but it is getting closer. This list of th
 - [ ] Overview
     - [x] App search
     - [x] Web search
-    - [ ] Calculator module
+    - [x] Calculator module
     - [ ] Text manipulation module
     - [ ] Hashing module
 - [x] Power menu
