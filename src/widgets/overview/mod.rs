@@ -1,3 +1,6 @@
+mod item;
+mod modules;
+
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
