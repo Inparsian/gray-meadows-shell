@@ -9,7 +9,7 @@ where
 
     controller.connect_key_pressed(move |_, keyval, keycode, _| {
         on_press(keyval, keycode);
-        gtk4::glib::Propagation::Stop
+        gtk4::glib::Propagation::Proceed
     });
 
     controller

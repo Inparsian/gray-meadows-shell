@@ -47,6 +47,49 @@
             caret-color: $foreground-color-select;
         }
     }
+
+    .overview-search-results {
+        background: $background-color-primary;
+        border: 1px solid $border-color-primary;
+        padding: 8px;
+        min-width: 350px;
+
+        .overview-search-item {
+            @include large-text;
+            background: $background-color-primary;
+            color: $foreground-color-primary;
+            border-radius: 0px;
+
+            &:hover, &:focus {
+                background: $background-color-third;
+                outline: none;
+            }
+
+            &:active {
+                background: $background-color-fourth;
+            }
+
+            .overview-search-item-box {
+                padding: 4px;
+                font-weight: normal;
+
+                .overview-search-item-icon {
+                    font-size: 24px;
+                    margin-right: 16px;
+                }
+
+                .overview-search-item-subtitle {
+                    @include tiny-text;
+                    margin-left: 1px; /* sigh */
+                    color: $foreground-color-secondary;
+                }
+
+                .overview-search-item-action-label {
+                    color: $foreground-color-secondary;
+                }
+            }
+        }
+    }
 }
 
 .session-window {

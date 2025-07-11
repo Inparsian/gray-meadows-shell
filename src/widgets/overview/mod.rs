@@ -3,10 +3,39 @@ mod modules;
 
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
+use relm4::RelmRemoveAllExt;
 
-use crate::{helpers::gesture, ipc, singletons::hyprland};
+use crate::{
+    helpers::gesture,
+    ipc,
+    singletons::hyprland,
+    widgets::overview::item::OverviewSearchItem
+};
+
+fn generate_search_results(query: &str) -> Vec<OverviewSearchItem> {
+    let mut results = Vec::new();
+
+    // dummy items
+    let item = item::OverviewSearchItem {
+        title: format!("Result for '{}'", query),
+        subtitle: Some("This is a dummy result".to_string()),
+        icon: "system-run".to_string(),
+        action_text: "Run".to_string(),
+        action: item::OverviewSearchItemAction::RunCommand("echo 'Running command'".to_string()),
+    };
+
+    results.push(item.clone());
+    results.push(item.clone());
+    results.push(item);
+
+    results
+}
 
 pub fn new(application: &libadwaita::Application) {
+    let search_results = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+    search_results.set_css_classes(&["overview-search-results"]);
+    search_results.set_height_request(200);
+    
     relm4_macros::view! {
         entry_prompt_revealer = gtk4::Revealer {
             set_transition_type: gtk4::RevealerTransitionType::Crossfade,
@@ -16,6 +45,14 @@ pub fn new(application: &libadwaita::Application) {
                 set_css_classes: &["entry-prompt-label"],
                 set_label: "Type to search, and stuff",
             }
+        },
+
+        search_results_revealer = gtk4::Revealer {
+            set_transition_type: gtk4::RevealerTransitionType::SlideDown,
+            set_transition_duration: 175,
+            set_reveal_child: false,
+
+            set_child: Some(&search_results),
         },
 
         entry = gtk4::Entry {
@@ -31,13 +68,25 @@ pub fn new(application: &libadwaita::Application) {
 
             connect_changed: {
                 let entry_prompt_revealer = entry_prompt_revealer.clone();
+                let search_results = search_results.clone();
+                let search_results_revealer = search_results_revealer.clone();
+
                 move |entry| {
-                    if !entry.text().is_empty() {
-                        entry_prompt_revealer.set_reveal_child(false);
-                        entry.style_context().add_class("entry-extended");
-                    } else {
+                    if entry.text().is_empty() {
                         entry_prompt_revealer.set_reveal_child(true);
+                        search_results_revealer.set_reveal_child(false);
                         entry.style_context().remove_class("entry-extended");
+                    } else {
+                        entry_prompt_revealer.set_reveal_child(false);
+                        search_results_revealer.set_reveal_child(true);
+                        entry.style_context().add_class("entry-extended");
+
+                        // Clear previous results
+                        search_results.remove_all();
+
+                        for item in generate_search_results(&entry.text()) {
+                            search_results.append(&item.build());
+                        }
                     }
                 }
             }
@@ -61,7 +110,9 @@ pub fn new(application: &libadwaita::Application) {
             gtk4::Overlay {
                 set_child: Some(&entry_box),
                 add_overlay: &entry_prompt_revealer,
-            }
+            },
+
+            append: &search_results_revealer,
         },
 
         window = gtk4::ApplicationWindow {
