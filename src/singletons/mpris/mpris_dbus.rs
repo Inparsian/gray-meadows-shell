@@ -99,7 +99,6 @@ where
     }
 }
 
-#[allow(dead_code)]
 pub fn set_dbus_property<T>(player: &MprisPlayer, property: &str, value: T) -> Result<(), Error>
 where
     T: arg::Arg + arg::Append + RefArg

@@ -4,8 +4,6 @@
     and expression unlocalization and calculation. This may be extended in the future.
 */
 
-#![allow(dead_code)] // shut up please
-
 #[cxx::bridge]
 pub mod ffi {
     unsafe extern "C++" {

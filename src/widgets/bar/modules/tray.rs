@@ -7,7 +7,6 @@ use crate::{
     widgets::bar::wrapper::BarModuleWrapper
 };
 
-#[allow(dead_code)]
 #[derive(Default, Clone)]
 struct SystemTrayItem {
     pub service: String,
@@ -15,7 +14,6 @@ struct SystemTrayItem {
     popover_menu: Option<gtk4::PopoverMenu>
 }
 
-#[allow(dead_code)]
 impl SystemTrayItem {
     pub fn new(service: String) -> Self {
         Self {
@@ -101,7 +99,6 @@ impl SystemTrayItem {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Clone)]
 struct SystemTray {
     box_: gtk4::Box,
