@@ -4,6 +4,7 @@ pub mod sysstats;
 pub mod hyprland;
 pub mod tray;
 pub mod wireplumber;
+pub mod apps;
 
 pub fn activate_all() {
     date_time::activate();
@@ -12,4 +13,5 @@ pub fn activate_all() {
     hyprland::activate();
     tray::activate();
     wireplumber::activate();
+    apps::activate();
 }

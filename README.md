@@ -17,7 +17,7 @@ Currently far from ready for daily use. This list of things to do may not be exh
     - [ ] Notifications (dbus)
     - [x] System tray (dbus)
     - [x] Hyprland (IPC)
-    - [ ] Apps
+    - [x] Apps
     - [x] WirePlumber (C++ FFI)
     - [ ] NetworkManager (dbus?)
     - [x] System resource monitoring

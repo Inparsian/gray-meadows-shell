@@ -21,9 +21,14 @@ pub fn get_styles_directory() -> String {
     styles_dir
 }
 
+pub fn get_home_directory() -> String {
+    std::env::var("HOME")
+        .expect("HOME environment variable not set")
+}
+
 pub fn get_xdg_runtime_directory() -> String {
     std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| {
-        let home = std::env::var("HOME").expect("HOME environment variable not set");
+        let home = get_home_directory();
         format!("{}/.local/run", home)
     })
 }

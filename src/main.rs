@@ -7,7 +7,7 @@ mod widgets;
 
 use gtk4::prelude::*;
 use libadwaita::Application;
-use notify::{event::AccessKind, Watcher};
+use notify::{EventKind, event::{AccessKind, AccessMode}, Watcher};
 use once_cell::sync::Lazy;
 use std::{path::Path, sync::Mutex};
 
@@ -72,7 +72,7 @@ fn watch_scss() {
                 match res {
                     Ok(event) => {
                         // If the event kind is Access(Close(Write)), it means the file is done being written to
-                        if event.paths.iter().any(|p| p.extension() == Some("scss".as_ref()) && matches!(event.kind, notify::EventKind::Access(AccessKind::Close(notify::event::AccessMode::Write)))) {
+                        if event.paths.iter().any(|p| p.extension() == Some("scss".as_ref()) && matches!(event.kind, EventKind::Access(AccessKind::Close(AccessMode::Write)))) {
                             println!("Styles changed: {:?}", event.paths);
                             bundle_apply_scss();
                         }
