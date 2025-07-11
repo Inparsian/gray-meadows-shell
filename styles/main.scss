@@ -13,6 +13,40 @@
     @include normal-text;
     background-color: $background-color-primary-semitrans;
     color: $foreground-color-primary;
+
+    .entry-prompt-label {
+        color: $foreground-color-secondary;
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .entry-box {
+        background: $background-color-primary;
+        border: 1px solid $border-color-primary;
+
+        .entry-prompt {
+            min-width: 20rem;
+            min-height: 3rem;
+            transition: all 0.3s cubic-bezier(0.5, 0, 0, 1);
+            outline: none;
+            background: $background-color-primary;
+            color: $foreground-color-primary;
+            padding-left: 12px;
+            padding-right: 12px;
+
+            selection {
+                background-color: $foreground-color-select;
+                color: $background-color-fourth;
+            }
+
+            caret-color: transparent;
+        }
+
+        .entry-prompt.entry-extended {
+            min-width: 32rem;
+            caret-color: $foreground-color-select;
+        }
+    }
 }
 
 .session-window {

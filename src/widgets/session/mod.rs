@@ -39,7 +39,6 @@ pub fn new(application: &libadwaita::Application) {
     relm4_macros::view! {
         session_box = gtk4::Box {
             set_orientation: gtk4::Orientation::Vertical,
-            set_css_classes: &["session-box"],
             set_spacing: 12,
             set_halign: gtk4::Align::Center,
             set_valign: gtk4::Align::Center,
