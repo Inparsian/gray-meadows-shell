@@ -11,8 +11,6 @@ impl OverviewSearchModule for OverviewCalculatorModule {
     }
 
     fn run(&self, query: &str) -> Vec<OverviewSearchItem> {
-        // Here you would implement the logic to handle the calculator query
-        // For example, you might call a function to evaluate the expression
         let unlocalized = ffi::unlocalizeExpression(query.to_string());
         let result = ffi::calculateAndPrint(unlocalized, 1000); // 100
 

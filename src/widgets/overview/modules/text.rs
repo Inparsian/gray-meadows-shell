@@ -141,14 +141,16 @@ impl OverviewSearchModule for OverviewTextModule {
             TextOperation::Hex
         ] {
             let result = digest(query.to_string(), operation.clone());
-
-            results.push(OverviewSearchItem {
-                title: result.clone(),
-                subtitle: Some(format!("Operation: {}", format!("{:?}", operation).to_lowercase())),
-                icon: "text-x-generic-symbolic".to_string(),
-                action: OverviewSearchItemAction::Copy(result),
-                action_text: "copy".to_string(),
-            });
+            
+            if query != result {
+                results.push(OverviewSearchItem {
+                    title: result.clone(),
+                    subtitle: Some(format!("Operation: {}", format!("{:?}", operation).to_lowercase())),
+                    icon: "text-x-generic-symbolic".to_string(),
+                    action: OverviewSearchItemAction::Copy(result),
+                    action_text: "copy".to_string(),
+                });
+            }
         }
 
         results
