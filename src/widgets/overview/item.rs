@@ -31,7 +31,8 @@ impl OverviewSearchItem {
                 gtk4::Label {
                     set_css_classes: &["overview-search-item-action"],
                     set_label: &self.action_text,
-                    set_xalign: 1.0
+                    set_xalign: 1.0,
+                    set_ellipsize: gtk4::pango::EllipsizeMode::Start
                 }
             },
 
@@ -108,13 +109,15 @@ impl OverviewSearchItem {
                             set_label: self.subtitle.as_ref().unwrap_or(&String::new()).as_str(),
                             set_visible: self.subtitle.is_some(),
                             set_css_classes: &["overview-search-item-subtitle"],
-                            set_xalign: 0.0
+                            set_xalign: 0.0,
+                            set_ellipsize: gtk4::pango::EllipsizeMode::End
                         },
 
                         gtk4::Label {
                             set_label: &self.title,
                             set_css_classes: &["overview-search-item-title"],
-                            set_xalign: 0.0
+                            set_xalign: 0.0,
+                            set_ellipsize: gtk4::pango::EllipsizeMode::End
                         }
                     },
 

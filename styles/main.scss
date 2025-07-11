@@ -25,7 +25,7 @@
         border: 1px solid $border-color-primary;
 
         .entry-prompt {
-            min-width: 20rem;
+            min-width: 294px;
             min-height: 3rem;
             transition: all 0.3s cubic-bezier(0.5, 0, 0, 1);
             outline: none;
@@ -43,7 +43,7 @@
         }
 
         .entry-prompt.entry-extended {
-            min-width: 32rem;
+            min-width: 440px;
             caret-color: $foreground-color-select;
         }
     }
@@ -52,7 +52,7 @@
         background: $background-color-primary;
         border: 1px solid $border-color-primary;
         padding: 8px;
-        min-width: 350px;
+        min-width: 448px;
 
         .overview-search-item {
             @include large-text;

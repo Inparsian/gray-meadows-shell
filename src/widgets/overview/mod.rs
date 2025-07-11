@@ -86,7 +86,11 @@ pub fn new(application: &libadwaita::Application) {
             set_transition_duration: 175,
             set_reveal_child: false,
 
-            set_child: Some(&search_results),
+            libadwaita::Clamp {
+                set_width_request: 0,
+                set_maximum_size: 0,
+                set_child: Some(&search_results)
+            },
         },
 
         entry = gtk4::Entry {
@@ -133,7 +137,7 @@ pub fn new(application: &libadwaita::Application) {
         entry_box = gtk4::Box {
             set_css_classes: &["entry-box"],
             set_orientation: gtk4::Orientation::Horizontal,
-            set_hexpand: true,
+            set_halign: gtk4::Align::Center,
 
             append: &entry,
         },
