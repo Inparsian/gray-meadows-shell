@@ -4,7 +4,7 @@ My personal desktop shell using gtk4 and gtk4-layer-shell, re-written from scrat
 
 ## To-Do
 
-Currently far from ready for daily use. This list of things to do may not be exhaustive and is subject to change.
+Currently not ready for daily use yet, but it is getting closer. This list of things to do may not be exhaustive and is subject to change.
 
 ⚠️ = Known bugs/issues exist.<br>
 ❓ = This particular module will be a challenge.

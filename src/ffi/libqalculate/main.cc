@@ -3,30 +3,43 @@
 #include <rust/cxx.h>
 #include <memory>
 
-std::unique_ptr<Calculator> create_calculator() {
-    return std::make_unique<Calculator>();
+static void assert_calculator() {
+    if (!calculator) {
+        throw std::runtime_error("Calculator instance not initialized");
+    }
 }
 
-bool loadExchangeRates(Calculator &self) {
-    return self.loadExchangeRates();
+void init_calc() {
+    if (!calculator) {
+        calculator = new Calculator();
+    }
 }
 
-bool loadGlobalDefinitions(Calculator &self) {
-    return self.loadGlobalDefinitions();
+bool loadExchangeRates() {
+    assert_calculator();
+    return calculator->loadExchangeRates();
 }
 
-bool loadLocalDefinitions(Calculator &self) {
-    return self.loadLocalDefinitions();
+bool loadGlobalDefinitions() {
+    assert_calculator();
+    return calculator->loadGlobalDefinitions();
 }
 
-rust::String unlocalizeExpression(Calculator &self, rust::String str) {
+bool loadLocalDefinitions() {
+    assert_calculator();
+    return calculator->loadLocalDefinitions();
+}
+
+rust::String unlocalizeExpression(rust::String str) {
+    assert_calculator();
     std::string in = str.c_str();
-    std::string out = self.unlocalizeExpression(in);
+    std::string out = calculator->unlocalizeExpression(in);
     return rust::String(std::move(out));
 }
 
-rust::String calculateAndPrint(Calculator &self, rust::String str, int msecs) {
+rust::String calculateAndPrint(rust::String str, rust::u32 msecs) {
+    assert_calculator();
     std::string in = str.c_str();
-    std::string out = self.calculateAndPrint(in, msecs);
+    std::string out = calculator->calculateAndPrint(in, msecs);
     return rust::String(std::move(out));
 }

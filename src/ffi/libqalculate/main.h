@@ -3,21 +3,17 @@
 #include <rust/cxx.h>
 #include <memory>
 
-// factory for Calculator
-std::unique_ptr<Calculator> create_calculator();
+void init_calc();
 
-// Calculator methods
-bool loadExchangeRates(Calculator &self);
-bool loadGlobalDefinitions(Calculator &self);
-bool loadLocalDefinitions(Calculator &self);
+bool loadExchangeRates();
+bool loadGlobalDefinitions();
+bool loadLocalDefinitions();
 
-rust::string unlocalizeExpression(
-    Calculator &self,
-    rust::string str
+rust::String unlocalizeExpression(
+    rust::String str
 );
 
-rust::string calculateAndPrint(
-    Calculator &self,
-    rust::string str,
-    int msecs
+rust::String calculateAndPrint(
+    rust::String str,
+    rust::u32 msecs
 );
