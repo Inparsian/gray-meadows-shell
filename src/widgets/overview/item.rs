@@ -65,9 +65,7 @@ impl OverviewSearchItem {
                                     let text = text.clone();
 
                                     move || {
-                                        let _output = std::process::Command::new("bash")
-                                            .arg("-c")
-                                            .arg("wl-copy")
+                                        let _output = std::process::Command::new("wl-copy")
                                             .arg(text)
                                             .output();
                                     }
