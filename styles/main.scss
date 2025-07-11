@@ -9,7 +9,14 @@
     margin-right: 6px;
 }
 
+.overview-window {
+    @include normal-text;
+    background-color: $background-color-primary-semitrans;
+    color: $foreground-color-primary;
+}
+
 .session-window {
+    @include normal-text;
     background-color: $background-color-primary-semitrans;
     color: $foreground-color-primary;
 

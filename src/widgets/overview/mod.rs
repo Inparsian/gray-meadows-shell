@@ -9,6 +9,9 @@ pub fn new(application: &libadwaita::Application) {
             set_orientation: gtk4::Orientation::Vertical,
             set_css_classes: &["overview"],
             set_spacing: 0,
+            set_halign: gtk4::Align::Center,
+            set_valign: gtk4::Align::Center,
+            set_hexpand: true,
 
             // Placeholder for overview content
             gtk4::Label {

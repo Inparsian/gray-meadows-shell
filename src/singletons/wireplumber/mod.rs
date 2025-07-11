@@ -153,7 +153,6 @@ pub fn activate() {
                 },
 
                 WpEvent::RemoveStream(node) => {
-
                     let _ = NODES.get().map(|nodes| {
                         nodes.lock().unwrap().retain(|n| n.id != node.id);
                     });
