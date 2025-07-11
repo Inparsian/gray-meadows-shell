@@ -20,7 +20,7 @@ fn generate_search_results(query: &str) -> Vec<OverviewSearchItem> {
         title: format!("Result for '{}'", query),
         subtitle: Some("This is a dummy result".to_string()),
         icon: "system-run".to_string(),
-        action_text: "Run".to_string(),
+        action_text: "run".to_string(),
         action: item::OverviewSearchItemAction::RunCommand("echo 'Running command'".to_string()),
     };
 
@@ -162,14 +162,17 @@ pub fn new(application: &libadwaita::Application) {
 
             if window.is_visible() {
                 window.hide();
+                entry.set_text("");
             } else {
                 window.set_monitor(monitor.as_ref());
                 window.show();
+                entry.grab_focus();
             }
         }
 
         else if message.as_str() == "hide_overview" {
             window.hide();
+            entry.set_text("");
         }
     });
 }

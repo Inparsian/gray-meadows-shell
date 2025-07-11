@@ -65,6 +65,18 @@
                 outline: none;
             }
 
+            &:focus {
+                .overview-search-item-action {
+                    opacity: 1;
+                }
+            }
+
+            &:not(:focus) {
+                .overview-search-item-action {
+                    opacity: 0;
+                }
+            }
+
             &:active {
                 background: $background-color-fourth;
             }
@@ -84,8 +96,9 @@
                     color: $foreground-color-secondary;
                 }
 
-                .overview-search-item-action-label {
+                .overview-search-item-action {
                     color: $foreground-color-secondary;
+                    transition: opacity 0.175s cubic-bezier(0.5, 0, 0, 1);
                 }
             }
         }
