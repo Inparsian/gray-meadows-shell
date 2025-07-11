@@ -40,9 +40,9 @@ impl OverviewSearchItem {
                     let action = self.action.clone();
                     move |_| {
                         match &action {
-                            // Launch and RunCommand will share the same behavior for now, however they
-                            // in the future Launch will enable gray-meadows-shell to internally track the
-                            // most launched applications, hence why it is separated from RunCommand.
+                            // Launch and RunCommand will share the same behavior for now, however in the
+                            // future, Launch will enable gray-meadows-shell to internally track the most
+                            // launched applications, hence why it is separated from RunCommand.
                             OverviewSearchItemAction::Launch(command) | OverviewSearchItemAction::RunCommand(command) => {
                                 println!("Running command: {}", command);
                             }
