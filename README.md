@@ -41,7 +41,11 @@ Currently far from ready for daily use. This list of things to do may not be exh
     - [ ] Keybinds
     - [ ] Notifications
 - [ ] Overview
-    - [ ] Search
+    - [x] App search
+    - [x] Web search
+    - [ ] Calculator module
+    - [ ] Text manipulation module
+    - [ ] Hashing module
 - [x] Power menu
 - [ ] Right sidebar
     - [ ] Header

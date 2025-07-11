@@ -1,32 +1,47 @@
 mod item;
 mod modules;
 
+use freedesktop_desktop_entry::get_languages_from_env;
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 use relm4::RelmRemoveAllExt;
+use urlencoding::encode;
 
 use crate::{
     helpers::gesture,
     ipc,
-    singletons::hyprland,
-    widgets::overview::item::OverviewSearchItem
+    singletons::{apps, hyprland},
+    widgets::overview::item::{OverviewSearchItem, OverviewSearchItemAction}
 };
 
 fn generate_search_results(query: &str) -> Vec<OverviewSearchItem> {
     let mut results = Vec::new();
 
-    // dummy items
-    let item = item::OverviewSearchItem {
-        title: format!("Result for '{}'", query),
-        subtitle: Some("This is a dummy result".to_string()),
-        icon: "system-run".to_string(),
-        action_text: "run".to_string(),
-        action: item::OverviewSearchItemAction::RunCommand("echo 'Running command'".to_string()),
-    };
+    // Filter and weigh the applications based on the query
+    let locales = get_languages_from_env();
+    let desktops = apps::query_desktops(query);
+    for i in 0..8 {
+        if let Some(entry) = desktops.get(i) {
+            let entry = &entry.entry;
 
-    results.push(item.clone());
-    results.push(item.clone());
-    results.push(item);
+            results.push(OverviewSearchItem {
+                title: entry.name(&locales).unwrap_or_default().to_string(),
+                subtitle: None,
+                icon: entry.icon().map(|icon| icon.to_string()).unwrap_or_default(),
+                action: OverviewSearchItemAction::Launch(entry.exec().unwrap_or_default().to_string()),
+                action_text: "launch".to_string(),
+            });
+        }
+    }
+
+    // web search as final fallback
+    results.push(OverviewSearchItem {
+        title: query.to_string(),
+        subtitle: Some("Search the web".to_string()),
+        icon: "search".to_string(),
+        action: OverviewSearchItemAction::RunCommand(format!("xdg-open https://duckduckgo.com/?q={}", encode(query))),
+        action_text: "search".to_string(),
+    });
 
     results
 }
@@ -59,10 +74,14 @@ pub fn new(application: &libadwaita::Application) {
             set_css_classes: &["entry-prompt"],
             set_has_frame: false,
 
-            connect_activate: move |entry| {
-                let text = entry.text().to_string();
-                if !text.is_empty() {
-                    println!("Search query: {}", text);
+            connect_activate: {
+                let search_results = search_results.clone();
+
+                move |entry| {
+                    let text = entry.text().to_string();
+                    if !text.is_empty() {
+                        search_results.first_child().map(|child| child.activate());
+                    }
                 }
             },
 

@@ -3,16 +3,71 @@ use freedesktop_desktop_entry::{default_paths, get_languages_from_env, Iter, Des
 use notify::{event::{AccessKind, AccessMode}, EventKind, Watcher};
 use once_cell::sync::Lazy;
 
+use crate::helpers::matching;
+
+pub struct WeightedDesktopEntry {
+    pub entry: DesktopEntry,
+    weight: usize,
+}
+
 pub static DESKTOPS: Lazy<Mutex<Vec<DesktopEntry>>> = Lazy::new(|| Mutex::new(Vec::new()));
 
 pub fn activate() {
-    // Perform initial load of .desktop files
     refresh_desktops();
 
-    // Watch for changes in the default .desktop file directories
     for path in default_paths() {
         std::thread::spawn(|| watch_desktops(path));
     }
+}
+
+pub fn query_desktops(query: &str) -> Vec<WeightedDesktopEntry> {
+    let desktops = DESKTOPS.lock().unwrap();
+    let locales = get_languages_from_env();
+
+    let mut weighted = desktops.iter()
+        .map(|entry| {
+            // Fixed weights:
+            // 1. Exact match (10000)
+            // 2. Lazy match, contains all characters, length match (500)
+            // 3. Fuzzy match (30)
+            // 4. Lazy match (10)
+            //
+            // Dynamic weights:
+            // 5. Beginning match (100)
+            // 6. String inclusion bonus (query.length * 4)
+            let name = entry.name(&locales).map(|c| c.to_string()).unwrap_or_default().to_lowercase();
+            let query = &query.trim().to_lowercase();
+            let mut weight = if name == *query {
+                10000
+            } else if matching::lazy_match(&name, query) {
+                500
+            } else if matching::fuzzy_match(&name, query) {
+                30
+            } else if matching::lazy_match(&name, query) {
+                10
+            } else {
+                0
+            };
+
+            if name.starts_with(query) {
+                weight += 100;
+            }
+
+            if name.contains(query) {
+                weight += query.len() * 4;
+            }
+
+            WeightedDesktopEntry {
+                entry: entry.clone(),
+                weight
+            }
+        })
+        .filter(|entry| entry.weight > 0)
+        .collect::<Vec<_>>();
+
+    weighted.sort_by(|a, b| b.weight.cmp(&a.weight));
+
+    weighted
 }
 
 pub fn refresh_desktops() {
