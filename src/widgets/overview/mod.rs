@@ -68,7 +68,6 @@ fn generate_search_results(query: &str) -> Vec<OverviewSearchItem> {
 pub fn new(application: &libadwaita::Application) {
     let search_results = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
     search_results.set_css_classes(&["overview-search-results"]);
-    search_results.set_height_request(200);
     
     relm4_macros::view! {
         entry_prompt_revealer = gtk4::Revealer {

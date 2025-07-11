@@ -37,13 +37,17 @@ pub fn query_desktops(query: &str) -> Vec<WeightedDesktopEntry> {
             // 6. String inclusion bonus (query.length * 4)
             let name = entry.name(&locales).map(|c| c.to_string()).unwrap_or_default().to_lowercase();
             let query = &query.trim().to_lowercase();
+
+            let lazy_match = matching::lazy_match(&name, query);
+            let contains_all = name.chars().all(|c| query.contains(c));
+
             let mut weight = if name == *query {
                 10000
-            } else if matching::lazy_match(&name, query) {
+            } else if lazy_match && contains_all && query.len() == name.len() {
                 500
             } else if matching::fuzzy_match(&name, query) {
                 30
-            } else if matching::lazy_match(&name, query) {
+            } else if lazy_match {
                 10
             } else {
                 0
