@@ -44,7 +44,7 @@ Currently not ready for daily use yet, but it is getting closer. This list of th
     - [x] App search
     - [x] Web search
     - [x] Calculator module
-    - [ ] Text manipulation module
+    - [x] Text manipulation module
     - [ ] Hashing module
 - [x] Power menu
 - [ ] Right sidebar
