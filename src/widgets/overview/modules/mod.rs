@@ -9,7 +9,7 @@ pub trait OverviewSearchModule {
 }
 
 pub fn validate_input(module: &dyn OverviewSearchModule, query: &str) -> bool {
-    module.extensions().iter().any(|ext| query.starts_with(ext))
+    module.extensions().iter().any(|ext| query.starts_with(&format!("{} ", ext)))
 }
 
 pub fn input_without_extensions(module: &dyn OverviewSearchModule, query: &str) -> String {
