@@ -1,6 +1,6 @@
 use gtk4::prelude::*;
 
-use crate::{ipc, helpers::process};
+use crate::{helpers::process, ipc, singletons::apps::pixbuf::get_pixbuf_or_fallback};
 
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
@@ -22,6 +22,8 @@ pub struct OverviewSearchItem {
 
 impl OverviewSearchItem {
     pub fn build(&self) -> gtk4::Button {
+        let icon = get_pixbuf_or_fallback(&self.icon, "emote-love");
+
         relm4_macros::view! {
             action_slide_revealer = gtk4::Revealer {
                 set_transition_type: gtk4::RevealerTransitionType::SlideLeft,
@@ -95,7 +97,7 @@ impl OverviewSearchItem {
                     set_hexpand: true,
 
                     gtk4::Image {
-                        set_icon_name: Some(&self.icon),
+                        set_from_pixbuf: icon.as_ref(),
                         set_pixel_size: 24,
                         set_css_classes: &["overview-search-item-icon"],
                     },
