@@ -82,7 +82,7 @@ pub fn new(application: &libadwaita::Application) {
 
         search_results_revealer = gtk4::Revealer {
             set_transition_type: gtk4::RevealerTransitionType::SlideDown,
-            set_transition_duration: 175,
+            set_transition_duration: 250,
             set_reveal_child: false,
 
             libadwaita::Clamp {
@@ -92,8 +92,15 @@ pub fn new(application: &libadwaita::Application) {
             },
         },
 
+        entry_box = gtk4::Box {
+            set_css_classes: &["entry-box"],
+            set_orientation: gtk4::Orientation::Horizontal,
+            set_halign: gtk4::Align::Center
+        },
+
         entry = gtk4::Entry {
             set_css_classes: &["entry-prompt"],
+            set_hexpand: true,
             set_has_frame: false,
 
             connect_activate: {
@@ -108,6 +115,7 @@ pub fn new(application: &libadwaita::Application) {
             },
 
             connect_changed: {
+                let entry_box = entry_box.clone();
                 let entry_prompt_revealer = entry_prompt_revealer.clone();
                 let search_results = search_results.clone();
                 let search_results_revealer = search_results_revealer.clone();
@@ -116,11 +124,11 @@ pub fn new(application: &libadwaita::Application) {
                     if entry.text().is_empty() {
                         entry_prompt_revealer.set_reveal_child(true);
                         search_results_revealer.set_reveal_child(false);
-                        entry.style_context().remove_class("entry-extended");
+                        entry_box.style_context().remove_class("entry-extended");
                     } else {
                         entry_prompt_revealer.set_reveal_child(false);
                         search_results_revealer.set_reveal_child(true);
-                        entry.style_context().add_class("entry-extended");
+                        entry_box.style_context().add_class("entry-extended");
 
                         // Clear previous results
                         search_results.remove_all();
@@ -133,12 +141,10 @@ pub fn new(application: &libadwaita::Application) {
             }
         },
 
-        entry_box = gtk4::Box {
-            set_css_classes: &["entry-box"],
-            set_orientation: gtk4::Orientation::Horizontal,
-            set_halign: gtk4::Align::Center,
-
-            append: &entry,
+        entry_overlay = gtk4::Overlay {
+            set_hexpand: true,
+            set_child: Some(&entry_prompt_revealer),
+            add_overlay: &entry,
         },
 
         overview_box = gtk4::Box {
@@ -148,11 +154,7 @@ pub fn new(application: &libadwaita::Application) {
             set_valign: gtk4::Align::Center,
             set_hexpand: true,
 
-            gtk4::Overlay {
-                set_child: Some(&entry_box),
-                add_overlay: &entry_prompt_revealer,
-            },
-
+            append: &entry_box,
             append: &search_results_revealer,
         },
 
@@ -171,6 +173,8 @@ pub fn new(application: &libadwaita::Application) {
             set_child: Some(&overview_box),
         }
     };
+
+    entry_box.append(&entry_overlay);
 
     window.add_controller(gesture::on_primary_click({
         let window = window.clone();
