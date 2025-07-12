@@ -146,7 +146,7 @@ impl OverviewSearchModule for OverviewTextModule {
                 results.push(OverviewSearchItem {
                     title: result.clone(),
                     subtitle: Some(format!("Operation: {}", format!("{:?}", operation).to_lowercase())),
-                    icon: "text-x-generic-symbolic".to_string(),
+                    icon: "text-x-generic".to_string(),
                     action: OverviewSearchItemAction::Copy(result),
                     action_text: "copy".to_string(),
                 });
