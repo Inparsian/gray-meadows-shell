@@ -20,7 +20,8 @@ use crate::{
 
 static MODULES: Lazy<Vec<&(dyn OverviewSearchModule + Send + Sync)>> = Lazy::new(|| vec![
     &modules::calculator::OverviewCalculatorModule,
-    &modules::text::OverviewTextModule
+    &modules::text::OverviewTextModule,
+    &modules::terminal::OverviewTerminalModule
 ]);
 
 fn generate_search_results(query: &str) -> Vec<OverviewSearchItem> {

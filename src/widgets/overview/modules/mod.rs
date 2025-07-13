@@ -2,6 +2,7 @@ use crate::widgets::overview::item::OverviewSearchItem;
 
 pub mod calculator;
 pub mod text;
+pub mod terminal;
 
 pub trait OverviewSearchModule {
     fn extensions(&self) -> Vec<&str>;
