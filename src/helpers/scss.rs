@@ -66,17 +66,6 @@ pub fn refresh_variables() {
     *scss_vars = vars;
 }
 
-pub fn get_color(name: &str) -> Option<color::Rgba> {
-    let scss_vars = SCSS_VARS.lock().unwrap();
-    scss_vars.get_color(name).cloned()
-}
-
-#[allow(dead_code)]
-pub fn get_string(name: &str) -> Option<String> {
-    let scss_vars = SCSS_VARS.lock().unwrap();
-    scss_vars.get_string(name).cloned()
-}
-
 pub fn escape_html(input: char) -> String {
     match input {
         '&' => "&amp;".to_string(),
@@ -86,4 +75,15 @@ pub fn escape_html(input: char) -> String {
         '\'' => "&#39;".to_string(),
         _ => input.to_string(),
     }
+}
+
+pub fn get_color(name: &str) -> Option<color::Rgba> {
+    let scss_vars = SCSS_VARS.lock().unwrap();
+    scss_vars.get_color(name).cloned()
+}
+
+#[allow(dead_code)]
+pub fn get_string(name: &str) -> Option<String> {
+    let scss_vars = SCSS_VARS.lock().unwrap();
+    scss_vars.get_string(name).cloned()
 }

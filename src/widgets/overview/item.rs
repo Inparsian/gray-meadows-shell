@@ -144,8 +144,6 @@ impl OverviewSearchItem {
                 chars.push(if indices.iter().any(|(start, _)| *start == i) {
                     format!(
                         "<b>{}</b>",
-
-                        // Escape ampersands and other special characters
                         scss::escape_html(c)
                     )
                 } else {
