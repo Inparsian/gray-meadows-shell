@@ -149,6 +149,7 @@ impl OverviewSearchModule for OverviewTextModule {
                     icon: "text-x-generic".to_string(),
                     action: OverviewSearchItemAction::Copy(result),
                     action_text: "copy".to_string(),
+                    query: None
                 });
             }
         }

@@ -1,6 +1,6 @@
 use gtk4::prelude::*;
 
-use crate::{helpers::process, ipc, singletons::apps::pixbuf::get_pixbuf_or_fallback};
+use crate::{helpers::{matching, process, scss}, ipc, singletons::apps::pixbuf::get_pixbuf_or_fallback};
 
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
@@ -18,6 +18,7 @@ pub struct OverviewSearchItem {
     pub icon: String,
     pub action_text: String,
     pub action: OverviewSearchItemAction,
+    pub query: Option<String>
 }
 
 impl OverviewSearchItem {
@@ -25,6 +26,13 @@ impl OverviewSearchItem {
         let icon = get_pixbuf_or_fallback(&self.icon, "emote-love");
 
         relm4_macros::view! {
+            title = gtk4::Label {
+                set_label: &self.title,
+                set_css_classes: &["overview-search-item-title"],
+                set_xalign: 0.0,
+                set_ellipsize: gtk4::pango::EllipsizeMode::End
+            },
+
             action_slide_revealer = gtk4::Revealer {
                 set_transition_type: gtk4::RevealerTransitionType::SlideLeft,
                 set_transition_duration: 175,
@@ -115,17 +123,47 @@ impl OverviewSearchItem {
                             set_ellipsize: gtk4::pango::EllipsizeMode::End
                         },
 
-                        gtk4::Label {
-                            set_label: &self.title,
-                            set_css_classes: &["overview-search-item-title"],
-                            set_xalign: 0.0,
-                            set_ellipsize: gtk4::pango::EllipsizeMode::End
-                        }
+                        append: &title
                     },
 
                     append: &action_slide_revealer
                 }
             }
+        }
+
+        if let Some(query) = &self.query {
+            // Build the markup for our query using lazy match indices
+            let indices: Vec<(usize, usize)> = matching::lazy_match_indices(
+                &self.title.to_lowercase(),
+                &query.to_lowercase()
+            );
+
+            let mut chars: Vec<String> = Vec::new();
+
+            for (i, c) in self.title.chars().enumerate() {
+                chars.push(if indices.iter().any(|(start, _)| *start == i) {
+                    format!(
+                        "<b>{}</b>",
+
+                        // Escape ampersands and other special characters
+                        scss::escape_html(c)
+                    )
+                } else {
+                    let color = scss::get_color("foreground-color-select");
+
+                    if let Some(color) = color {
+                        format!(
+                            "<span foreground=\"{}\">{}</span>",
+                            color.as_hex(),
+                            scss::escape_html(c)
+                        )
+                    } else {
+                        scss::escape_html(c).to_string()
+                    }
+                });
+            }
+
+            title.set_markup(&chars.join(""));
         }
 
         widget

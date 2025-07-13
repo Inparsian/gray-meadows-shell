@@ -12,7 +12,7 @@ impl OverviewSearchModule for OverviewCalculatorModule {
 
     fn run(&self, query: &str) -> Vec<OverviewSearchItem> {
         let unlocalized = ffi::unlocalizeExpression(query.to_string());
-        let result = ffi::calculateAndPrint(unlocalized, 1000); // 100
+        let result = ffi::calculateAndPrint(unlocalized, 1000);
 
         vec![OverviewSearchItem {
             title: result.clone(),
@@ -20,6 +20,7 @@ impl OverviewSearchModule for OverviewCalculatorModule {
             icon: "accessories-calculator".to_string(),
             action: OverviewSearchItemAction::Copy(result),
             action_text: "calculate".to_string(),
+            query: None
         }]
     }
 }

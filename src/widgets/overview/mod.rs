@@ -49,6 +49,7 @@ fn generate_search_results(query: &str) -> Vec<OverviewSearchItem> {
                 icon: entry.icon().map(|icon| icon.to_string()).unwrap_or_default(),
                 action: OverviewSearchItemAction::Launch(entry.exec().unwrap_or_default().to_string()),
                 action_text: "launch".to_string(),
+                query: Some(query.to_string())
             });
         }
     }
@@ -60,6 +61,7 @@ fn generate_search_results(query: &str) -> Vec<OverviewSearchItem> {
         icon: "search".to_string(),
         action: OverviewSearchItemAction::RunCommand(format!("xdg-open https://duckduckgo.com/?q={}", encode(query))),
         action_text: "search".to_string(),
+        query: None
     });
 
     results

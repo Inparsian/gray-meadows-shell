@@ -76,3 +76,14 @@ pub fn get_string(name: &str) -> Option<String> {
     let scss_vars = SCSS_VARS.lock().unwrap();
     scss_vars.get_string(name).cloned()
 }
+
+pub fn escape_html(input: char) -> String {
+    match input {
+        '&' => "&amp;".to_string(),
+        '<' => "&lt;".to_string(),
+        '>' => "&gt;".to_string(),
+        '"' => "&quot;".to_string(),
+        '\'' => "&#39;".to_string(),
+        _ => input.to_string(),
+    }
+}

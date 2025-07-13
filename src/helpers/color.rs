@@ -43,6 +43,19 @@ impl Rgba {
             alpha: a as f64 / 255.0,
         }
     }
+
+    pub fn as_hex(&self) -> String {
+        let r = (self.red * 255.0).round() as u8;
+        let g = (self.green * 255.0).round() as u8;
+        let b = (self.blue * 255.0).round() as u8;
+        let a = self.alpha.round() as u8;
+
+        if self.alpha < 1.0 {
+            format!("#{:02x}{:02x}{:02x}{:02x}", r, g, b, a)
+        } else {
+            format!("#{:02x}{:02x}{:02x}", r, g, b)
+        }
+    }
 }
 
 pub fn is_valid_hex_color(hex: &str) -> bool {
