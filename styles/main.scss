@@ -36,6 +36,45 @@
         color: $foreground-color-primary;
         padding: 16px;
         min-width: 350px;
+
+        .sidebar-right-header-icon {
+            @include large-text;
+            min-width: 40px;
+            min-height: 40px;
+            background: $background-color-secondary;
+            border: 1px solid $background-color-third;
+        }
+
+        .sidebar-right-header-label {
+            margin-left: 10px;
+        }
+
+        .sidebar-right-header-sublabel {
+            @include tiny-text;
+            margin-left: 10px;
+            color: $foreground-color-secondary;
+        }
+
+        .sidebar-button {
+            background: $background-color-primary;
+            border: 1px solid $border-color-primary;
+            border-radius: 0px;
+            color: $foreground-color-primary;
+            padding-top: 0px;
+            padding-bottom: 0px;
+            padding-left: 6px;
+            padding-right: 6px;
+            font-weight: normal;
+
+            &:hover, &:focus {
+                background: $background-color-third;
+                outline: none;
+            }
+
+            &:active {
+                background: $background-color-fourth;
+            }
+        }
     }
 }
 

@@ -23,6 +23,7 @@ pub static SYS_STATS: Lazy<Mutex<SysStats>> = Lazy::new(|| Mutex::new(SysStats::
 #[derive(Default)]
 pub struct SysStats {
     // sysstats
+    pub uptime: Mutable<u64>,
     pub used_memory: Mutable<u64>,
     pub total_memory: Mutable<u64>,
     pub free_memory: Mutable<u64>,
@@ -42,6 +43,7 @@ impl SysStats {
         sys.refresh_memory();
         sys.refresh_cpu_usage();
 
+        self.uptime.set(sysinfo::System::uptime());
         self.used_memory.set(sys.used_memory());
         self.total_memory.set(sys.total_memory());
         self.free_memory.set(sys.free_memory());
@@ -89,6 +91,8 @@ pub fn activate() {
     // TODO: Add support for other GPU vendors
     let _ = gpu::nvidia::init_nvml();
     sensors::init_sensors();
+    
+    SYS_STATS.lock().unwrap().uptime.set(sysinfo::System::uptime());
 
     std::thread::spawn(|| {
         loop {

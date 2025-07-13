@@ -51,7 +51,7 @@ This list of things to do may not be exhaustive and is subject to change.
     - [ ] Hashing module
 - [x] Power menu
 - [ ] Right sidebar
-    - [ ] Header
+    - [x] Header
     - [ ] Quick toggles
     - [ ] Top modules
         - [ ] Notifications

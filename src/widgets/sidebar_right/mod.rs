@@ -1,16 +1,22 @@
+mod header;
+
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
 use crate::{helpers::gesture, ipc, singletons::hyprland};
 
 pub fn new(application: &libadwaita::Application) {
+    let header = header::new();
+
     relm4_macros::view! {
         right_sidebar_box = gtk4::Box {
             set_css_classes: &["right-sidebar-box"],
             set_orientation: gtk4::Orientation::Vertical,
             set_spacing: 12,
             set_hexpand: true,
-            set_vexpand: true
+            set_vexpand: true,
+
+            append: &header
         },
 
         window = gtk4::ApplicationWindow {
