@@ -97,6 +97,8 @@ fn activate(application: &Application) {
 
     widgets::overview::new(application);
     widgets::session::new(application);
+    widgets::sidebar_left::new(application);
+    widgets::sidebar_right::new(application);
 }
 
 #[tokio::main]

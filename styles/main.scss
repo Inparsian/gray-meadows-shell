@@ -9,6 +9,36 @@
     margin-right: 6px;
 }
 
+.left-sidebar-window {
+    margin-right: 5px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+
+    .left-sidebar-box {
+        @include normal-text;
+        background-color: $background-color-primary;
+        border: 1px solid $border-color-primary;
+        color: $foreground-color-primary;
+        padding: 16px;
+        min-width: 350px;
+    }
+}
+
+.right-sidebar-window {
+    margin-right: 5px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+
+    .right-sidebar-box {
+        @include normal-text;
+        background-color: $background-color-primary;
+        border: 1px solid $border-color-primary;
+        color: $foreground-color-primary;
+        padding: 16px;
+        min-width: 350px;
+    }
+}
+
 .overview-window {
     @include normal-text;
     background-color: $background-color-primary-semitrans;

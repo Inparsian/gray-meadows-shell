@@ -52,11 +52,10 @@ fn digest(input: String, operation: TextOperation) -> String {
             let mut result = String::new();
 
             for c in input.chars() {
+                result.push(c);
+                
                 if c.is_alphabetic() {
-                    result.push(c);
                     result.push(' ');
-                } else {
-                    result.push(c);
                 }
             }
 
