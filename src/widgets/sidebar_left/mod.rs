@@ -15,6 +15,7 @@ pub fn new(application: &libadwaita::Application) {
 
         window = gtk4::ApplicationWindow {
             set_css_classes: &["left-sidebar-window"],
+            set_namespace: Some("left-sidebar"),
             set_application: Some(application),
             init_layer_shell: (),
             set_monitor: hyprland::get_active_monitor().as_ref(),
