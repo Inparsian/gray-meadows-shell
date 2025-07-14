@@ -26,6 +26,7 @@ This list of things to do may not be exhaustive and is subject to change.
         - [x] Built-in (CPU, RAM)
         - [x] CPU Temp (and maybe other temp sensors)
         - [x] GPU ⚠️ 1
+    - [x] Google Translate
     - [ ] Timers
     - [ ] Weather
 - [ ] Bar
