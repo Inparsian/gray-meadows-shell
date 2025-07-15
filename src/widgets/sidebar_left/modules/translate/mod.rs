@@ -11,7 +11,7 @@ static SOURCE_LANG: Lazy<Mutex<Option<Language>>> = Lazy::new(|| Mutex::new(lang
 static TARGET_LANG: Lazy<Mutex<Option<Language>>> = Lazy::new(|| Mutex::new(language::get_by_name("Spanish")));
 static AUTO_DETECTED_LANG: Lazy<Mutex<Option<Language>>> = Lazy::new(|| Mutex::new(None));
 
-enum TranslationEvent {
+enum UiEvent {
     TranslationStarted,
     TranslationFinished(Result<GoogleTranslateResult, String>),
     SourceLanguageChanged(Option<Language>),
@@ -22,7 +22,7 @@ fn is_working() -> bool {
     WORKING.try_lock().map(|w| *w).unwrap_or(true)
 }
 
-fn change_source_language(lang: Option<Language>, tx: &async_channel::Sender<TranslationEvent>) {
+fn change_source_language(lang: Option<Language>, tx: &async_channel::Sender<UiEvent>) {
     let mut source_lang = SOURCE_LANG.lock().unwrap();
     *source_lang = lang.clone();
 
@@ -31,12 +31,12 @@ fn change_source_language(lang: Option<Language>, tx: &async_channel::Sender<Tra
         let tx = tx.clone();
 
         async move {
-            tx.send(TranslationEvent::SourceLanguageChanged(lang)).await.ok();
+            tx.send(UiEvent::SourceLanguageChanged(lang)).await.ok();
         }
     });
 }
 
-fn change_target_language(lang: Option<Language>, tx: &async_channel::Sender<TranslationEvent>) {
+fn change_target_language(lang: Option<Language>, tx: &async_channel::Sender<UiEvent>) {
     let mut target_lang = TARGET_LANG.lock().unwrap();
     *target_lang = lang.clone();
     
@@ -45,7 +45,7 @@ fn change_target_language(lang: Option<Language>, tx: &async_channel::Sender<Tra
         let tx = tx.clone();
 
         async move {
-            tx.send(TranslationEvent::TargetLanguageChanged(lang)).await.ok();
+            tx.send(UiEvent::TargetLanguageChanged(lang)).await.ok();
         }
     });
 }
@@ -55,17 +55,17 @@ async fn translate_future(
     source_lang: Option<Language>,
     target_lang: Option<Language>,
     autocorrect: bool,
-    sender: async_channel::Sender<TranslationEvent>
+    sender: async_channel::Sender<UiEvent>
 ) {
     if let (Some(source_lang), Some(target_lang)) = (source_lang, target_lang) {
         if WORKING.lock().map(|mut w| *w = true).is_ok() {
-            sender.send(TranslationEvent::TranslationStarted).await.ok();
+            sender.send(UiEvent::TranslationStarted).await.ok();
 
             let translation_result = translate(&text, source_lang, target_lang, autocorrect)
                 .await
                 .map_err(|e| e.to_string());
 
-            sender.send(TranslationEvent::TranslationFinished(translation_result)).await.ok();
+            sender.send(UiEvent::TranslationFinished(translation_result)).await.ok();
 
             // Keep a hold of the working state for a while longer to prevent
             // an infinite translation loop due to buffer change signals.
@@ -84,7 +84,7 @@ pub fn new() -> gtk4::Box {
     let output_buffer = gtk4::TextBuffer::new(None);
     let from_to_button_transition_provider = gtk4::CssProvider::new();
 
-    let (tx, rx) = async_channel::bounded::<TranslationEvent>(1);
+    let (tx, rx) = async_channel::bounded::<UiEvent>(1);
 
     relm4_macros::view! {
         source_lang_button = gtk4::Button {
@@ -316,12 +316,12 @@ pub fn new() -> gtk4::Box {
         async move {
             while let Ok(event) = rx.recv().await {
                 match event {
-                    TranslationEvent::TranslationStarted => {
+                    UiEvent::TranslationStarted => {
                         output_buffer.set_text("Translating...");
                         input_text_view.set_editable(false);
                     },
 
-                    TranslationEvent::TranslationFinished(result) => {
+                    UiEvent::TranslationFinished(result) => {
                         if let Ok(res) = result {
                             output_buffer.set_text(&res.to.text);
 
@@ -340,11 +340,11 @@ pub fn new() -> gtk4::Box {
                         input_text_view.set_editable(true);
                     },
 
-                    TranslationEvent::SourceLanguageChanged(lang) => {
+                    UiEvent::SourceLanguageChanged(lang) => {
                         source_lang_button.set_label(lang.as_ref().map_or("Source...", |l| &l.name));
                     },
 
-                    TranslationEvent::TargetLanguageChanged(lang) => {
+                    UiEvent::TargetLanguageChanged(lang) => {
                         target_lang_button.set_label(lang.as_ref().map_or("Target...", |l| &l.name));
                     }
                 }
