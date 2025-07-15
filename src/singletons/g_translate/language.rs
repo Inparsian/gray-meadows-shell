@@ -148,6 +148,12 @@ pub static LANGUAGES: Lazy<Vec<Language>> = Lazy::new(|| vec![
     Language { code: "zu".into(), name: "Zulu".into() }
 ]);
 
+pub fn get_by_name(name: &str) -> Option<Language> {
+    LANGUAGES.iter()
+        .find(|lang| lang.name.eq_ignore_ascii_case(name))
+        .cloned()
+}
+
 pub fn get_language_name(code: &str) -> Option<String> {
     LANGUAGES.iter()
         .find(|lang| lang.code == code)

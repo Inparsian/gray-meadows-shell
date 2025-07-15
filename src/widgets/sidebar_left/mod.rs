@@ -1,3 +1,5 @@
+pub mod modules;
+
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
@@ -10,7 +12,9 @@ pub fn new(application: &libadwaita::Application) {
             set_orientation: gtk4::Orientation::Vertical,
             set_spacing: 12,
             set_hexpand: true,
-            set_vexpand: true
+            set_vexpand: true,
+
+            append: &modules::translate::new()
         },
 
         window = gtk4::ApplicationWindow {

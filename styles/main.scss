@@ -10,7 +10,7 @@
 }
 
 .left-sidebar-window {
-    margin-right: 5px;
+    margin-left: 5px;
     margin-top: 5px;
     margin-bottom: 5px;
 
@@ -20,7 +20,18 @@
         border: 1px solid $border-color-primary;
         color: $foreground-color-primary;
         padding: 16px;
-        min-width: 350px;
+        min-width: 400px;
+
+        .GoogleTranslate {
+            .google-translate-text-view {
+                @include large-text;
+                background: #1b1b1b;
+
+                text {
+                    background: #1b1b1b;
+                }
+            }
+        }
     }
 }
 

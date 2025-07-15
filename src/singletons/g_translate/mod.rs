@@ -9,7 +9,7 @@ use serde::Serialize;
 use crate::singletons::g_translate::{language::Language, result::GoogleTranslateResult};
 
 pub static SESSION: Lazy<Mutex<GoogleTranslateSession>> = Lazy::new(|| Mutex::new(GoogleTranslateSession::default()));
-static LENGTH_REGEX: Lazy<regex::Regex> = Lazy::new(|| regex::Regex::new(r"^\d+").unwrap());
+static LENGTH_REGEX: Lazy<regex::Regex> = Lazy::new(|| regex::Regex::new(r"^(\d+)").unwrap());
 
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct GoogleTranslateSession {
@@ -109,38 +109,43 @@ pub async fn translate(
     // Parse the response text into a sane structure
     // !! ABSOLUTE MAGIC NUMBER HELL, THIS COULD BREAK AT ANY TIME !!
     let mut result = GoogleTranslateResult::default();
-    let raw_response = translation_response.text()
-        .await?;
-    let raw_response = &raw_response[6..]; // Skip the ")]}'"
+    let raw_response = translation_response.text().await?;
+    let raw_response = &raw_response[6..]; // Skip the ")]}'" garbage
 
     let captures = LENGTH_REGEX.captures(raw_response);
     if let Some(caps) = captures {
-        let length = caps[1].parse().unwrap_or(0);
-        let start = caps.get(0).unwrap().end();
-        let end = start + length;
-        let chunk = &raw_response[start..end];
-        let data: Vec<serde_json::Value> = serde_json::from_str(chunk)?;
-        let j: Vec<serde_json::Value> = serde_json::from_str(data.first().and_then(|v| v.get(2)).unwrap().as_str().unwrap())?;
+        // Removing everything after the second linebreak appears to be more reliable than
+        // blindly trusting the length we're given by the RPC response.
+        let start = caps.get(0).unwrap().end() + 1;
+        let mut chunk = &raw_response[start..];
+        if let Some(newline_pos) = chunk.find('\n') {
+            chunk = &chunk[..newline_pos];
+        } else {
+            return Err("No newline found! Something probably changed internally.".into());
+        }
 
-        if let Some(pronunciation) = j.get(1).and_then(|v| v.get(0)).and_then(|v| v.get(1)) {
+        let data: Vec<serde_json::Value> = serde_json::from_str(chunk)?;
+        let json: Vec<serde_json::Value> = serde_json::from_str(data.first().and_then(|v| v.get(2)).unwrap().as_str().unwrap())?;
+
+        if let Some(pronunciation) = json.get(1).and_then(|v| v.get(0)).and_then(|v| v.get(1)) {
             result.pronunciation = pronunciation.as_str().unwrap_or("").to_string();
         }
 
         // Detect source language
-        if j[0][1].is_array() {
+        if json[0][1].is_array() {
             result.from.language_did_you_mean = true;
-            result.from.language.code = j[0][1][1][0].as_str().unwrap_or("").to_string();
-        } else if j[1][3] == "auto" {
-            result.from.language.code = j[2].as_str().unwrap_or("").to_string();
+            result.from.language.code = json[0][1][1][0].as_str().unwrap_or("").to_string();
+        } else if json[1][3] == "auto" {
+            result.from.language.code = json[2].as_str().unwrap_or("").to_string();
         } else {
-            result.from.language.code = j[1][3].as_str().unwrap_or("").to_string();
+            result.from.language.code = json[1][3].as_str().unwrap_or("").to_string();
         }
         result.from.language.name = language::get_language_name(&result.from.language.code)
             .unwrap_or_else(|| "Unknown".to_string());
 
         // Build target text and language code
-        if j[1][0][0][5].is_array() {
-            result.to.text = j[1][0][0][5]
+        if json[1][0][0][5].is_array() {
+            result.to.text = json[1][0][0][5]
                 .as_array()
                 .unwrap()
                 .iter()
@@ -148,15 +153,15 @@ pub async fn translate(
                 .collect::<Vec<&str>>()
                 .join(" ");
         } else {
-            result.to.text = j[1][0][0][0].as_str().unwrap_or("").to_string();
+            result.to.text = json[1][0][0][0].as_str().unwrap_or("").to_string();
         }
-        result.to.language.code = j[1][1].as_str().unwrap_or("").to_string();
+        result.to.language.code = json[1][1].as_str().unwrap_or("").to_string();
         result.to.language.name = language::get_language_name(&result.to.language.code)
             .unwrap_or_else(|| "Unknown".to_string());
 
         // Autocorrect / didYouMean for source text, if any
-        if j[0][1].is_array() && !j[0][1].as_array().unwrap().is_empty() {
-            let obj = &j[0][1][0];
+        if json[0][1].is_array() && !json[0][1].as_array().unwrap().is_empty() {
+            let obj = &json[0][1][0];
 
             if obj.is_array() && !obj.as_array().unwrap().is_empty() && obj[0].is_array() && obj[0].as_array().unwrap().len() > 1 {
                 let cleaned = obj[0][1].as_str().unwrap_or("")
