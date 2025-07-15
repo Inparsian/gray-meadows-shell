@@ -12,6 +12,10 @@ enum TranslationEvent {
     TranslationFinished(Result<GoogleTranslateResult, String>),
 }
 
+fn is_working() -> bool {
+    WORKING.try_lock().map(|w| *w).unwrap_or(true)
+}
+
 async fn translate_future(
     text: String,
     source_lang: Option<Language>,
@@ -82,6 +86,38 @@ pub fn new() -> gtk4::Box {
 
             gtk4::ScrolledWindow {
                 set_child: Some(&output_text_view)
+            },
+
+            gtk4::Box {
+                set_homogeneous: true,
+                set_spacing: 16,
+
+                gtk4::Button {
+                    set_css_classes: &["google-translate-button"],
+                    connect_clicked: {
+                        let input_buffer = input_buffer.clone();
+                        let output_buffer = output_buffer.clone();
+
+                        move |_| if !is_working() {
+                            input_buffer.set_text("");
+                            output_buffer.set_text("");
+                        }
+                    },
+
+                    gtk4::Box {
+                        set_spacing: 4,
+                        set_halign: gtk4::Align::Center,
+
+                        gtk4::Label {
+                            set_css_classes: &["material-icons"],
+                            set_text: "delete"
+                        },
+
+                        gtk4::Label {
+                            set_text: "Clear"
+                        }
+                    }
+                }
             }
         }
     };
@@ -92,7 +128,7 @@ pub fn new() -> gtk4::Box {
         let tx = tx.clone();
 
         move |buffer| {
-            if WORKING.try_lock().map(|w| *w).unwrap_or(true) {
+            if is_working() {
                 return;
             }
 

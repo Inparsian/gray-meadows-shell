@@ -23,12 +23,38 @@
         min-width: 400px;
 
         .GoogleTranslate {
+            .google-translate-button,
+            .google-translate-language-select-button {
+                @include normal-text;
+                background: $background-color-secondary;
+                font-weight: 300;
+                border: 0px;
+                color: $foreground-color-primary;
+                padding: 8px 12px;
+                border-radius: 0px;
+
+                &:hover, &:focus {
+                    background: $background-color-third;
+                    outline: none;
+                }
+
+                &:active {
+                    background: $background-color-fourth;
+                }
+
+                .material-icons {
+                    font-weight: 400;
+                    font-size: 16px;
+                }
+            }
+
             .google-translate-text-view {
                 @include large-text;
-                background: #1b1b1b;
+                padding: 12px;
+                background: $background-color-secondary;
 
                 text {
-                    background: #1b1b1b;
+                    background: $background-color-secondary;
                 }
             }
         }
