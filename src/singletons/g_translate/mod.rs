@@ -182,17 +182,20 @@ pub async fn translate(
     Ok(result)
 }
 
+pub async fn refresh_session() -> Result<(), Box<dyn std::error::Error>> {
+    let new_session = get_session().await?;
+    let mut session_lock = SESSION.lock().unwrap();
+    *session_lock = new_session;
+    Ok(())
+}
+
 pub fn activate() {
     tokio::spawn(async {
-        let session = get_session().await;
-        
-        if let Ok(session) = session {
-            let mut session_lock = SESSION.lock().unwrap();
-            *session_lock = session;
-
+        let refresh_session_result = refresh_session().await;
+        if refresh_session_result.is_ok() {
             println!("Google Translate session initialized successfully.");
         } else {
-            eprintln!("Failed to initialize Google Translate session: {:?}", session);
+            eprintln!("Failed to initialize Google Translate session: {:?}", refresh_session_result.unwrap_err());
         }
     });
 }
