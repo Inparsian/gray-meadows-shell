@@ -13,43 +13,26 @@ enum TranslationEvent {
 }
 
 async fn translate_future(
-    from_language: Option<Language>,
-    to_language: Option<Language>,
     text: String,
+    source_lang: Option<Language>,
+    target_lang: Option<Language>,
     autocorrect: bool,
     sender: async_channel::Sender<TranslationEvent>
 ) {
-    if let (Some(from_lang), Some(to_lang)) = (from_language, to_language) {
-        let can_proceed = {
-            if let Ok(mut working) = WORKING.lock() {
-                *working = true;
-                true
-            } else {
-                false
-            }
-        };
-
-        if can_proceed {
+    if let (Some(source_lang), Some(target_lang)) = (source_lang, target_lang) {
+        if WORKING.lock().map(|mut w| *w = true).is_ok() {
             sender.send(TranslationEvent::TranslationStarted).await.ok();
 
-            let translation_result = translate(
-                &text,
-                from_lang,
-                to_lang,
-                autocorrect
-            ).await;
+            let translation_result = translate(&text, source_lang, target_lang, autocorrect)
+                .await
+                .map_err(|e| e.to_string());
 
-            sender.send(TranslationEvent::TranslationFinished(
-                translation_result.map_err(|e| e.to_string())
-            )).await.ok();
+            sender.send(TranslationEvent::TranslationFinished(translation_result)).await.ok();
 
             // Keep a hold of the working state for a while longer to prevent
             // an infinite translation loop due to buffer change signals.
             std::thread::sleep(Duration::from_millis(10));
-            
-            if let Ok(mut working) = WORKING.lock() {
-                *working = false;
-            }
+            let _ = WORKING.lock().map(|mut w| *w = false);
         } else {
             eprintln!("Translation already in progress");
         }
@@ -60,8 +43,8 @@ async fn translate_future(
 
 pub fn new() -> gtk4::Box {
     // TODO: Make these mutable by the user
-    let from_language = language::get_by_name("English");
-    let to_language = language::get_by_name("Spanish");
+    let source_lang = language::get_by_name("English");
+    let target_lang = language::get_by_name("Spanish");
 
     let input_buffer = gtk4::TextBuffer::new(None);
     let output_buffer = gtk4::TextBuffer::new(None);
@@ -104,57 +87,44 @@ pub fn new() -> gtk4::Box {
     };
 
     input_buffer.connect_changed({
-        let from_language = from_language.clone();
-        let to_language = to_language.clone();
+        let source_lang = source_lang.clone();
+        let target_lang = target_lang.clone();
         let tx = tx.clone();
 
         move |buffer| {
-            if let Ok(working) = WORKING.try_lock() {
-                if *working {
-                    return;
-                }
-            } else {
+            if WORKING.try_lock().map(|w| *w).unwrap_or(true) {
                 return;
             }
 
-            let text = buffer.text(
-                &buffer.start_iter(), 
-                &buffer.end_iter(), 
-                false
-            ).to_string();
-
-            let mut worker_timeout = WORKER_TIMEOUT.lock().unwrap();
-            if let Some(source_id) = worker_timeout.take() {
+            if let Some(source_id) = WORKER_TIMEOUT.lock().unwrap().take() {
                 source_id.remove();
             }
 
+            let text = buffer.text(&buffer.start_iter(), &buffer.end_iter(), false).to_string();
             if !text.is_empty() {
-                *worker_timeout = Some(gtk4::glib::timeout_add_local_once(Duration::from_millis(500), {
-                    let from_language = from_language.clone();
-                    let to_language = to_language.clone();
-                    let tx = tx.clone();
+                let source_lang = source_lang.clone();
+                let target_lang = target_lang.clone();
+                let tx = tx.clone();
 
-                    move || {
-                        if let Ok(mut worker_timeout) = WORKER_TIMEOUT.lock() {
-                            *worker_timeout = None;
-                        }
+                let timeout = gtk4::glib::timeout_add_local_once(Duration::from_millis(500), move || {
+                    WORKER_TIMEOUT.lock().unwrap().take();
 
-                        std::thread::spawn({
-                            let from_language = from_language.clone();
-                            let to_language = to_language.clone();
-                            let text = text.clone();
-                            let tx = tx.clone();
+                    std::thread::spawn({
+                        let source_lang = source_lang.clone();
+                        let target_lang = target_lang.clone();
+                        let tx = tx.clone();
 
-                            move || tokio::runtime::Runtime::new().unwrap().block_on(translate_future(
-                                from_language,
-                                to_language,
-                                text,
-                                false,
-                                tx
-                            ))
-                        });
-                    }
-                }));
+                        move || tokio::runtime::Runtime::new().unwrap().block_on(translate_future(
+                            text,
+                            source_lang,
+                            target_lang,
+                            false,
+                            tx
+                        ))
+                    });
+                });
+
+                *WORKER_TIMEOUT.lock().unwrap() = Some(timeout);
             }
         }
     });
