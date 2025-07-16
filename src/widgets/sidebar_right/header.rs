@@ -31,8 +31,7 @@ fn get_uptime_label_text(uptime: Option<u64>) -> String {
 pub fn new() -> gtk4::Box {
     let whoami = Command::new("whoami")
         .output()
-        .map(|output| String::from_utf8_lossy(&output.stdout).trim().to_string())
-        .unwrap_or_else(|_| "Unknown User".to_string());
+        .map_or_else(|_| "Unknown User".to_owned(), |output| String::from_utf8_lossy(&output.stdout).trim().to_owned());
 
     relm4_macros::view! {
         face = gtk4::Image {

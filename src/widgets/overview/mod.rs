@@ -47,21 +47,21 @@ fn generate_search_results(query: &str) -> Vec<OverviewSearchItem> {
             results.push(OverviewSearchItem {
                 title: entry.name(&locales).unwrap_or_default().to_string(),
                 subtitle: None,
-                icon: entry.icon().map(|icon| icon.to_string()).unwrap_or_default(),
-                action: OverviewSearchItemAction::Launch(entry.exec().unwrap_or_default().to_string()),
-                action_text: "launch".to_string(),
-                query: Some(query.to_string())
+                icon: entry.icon().map(|icon| icon.to_owned()).unwrap_or_default(),
+                action: OverviewSearchItemAction::Launch(entry.exec().unwrap_or_default().to_owned()),
+                action_text: "launch".to_owned(),
+                query: Some(query.to_owned())
             });
         }
     }
 
     // web search as final fallback
     results.push(OverviewSearchItem {
-        title: query.to_string(),
-        subtitle: Some("Search the web".to_string()),
-        icon: "search".to_string(),
+        title: query.to_owned(),
+        subtitle: Some("Search the web".to_owned()),
+        icon: "search".to_owned(),
         action: OverviewSearchItemAction::RunCommand(format!("xdg-open https://duckduckgo.com/?q={}", encode(query))),
-        action_text: "search".to_string(),
+        action_text: "search".to_owned(),
         query: None
     });
 

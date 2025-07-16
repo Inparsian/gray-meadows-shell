@@ -17,7 +17,7 @@ fn format_percentage(percentage: f64) -> String {
     if percentage <= 100.0 {
         format!("{:02.0}%", percentage)
     } else {
-        "</3".to_string() // we show brokey heart cause rip in ripperoni
+        "</3".to_owned() // we show brokey heart cause rip in ripperoni
     }
 }
 

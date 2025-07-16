@@ -85,7 +85,7 @@ where
 {
     let connection = Connection::new_session()?;
     let proxy = connection.with_proxy(
-        player.bus.to_string(),
+        player.bus.clone(),
         "/org/mpris/MediaPlayer2",
         Duration::from_secs(5)
     );
@@ -105,7 +105,7 @@ where
 {
     let connection = Connection::new_session()?;
     let proxy = connection.with_proxy(
-        player.bus.to_string(),
+        player.bus.clone(),
         "/org/mpris/MediaPlayer2",
         Duration::from_secs(5)
     );

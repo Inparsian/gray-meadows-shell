@@ -83,8 +83,7 @@ fn digest(input: String, operation: TextOperation) -> String {
                 result.push(match c.to_ascii_lowercase() {
                     'a' => '4',
                     'e' => '3',
-                    'i' => '1',
-                    'l' => '1',
+                    'i' | 'l' => '1',
                     'o' => '0',
                     's' => '5',
                     't' => '7',
@@ -139,15 +138,15 @@ impl OverviewSearchModule for OverviewTextModule {
             TextOperation::Binary,
             TextOperation::Hex
         ] {
-            let result = digest(query.to_string(), operation.clone());
+            let result = digest(query.to_owned(), operation.clone());
             
             if query != result {
                 results.push(OverviewSearchItem {
                     title: result.clone(),
                     subtitle: Some(format!("Operation: {}", format!("{:?}", operation).to_lowercase())),
-                    icon: "text-x-generic".to_string(),
+                    icon: "text-x-generic".to_owned(),
                     action: OverviewSearchItemAction::Copy(result),
-                    action_text: "copy".to_string(),
+                    action_text: "copy".to_owned(),
                     query: None
                 });
             }

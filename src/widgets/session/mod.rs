@@ -4,8 +4,8 @@ use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 use crate::{helpers::gesture, ipc, singletons::hyprland};
 
 pub fn session_button(icon: &str, command: &str) -> gtk4::Button {
-    let icon = icon.to_string();
-    let command = command.to_string();
+    let icon = icon.to_owned();
+    let command = command.to_owned();
 
     let button = gtk4::Button::new();
     button.set_valign(gtk4::Align::Center);

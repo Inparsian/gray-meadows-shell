@@ -35,11 +35,11 @@ impl Menu {
             // Iterate through the properties map
             for (key, value) in properties {
                 match key.as_str() {
-                    "label" => item.label = value.as_str().unwrap_or_default().to_string(),
+                    "label" => item.label = value.as_str().unwrap_or_default().to_owned(),
                     "enabled" => item.enabled = value.as_i64().unwrap_or(0) != 0,
-                    "type" => item.type_ = value.as_str().unwrap_or_default().to_string(),
+                    "type" => item.type_ = value.as_str().unwrap_or_default().to_owned(),
                     "visible" => item.visible = value.as_i64().unwrap_or(0) != 0,
-                    "children-display" => item.children_display = value.as_str().unwrap_or_default().to_string(),
+                    "children-display" => item.children_display = value.as_str().unwrap_or_default().to_owned(),
                     "icon-data" => if let Some(mut icon_data) = value.as_iter() {
                         // are we being deadass
                         let icon_data = icon_data.next().and_then(|v| v.as_iter());
@@ -145,7 +145,7 @@ impl DbusMenu {
         let _: Result<(), dbus::Error> = proxy.method_call(bus::DBUSMENU_BUS, "Event", (
             item_id as i32,
             "clicked",
-            Variant(0u32),
+            Variant(0_u32),
             timestamp.as_millis() as u32,
         ));
 

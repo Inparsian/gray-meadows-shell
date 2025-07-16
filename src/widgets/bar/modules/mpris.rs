@@ -15,14 +15,14 @@ const MAX_TRACK_WIDTH: i32 = WIDGET_WIDTH - ALBUM_ART_WIDTH;
 
 fn get_mpris_player_label_text() -> String {
     mpris::get_default_player()
-        .map_or_else(|| "No MPRIS players".to_string(), |player| format!("{} - {}",
-            player.metadata.artist.unwrap_or(vec!["No artist".to_string()]).join(", "),
-            player.metadata.title.unwrap_or("No title".to_string())
+        .map_or_else(|| "No MPRIS players".to_owned(), |player| format!("{} - {}",
+            player.metadata.artist.unwrap_or(vec!["No artist".to_owned()]).join(", "),
+            player.metadata.title.unwrap_or("No title".to_owned())
         ))
 }
 
 pub fn new() -> gtk4::Box {
-    let current_art_url = RefCell::new(" ".to_string());
+    let current_art_url = RefCell::new(" ".to_owned());
 
     relm4_macros::view! {
         widget_middle_click_gesture = gesture::on_middle_click(|_, _, _| {
@@ -134,7 +134,7 @@ pub fn new() -> gtk4::Box {
                 );
 
                 if let Some(blank_pixbuf) = blank_pixbuf {
-                    blank_pixbuf.fill(0x0D0D0DFF);
+                    blank_pixbuf.fill(0x0D0D_0DFF);
                     current_album_art.set_from_pixbuf(Some(&blank_pixbuf));
                 } else {
                     eprintln!("Failed to create blank pixbuf for album art! :O");
@@ -143,7 +143,7 @@ pub fn new() -> gtk4::Box {
 
             if let Some(art_url) = default_player.metadata.art_url {
                 if *current_art_url.borrow() != *art_url {
-                    *current_art_url.borrow_mut() = art_url.to_string();
+                    *current_art_url.borrow_mut() = art_url.clone();
 
                     // URL-decode the album art URL
                     let art_url = match urlencoding::decode(&art_url.replace("file://", "")) {

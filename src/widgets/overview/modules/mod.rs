@@ -25,9 +25,9 @@ pub fn input_without_extensions(module: &dyn OverviewSearchModule, query: &str) 
 
     for ext in sorted_exts {
         if query.starts_with(ext) {
-            return query.strip_prefix(ext).unwrap_or(query).trim().to_string();
+            return query.strip_prefix(ext).unwrap_or(query).trim().to_owned();
         }
     }
     
-    query.to_string()
+    query.to_owned()
 }

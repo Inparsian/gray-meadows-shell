@@ -49,7 +49,7 @@ pub fn subscribe_to_ui_events() -> async_channel::Receiver<UiEvent> {
 
     tokio::spawn(async move {
         while let Ok(event) = receiver.recv().await {
-            local_tx.send(event).await.ok();
+            let _ = local_tx.send(event).await;
         }
     });
 
@@ -328,9 +328,8 @@ pub fn new() -> gtk4::Box {
                         main_ui_revealer.set_reveal_child(was_already_open || reveal == LanguageSelectReveal::None);
                         select_ui_revealer.set_reveal_child(!was_already_open && reveal != LanguageSelectReveal::None);
                         select_ui_stack.set_visible_child_name(match reveal {
-                            LanguageSelectReveal::Source => "source",
                             LanguageSelectReveal::Target => "target",
-                            LanguageSelectReveal::None => "source" // Default to source when hidden
+                            LanguageSelectReveal::Source | LanguageSelectReveal::None => "source" // Default to source when hidden
                         });
 
                         *REVEAL.lock().unwrap() = if was_already_open {

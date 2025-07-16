@@ -32,7 +32,7 @@ pub mod ffi {
 
     #[derive(Debug, Clone)]
     struct Endpoint {
-        endpoint_type: EndpointType,
+        type_: EndpointType,
         is_default: bool,
         node: Node
     }

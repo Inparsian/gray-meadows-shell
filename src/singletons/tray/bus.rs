@@ -34,7 +34,7 @@ pub fn make_key_value_pairs(value: &dyn RefArg) -> Vec<(String, &dyn RefArg)> {
             if i % 2 == 0 {
                 if let Some(key) = entry.as_str() {
                     if let Some(value) = enumerate.next() {
-                        pairs.push((key.to_string(), value.1));
+                        pairs.push((key.to_owned(), value.1));
                     }
                 }
             }

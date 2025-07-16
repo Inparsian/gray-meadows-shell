@@ -126,7 +126,7 @@ impl StatusNotifierWatcher {
                     .with_type(MessageType::Signal);
 
                 let become_monitor_result: Result<(), dbus::Error> =
-                    proxy.method_call("org.freedesktop.DBus.Monitoring", "BecomeMonitor", (vec![rule.match_str()], 0u32));
+                    proxy.method_call("org.freedesktop.DBus.Monitoring", "BecomeMonitor", (vec![rule.match_str()], 0_u32));
 
                 match become_monitor_result {
                     Ok(()) => {

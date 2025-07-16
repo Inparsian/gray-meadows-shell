@@ -40,23 +40,17 @@ pub fn subscribe() -> tokio::sync::broadcast::Receiver<bus::BusEvent> {
 }
 
 pub fn get_item(service: &str) -> Option<StatusNotifierItem> {
-    ITEMS.get().and_then(|items| {
-        items.lock().unwrap().iter()
-            .find(|item| item.service == service)
-            .cloned()
-    })
+    ITEMS.get()?.lock().unwrap().iter()
+        .find(|item| item.service == service)
+        .cloned()
 }
 
 pub fn try_get_item(service: &str) -> Option<StatusNotifierItem> {
-    ITEMS.get().and_then(|items| {
-        let lock = items.try_lock();
-        
-        if let Ok(items) = lock {
-            items.iter()
-                .find(|item| item.service == service)
-                .cloned()
-        } else {
-            None
-        }
-    })
+    if let Ok(items) = ITEMS.get()?.try_lock() {
+        items.iter()
+            .find(|item| item.service == service)
+            .cloned()
+    } else {
+        None
+    }
 }

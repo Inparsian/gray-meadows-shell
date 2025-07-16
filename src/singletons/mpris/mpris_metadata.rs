@@ -10,7 +10,7 @@ pub fn make_key_value_pairs(value: &Variant<Box<dyn RefArg>>) -> Vec<(String, &d
             if i % 2 == 0 {
                 if let Some(key) = entry.as_str() {
                     if let Some(value) = enumerate.next() {
-                        pairs.push((key.to_string(), value.1));
+                        pairs.push((key.to_owned(), value.1));
                     }
                 }
             }
@@ -22,7 +22,7 @@ pub fn make_key_value_pairs(value: &Variant<Box<dyn RefArg>>) -> Vec<(String, &d
 
 pub fn as_str(arg: &dyn RefArg) -> Result<String, String> {
     if let Some(s) = arg.as_str() {
-        Ok(s.to_string())
+        Ok(s.to_owned())
     } else {
         Err(format!("ARG is not a string: {:?}", arg))
     }
@@ -44,7 +44,7 @@ pub fn as_str_vec(arg: &dyn RefArg) -> Result<Vec<String>, String> {
         let mut vec = Vec::new();
         for item in iter {
             if let Some(iter) = item.as_iter() {
-                vec.extend(iter.map(|s| s.as_str().unwrap_or("").to_string()));
+                vec.extend(iter.map(|s| s.as_str().unwrap_or("").to_owned()));
             }
         }
 

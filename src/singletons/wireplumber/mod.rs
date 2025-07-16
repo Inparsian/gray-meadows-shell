@@ -27,39 +27,27 @@ pub fn subscribe() -> tokio::sync::broadcast::Receiver<WpEvent> {
 }
 
 pub fn get_node(id: i32) -> Option<ffi::Node> {
-    NODES.get().and_then(|nodes| {
-        if let Ok(lock) = nodes.try_lock() {
-            lock.iter().find(|&n| n.id == id).cloned()
-        } else {
-            None
-        }
-    })
+    if let Ok(lock) = NODES.get()?.try_lock() {
+        lock.iter().find(|&n| n.id == id).cloned()
+    } else {
+        None
+    }
 }
 
 pub fn get_endpoint(id: i32) -> Option<ffi::Endpoint> {
-    ENDPOINTS.get().and_then(|endpoints| {
-        if let Ok(lock) = endpoints.try_lock() {
-            lock.iter().find(|&e| e.node.id == id).cloned()
-        } else {
-            None
-        }
-    })
+    if let Ok(lock) = ENDPOINTS.get()?.try_lock() {
+        lock.iter().find(|&e| e.node.id == id).cloned()
+    } else {
+        None
+    }
 }
 
-//pub fn get_default_microphone() -> Option<ffi::Endpoint> {
-//    ENDPOINTS.get().and_then(|endpoints| {
-//        endpoints.lock().unwrap().iter().find(|&e| e.is_default && e.endpoint_type == ffi::EndpointType::Microphone).cloned()
-//    })
-//}
-
 pub fn get_default_speaker() -> Option<ffi::Endpoint> {
-    ENDPOINTS.get().and_then(|endpoints| {
-        if let Ok(lock) = endpoints.try_lock() {
-            lock.iter().find(|&e| e.is_default && e.endpoint_type == ffi::EndpointType::Speaker).cloned()
-        } else {
-            None
-        }
-    })
+    if let Ok(lock) = ENDPOINTS.get()?.try_lock() {
+        lock.iter().find(|&e| e.is_default && e.type_ == ffi::EndpointType::Speaker).cloned()
+    } else {
+        None
+    }
 }
 
 pub fn activate() {

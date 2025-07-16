@@ -11,11 +11,11 @@ const HIGH_VOLUME_CHAR: &str = "";
 
 fn volume_to_char(volume: f32) -> String {
     if volume > 0.6 {
-        HIGH_VOLUME_CHAR.to_string()
+        HIGH_VOLUME_CHAR.to_owned()
     } else if volume > 0.3 {
-        MID_VOLUME_CHAR.to_string()
+        MID_VOLUME_CHAR.to_owned()
     } else {
-        LOW_VOLUME_CHAR.to_string()
+        LOW_VOLUME_CHAR.to_owned()
     }
 }
 

@@ -10,20 +10,20 @@ impl OverviewSearchModule for OverviewTerminalModule {
     fn run(&self, query: &str) -> Vec<OverviewSearchItem> {
         vec![
             OverviewSearchItem {
-                title: query.to_string(),
-                subtitle: Some("Run in background".to_string()),
-                icon: "utilities-terminal".to_string(),
-                action: OverviewSearchItemAction::RunCommand(query.to_string()),
-                action_text: "run".to_string(),
+                title: query.to_owned(),
+                subtitle: Some("Run in background".to_owned()),
+                icon: "utilities-terminal".to_owned(),
+                action: OverviewSearchItemAction::RunCommand(query.to_owned()),
+                action_text: "run".to_owned(),
                 query: None
             },
 
             OverviewSearchItem {
-                title: query.to_string(),
-                subtitle: Some("Run in terminal".to_string()),
-                icon: "utilities-terminal".to_string(),
+                title: query.to_owned(),
+                subtitle: Some("Run in terminal".to_owned()),
+                icon: "utilities-terminal".to_owned(),
                 action: OverviewSearchItemAction::Launch(format!("foot fish -C \"{}\"", query.replace('"', "\\\""))),
-                action_text: "run".to_string(),
+                action_text: "run".to_owned(),
                 query: None
             }
         ]

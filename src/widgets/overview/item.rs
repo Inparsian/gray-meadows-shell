@@ -156,7 +156,7 @@ impl OverviewSearchItem {
                             scss::escape_html(c)
                         )
                     } else {
-                        scss::escape_html(c).to_string()
+                        scss::escape_html(c).clone()
                     }
                 });
             }

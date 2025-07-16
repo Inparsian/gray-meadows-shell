@@ -28,7 +28,7 @@ pub fn get_pixbuf(icon_name: &str) -> Option<Pixbuf> {
                 let pixbuf = pixbuf.scale_simple(24, 24, gtk4::gdk_pixbuf::InterpType::Bilinear);
                 
                 if let Some(pixbuf) = pixbuf {
-                    pixbufs.insert(icon_name.to_string(), pixbuf.clone());
+                    pixbufs.insert(icon_name.to_owned(), pixbuf.clone());
                     return Some(pixbuf);
                 }
             }
@@ -50,7 +50,7 @@ pub fn get_pixbuf(icon_name: &str) -> Option<Pixbuf> {
                     let pixbuf = pixbuf.scale_simple(24, 24, gtk4::gdk_pixbuf::InterpType::Bilinear);
                     
                     if let Some(pixbuf) = pixbuf {
-                        pixbufs.insert(icon_name.to_string(), pixbuf.clone());
+                        pixbufs.insert(icon_name.to_owned(), pixbuf.clone());
                         return Some(pixbuf);
                     }
                 }

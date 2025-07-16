@@ -68,11 +68,11 @@ pub fn refresh_variables() {
 
 pub fn escape_html(input: char) -> String {
     match input {
-        '&' => "&amp;".to_string(),
-        '<' => "&lt;".to_string(),
-        '>' => "&gt;".to_string(),
-        '"' => "&quot;".to_string(),
-        '\'' => "&#39;".to_string(),
+        '&' => "&amp;".to_owned(),
+        '<' => "&lt;".to_owned(),
+        '>' => "&gt;".to_owned(),
+        '"' => "&quot;".to_owned(),
+        '\'' => "&#39;".to_owned(),
         _ => input.to_string(),
     }
 }

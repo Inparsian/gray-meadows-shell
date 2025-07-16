@@ -4,7 +4,7 @@ use regex::Regex;
 use libc::{open, close, setsid, dup2, O_RDWR, STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO};
 
 static FIELD_CODE_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"%[fFuUdDnNiIcCkvVm]").expect("Failed to compile field code regex")
+    Regex::new("%[fFuUdDnNiIcCkvVm]").expect("Failed to compile field code regex")
 });
 
 fn detach_child() {
@@ -36,15 +36,13 @@ fn detach_child() {
 
 pub fn launch(input: &str) {
     // Remove field codes from argv (including those that are deprecated), we won't be needing them...
-    let argv: Vec<String> = match shlex::split(input) {
-        Some(args) => args.iter()
+    let argv: Vec<String> = if let Some(args) = shlex::split(input) {
+        args.iter()
             .map(|s| FIELD_CODE_REGEX.replace_all(s, "").to_string())
-            .collect(),
-
-        None => {
-            eprintln!("Failed to parse command: {}", input);
-            return;
-        }
+            .collect()
+    } else {
+        eprintln!("Failed to parse command: {}", input);
+        return;
     };
 
     let binding = gtk4::glib::environ();

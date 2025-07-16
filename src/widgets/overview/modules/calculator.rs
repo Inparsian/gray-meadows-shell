@@ -38,11 +38,11 @@ const NUM_SUFFIXES: [(u16, &str); 102] = [
 
 fn to_suffixed_number(num: f64) -> String {
     if num.is_nan() {
-        return "NaN".to_string();
+        return "NaN".to_owned();
     }
 
     if num.is_infinite() {
-        return "inf".to_string();
+        return "inf".to_owned();
     }
 
     if num.abs() < 1000.0 {
@@ -53,8 +53,7 @@ fn to_suffixed_number(num: f64) -> String {
     let num = num / 1000.0_f64.powi((zeroes / 3) as i32);
     let suffix = NUM_SUFFIXES.iter()
         .find(|(z, _)| *z == zeroes)
-        .map(|(_, s)| *s)
-        .unwrap_or("");
+        .map_or("", |(_, s)| *s);
 
     let num_str = if is_scientific_notation(&num.to_string()) {
         format!("{:.2e}", num)
@@ -82,7 +81,7 @@ fn add_suffix_to_notation(num: &str) -> String {
             to_suffixed_number(num.parse::<f64>().unwrap_or_default())
         )
     } else {
-        num.to_string()
+        num.to_owned()
     }
 }
 
@@ -94,15 +93,15 @@ impl OverviewSearchModule for OverviewCalculatorModule {
     }
 
     fn run(&self, query: &str) -> Vec<OverviewSearchItem> {
-        let unlocalized = ffi::unlocalizeExpression(query.to_string());
+        let unlocalized = ffi::unlocalizeExpression(query.to_owned());
         let result = add_suffix_to_notation(&ffi::calculateAndPrint(unlocalized, 1000));
 
         vec![OverviewSearchItem {
             title: result.clone(),
-            subtitle: Some("Math result".to_string()),
-            icon: "accessories-calculator".to_string(),
+            subtitle: Some("Math result".to_owned()),
+            icon: "accessories-calculator".to_owned(),
             action: OverviewSearchItemAction::Copy(result),
-            action_text: "calculate".to_string(),
+            action_text: "calculate".to_owned(),
             query: None
         }]
     }

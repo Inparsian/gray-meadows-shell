@@ -30,7 +30,7 @@ fn extract(key: &str, res: &str) -> String {
     let re = regex::Regex::new(&pattern).unwrap();
     re.captures(res)
         .and_then(|caps| caps.get(1))
-        .map_or(String::new(), |m| m.as_str().to_string())
+        .map_or(String::new(), |m| m.as_str().to_owned())
 }
 
 async fn get_session() -> Result<GoogleTranslateSession, Box<dyn std::error::Error>> {
@@ -71,9 +71,9 @@ pub async fn translate(
     // Prepare the RPC request payload (f.req)
     let inner_list = vec![
         vec![
-            serde_json::Value::String(text.to_string()),
-            serde_json::Value::String(source_lang.code.to_string()),
-            serde_json::Value::String(target_lang.code.to_string()),
+            serde_json::Value::String(text.to_owned()),
+            serde_json::Value::String(source_lang.code.clone()),
+            serde_json::Value::String(target_lang.code.clone()),
             serde_json::Value::Bool(autocorrect)
         ],
         vec![serde_json::Value::Null]
@@ -83,7 +83,7 @@ pub async fn translate(
         serde_json::Value::String(session.rpcids.clone()),
         serde_json::Value::String(serde_json::to_string(&inner_list)?),
         serde_json::Value::Null,
-        serde_json::Value::String("generic".to_string())
+        serde_json::Value::String("generic".to_owned())
     ]]];
 
     let session_query = [
@@ -128,20 +128,20 @@ pub async fn translate(
         let json: Vec<serde_json::Value> = serde_json::from_str(data.first().and_then(|v| v.get(2)).unwrap().as_str().unwrap())?;
 
         if let Some(pronunciation) = json.get(1).and_then(|v| v.get(0)).and_then(|v| v.get(1)) {
-            result.pronunciation = pronunciation.as_str().unwrap_or("").to_string();
+            result.pronunciation = pronunciation.as_str().unwrap_or("").to_owned();
         }
 
         // Detect source language
         if json[0][1].is_array() {
             result.from.language_did_you_mean = true;
-            result.from.language.code = json[0][1][1][0].as_str().unwrap_or("").to_string();
+            result.from.language.code = json[0][1][1][0].as_str().unwrap_or("").to_owned();
         } else if json[1][3] == "auto" {
-            result.from.language.code = json[2].as_str().unwrap_or("").to_string();
+            result.from.language.code = json[2].as_str().unwrap_or("").to_owned();
         } else {
-            result.from.language.code = json[1][3].as_str().unwrap_or("").to_string();
+            result.from.language.code = json[1][3].as_str().unwrap_or("").to_owned();
         }
         result.from.language.name = language::get_language_name(&result.from.language.code)
-            .unwrap_or_else(|| "Unknown".to_string());
+            .unwrap_or_else(|| "Unknown".to_owned());
 
         // Build target text and language code
         if json[1][0][0][5].is_array() {
@@ -153,11 +153,11 @@ pub async fn translate(
                 .collect::<Vec<&str>>()
                 .join(" ");
         } else {
-            result.to.text = json[1][0][0][0].as_str().unwrap_or("").to_string();
+            result.to.text = json[1][0][0][0].as_str().unwrap_or("").to_owned();
         }
-        result.to.language.code = json[1][1].as_str().unwrap_or("").to_string();
+        result.to.language.code = json[1][1].as_str().unwrap_or("").to_owned();
         result.to.language.name = language::get_language_name(&result.to.language.code)
-            .unwrap_or_else(|| "Unknown".to_string());
+            .unwrap_or_else(|| "Unknown".to_owned());
 
         // Autocorrect / didYouMean for source text, if any
         if json[0][1].is_array() && !json[0][1].as_array().unwrap().is_empty() {

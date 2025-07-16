@@ -62,20 +62,16 @@ where
             match change {
                 // Do nothing if there's already more than one player
                 // This is for if a player is instantiated when there's no players
-                VecDiff::Push { value: _ } => if MPRIS.players.lock_ref().len() == 1 {
+                VecDiff::Push {..} => if MPRIS.players.lock_ref().len() == 1 {
                     run_callback();
                 },
 
-                VecDiff::UpdateAt { index, value: _ } => if index == MPRIS.default_player.get() {
-                    run_callback();
-                },
-
+                VecDiff::UpdateAt { index, .. } |
                 VecDiff::RemoveAt { index } => if index == MPRIS.default_player.get() {
                     run_callback();
                 },
                 
-                VecDiff::Pop {} => run_callback(),
-                VecDiff::Clear {} => run_callback(),
+                VecDiff::Pop {} | VecDiff::Clear {} => run_callback(),
 
                 _ => {}
             }
@@ -133,7 +129,7 @@ pub fn activate() {
             .with_type(MessageType::Signal);
 
         let become_monitor_result: Result<(), dbus::Error> =
-            proxy.method_call("org.freedesktop.DBus.Monitoring", "BecomeMonitor", (vec![rule.match_str()], 0u32));
+            proxy.method_call("org.freedesktop.DBus.Monitoring", "BecomeMonitor", (vec![rule.match_str()], 0_u32));
 
         match become_monitor_result {
             Ok(()) => {
@@ -157,10 +153,7 @@ pub fn activate() {
     // Monitor the MPRIS players for changes
     let future = MPRIS.players.signal_vec_cloned().for_each(|change| {
         match change {
-            VecDiff::RemoveAt { index: _ } => assert_default_player(),
-            VecDiff::Pop {} => assert_default_player(),
-            VecDiff::Clear {} => assert_default_player(),
-
+            VecDiff::RemoveAt {..} | VecDiff::Pop {} | VecDiff::Clear {} => assert_default_player(),
             _ => {}
         }
 
