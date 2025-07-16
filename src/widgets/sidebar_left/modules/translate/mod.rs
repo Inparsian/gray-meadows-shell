@@ -1,3 +1,5 @@
+mod lang_buttons;
+
 use std::{sync::Mutex, time::Duration};
 use once_cell::sync::Lazy;
 use gtk4::prelude::*;
@@ -14,43 +16,49 @@ static SOURCE_LANG: Lazy<Mutex<Option<Language>>> = Lazy::new(|| Mutex::new(lang
 static TARGET_LANG: Lazy<Mutex<Option<Language>>> = Lazy::new(|| Mutex::new(language::get_by_name("Spanish")));
 static AUTO_DETECTED_LANG: Lazy<Mutex<Option<Language>>> = Lazy::new(|| Mutex::new(None));
 
-enum UiEvent {
+#[derive(Debug, Clone)]
+pub enum LanguageSelectReveal {
+    Source,
+    Target,
+    None
+}
+
+#[derive(Debug, Clone)]
+pub enum UiEvent {
     TranslationStarted,
     TranslationFinished(Result<GoogleTranslateResult, String>),
     SourceLanguageChanged(Option<Language>),
     TargetLanguageChanged(Option<Language>),
+    LanguageSelectRevealChanged(LanguageSelectReveal)
 }
 
 fn is_working() -> bool {
     WORKING.try_lock().map(|w| *w).unwrap_or(true)
 }
 
-fn change_source_language(lang: Option<Language>, tx: &async_channel::Sender<UiEvent>) {
-    let mut source_lang = SOURCE_LANG.lock().unwrap();
-    *source_lang = lang.clone();
-
+pub fn send_ui_event(event: UiEvent, sender: &async_channel::Sender<UiEvent>) {
     tokio::spawn({
-        let lang = lang.clone();
-        let tx = tx.clone();
+        let event = event.clone();
+        let tx = sender.clone();
 
         async move {
-            tx.send(UiEvent::SourceLanguageChanged(lang)).await.ok();
+            tx.send(event).await.ok();
         }
     });
 }
 
-fn change_target_language(lang: Option<Language>, tx: &async_channel::Sender<UiEvent>) {
+pub fn set_source_language(lang: Option<Language>, tx: &async_channel::Sender<UiEvent>) {
+    let mut source_lang = SOURCE_LANG.lock().unwrap();
+    *source_lang = lang.clone();
+
+    send_ui_event(UiEvent::SourceLanguageChanged(lang), tx);
+}
+
+pub fn set_target_language(lang: Option<Language>, tx: &async_channel::Sender<UiEvent>) {
     let mut target_lang = TARGET_LANG.lock().unwrap();
     *target_lang = lang.clone();
     
-    tokio::spawn({
-        let lang = lang.clone();
-        let tx = tx.clone();
-
-        async move {
-            tx.send(UiEvent::TargetLanguageChanged(lang)).await.ok();
-        }
-    });
+    send_ui_event(UiEvent::TargetLanguageChanged(lang), tx);
 }
 
 async fn translate_future(
@@ -86,37 +94,12 @@ async fn translate_future(
 pub fn new() -> gtk4::Box {
     let input_buffer = gtk4::TextBuffer::new(None);
     let output_buffer = gtk4::TextBuffer::new(None);
-    let from_to_button_transition_provider = gtk4::CssProvider::new();
 
     let (tx, rx) = async_channel::bounded::<UiEvent>(1);
 
+    let language_buttons = lang_buttons::LanguageButtons::new(tx.clone());
+
     relm4_macros::view! {
-        source_lang_button = gtk4::Button {
-            set_label: SOURCE_LANG.lock().unwrap().as_ref().map_or("Source...", |l| &l.name),
-            set_css_classes: &["google-translate-language-select-button", "source-lang"],
-            set_hexpand: true,
-            connect_clicked: move |_| println!("Source language selection clicked")
-        },
-
-        target_lang_button = gtk4::Button {
-            set_label: TARGET_LANG.lock().unwrap().as_ref().map_or("Target...", |l| &l.name),
-            set_css_classes: &["google-translate-language-select-button", "target-lang"],
-            set_hexpand: true,
-            connect_clicked: move |_| println!("Target language selection clicked")
-        },
-
-        language_select_buttons = gtk4::Box {
-            set_hexpand: true,
-            
-            append: &source_lang_button,
-            gtk4::Label {
-                set_css_classes: &["google-translate-arrow"],
-                set_text: "→",
-                set_hexpand: true
-            },
-            append: &target_lang_button
-        },
-
         input_text_view = gtk4::TextView {
             set_wrap_mode: gtk4::WrapMode::WordChar,
             set_vexpand: true,
@@ -141,7 +124,7 @@ pub fn new() -> gtk4::Box {
             set_hexpand: true,
             set_vexpand: true,
 
-            append: &language_select_buttons,
+            append: &language_buttons.container,
 
             gtk4::ScrolledWindow {
                 set_child: Some(&input_text_view)
@@ -187,10 +170,7 @@ pub fn new() -> gtk4::Box {
                     connect_clicked: {
                         let input_buffer = input_buffer.clone();
                         let output_buffer = output_buffer.clone();
-                        let source_lang_button = source_lang_button.clone();
-                        let target_lang_button = target_lang_button.clone();
-                        let language_select_buttons = language_select_buttons.clone();
-                        let from_to_button_transition_provider = from_to_button_transition_provider.clone();
+                        let language_buttons = language_buttons.clone();
                         let tx = tx.clone();
 
                         move |_| if !is_working() {
@@ -199,45 +179,12 @@ pub fn new() -> gtk4::Box {
                             let source_lang_cloned = SOURCE_LANG.lock().unwrap().clone();
                             let target_lang_cloned = TARGET_LANG.lock().unwrap().clone();
 
-                            change_source_language(target_lang_cloned, &tx);
-                            change_target_language(source_lang_cloned, &tx);
+                            set_source_language(target_lang_cloned, &tx);
+                            set_target_language(source_lang_cloned, &tx);
+                            language_buttons.swap_animation();
 
                             input_buffer.set_text(&output_text);
                             output_buffer.set_text(&input_text);
-
-                            // Button swap animation
-                            let source_lang_allocation = source_lang_button.allocation();
-                            let target_lang_allocation = target_lang_button.allocation();
-                            let buttons_box_allocation = language_select_buttons.allocation();
-                            let source_margin = buttons_box_allocation.width() - source_lang_allocation.width() + 1;
-                            let target_margin = buttons_box_allocation.width() - target_lang_allocation.width() + 1;
-                            
-                            from_to_button_transition_provider.load_from_data(&format!("
-                                .google-translate-language-select-button.source-lang {{
-                                    transition: none;
-                                    margin-left: {source_margin}px;
-                                    margin-right: -{source_margin}px;
-                                }}
-
-                                .google-translate-language-select-button.target-lang {{
-                                    transition: none;
-                                    margin-left: -{target_margin}px;
-                                    margin-right: {target_margin}px;
-                                }}
-                            "));
-
-                            gtk4::glib::timeout_add_local_once(Duration::from_millis(10), {
-                                let from_to_button_transition_provider = from_to_button_transition_provider.clone();
-                                move || from_to_button_transition_provider.load_from_data("
-                                    .google-translate-language-select-button.source-lang,
-                                    .google-translate-language-select-button.target-lang {
-                                        transition: margin-left 0.33s cubic-bezier(0.5, 0.8, 0, 1),
-                                                    margin-right 0.33s cubic-bezier(0.5, 0.8, 0, 1);
-                                        margin-left: 0px;
-                                        margin-right: 0px;
-                                    }
-                                ")
-                            });
                         }
                     },
                             
@@ -258,16 +205,6 @@ pub fn new() -> gtk4::Box {
             }
         }
     };
-
-    source_lang_button.style_context().add_provider(
-        &from_to_button_transition_provider,
-        gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION
-    );
-
-    target_lang_button.style_context().add_provider(
-        &from_to_button_transition_provider,
-        gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION
-    );
 
     input_buffer.connect_changed({
         let tx = tx.clone();
@@ -308,8 +245,7 @@ pub fn new() -> gtk4::Box {
     gtk4::glib::spawn_future_local({
         let output_buffer = output_buffer.clone();
         let input_text_view = input_text_view.clone();
-        let source_lang_button = source_lang_button.clone();
-        let target_lang_button = target_lang_button.clone();
+        let language_buttons = language_buttons.clone();
 
         async move {
             while let Ok(event) = rx.recv().await {
@@ -329,7 +265,7 @@ pub fn new() -> gtk4::Box {
 
                                 *auto_detected_lang = Some(res.from.language.clone());
 
-                                source_lang_button.set_label(&format!("Auto ({})", res.from.language.name));
+                                language_buttons.set_source_label(&format!("Auto ({})", res.from.language.name));
                             }
                         } else {
                             output_buffer.set_text(&format!("Translation failed:\n{}", result.unwrap_err()));
@@ -339,11 +275,15 @@ pub fn new() -> gtk4::Box {
                     },
 
                     UiEvent::SourceLanguageChanged(lang) => {
-                        source_lang_button.set_label(lang.as_ref().map_or("Source...", |l| &l.name));
+                        language_buttons.set_source_label(lang.as_ref().map_or("Source...", |l| &l.name));
                     },
 
                     UiEvent::TargetLanguageChanged(lang) => {
-                        target_lang_button.set_label(lang.as_ref().map_or("Target...", |l| &l.name));
+                        language_buttons.set_target_label(lang.as_ref().map_or("Target...", |l| &l.name));
+                    },
+
+                    UiEvent::LanguageSelectRevealChanged(reveal) => {
+                        println!("Language select reveal changed: {:?}", reveal);
                     }
                 }
             }
