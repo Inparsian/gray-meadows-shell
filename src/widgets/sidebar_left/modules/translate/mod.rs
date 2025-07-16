@@ -1,4 +1,5 @@
 mod lang_buttons;
+mod lang_select;
 
 use std::{sync::Mutex, time::Duration};
 use once_cell::sync::Lazy;
@@ -15,8 +16,9 @@ static WORKING: Lazy<Mutex<bool>> = Lazy::new(|| Mutex::new(false));
 static SOURCE_LANG: Lazy<Mutex<Option<Language>>> = Lazy::new(|| Mutex::new(language::get_by_name("English")));
 static TARGET_LANG: Lazy<Mutex<Option<Language>>> = Lazy::new(|| Mutex::new(language::get_by_name("Spanish")));
 static AUTO_DETECTED_LANG: Lazy<Mutex<Option<Language>>> = Lazy::new(|| Mutex::new(None));
+static REVEAL: Lazy<Mutex<LanguageSelectReveal>> = Lazy::new(|| Mutex::new(LanguageSelectReveal::None));
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum LanguageSelectReveal {
     Source,
     Target,
@@ -102,7 +104,6 @@ pub fn new() -> gtk4::Box {
     relm4_macros::view! {
         input_text_view = gtk4::TextView {
             set_wrap_mode: gtk4::WrapMode::WordChar,
-            set_vexpand: true,
             set_hexpand: true,
             set_css_classes: &["google-translate-text-view"],
             set_buffer: Some(&input_buffer)
@@ -110,27 +111,24 @@ pub fn new() -> gtk4::Box {
         
         output_text_view = gtk4::TextView {
             set_wrap_mode: gtk4::WrapMode::WordChar,
-            set_vexpand: true,
             set_hexpand: true,
             set_css_classes: &["google-translate-text-view"],
             set_buffer: Some(&output_buffer),
             set_editable: false
         },
 
-        widget = gtk4::Box {
-            set_css_classes: &["GoogleTranslate"],
+        main_ui = gtk4::Box {
             set_orientation: gtk4::Orientation::Vertical,
             set_spacing: 8,
             set_hexpand: true,
-            set_vexpand: true,
-
-            append: &language_buttons.container,
 
             gtk4::ScrolledWindow {
+                set_height_request: 400,
                 set_child: Some(&input_text_view)
             },
 
             gtk4::ScrolledWindow {
+                set_height_request: 400,
                 set_child: Some(&output_text_view)
             },
 
@@ -203,6 +201,47 @@ pub fn new() -> gtk4::Box {
                     }
                 }
             }
+        },
+
+        main_ui_revealer = gtk4::Revealer {
+            set_reveal_child: REVEAL.lock().unwrap().clone() == LanguageSelectReveal::None,
+            set_transition_type: gtk4::RevealerTransitionType::SlideDown,
+            set_transition_duration: 250,
+            set_child: Some(&main_ui)
+        },
+
+        select_ui_stack = gtk4::Stack {
+            set_hexpand: true,
+            set_transition_type: gtk4::StackTransitionType::SlideLeftRight,
+            set_transition_duration: 250,
+
+            add_named: (&lang_select::new(LanguageSelectReveal::Source, tx.clone()), Some("source")),
+            add_named: (&lang_select::new(LanguageSelectReveal::Target, tx.clone()), Some("target"))
+        },
+
+        select_ui = gtk4::Box {
+            set_orientation: gtk4::Orientation::Vertical,
+            set_spacing: 8,
+            set_hexpand: true,
+            append: &select_ui_stack
+        },
+
+        select_ui_revealer = gtk4::Revealer {
+            set_reveal_child: REVEAL.lock().unwrap().clone() != LanguageSelectReveal::None,
+            set_transition_type: gtk4::RevealerTransitionType::SlideDown,
+            set_transition_duration: 250,
+            set_child: Some(&select_ui)
+        },
+
+        widget = gtk4::Box {
+            set_css_classes: &["GoogleTranslate"],
+            set_orientation: gtk4::Orientation::Vertical,
+            set_spacing: 8,
+            set_hexpand: true,
+
+            append: &language_buttons.container,
+            append: &select_ui_revealer,
+            append: &main_ui_revealer,
         }
     };
 
@@ -246,6 +285,8 @@ pub fn new() -> gtk4::Box {
         let output_buffer = output_buffer.clone();
         let input_text_view = input_text_view.clone();
         let language_buttons = language_buttons.clone();
+        let main_ui_revealer = main_ui_revealer.clone();
+        let select_ui_revealer = select_ui_revealer.clone();
 
         async move {
             while let Ok(event) = rx.recv().await {
@@ -283,7 +324,21 @@ pub fn new() -> gtk4::Box {
                     },
 
                     UiEvent::LanguageSelectRevealChanged(reveal) => {
-                        println!("Language select reveal changed: {:?}", reveal);
+                        let was_already_open = reveal == *REVEAL.lock().unwrap();
+
+                        main_ui_revealer.set_reveal_child(was_already_open || reveal == LanguageSelectReveal::None);
+                        select_ui_revealer.set_reveal_child(!was_already_open && reveal != LanguageSelectReveal::None);
+                        select_ui_stack.set_visible_child_name(match reveal {
+                            LanguageSelectReveal::Source => "source",
+                            LanguageSelectReveal::Target => "target",
+                            LanguageSelectReveal::None => "source" // Default to source when hidden
+                        });
+
+                        *REVEAL.lock().unwrap() = if was_already_open {
+                            LanguageSelectReveal::None
+                        } else {
+                            reveal
+                        };
                     }
                 }
             }
