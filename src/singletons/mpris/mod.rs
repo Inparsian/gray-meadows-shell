@@ -44,42 +44,34 @@ pub fn subscribe_to_default_player_changes<F>(callback: F)
 where
     F: Fn(usize) + 'static,
 {
-    let callback_rc = Rc::new(callback);
+    let callback = Rc::new(callback);
 
     let players_future = {
-        let callback = callback_rc.clone();
+        let callback = callback.clone();
 
         MPRIS.players.signal_vec_cloned().for_each(move |change| {
             let run_callback = || {
                 let callback = callback.clone();
 
-                gtk4::glib::source::idle_add_local(move || {
+                gtk4::glib::source::idle_add_local_once(move || {
                     assert_default_player();
                     callback(MPRIS.default_player.get());
-
-                    gtk4::glib::ControlFlow::Break
                 });
             };
 
             match change {
-                VecDiff::Push { value: _ } => {
-                    // Do nothing if there's already more than one player
-                    // This is for if a player is instantiated when there's no players
-                    if MPRIS.players.lock_ref().len() == 1 {
-                        run_callback();
-                    }
+                // Do nothing if there's already more than one player
+                // This is for if a player is instantiated when there's no players
+                VecDiff::Push { value: _ } => if MPRIS.players.lock_ref().len() == 1 {
+                    run_callback();
                 },
 
-                VecDiff::UpdateAt { index, value: _ } => {
-                    if index == MPRIS.default_player.get() {
-                        run_callback();
-                    }
+                VecDiff::UpdateAt { index, value: _ } => if index == MPRIS.default_player.get() {
+                    run_callback();
                 },
 
-                VecDiff::RemoveAt { index } => {
-                    if index == MPRIS.default_player.get() {
-                        run_callback();
-                    }
+                VecDiff::RemoveAt { index } => if index == MPRIS.default_player.get() {
+                    run_callback();
                 },
                 
                 VecDiff::Pop {} => run_callback(),
@@ -93,16 +85,12 @@ where
     };
 
     let default_player_future = {
-        let callback = callback_rc.clone();
+        let callback = callback.clone();
 
         MPRIS.default_player.signal().for_each(move |index| {
             let callback = callback.clone();
 
-            gtk4::glib::source::idle_add_local(move || {
-                callback(index);
-
-                gtk4::glib::ControlFlow::Break
-            });
+            gtk4::glib::source::idle_add_local_once(move || callback(index));
 
             async {}
         })
