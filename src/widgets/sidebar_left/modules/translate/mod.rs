@@ -2,7 +2,10 @@ use std::{sync::Mutex, time::Duration};
 use once_cell::sync::Lazy;
 use gtk4::prelude::*;
 
-use crate::singletons::g_translate::{language::{self, Language}, result::GoogleTranslateResult, translate};
+use crate::singletons::g_translate::{
+    language::{self, Language, AUTO_LANG},
+    result::GoogleTranslateResult, translate
+};
 
 static WORKER_TIMEOUT: Lazy<Mutex<Option<gtk4::glib::SourceId>>> = Lazy::new(|| Mutex::new(None));
 static WORKING: Lazy<Mutex<bool>> = Lazy::new(|| Mutex::new(false));
@@ -326,7 +329,7 @@ pub fn new() -> gtk4::Box {
                             output_buffer.set_text(&res.to.text);
 
                             // Set the auto-detected language if applicable
-                            if SOURCE_LANG.lock().unwrap().as_ref().unwrap().code == "auto" {
+                            if SOURCE_LANG.lock().unwrap().as_ref().unwrap() == &*AUTO_LANG {
                                 let mut auto_detected_lang = AUTO_DETECTED_LANG.lock().unwrap();
 
                                 *auto_detected_lang = Some(res.from.language.clone());

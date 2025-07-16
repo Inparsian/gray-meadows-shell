@@ -1,17 +1,15 @@
 use once_cell::sync::Lazy;
 
-// Our dictionary of languages
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct Language {
     pub name: String,
     pub code: String
 }
 
-pub static LANGUAGES: Lazy<Vec<Language>> = Lazy::new(|| vec![
-    // auto
-    Language { code: "auto".into(), name: "Automatic".into() },
+pub static AUTO_LANG: Lazy<Language> = Lazy::new(|| Language { code: "auto".into(), name: "Automatic".into() });
 
-    // codes
+// Our dictionary of languages
+pub static LANGUAGES: Lazy<Vec<Language>> = Lazy::new(|| vec![
     Language { code: "af".into(), name: "Afrikaans".into() },
     Language { code: "sq".into(), name: "Albanian".into() },
     Language { code: "am".into(), name: "Amharic".into() },
