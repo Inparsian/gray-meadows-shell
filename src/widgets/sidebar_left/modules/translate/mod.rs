@@ -55,11 +55,12 @@ fn change_target_language(lang: Option<Language>, tx: &async_channel::Sender<UiE
 
 async fn translate_future(
     text: String,
-    source_lang: Option<Language>,
-    target_lang: Option<Language>,
     autocorrect: bool,
     sender: async_channel::Sender<UiEvent>
 ) {
+    let source_lang = SOURCE_LANG.lock().unwrap().clone();
+    let target_lang = TARGET_LANG.lock().unwrap().clone();
+
     if let (Some(source_lang), Some(target_lang)) = (source_lang, target_lang) {
         if WORKING.lock().map(|mut w| *w = true).is_ok() {
             sender.send(UiEvent::TranslationStarted).await.ok();
@@ -208,24 +209,22 @@ pub fn new() -> gtk4::Box {
                             let source_lang_allocation = source_lang_button.allocation();
                             let target_lang_allocation = target_lang_button.allocation();
                             let buttons_box_allocation = language_select_buttons.allocation();
+                            let source_margin = buttons_box_allocation.width() - source_lang_allocation.width() + 1;
+                            let target_margin = buttons_box_allocation.width() - target_lang_allocation.width() + 1;
                             
                             from_to_button_transition_provider.load_from_data(&format!("
                                 .google-translate-language-select-button.source-lang {{
                                     transition: none;
-                                    margin-left: {}px;
-                                    margin-right: -{}px;
+                                    margin-left: {source_margin}px;
+                                    margin-right: -{source_margin}px;
                                 }}
 
                                 .google-translate-language-select-button.target-lang {{
                                     transition: none;
-                                    margin-left: -{}px;
-                                    margin-right: {}px;
-                                }}",
-                                buttons_box_allocation.width() - source_lang_allocation.width() + 1,
-                                buttons_box_allocation.width() - source_lang_allocation.width() + 1,
-                                buttons_box_allocation.width() - target_lang_allocation.width() + 1,
-                                buttons_box_allocation.width() - target_lang_allocation.width() + 1
-                            ));
+                                    margin-left: -{target_margin}px;
+                                    margin-right: {target_margin}px;
+                                }}
+                            "));
 
                             gtk4::glib::timeout_add_local_once(Duration::from_millis(10), {
                                 let from_to_button_transition_provider = from_to_button_transition_provider.clone();
@@ -290,14 +289,10 @@ pub fn new() -> gtk4::Box {
                     WORKER_TIMEOUT.lock().unwrap().take();
 
                     std::thread::spawn({
-                        let source_lang = SOURCE_LANG.lock().unwrap().clone();
-                        let target_lang = TARGET_LANG.lock().unwrap().clone();
                         let tx = tx.clone();
 
                         move || tokio::runtime::Runtime::new().unwrap().block_on(translate_future(
                             text,
-                            source_lang,
-                            target_lang,
                             false,
                             tx
                         ))
