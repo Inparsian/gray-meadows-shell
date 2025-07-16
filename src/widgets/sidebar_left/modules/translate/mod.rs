@@ -4,6 +4,7 @@ mod lang_select;
 use std::{sync::Mutex, time::Duration};
 use once_cell::sync::Lazy;
 use gtk4::prelude::*;
+use tokio::sync::broadcast;
 
 use crate::singletons::g_translate::{
     language::{self, Language, AUTO_LANG},
@@ -17,6 +18,10 @@ static SOURCE_LANG: Lazy<Mutex<Option<Language>>> = Lazy::new(|| Mutex::new(lang
 static TARGET_LANG: Lazy<Mutex<Option<Language>>> = Lazy::new(|| Mutex::new(language::get_by_name("Spanish")));
 static AUTO_DETECTED_LANG: Lazy<Mutex<Option<Language>>> = Lazy::new(|| Mutex::new(None));
 static REVEAL: Lazy<Mutex<LanguageSelectReveal>> = Lazy::new(|| Mutex::new(LanguageSelectReveal::None));
+
+static UI_EVENT_CHANNEL: Lazy<broadcast::Sender<UiEvent>> = Lazy::new(|| {
+    broadcast::channel(100).0
+});
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum LanguageSelectReveal {
@@ -38,48 +43,56 @@ fn is_working() -> bool {
     WORKING.try_lock().map(|w| *w).unwrap_or(true)
 }
 
-pub fn send_ui_event(event: UiEvent, sender: &async_channel::Sender<UiEvent>) {
+pub fn subscribe_to_ui_events() -> async_channel::Receiver<UiEvent> {
+    let mut receiver = UI_EVENT_CHANNEL.subscribe();
+    let (local_tx, local_rx) = async_channel::bounded::<UiEvent>(1);
+
+    tokio::spawn(async move {
+        while let Ok(event) = receiver.recv().await {
+            local_tx.send(event).await.ok();
+        }
+    });
+
+    local_rx
+}
+
+pub fn send_ui_event(event: UiEvent) {
     tokio::spawn({
         let event = event.clone();
-        let tx = sender.clone();
 
         async move {
-            tx.send(event).await.ok();
+            let _ = UI_EVENT_CHANNEL.send(event);
         }
     });
 }
 
-pub fn set_source_language(lang: Option<Language>, tx: &async_channel::Sender<UiEvent>) {
+pub fn set_source_language(lang: Option<Language>) {
     let mut source_lang = SOURCE_LANG.lock().unwrap();
     *source_lang = lang.clone();
 
-    send_ui_event(UiEvent::SourceLanguageChanged(lang), tx);
+    send_ui_event(UiEvent::SourceLanguageChanged(lang));
 }
 
-pub fn set_target_language(lang: Option<Language>, tx: &async_channel::Sender<UiEvent>) {
+pub fn set_target_language(lang: Option<Language>) {
     let mut target_lang = TARGET_LANG.lock().unwrap();
     *target_lang = lang.clone();
     
-    send_ui_event(UiEvent::TargetLanguageChanged(lang), tx);
+    send_ui_event(UiEvent::TargetLanguageChanged(lang));
 }
 
-async fn translate_future(
-    text: String,
-    autocorrect: bool,
-    sender: async_channel::Sender<UiEvent>
-) {
+async fn translate_future(text: String, autocorrect: bool) {
     let source_lang = SOURCE_LANG.lock().unwrap().clone();
     let target_lang = TARGET_LANG.lock().unwrap().clone();
 
     if let (Some(source_lang), Some(target_lang)) = (source_lang, target_lang) {
         if WORKING.lock().map(|mut w| *w = true).is_ok() {
-            sender.send(UiEvent::TranslationStarted).await.ok();
+            send_ui_event(UiEvent::TranslationStarted);
 
             let translation_result = translate(&text, source_lang, target_lang, autocorrect)
                 .await
                 .map_err(|e| e.to_string());
 
-            sender.send(UiEvent::TranslationFinished(translation_result)).await.ok();
+            send_ui_event(UiEvent::TranslationFinished(translation_result.clone()));
 
             // Keep a hold of the working state for a while longer to prevent
             // an infinite translation loop due to buffer change signals.
@@ -97,9 +110,7 @@ pub fn new() -> gtk4::Box {
     let input_buffer = gtk4::TextBuffer::new(None);
     let output_buffer = gtk4::TextBuffer::new(None);
 
-    let (tx, rx) = async_channel::bounded::<UiEvent>(1);
-
-    let language_buttons = lang_buttons::LanguageButtons::new(tx.clone());
+    let language_buttons = lang_buttons::LanguageButtons::new();
 
     relm4_macros::view! {
         input_text_view = gtk4::TextView {
@@ -169,7 +180,6 @@ pub fn new() -> gtk4::Box {
                         let input_buffer = input_buffer.clone();
                         let output_buffer = output_buffer.clone();
                         let language_buttons = language_buttons.clone();
-                        let tx = tx.clone();
 
                         move |_| if !is_working() {
                             let input_text = input_buffer.text(&input_buffer.start_iter(), &input_buffer.end_iter(), false).to_string();
@@ -177,8 +187,8 @@ pub fn new() -> gtk4::Box {
                             let source_lang_cloned = SOURCE_LANG.lock().unwrap().clone();
                             let target_lang_cloned = TARGET_LANG.lock().unwrap().clone();
 
-                            set_source_language(target_lang_cloned, &tx);
-                            set_target_language(source_lang_cloned, &tx);
+                            set_source_language(target_lang_cloned);
+                            set_target_language(source_lang_cloned);
                             language_buttons.swap_animation();
 
                             input_buffer.set_text(&output_text);
@@ -215,8 +225,8 @@ pub fn new() -> gtk4::Box {
             set_transition_type: gtk4::StackTransitionType::SlideLeftRight,
             set_transition_duration: 250,
 
-            add_named: (&lang_select::new(LanguageSelectReveal::Source, tx.clone()), Some("source")),
-            add_named: (&lang_select::new(LanguageSelectReveal::Target, tx.clone()), Some("target"))
+            add_named: (&lang_select::new(LanguageSelectReveal::Source), Some("source")),
+            add_named: (&lang_select::new(LanguageSelectReveal::Target), Some("target"))
         },
 
         select_ui = gtk4::Box {
@@ -245,42 +255,31 @@ pub fn new() -> gtk4::Box {
         }
     };
 
-    input_buffer.connect_changed({
-        let tx = tx.clone();
+    input_buffer.connect_changed(move |buffer| {
+        if is_working() {
+            return;
+        }
 
-        move |buffer| {
-            if is_working() {
-                return;
-            }
+        if let Some(source_id) = WORKER_TIMEOUT.lock().unwrap().take() {
+            source_id.remove();
+        }
 
-            if let Some(source_id) = WORKER_TIMEOUT.lock().unwrap().take() {
-                source_id.remove();
-            }
+        let text = buffer.text(&buffer.start_iter(), &buffer.end_iter(), false).to_string();
+        if !text.is_empty() {
+            let timeout = gtk4::glib::timeout_add_local_once(Duration::from_millis(500), move || {
+                WORKER_TIMEOUT.lock().unwrap().take();
 
-            let text = buffer.text(&buffer.start_iter(), &buffer.end_iter(), false).to_string();
-            if !text.is_empty() {
-                let tx = tx.clone();
+                std::thread::spawn(
+                    move || tokio::runtime::Runtime::new().unwrap().block_on(translate_future(text, false))
+                );
+            });
 
-                let timeout = gtk4::glib::timeout_add_local_once(Duration::from_millis(500), move || {
-                    WORKER_TIMEOUT.lock().unwrap().take();
-
-                    std::thread::spawn({
-                        let tx = tx.clone();
-
-                        move || tokio::runtime::Runtime::new().unwrap().block_on(translate_future(
-                            text,
-                            false,
-                            tx
-                        ))
-                    });
-                });
-
-                *WORKER_TIMEOUT.lock().unwrap() = Some(timeout);
-            }
+            *WORKER_TIMEOUT.lock().unwrap() = Some(timeout);
         }
     });
 
-    // Start our receiver task
+    // Start our event receiver task
+    let receiver = subscribe_to_ui_events();
     gtk4::glib::spawn_future_local({
         let output_buffer = output_buffer.clone();
         let input_text_view = input_text_view.clone();
@@ -289,7 +288,7 @@ pub fn new() -> gtk4::Box {
         let select_ui_revealer = select_ui_revealer.clone();
 
         async move {
-            while let Ok(event) = rx.recv().await {
+            while let Ok(event) = receiver.recv().await {
                 match event {
                     UiEvent::TranslationStarted => {
                         output_buffer.set_text("Translating...");

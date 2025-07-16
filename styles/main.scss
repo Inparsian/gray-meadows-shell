@@ -56,6 +56,62 @@
                 }
             }
 
+            .google-translate-language-select-box {
+                .google-translate-language-select-label {
+                    @include large-text;
+                    margin-top: 6px;
+                }
+
+                .google-translate-language-select-nav-button {
+                    @include normal-text;
+                    background: $background-color-secondary;
+                    font-weight: 300;
+                    border: 0px;
+                    color: $foreground-color-primary;
+                    padding: 4px;
+                    border-radius: 0px;
+
+                    &:hover {
+                        background: $background-color-third;
+                    }
+                }
+            }
+
+            .google-translate-language-select-filter-box {
+                background: $background-color-secondary;
+                border: 1px solid $background-color-third;
+                padding: 8px;
+
+                .google-translate-language-select-filter-entry {
+                    background: transparent;
+                    color: $foreground-color-primary;
+                    padding: 4px;
+                    min-height: 0px;
+                    border-radius: 0px;
+                    outline: none;
+                    box-shadow: none;
+                    border: none;
+                }
+
+                .google-translate-language-select-filter-clear-button {
+                    @include material-icons;
+                    background: transparent;
+                    min-height: 0px;
+                    margin-left: 4px;
+                    padding: 0px;
+                    color: #777;
+
+                    &:hover, &:focus {
+                        color: #888;
+                        outline: none;
+                    }
+
+                    &:active {
+                        color: #aaa;
+                    }
+                }
+            }
+
             .google-translate-text-view {
                 @include large-text;
                 padding: 12px;

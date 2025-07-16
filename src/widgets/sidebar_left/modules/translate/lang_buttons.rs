@@ -13,7 +13,7 @@ pub struct LanguageButtons {
 }
 
 impl LanguageButtons {
-    pub fn new(sender: async_channel::Sender<UiEvent>) -> Self {
+    pub fn new() -> Self {
         let swap_transition_provider = gtk4::CssProvider::new();
 
         relm4_macros::view! {
@@ -21,20 +21,14 @@ impl LanguageButtons {
                 set_label: SOURCE_LANG.lock().unwrap().as_ref().map_or("Source...", |l| &l.name),
                 set_css_classes: &["google-translate-language-select-button", "source-lang"],
                 set_hexpand: true,
-                connect_clicked: {
-                    let tx = sender.clone();
-                    move |_| send_ui_event(UiEvent::LanguageSelectRevealChanged(LanguageSelectReveal::Source), &tx)
-                }
+                connect_clicked: move |_| send_ui_event(UiEvent::LanguageSelectRevealChanged(LanguageSelectReveal::Source))
             },
 
             target_lang_button = gtk4::Button {
                 set_label: TARGET_LANG.lock().unwrap().as_ref().map_or("Target...", |l| &l.name),
                 set_css_classes: &["google-translate-language-select-button", "target-lang"],
                 set_hexpand: true,
-                connect_clicked: {
-                    let tx = sender.clone();
-                    move |_| send_ui_event(UiEvent::LanguageSelectRevealChanged(LanguageSelectReveal::Target), &tx)
-                }
+                connect_clicked: move |_| send_ui_event(UiEvent::LanguageSelectRevealChanged(LanguageSelectReveal::Target))
             },
 
             container = gtk4::Box {
