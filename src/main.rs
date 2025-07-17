@@ -8,22 +8,19 @@ mod widgets;
 use gtk4::prelude::*;
 use libadwaita::Application;
 use notify::{EventKind, event::{AccessKind, AccessMode}, Watcher};
-use once_cell::sync::Lazy;
-use std::{path::Path, sync::Mutex};
+use std::{cell::RefCell, path::Path};
 
 pub struct GrayMeadows {
     provider: gtk4::CssProvider,
     icon_theme: gtk4::IconTheme
 }
 
-unsafe impl Send for GrayMeadows {}
-
-pub static APP: Lazy<Mutex<GrayMeadows>> = Lazy::new(|| {
-    Mutex::new(GrayMeadows {
+thread_local! {
+    pub static APP: RefCell<GrayMeadows> = RefCell::new(GrayMeadows {
         provider: gtk4::CssProvider::new(),
         icon_theme: gtk4::IconTheme::default()
-    })
-});
+    });
+}
 
 pub fn bundle_apply_scss() {
     gtk4::glib::MainContext::default().invoke(|| {
@@ -43,12 +40,11 @@ pub fn bundle_apply_scss() {
         }
     
         // Load the generated CSS into the provider
-        let app = &APP.lock().unwrap();
         let css = std::fs::read_to_string(format!("{}/output.css", styles_path))
             .expect("Failed to read output.css");
-    
-        app.provider.load_from_data(&css);
 
+        APP.with(|app| app.borrow().provider.load_from_data(&css));
+        
         // Refresh SCSS variables
         helpers::scss::refresh_variables();
     });
@@ -126,17 +122,17 @@ async fn main() {
 
             gtk4::style_context_add_provider_for_display(
                 &gdk4::Display::default().expect("Failed to get default display"),
-                &APP.lock().unwrap().provider,
+                &APP.with(|app| app.borrow().provider.clone()),
                 gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
             );
 
             // Add your manual search paths here
             // TODO: Replace this with an automatic search for the currently equipped icon theme
-            {
-                let icon_theme = &APP.lock().unwrap().icon_theme;
+            APP.with(|app| {
+                let icon_theme = &app.borrow().icon_theme;
                 icon_theme.add_search_path(Path::new("/home/inparsian/.icons/besgnulinux-mono-grey/apps/scalable"));
                 icon_theme.set_theme_name(Some("besgnulinux-mono-grey"));
-            }
+            });
 
             bundle_apply_scss();
             watch_scss();

@@ -35,7 +35,7 @@ pub fn get_pixbuf(icon_name: &str) -> Option<Pixbuf> {
         }
 
         // Otherwise, try to load it as an icon from the icon theme
-        let icon_theme = &APP.lock().unwrap().icon_theme;
+        let icon_theme = APP.with(|app| app.borrow().icon_theme.clone());
         let icon_paintable = icon_theme.lookup_icon(
             icon_name,
             &[],

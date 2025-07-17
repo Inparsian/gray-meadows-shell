@@ -12,7 +12,7 @@ const MAX_TITLE_WIDTH: i32 = 54;
 
 fn icon_or(icon_name: Option<&str>) -> Option<&str> {
     if let Some(name) = icon_name {
-        let icon_theme = &APP.lock().unwrap().icon_theme;
+        let icon_theme = &APP.with(|app| app.borrow().icon_theme.clone());
 
         if icon_theme.has_icon(name) {
             return Some(name);
