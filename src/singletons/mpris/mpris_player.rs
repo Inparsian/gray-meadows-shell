@@ -2,7 +2,7 @@ use dbus::{arg::{self, RefArg}, Error, Message};
 
 use crate::singletons::mpris::{mpris_dbus, mpris_metadata};
 
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum PlaybackStatus {
     Playing,
     Paused,
@@ -19,7 +19,7 @@ impl PlaybackStatus {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum LoopStatus {
     #[default] None,
     Track,
@@ -135,7 +135,7 @@ impl MprisPlayer {
             "LoopStatus",
         ];
 
-        for key in booleans.iter_mut() {
+        for key in &mut booleans {
             let prop: bool = mpris_dbus::get_dbus_property::<bool>(self, key)
                 .unwrap_or_else(|_| {
                     eprintln!("Failed to get {} property", key);
@@ -154,7 +154,7 @@ impl MprisPlayer {
             }
         }
 
-        for key in f64s.iter_mut() {
+        for key in &mut f64s {
             let prop: f64 = mpris_dbus::get_dbus_property::<f64>(self, key)
                 .unwrap_or_else(|_| {
                     eprintln!("Failed to get {} property", key);
@@ -170,7 +170,7 @@ impl MprisPlayer {
             }
         }
 
-        for key in i64s.iter_mut() {
+        for key in &mut i64s {
             let prop: i64 = mpris_dbus::get_dbus_property::<i64>(self, key)
                 .unwrap_or_else(|_| {
                     eprintln!("Failed to get {} property", key);
@@ -180,7 +180,7 @@ impl MprisPlayer {
             if *key == "Position" { self.position = prop }
         }
 
-        for key in strings.iter_mut() {
+        for key in &mut strings {
             let prop: String = mpris_dbus::get_dbus_property::<String>(self, key)
                 .unwrap_or_else(|_| {
                     eprintln!("Failed to get {} property", key);
@@ -261,7 +261,7 @@ impl MprisPlayer {
                 }
             }
 
-            for (key, flag) in booleans.iter_mut() {
+            for (key, flag) in &mut booleans {
                 if let Some(value) = props.get(*key) {
                     if let Some(b) = value.0.as_i64() {
                         **flag = b != 0;
@@ -271,7 +271,7 @@ impl MprisPlayer {
                 }
             }
 
-            for (key, value) in f64s.iter_mut() {
+            for (key, value) in &mut f64s {
                 if let Some(prop) = props.get(*key) {
                     if let Some(v) = prop.0.as_f64() {
                         **value = v;

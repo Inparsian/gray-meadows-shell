@@ -1,6 +1,6 @@
 use once_cell::sync::Lazy;
 
-#[derive(Debug, Clone, Default, PartialEq)]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Language {
     pub name: String,
     pub code: String

@@ -27,7 +27,7 @@ macro_rules! subscribeCloned {
 }
 
 // Helper functions to make writing reactive GTK widgets easier w/ Relm4 syntax
-pub fn reactive_label(mutable: Mutable<String>) -> gtk4::Label {
+pub fn reactive_label(mutable: &Mutable<String>) -> gtk4::Label {
     let widget = gtk4::Label::new(Some("..."));
     let widget_clone = widget.clone();
     subscribeCloned!(mutable, widget_clone, set_label);

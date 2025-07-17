@@ -90,25 +90,25 @@ pub fn receive_update_node(id: i32, property_name: String) {
 }
 
 pub fn receive_update_microphone(id: i32, property_name: String) {
-    let _ = CHANNEL.send(WpEvent::UpdateEndpoint(
-        id,
-        property_name.clone(),
-    ));
-
     if property_name == "is-default" && ffi::endpoint_get_is_default(id) {
         let _ = CHANNEL.send(WpEvent::UpdateDefaultMicrophone(id));
     }
+    
+    let _ = CHANNEL.send(WpEvent::UpdateEndpoint(
+        id,
+        property_name,
+    ));
 }
 
 pub fn receive_update_speaker(id: i32, property_name: String) {
-    let _ = CHANNEL.send(WpEvent::UpdateEndpoint(
-        id,
-        property_name.clone(),
-    ));
-
     if property_name == "is-default" && ffi::endpoint_get_is_default(id) {
         let _ = CHANNEL.send(WpEvent::UpdateDefaultSpeaker(id));
     }
+
+    let _ = CHANNEL.send(WpEvent::UpdateEndpoint(
+        id,
+        property_name,
+    ));
 }
 
 pub fn receive_create_stream(node: ffi::Node) {

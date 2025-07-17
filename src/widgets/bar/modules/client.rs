@@ -151,7 +151,7 @@ pub fn new() -> gtk4::Box {
     gtk4::glib::MainContext::default().spawn_local(hyprland_active_client_future);
     gtk4::glib::MainContext::default().spawn_local(reveal_title_future);
 
-    BarModuleWrapper::new(widget)
+    BarModuleWrapper::new(&widget)
         .add_controller(reveal_title_gesture)
         .get_widget()
 }

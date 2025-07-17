@@ -76,9 +76,9 @@ impl SystemTrayItem {
         self.widget = Some(new_widget);
     }
 
-    pub fn update(&mut self, member: String) {
+    pub fn update(&self, member: &str) {
         if let (Some(widget), Some(item)) = (&self.widget, crate::singletons::tray::get_item(&self.service)) {
-            match member.as_str() {
+            match member {
                 "NewToolTip" => {
                     if !item.tool_tip.title.is_empty() {
                         widget.set_tooltip_text(Some(&item.tool_tip.title));
@@ -121,7 +121,7 @@ impl SystemTray {
         self.items.push(item);
     }
 
-    fn build_item(&mut self, service: String) {
+    fn build_item(&mut self, service: &str) {
         if let Some(item) = self.items.iter_mut().find(|i| i.service == service) {
             item.build_widget();
 
@@ -131,13 +131,13 @@ impl SystemTray {
         }
     }
 
-    fn update_item(&mut self, member: String, service: String) {
+    fn update_item(&mut self, member: &str, service: &str) {
         if let Some(item) = self.items.iter_mut().find(|i| i.service == service) {
             item.update(member);
         }
     }
 
-    fn remove_item(&mut self, service: String) {
+    fn remove_item(&mut self, service: &str) {
         if let Some(pos) = self.items.iter().position(|i| i.service == service) {
             let item = self.items.remove(pos);
 
@@ -191,19 +191,19 @@ pub fn new() -> gtk4::Box {
             match event {
                 BusEvent::ItemRegistered(item) => {
                     tray.add_item(item.service.clone());
-                    tray.build_item(item.service);
+                    tray.build_item(&item.service);
                 },
 
                 BusEvent::ItemUpdated(member, item) => {
-                    tray.update_item(member, item.service);
+                    tray.update_item(&member, &item.service);
                 },
 
                 BusEvent::ItemUnregistered(item) => {
-                    tray.remove_item(item.service);
+                    tray.remove_item(&item.service);
                 }
             }
         }
     });
 
-    BarModuleWrapper::new(widget).get_widget()
+    BarModuleWrapper::new(&widget).get_widget()
 }

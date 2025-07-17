@@ -115,8 +115,8 @@ impl StatusNotifierItem {
     }
 
     /// Passes an update to the StatusNotifierItem, updating its properties.
-    pub fn pass_update(&mut self, member: String) {
-        match member.as_str() {
+    pub fn pass_update(&mut self, member: &str) {
+        match member {
             "NewTitle" => {
                 if let Ok(title) = self.try_get_prop::<String>("Title") {
                     self.title = title;

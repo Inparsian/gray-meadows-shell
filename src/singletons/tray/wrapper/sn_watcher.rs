@@ -84,7 +84,7 @@ impl StatusNotifierWatcher {
     /// ```rust
     /// std::thread::spawn(move || watcher.serve());
     /// ```
-    pub fn serve(mut self) -> Result<(), dbus::Error> {
+    pub fn serve(self) -> Result<(), dbus::Error> {
         let connection = blocking::Connection::new_session()?;
 
         let mut crossroads = Crossroads::new();
@@ -108,7 +108,7 @@ impl StatusNotifierWatcher {
     /// Creates a new D-Bus connection on a separate thread to monitor items on the bus.
     ///
     /// Meant to be used internally in serve.
-    fn monitor_items(&mut self) -> Result<(), dbus::Error> {
+    fn monitor_items(&self) -> Result<(), dbus::Error> {
         std::thread::spawn({
             let items = self.items();
             let sender = self.sender.clone();
@@ -162,7 +162,7 @@ impl StatusNotifierWatcher {
                                         if let Some(item) = items.lock().unwrap().iter_mut().find(|item| item.service == service) {
                                             match msg.path() {
                                                 Some(path) if path == Path::from(bus::ITEM_DBUS_OBJECT) => {
-                                                    item.pass_update(member.clone());
+                                                    item.pass_update(&member);
 
                                                     sender.send(BusEvent::ItemUpdated(member, item.clone())).unwrap();
                                                 },

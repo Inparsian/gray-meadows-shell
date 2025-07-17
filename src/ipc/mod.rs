@@ -25,7 +25,7 @@ where
             match receiver.recv().await {
                 Ok(message) => tx.send(message).await.unwrap(),
                 Err(broadcast::error::RecvError::Closed) => break, // Channel closed
-                Err(broadcast::error::RecvError::Lagged(_)) => continue, // Lagged messages
+                Err(broadcast::error::RecvError::Lagged(_)) => {}, // Lagged messages
             }
         }
     });

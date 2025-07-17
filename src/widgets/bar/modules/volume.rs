@@ -103,7 +103,7 @@ pub fn new() -> gtk4::Box {
         }
     });
 
-    BarModuleWrapper::new(widget)
+    BarModuleWrapper::new(&widget)
         .add_controller(volume_scroll_gesture)
         .add_controller(volume_click_gesture)
         .get_widget()

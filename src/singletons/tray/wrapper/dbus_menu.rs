@@ -1,5 +1,5 @@
 use std::time::SystemTime;
-use dbus::{arg::{self, RefArg, Variant}, blocking};
+use dbus::{arg::{self, RefArg, Variant}, Error, blocking};
 
 use crate::singletons::tray::{bus::{self, make_key_value_pairs}, proxy::menu::RawLayout};
 
@@ -85,7 +85,7 @@ impl Menu {
         }
     }
 
-    pub fn from_raw(value: RawLayout) -> Self {
+    pub fn from_raw(value: &RawLayout) -> Self {
         let mut menu = Menu {
             _id: value.0,
             items: Vec::new()
@@ -124,7 +124,7 @@ impl DbusMenu {
     }
 
     /// Activates an item on this menu.
-    pub fn activate(&self, item_id: u32) -> Result<(), dbus::Error> {
+    pub fn activate(&self, item_id: u32) -> Result<(), Error> {
         let connection = blocking::Connection::new_session()?;
         let proxy = connection.with_proxy(
             self.service.clone(),
@@ -137,7 +137,7 @@ impl DbusMenu {
             .expect("Meow, time is broken");
 
         // Call the ActivateItem method with the item ID
-        let _: Result<(), dbus::Error> = proxy.method_call(bus::DBUSMENU_BUS, "Event", (
+        let _: Result<(), Error> = proxy.method_call(bus::DBUSMENU_BUS, "Event", (
             item_id as i32,
             "clicked",
             Variant(0_u32),
@@ -148,7 +148,7 @@ impl DbusMenu {
     }
 
     /// Gets the layout of the menu.
-    pub fn get_layout(&self) -> Result<Menu, dbus::Error> {
+    pub fn get_layout(&self) -> Result<Menu, Error> {
         let connection = blocking::Connection::new_session()?;
         let proxy = connection.with_proxy(
             self.service.clone(),
@@ -156,13 +156,13 @@ impl DbusMenu {
             std::time::Duration::from_millis(5000),
         );
         
-        let result = proxy.method_call(bus::DBUSMENU_BUS, "GetLayout", (0, 10, Vec::<String>::new(),));
+        let result: Result<RawLayout, Error> = proxy.method_call(bus::DBUSMENU_BUS, "GetLayout", (0, 10, Vec::<String>::new(),));
 
         if let Ok(layout) = result {
-            Ok(Menu::from_raw(layout))
+            Ok(Menu::from_raw(&layout))
         } else {
             eprintln!("Failed to get menu layout: {:?}", result);
-            Err(dbus::Error::new_failed("Failed to get menu layout"))
+            Err(Error::new_failed("Failed to get menu layout"))
         }
     }
 }

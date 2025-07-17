@@ -18,7 +18,7 @@ pub fn activate() {
     refresh_desktops();
 
     for path in default_paths() {
-        std::thread::spawn(|| watch_desktops(path));
+        std::thread::spawn(move || watch_desktops(&path));
     }
 }
 
@@ -91,12 +91,12 @@ pub fn refresh_desktops() {
     }
 }
 
-pub fn watch_desktops(path: PathBuf) {
+pub fn watch_desktops(path: &PathBuf) {
     let (tx, rx) = std::sync::mpsc::channel();
     
     let mut watcher = notify::recommended_watcher(tx).unwrap();
     let result = watcher.watch(
-        Path::new(&path),
+        Path::new(path),
         notify::RecursiveMode::Recursive,
     );
 

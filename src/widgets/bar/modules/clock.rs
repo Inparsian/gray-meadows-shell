@@ -12,11 +12,11 @@ pub fn new() -> gtk4::Box {
             set_css_classes: &["bar-widget"],
             set_hexpand: false,
 
-            reactivity::reactive_label(singletons::date_time::DATE_TIME.time.clone()) {},
+            reactivity::reactive_label(&singletons::date_time::DATE_TIME.time) {},
             widgets::dot_separator::new() {},
-            reactivity::reactive_label(singletons::date_time::DATE_TIME.date.clone()) {}
+            reactivity::reactive_label(&singletons::date_time::DATE_TIME.date) {}
         }
     }
 
-    BarModuleWrapper::new(widget).get_widget()
+    BarModuleWrapper::new(&widget).get_widget()
 }

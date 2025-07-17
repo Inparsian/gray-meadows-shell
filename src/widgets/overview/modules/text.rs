@@ -1,3 +1,4 @@
+use std::fmt::Write;
 use rand::seq::SliceRandom;
 
 use crate::widgets::overview::{item::{OverviewSearchItem, OverviewSearchItemAction}, modules::OverviewSearchModule};
@@ -17,7 +18,7 @@ enum TextOperation {
     Hex // hex
 }
 
-fn digest(input: String, operation: TextOperation) -> String {
+fn digest(input: &str, operation: &TextOperation) -> String {
     match operation {
         TextOperation::Uppercase => input.to_uppercase(),
         TextOperation::Lowercase => input.to_lowercase(),
@@ -110,8 +111,15 @@ fn digest(input: String, operation: TextOperation) -> String {
             }).collect()
         },
 
-        TextOperation::Binary => input.chars().map(|c| format!("{:08b}", c as u8)).collect::<String>(),
-        TextOperation::Hex => input.chars().map(|c| format!("{:02x}", c as u8)).collect::<String>()
+        TextOperation::Binary => input.chars().fold(String::new(), |mut acc, c| {
+            write!(&mut acc, "{:08b}", c as u8).unwrap();
+            acc
+        }),
+
+        TextOperation::Hex => input.chars().fold(String::new(), |mut acc, c| {
+            write!(&mut acc, "{:02x}", c as u8).unwrap();
+            acc
+        })
     }
 }
 
@@ -138,7 +146,7 @@ impl OverviewSearchModule for OverviewTextModule {
             TextOperation::Binary,
             TextOperation::Hex
         ] {
-            let result = digest(query.to_owned(), operation.clone());
+            let result = digest(query, &operation);
             
             if query != result {
                 results.push(OverviewSearchItem {

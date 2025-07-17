@@ -5,11 +5,11 @@ pub struct BarModuleWrapper {
 }
 
 impl BarModuleWrapper {
-    pub fn new(inner_bx: gtk4::Box) -> Self {
+    pub fn new(inner_bx: &gtk4::Box) -> Self {
         let bx = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
         bx.set_css_classes(&["bar-widget-wrapper"]);
         bx.set_hexpand(false);
-        bx.append(&inner_bx);
+        bx.append(inner_bx);
 
         Self {
             bx

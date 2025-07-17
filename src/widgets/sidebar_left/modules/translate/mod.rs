@@ -23,7 +23,7 @@ static UI_EVENT_CHANNEL: Lazy<broadcast::Sender<UiEvent>> = Lazy::new(|| {
     broadcast::channel(100).0
 });
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LanguageSelectReveal {
     Source,
     Target,
@@ -56,7 +56,7 @@ pub fn subscribe_to_ui_events() -> async_channel::Receiver<UiEvent> {
     local_rx
 }
 
-pub fn send_ui_event(event: UiEvent) {
+pub fn send_ui_event(event: &UiEvent) {
     tokio::spawn({
         let event = event.clone();
 
@@ -70,14 +70,14 @@ pub fn set_source_language(lang: Option<Language>) {
     let mut source_lang = SOURCE_LANG.lock().unwrap();
     *source_lang = lang.clone();
 
-    send_ui_event(UiEvent::SourceLanguageChanged(lang));
+    send_ui_event(&UiEvent::SourceLanguageChanged(lang));
 }
 
 pub fn set_target_language(lang: Option<Language>) {
     let mut target_lang = TARGET_LANG.lock().unwrap();
     *target_lang = lang.clone();
     
-    send_ui_event(UiEvent::TargetLanguageChanged(lang));
+    send_ui_event(&UiEvent::TargetLanguageChanged(lang));
 }
 
 async fn translate_future(text: String, autocorrect: bool) {
@@ -86,13 +86,13 @@ async fn translate_future(text: String, autocorrect: bool) {
 
     if let (Some(source_lang), Some(target_lang)) = (source_lang, target_lang) {
         if WORKING.lock().map(|mut w| *w = true).is_ok() {
-            send_ui_event(UiEvent::TranslationStarted);
+            send_ui_event(&UiEvent::TranslationStarted);
 
             let translation_result = translate(&text, source_lang, target_lang, autocorrect)
                 .await
                 .map_err(|e| e.to_string());
 
-            send_ui_event(UiEvent::TranslationFinished(translation_result.clone()));
+            send_ui_event(&UiEvent::TranslationFinished(translation_result.clone()));
 
             // Keep a hold of the working state for a while longer to prevent
             // an infinite translation loop due to buffer change signals.

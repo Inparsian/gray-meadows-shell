@@ -205,7 +205,7 @@ pub fn new() -> gtk4::Box {
     gtk4::glib::MainContext::default().spawn_local(gpu_util_future);
     gtk4::glib::MainContext::default().spawn_local(gpu_temp_future);
 
-    BarModuleWrapper::new(widget)
+    BarModuleWrapper::new(&widget)
         .add_controller(detailed_toggle_gesture)
         .get_widget()
 }

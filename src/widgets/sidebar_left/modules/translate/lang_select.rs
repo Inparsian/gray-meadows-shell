@@ -10,13 +10,13 @@ use crate::{
 const BUTTONS_PER_ROW: usize = 3;
 const BUTTONS_PER_PAGE: usize = BUTTONS_PER_ROW * 12;
 
-fn get_page_boxes(reveal_type: LanguageSelectReveal, filter: Option<&str>) -> Vec<gtk4::Box> {
+fn get_page_boxes(reveal_type: &LanguageSelectReveal, filter: Option<&str>) -> Vec<gtk4::Box> {
     let mut i = 0;
     let mut page_boxes: Vec<gtk4::Box> = Vec::new();
     let mut boxes: Vec<gtk4::Box> = Vec::new();
     let mut buttons: Vec<gtk4::Button> = Vec::new();
 
-    let languages: Vec<Language> = if reveal_type == LanguageSelectReveal::Source {
+    let languages: Vec<Language> = if *reveal_type == LanguageSelectReveal::Source {
         let mut langs = vec![AUTO_LANG.clone()];
         langs.extend(LANGUAGES.iter().cloned());
         langs
@@ -43,7 +43,7 @@ fn get_page_boxes(reveal_type: LanguageSelectReveal, filter: Option<&str>) -> Ve
                     _ => unreachable!(),
                 }
 
-                send_ui_event(UiEvent::LanguageSelectRevealChanged(LanguageSelectReveal::None));
+                send_ui_event(&UiEvent::LanguageSelectRevealChanged(LanguageSelectReveal::None));
             }
         });
 
@@ -124,7 +124,7 @@ pub fn new(reveal_type: LanguageSelectReveal) -> gtk4::Box {
         let reveal_type = reveal_type.clone();
 
         Rc::new(Mutex::new(
-            get_page_boxes(reveal_type, None)
+            get_page_boxes(&reveal_type, None)
         ))
     };
 
@@ -173,7 +173,7 @@ pub fn new(reveal_type: LanguageSelectReveal) -> gtk4::Box {
                 move |entry| {
                     let filter_text = entry.text().to_string();
                     let filtered_boxes = get_page_boxes(
-                        reveal_type.clone(),
+                        &reveal_type,
                         if filter_text.is_empty() { None } else { Some(&filter_text) }
                     );
 

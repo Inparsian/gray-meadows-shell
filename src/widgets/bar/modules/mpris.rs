@@ -186,7 +186,7 @@ pub fn new() -> gtk4::Box {
         }
     });
 
-    BarModuleWrapper::new(widget)
+    BarModuleWrapper::new(&widget)
         .add_controller(widget_middle_click_gesture)
         .add_controller(widget_right_click_gesture)
         .add_controller(widget_scroll_controller)

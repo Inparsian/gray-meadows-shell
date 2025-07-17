@@ -33,7 +33,7 @@ impl WorkspaceMask {
             let offset = (((active_workspace.id - 1) as f64 / SHOWN_WORKSPACES as f64).floor() * SHOWN_WORKSPACES as f64) as i32;
             let mut mask = 0;
 
-            for workspace in workspaces.iter() {
+            for workspace in &workspaces {
                 if workspace.id > offset && workspace.id <= offset + SHOWN_WORKSPACES as i32 && workspace.windows > 0 {
                     mask |= 1 << (workspace.id - offset);
                 }
@@ -160,7 +160,7 @@ pub fn new() -> gtk4::Box {
     gtk4::glib::MainContext::default().spawn_local(workspaces_future);
     gtk4::glib::MainContext::default().spawn_local(active_workspace_future);
 
-    BarModuleWrapper::new(workspaces_box)
+    BarModuleWrapper::new(&workspaces_box)
         .add_controller(workspaces_click_gesture)
         .add_controller(workspaces_scroll_gesture)
         .get_widget()
