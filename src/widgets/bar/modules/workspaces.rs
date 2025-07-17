@@ -73,11 +73,8 @@ pub fn new() -> gtk4::Box {
                 move |area, cr, _, _| {
                     area.set_size_request((SHOWN_WORKSPACES as i32 + 1) * WORKSPACE_WIDTH as i32, 16);
 
-                    let active_ws: f64 = if let Some(font_desc) = area.pango_context().font_description() {
-                        font_desc.size() as f64 / gtk4::pango::SCALE as f64
-                    } else {
-                        1.0 // fallback to workspace 1
-                    };
+                    let active_ws: f64 = area.pango_context().font_description()
+                        .map_or(1.0, |desc| desc.size() as f64 / gtk4::pango::SCALE as f64);
 
                     // draw workspace squares
                     for i in 0..SHOWN_WORKSPACES+1 {

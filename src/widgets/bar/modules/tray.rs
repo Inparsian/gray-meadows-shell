@@ -3,7 +3,7 @@ use gtk4::prelude::*;
 
 use crate::{
     helpers::gesture,
-    singletons::tray::{bus::BusEvent, icon::make_icon_pixbuf, subscribe, tray_menu},
+    singletons::tray::{self, bus::BusEvent, icon::make_icon_pixbuf, subscribe, tray_menu},
     widgets::bar::wrapper::BarModuleWrapper
 };
 
@@ -34,7 +34,7 @@ impl SystemTrayItem {
             let service = self.service.clone();
         
             move |_, x, y| {
-                if let Some(item) = crate::singletons::tray::try_get_item(&service) {
+                if let Some(item) = tray::try_get_item(&service) {
                     let _ = item.activate(x as i32, y as i32);
                 }
             }
@@ -44,17 +44,13 @@ impl SystemTrayItem {
             let service = self.service.clone();
             let popover_menu = self.popover_menu.clone();
 
-            move |_, _, _| {
-                if let Some(popover_menu) = &popover_menu {
-                    if let Some(item) = crate::singletons::tray::try_get_item(&service) {
-                        if let Some((model, actions)) = tray_menu::build_gio_dbus_menu_model(item) {
-                            popover_menu.set_menu_model(Some(&model));
-                            popover_menu.insert_action_group("dbusmenu", Some(&actions));
-                        }
-                    }
-
-                    popover_menu.popup();
+            move |_, _, _| if let Some(popover_menu) = &popover_menu {
+                if let Some((model, actions)) = tray::try_get_item(&service).and_then(tray_menu::build_gio_dbus_menu_model) {
+                    popover_menu.set_menu_model(Some(&model));
+                    popover_menu.insert_action_group("dbusmenu", Some(&actions));
                 }
+
+                popover_menu.popup();
             }
         });
 

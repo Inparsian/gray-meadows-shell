@@ -27,27 +27,15 @@ pub fn subscribe() -> tokio::sync::broadcast::Receiver<WpEvent> {
 }
 
 pub fn get_node(id: i32) -> Option<ffi::Node> {
-    if let Ok(lock) = NODES.get()?.try_lock() {
-        lock.iter().find(|&n| n.id == id).cloned()
-    } else {
-        None
-    }
+    NODES.get()?.try_lock().ok()?.iter().find(|&n| n.id == id).cloned()
 }
 
 pub fn get_endpoint(id: i32) -> Option<ffi::Endpoint> {
-    if let Ok(lock) = ENDPOINTS.get()?.try_lock() {
-        lock.iter().find(|&e| e.node.id == id).cloned()
-    } else {
-        None
-    }
+    ENDPOINTS.get()?.try_lock().ok()?.iter().find(|&e| e.node.id == id).cloned()
 }
 
 pub fn get_default_speaker() -> Option<ffi::Endpoint> {
-    if let Ok(lock) = ENDPOINTS.get()?.try_lock() {
-        lock.iter().find(|&e| e.is_default && e.type_ == ffi::EndpointType::Speaker).cloned()
-    } else {
-        None
-    }
+    ENDPOINTS.get()?.try_lock().ok()?.iter().find(|&e| e.is_default && e.type_ == ffi::EndpointType::Speaker).cloned()
 }
 
 pub fn activate() {

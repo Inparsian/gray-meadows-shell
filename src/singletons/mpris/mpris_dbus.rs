@@ -90,13 +90,8 @@ where
         Duration::from_secs(5)
     );
 
-    let prop: Result<T, Error> = proxy.get("org.mpris.MediaPlayer2.Player", property);
-
-    if let Ok(prop) = prop {
-        Ok(prop)
-    } else {
-        Err(Error::new_failed(&format!("Failed to get D-Bus property '{}': {}", property, prop.err().unwrap())))
-    }
+    proxy.get("org.mpris.MediaPlayer2.Player", property)
+        .map_err(|err| Error::new_failed(&format!("Failed to get D-Bus property '{}': {}", property, err)))
 }
 
 pub fn set_dbus_property<T>(player: &MprisPlayer, property: &str, value: T) -> Result<(), Error>
@@ -110,13 +105,8 @@ where
         Duration::from_secs(5)
     );
 
-    let result = proxy.set("org.mpris.MediaPlayer2.Player", property, value);
-
-    if result.is_ok() {
-        Ok(())
-    } else {
-        Err(Error::new_failed(&format!("Failed to set D-Bus property '{}': {}", property, result.err().unwrap())))
-    }
+    proxy.set("org.mpris.MediaPlayer2.Player", property, value)
+        .map_err(|err| Error::new_failed(&format!("Failed to set D-Bus property '{}': {}", property, err)))
 }
 
 pub fn run_dbus_method(player: &MprisPlayer, method: &str) -> Result<Message, Error> {

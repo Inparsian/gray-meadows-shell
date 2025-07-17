@@ -92,13 +92,9 @@ impl MprisPlayer {
         let metadata: Result<arg::PropMap, Error> = mpris_dbus::get_dbus_property::<arg::PropMap>(self, "Metadata");
 
         if let Ok(metadata) = metadata {
-            let prop: Option<&T> = arg::prop_cast(&metadata, key);
-
-            if let Some(value) = prop {
-                Ok(value.clone())
-            } else {
-                Err(Error::new_failed(&format!("Property '{}' not found in metadata", key)))
-            }
+            arg::prop_cast(&metadata, key)
+                .ok_or(Error::new_failed(&format!("Property '{}' not found in metadata", key)))
+                .cloned()
         } else {
             Err(Error::new_failed(&format!("Failed to get metadata property '{}': {:?}", key, metadata.err())))
         }
@@ -253,13 +249,13 @@ impl MprisPlayer {
 
                 for (key, value) in kv {
                     match key.as_str() {
-                        "mpris:trackid" => self.metadata.track_id = Some(mpris_metadata::as_str(&value).unwrap_or_default()),
-                        "mpris:length" => self.metadata.length = Some(mpris_metadata::as_i64(&value).unwrap_or(0)),
-                        "mpris:artUrl" => self.metadata.art_url = Some(mpris_metadata::as_str(&value).unwrap_or_default()),
-                        "xesam:album" => self.metadata.album = Some(mpris_metadata::as_str(&value).unwrap_or_default()),
+                        "mpris:trackid" => self.metadata.track_id = Some(value.as_i64().unwrap_or_default().to_string()),
+                        "mpris:length" => self.metadata.length = Some(value.as_i64().unwrap_or_default()),
+                        "mpris:artUrl" => self.metadata.art_url = Some(value.as_str().unwrap_or_default().to_owned()),
+                        "xesam:album" => self.metadata.album = Some(value.as_str().unwrap_or_default().to_owned()),
                         "xesam:artist" => self.metadata.artist = Some(mpris_metadata::as_str_vec(&value).unwrap_or_default()),
-                        "xesam:contentCreated" => self.metadata.content_created = Some(mpris_metadata::as_str(&value).unwrap_or_default()),
-                        "xesam:title" => self.metadata.title = Some(mpris_metadata::as_str(&value).unwrap_or_default()),
+                        "xesam:contentCreated" => self.metadata.content_created = Some(value.as_str().unwrap_or_default().to_owned()),
+                        "xesam:title" => self.metadata.title = Some(value.as_str().unwrap_or_default().to_owned()),
                         _ => {}
                     }
                 }

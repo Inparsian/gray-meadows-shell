@@ -33,10 +33,8 @@ pub fn fuzzy_match(haystack: &str, needle: &str) -> bool {
     let mut needle = needle.chars();
 
     for c in haystack.chars() {
-        if let Some(n) = needle.clone().next() {
-            if c == n {
-                needle.next();
-            }
+        if needle.clone().next().is_some_and(|n| c == n) {
+            needle.next();
         }
     }
 

@@ -58,14 +58,14 @@ impl SysStats {
             if let Ok(util) = util {
                 self.gpu_utilization.set(util.gpu as f64);
             } else {
-                eprintln!("Failed to get GPU utilization: {:?}", util);
+                eprintln!("Failed to get GPU utilization: {:?}", util.unwrap_err());
             }
         
             let temp = device.temperature(TemperatureSensor::Gpu);
             if let Ok(temp) = temp {
                 self.gpu_temperature.set(temp as f64);
             } else {
-                eprintln!("Failed to get GPU temperature: {:?}", temp);
+                eprintln!("Failed to get GPU temperature: {:?}", temp.unwrap_err());
             }
         }
     }

@@ -32,10 +32,8 @@ pub fn make_key_value_pairs(value: &dyn RefArg) -> Vec<(String, &dyn RefArg)> {
         let mut enumerate = iter.enumerate();
         while let Some((i, entry)) = enumerate.next() {
             if i % 2 == 0 {
-                if let Some(key) = entry.as_str() {
-                    if let Some(value) = enumerate.next() {
-                        pairs.push((key.to_owned(), value.1));
-                    }
+                if let (Some(key), Some(value)) = (entry.as_str(), enumerate.next()) {
+                    pairs.push((key.to_owned(), value.1));
                 }
             }
         }

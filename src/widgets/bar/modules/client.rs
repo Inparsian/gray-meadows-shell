@@ -15,13 +15,11 @@ fn icon_or(icon_name: Option<&str>) -> Option<&str> {
         let icon_theme = &APP.lock().unwrap().icon_theme;
 
         if icon_theme.has_icon(name) {
-            Some(name)
-        } else {
-            Some("emote-love")
+            return Some(name);
         }
-    } else {
-        Some("emote-love")
     }
+    
+    Some("emote-love")
 }
 
 pub fn new() -> gtk4::Box {
@@ -134,11 +132,10 @@ pub fn new() -> gtk4::Box {
             client_box.set_visible(false);
             workspace_label.set_visible(true);
             
-            if let Some(active_workspace) = active_workspace {
-                workspace_label.set_label(&format!("Workspace {}", active_workspace.id));
-            } else {
-                workspace_label.set_label("No active workspace");
-            }
+            workspace_label.set_label(&active_workspace.map_or(
+                "No active workspace".to_owned(), 
+                |w| format!("Workspace {}", w.id)
+            ));
         }
 
         async {}

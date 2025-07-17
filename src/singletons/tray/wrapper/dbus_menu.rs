@@ -40,17 +40,12 @@ impl Menu {
                     "type" => item.type_ = value.as_str().unwrap_or_default().to_owned(),
                     "visible" => item.visible = value.as_i64().unwrap_or(0) != 0,
                     "children-display" => item.children_display = value.as_str().unwrap_or_default().to_owned(),
-                    "icon-data" => if let Some(mut icon_data) = value.as_iter() {
-                        // are we being deadass
-                        let icon_data = icon_data.next().and_then(|v| v.as_iter());
-                        
-                        if let Some(icon_data) = icon_data {
-                            item.icon_data = icon_data.map(|v| v.as_i64().unwrap_or_default() as u8)
-                                .collect::<Vec<u8>>()
-                                .into();
-                        } else {
-                            eprintln!("Icon data is not in the expected format.");
-                        }
+                    "icon-data" => if let Some(icon_data) = value.as_iter().and_then(|mut v| v.next().and_then(|v| v.as_iter())) {
+                        item.icon_data = icon_data.map(|v| v.as_i64().unwrap_or_default() as u8)
+                            .collect::<Vec<u8>>()
+                            .into();
+                    } else {
+                        eprintln!("Icon data is not in the expected format.");
                     },
 
                     _ => {

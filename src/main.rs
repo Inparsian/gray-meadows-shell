@@ -154,12 +154,10 @@ async fn main() {
         }
     } else {
         let command = args[1..].join(" ");
-        let response = ipc::client::send_message(&command);
 
-        if let Ok(response) = response {
-            println!("Response from IPC server: {}", response);
-        } else {
-            eprintln!("Failed to send IPC command: {}", response.unwrap_err());
-        }
+        ipc::client::send_message(&command).map_or_else(
+            |err| eprintln!("Failed to send IPC command: {}", err),
+            |response| println!("Response from IPC server: {}", response)
+        );
     }
 }

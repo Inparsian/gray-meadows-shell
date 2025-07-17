@@ -176,11 +176,8 @@ impl StatusNotifierItem {
     pub fn try_get_pixmap(&self, prop: &str) -> Result<Vec<RawPixmap>, dbus::MethodErr> {
         let icon = self.try_get_prop::<Vec<RawPixmap>>(prop)?;
         
-        if let Some(compressed) = compress_icon_pixmap(Some(&icon)) {
-            Ok(compressed)
-        } else {
-            Err(dbus::MethodErr::failed("Failed to compress icon pixmap"))
-        }
+        compress_icon_pixmap(Some(&icon))
+            .ok_or_else(|| dbus::MethodErr::failed("Failed to compress icon pixmap"))
     }
 
     /// Attempts to get a property from the StatusNotifierItem D-Bus object with
@@ -202,14 +199,8 @@ impl StatusNotifierItem {
             std::time::Duration::from_millis(5000),
         );
         
-        let result = proxy.get::<T>(bus::ITEM_DBUS_BUS, prop);
-        if let Ok(prop) = result {
-            Ok(prop)
-        } else {
-            let err = result.err().unwrap();
-
-            Err(dbus::MethodErr::failed(&err.message().unwrap_or_default()))
-        }
+        proxy.get::<T>(bus::ITEM_DBUS_BUS, prop)
+            .map_err(|err| dbus::MethodErr::failed(&err.message().unwrap_or_default()))
     }
 
     /// Sends a primary activation request to the StatusNotifierItem.

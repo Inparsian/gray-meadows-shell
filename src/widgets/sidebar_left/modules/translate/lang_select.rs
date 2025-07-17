@@ -25,10 +25,8 @@ fn get_page_boxes(reveal_type: LanguageSelectReveal, filter: Option<&str>) -> Ve
     };
 
     for lang in languages {
-        if let Some(filter) = filter {
-            if !lang.name.to_lowercase().contains(filter.to_lowercase().as_str()) {
-                continue;
-            }
+        if filter.is_some_and(|f| !lang.name.to_lowercase().contains(f.to_lowercase().as_str())) {
+            continue;
         }
 
         let button = gtk4::Button::new();

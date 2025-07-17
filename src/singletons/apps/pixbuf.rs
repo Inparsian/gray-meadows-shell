@@ -44,15 +44,13 @@ pub fn get_pixbuf(icon_name: &str) -> Option<Pixbuf> {
             gtk4::IconLookupFlags::empty()
         );
 
-        if let Some(file) = icon_paintable.file() {
-            if let Some(path) = file.path() {
-                if let Ok(pixbuf) = Pixbuf::from_file(path) {
-                    let pixbuf = pixbuf.scale_simple(24, 24, gtk4::gdk_pixbuf::InterpType::Bilinear);
-                    
-                    if let Some(pixbuf) = pixbuf {
-                        pixbufs.insert(icon_name.to_owned(), pixbuf.clone());
-                        return Some(pixbuf);
-                    }
+        if let Some(path) = icon_paintable.file().and_then(|f| f.path()) {
+            if let Ok(pixbuf) = Pixbuf::from_file(path) {
+                let pixbuf = pixbuf.scale_simple(24, 24, gtk4::gdk_pixbuf::InterpType::Bilinear);
+                
+                if let Some(pixbuf) = pixbuf {
+                    pixbufs.insert(icon_name.to_owned(), pixbuf.clone());
+                    return Some(pixbuf);
                 }
             }
         }

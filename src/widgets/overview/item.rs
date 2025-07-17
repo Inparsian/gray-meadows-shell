@@ -147,17 +147,14 @@ impl OverviewSearchItem {
                         scss::escape_html(c)
                     )
                 } else {
-                    let color = scss::get_color("foreground-color-select");
-
-                    if let Some(color) = color {
-                        format!(
+                    scss::get_color("foreground-color-select").map_or(
+                        scss::escape_html(c),
+                        |color| format!(
                             "<span foreground=\"{}\">{}</span>",
                             color.as_hex(),
                             scss::escape_html(c)
                         )
-                    } else {
-                        scss::escape_html(c).clone()
-                    }
+                    )
                 });
             }
 

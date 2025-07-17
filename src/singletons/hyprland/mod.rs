@@ -21,32 +21,16 @@ pub struct Hyprland {
 pub static HYPRLAND: Lazy<Hyprland> = Lazy::new(Hyprland::default);
 
 fn refresh_active_client() {
-    let active_client = Client::get_active();
-    if let Ok(active_client) = active_client {
-        HYPRLAND.active_client.set(active_client);
-    } else {
-        HYPRLAND.active_client.set(None);
-    }
+    HYPRLAND.active_client.set(Client::get_active().ok().unwrap_or(None));
 }
 
 fn refresh_active_workspace() {
-    let active_workspace = Workspace::get_active();
-    if let Ok(active_workspace) = active_workspace {
-        HYPRLAND.active_workspace.set(Some(active_workspace));
-    } else {
-        HYPRLAND.active_workspace.set(None);
-    }
-
+    HYPRLAND.active_workspace.set(Workspace::get_active().ok());
     refresh_active_client();
 }
 
 fn refresh_workspaces() {
-    let workspaces = Workspaces::get();
-    if let Ok(workspaces) = workspaces {
-        HYPRLAND.workspaces.set(Some(workspaces));
-    } else {
-        HYPRLAND.workspaces.set(None);
-    }
+    HYPRLAND.workspaces.set(Workspaces::get().ok());
 }
 
 pub fn activate() {

@@ -8,32 +8,14 @@ pub fn make_key_value_pairs(value: &Variant<Box<dyn RefArg>>) -> Vec<(String, &d
         let mut enumerate = iter.enumerate();
         while let Some((i, entry)) = enumerate.next() {
             if i % 2 == 0 {
-                if let Some(key) = entry.as_str() {
-                    if let Some(value) = enumerate.next() {
-                        pairs.push((key.to_owned(), value.1));
-                    }
+                if let (Some(key), Some(value)) = (entry.as_str(), enumerate.next()) {
+                    pairs.push((key.to_owned(), value.1));
                 }
             }
         }
     }
 
     pairs
-}
-
-pub fn as_str(arg: &dyn RefArg) -> Result<String, String> {
-    if let Some(s) = arg.as_str() {
-        Ok(s.to_owned())
-    } else {
-        Err(format!("ARG is not a string: {:?}", arg))
-    }
-}
-
-pub fn as_i64(arg: &dyn RefArg) -> Result<i64, String> {
-    if let Some(i) = arg.as_i64() {
-        Ok(i)
-    } else {
-        Err(format!("ARG is not an int: {:?}", arg))
-    }
 }
 
 pub fn as_str_vec(arg: &dyn RefArg) -> Result<Vec<String>, String> {

@@ -26,39 +26,38 @@ pub fn new() -> gtk4::Box {
 
     relm4_macros::view! {
         widget_middle_click_gesture = gesture::on_middle_click(|_, _, _| {
-            if let Some(player) = mpris::get_default_player() {
-                if let Err(e) = player.play_pause() {
-                    eprintln!("Failed to toggle play/pause: {}", e);
-                }
-            } else {
-                eprintln!("No MPRIS player available to toggle play/pause.");
+            let Some(player) = mpris::get_default_player() else {
+                return eprintln!("No MPRIS player available to toggle play/pause.");
+            };
+
+            if let Err(e) = player.play_pause() {
+                eprintln!("Failed to toggle play/pause: {}", e);
             }
         }),
 
         widget_right_click_gesture = gesture::on_secondary_click(|_, _, _| {
-            if let Some(player) = mpris::get_default_player() {
-                if let Err(e) = player.next() {
-                    eprintln!("Failed to skip to next track: {}", e);
-                }
-            } else {
-                eprintln!("No MPRIS player available to skip to next track.");
+            let Some(player) = mpris::get_default_player() else {
+                return eprintln!("No MPRIS player available to skip to next track.");
+            };
+
+            if let Err(e) = player.next() {
+                eprintln!("Failed to skip to next track: {}", e);
             }
         }),
 
         widget_scroll_controller = gesture::on_vertical_scroll(|delta_y| {
-            if let Some(player) = mpris::get_default_player() {
-                let step = if delta_y < 0.0 {
-                    VOLUME_STEP
-                } else {
-                    -VOLUME_STEP
-                };
-                
-                player.adjust_volume(step).unwrap_or_else(|e| {
-                    eprintln!("Failed to adjust volume: {}", e);
-                });
+            let Some(player) = mpris::get_default_player() else {
+                return eprintln!("No MPRIS player available to adjust volume.");
+            };
+
+            let step = if delta_y < 0.0 {
+                VOLUME_STEP
             } else {
-                eprintln!("No MPRIS player available to adjust volume.");
-            }
+                -VOLUME_STEP
+            };
+
+            player.adjust_volume(step)
+                .unwrap_or_else(|e| eprintln!("Failed to adjust volume: {}", e));
         }),
 
         no_players_widget = gtk4::Label {
@@ -159,6 +158,7 @@ pub fn new() -> gtk4::Box {
 
                     if let Ok(pixbuf) = pixbuf {
                         let scaled_pixbuf = pixbuf.scale_simple(ALBUM_ART_WIDTH, ALBUM_ART_HEIGHT, gtk4::gdk_pixbuf::InterpType::Tiles);
+                        
                         if let Some(scaled_pixbuf) = scaled_pixbuf {
                             scaled_pixbuf.saturate_and_pixelate(
                                 &scaled_pixbuf,
