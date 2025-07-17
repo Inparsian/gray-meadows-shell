@@ -327,10 +327,14 @@ pub fn new() -> gtk4::Box {
 
                         main_ui_revealer.set_reveal_child(was_already_open || reveal == LanguageSelectReveal::None);
                         select_ui_revealer.set_reveal_child(!was_already_open && reveal != LanguageSelectReveal::None);
-                        select_ui_stack.set_visible_child_name(match reveal {
-                            LanguageSelectReveal::Target => "target",
-                            LanguageSelectReveal::Source | LanguageSelectReveal::None => "source" // Default to source when hidden
-                        });
+
+                        if [LanguageSelectReveal::Source, LanguageSelectReveal::Target].contains(&reveal) {
+                            select_ui_stack.set_visible_child_name(match reveal {
+                                LanguageSelectReveal::Target => "target",
+                                LanguageSelectReveal::Source => "source",
+                                _ => unreachable!()
+                            });
+                        }
 
                         *REVEAL.lock().unwrap() = if was_already_open {
                             LanguageSelectReveal::None
