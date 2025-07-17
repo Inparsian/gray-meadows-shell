@@ -19,13 +19,15 @@ fn parse_uptime_seconds(seconds: u64) -> String {
     )
 }
 
+fn format_uptime_seconds(uptime: u64) -> String {
+    format!("  up: {}", parse_uptime_seconds(uptime))
+}
+
 fn get_uptime_label_text(uptime: Option<u64>) -> String {
-    if let Some(uptime) = uptime {
-        format!("  up: {}", parse_uptime_seconds(uptime))
-    } else {
+    uptime.map_or_else(|| {
         let sys_stats = singletons::sysstats::SYS_STATS.lock().unwrap();
-        format!("  up: {}", parse_uptime_seconds(sys_stats.uptime.get()))
-    }
+        format_uptime_seconds(sys_stats.uptime.get())
+    }, format_uptime_seconds)
 }
 
 pub fn new() -> gtk4::Box {

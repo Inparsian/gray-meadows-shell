@@ -19,7 +19,7 @@ pub fn make_key_value_pairs(value: &Variant<Box<dyn RefArg>>) -> Vec<(String, &d
 }
 
 pub fn as_str_vec(arg: &dyn RefArg) -> Result<Vec<String>, String> {
-    if let Some(iter) = arg.as_iter() {
+    arg.as_iter().map_or(Err(format!("arg is not a String iterable: {:?}", arg)), |iter| {
         // Casting arg to an iterator doesn't actually iterate over the underlying array,
         // instead it'll only have one item, which is the iterator itself.
         // We need to cast it AGAIN to actually get the underlying array's iterator
@@ -31,7 +31,5 @@ pub fn as_str_vec(arg: &dyn RefArg) -> Result<Vec<String>, String> {
         }
 
         Ok(vec)
-    } else {
-        Err(format!("ARG is not an iterable of strings: {:?}", arg))
-    }
+    })
 }

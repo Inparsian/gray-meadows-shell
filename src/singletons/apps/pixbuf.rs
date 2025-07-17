@@ -60,9 +60,5 @@ pub fn get_pixbuf(icon_name: &str) -> Option<Pixbuf> {
 }
 
 pub fn get_pixbuf_or_fallback(icon_name: &str, fallback_name: &str) -> Option<Pixbuf> {
-    if let Some(pixbuf) = get_pixbuf(icon_name) {
-        Some(pixbuf)
-    } else {
-        get_pixbuf(fallback_name)
-    }
+    get_pixbuf(icon_name).map_or_else(|| get_pixbuf(fallback_name), Some)
 }

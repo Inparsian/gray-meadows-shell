@@ -46,11 +46,7 @@ pub fn get_item(service: &str) -> Option<StatusNotifierItem> {
 }
 
 pub fn try_get_item(service: &str) -> Option<StatusNotifierItem> {
-    if let Ok(items) = ITEMS.get()?.try_lock() {
-        items.iter()
-            .find(|item| item.service == service)
-            .cloned()
-    } else {
-        None
-    }
+    ITEMS.get()?.try_lock().map_or(None, |items| items.iter()
+        .find(|item| item.service == service)
+        .cloned())
 }
