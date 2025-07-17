@@ -16,7 +16,7 @@ pub struct StatusNotifierWatcher {
 
 impl OrgKdeStatusNotifierWatcher for StatusNotifierWatcher {
     fn register_status_notifier_item(&mut self, service: String) -> Result<(), dbus::MethodErr> {
-        let item = StatusNotifierItem::new(service.clone());
+        let item = StatusNotifierItem::new(service);
 
         self.sender.send(BusEvent::ItemRegistered(item.clone())).unwrap();
 

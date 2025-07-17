@@ -120,7 +120,6 @@ pub fn new(application: &libadwaita::Application) {
             connect_changed: {
                 let entry_box = entry_box.clone();
                 let entry_prompt_revealer = entry_prompt_revealer.clone();
-                let search_results = search_results.clone();
                 let search_results_revealer = search_results_revealer.clone();
 
                 move |entry| {
@@ -182,7 +181,6 @@ pub fn new(application: &libadwaita::Application) {
     window.add_controller(gesture::on_primary_click({
         let window = window.clone();
         let entry = entry.clone();
-        let overview_box = overview_box.clone();
 
         move |_, x, y| {
             if window.is_visible() && !overview_box.allocation().contains_point(x as i32, y as i32) {

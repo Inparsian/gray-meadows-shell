@@ -78,7 +78,7 @@ pub fn new() -> gtk4::Box {
 
                     // draw workspace squares
                     for i in 0..SHOWN_WORKSPACES+1 {
-                        let workspace_x = (i as f64 - 1.0) * (WORKSPACE_WIDTH + WORKSPACE_PADDING) + WORKSPACE_PADDING;
+                        let workspace_x = (i as f64 - 1.0).mul_add(WORKSPACE_WIDTH + WORKSPACE_PADDING, WORKSPACE_PADDING);
                         let color_variable_name = if WORKSPACE_MASK.lock().unwrap().mask & (1 << i) != 0 {
                             "foreground-color-primary"
                         } else {
@@ -101,7 +101,7 @@ pub fn new() -> gtk4::Box {
 
                     // draw active workspace
                     if let Some(color) = scss::get_color("foreground-color-primary") {
-                        let active_workspace_x = (active_ws - 1.0) * (WORKSPACE_WIDTH + WORKSPACE_PADDING) + WORKSPACE_PADDING + 1.0;
+                        let active_workspace_x = (active_ws - 1.0).mul_add(WORKSPACE_WIDTH + WORKSPACE_PADDING, WORKSPACE_PADDING) + 1.0;
 
                         cr.set_source_rgba(color.red, color.green, color.blue, color.alpha);
 
@@ -139,22 +139,19 @@ pub fn new() -> gtk4::Box {
         }
     });
 
-    let active_workspace_future = hyprland::HYPRLAND.active_workspace.signal_cloned().for_each({
-        let workspaces_drawing_area = workspaces_drawing_area.clone();
-        move |active| {
-            WORKSPACE_MASK.lock().unwrap().update();
+    let active_workspace_future = hyprland::HYPRLAND.active_workspace.signal_cloned().for_each(move |active| {
+        WORKSPACE_MASK.lock().unwrap().update();
             
-            if let Some(active) = active {
-                style_provider.load_from_data(&format!(
-                    ".bar-workspaces-drawingarea {{ font-size: {}px; }}",
-                    ((active.id - 1) % SHOWN_WORKSPACES as i32) + 1
-                ));
-            }
-
-            workspaces_drawing_area.queue_draw();
-
-            async {}
+        if let Some(active) = active {
+            style_provider.load_from_data(&format!(
+                ".bar-workspaces-drawingarea {{ font-size: {}px; }}",
+                ((active.id - 1) % SHOWN_WORKSPACES as i32) + 1
+            ));
         }
+
+        workspaces_drawing_area.queue_draw();
+
+        async {}
     });
 
     gtk4::glib::MainContext::default().spawn_local(workspaces_future);

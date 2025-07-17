@@ -120,13 +120,9 @@ fn get_page_boxes(reveal_type: &LanguageSelectReveal, filter: Option<&str>) -> V
 
 pub fn new(reveal_type: LanguageSelectReveal) -> gtk4::Box {
     let current_page: Rc<Mutex<usize>> = Rc::new(Mutex::new(0));
-    let page_boxes: Rc<Mutex<Vec<gtk4::Box>>> = {
-        let reveal_type = reveal_type.clone();
-
-        Rc::new(Mutex::new(
-            get_page_boxes(&reveal_type, None)
-        ))
-    };
+    let page_boxes: Rc<Mutex<Vec<gtk4::Box>>> = Rc::new(Mutex::new(
+        get_page_boxes(&reveal_type, None)
+    ));
 
     relm4_macros::view! {
         pages_stack = gtk4::Stack {
@@ -297,37 +293,30 @@ pub fn new(reveal_type: LanguageSelectReveal) -> gtk4::Box {
 
     // Start our event receiver task
     let receiver = subscribe_to_ui_events();
-    gtk4::glib::spawn_future_local({
-        let pages_stack = pages_stack.clone();
-        let page_boxes = page_boxes.clone();
-        let current_page = current_page.clone();
-        let filter_entry = filter_entry.clone();
-
-        async move {
-            while let Ok(event) = receiver.recv().await {
-                if let UiEvent::LanguageSelectRevealChanged(reveal) = event {
-                    if reveal != reveal_type {
-                        continue;
-                    }
-
-                    *current_page.lock().unwrap() = 0;
-                    pages_stack.set_visible_child_name("page_0");
-                    pages_stack.remove_all();
-
-                    for (i, page_box) in page_boxes.lock().unwrap().iter_mut().enumerate() {
-                        page_box.set_css_classes(&["google-translate-language-select-page"]);
-                        pages_stack.add_named(page_box, Some(&format!("page_{}", i)));
-                    }
-
-                    page_label.set_label(&format!(
-                        "Page {} of {}",
-                        *current_page.lock().unwrap() + 1,
-                        page_boxes.lock().unwrap().len()
-                    ));
-
-                    filter_entry.set_text("");
-                    filter_entry.grab_focus();
+    gtk4::glib::spawn_future_local(async move {
+        while let Ok(event) = receiver.recv().await {
+            if let UiEvent::LanguageSelectRevealChanged(reveal) = event {
+                if reveal != reveal_type {
+                    continue;
                 }
+
+                *current_page.lock().unwrap() = 0;
+                pages_stack.set_visible_child_name("page_0");
+                pages_stack.remove_all();
+
+                for (i, page_box) in page_boxes.lock().unwrap().iter_mut().enumerate() {
+                    page_box.set_css_classes(&["google-translate-language-select-page"]);
+                    pages_stack.add_named(page_box, Some(&format!("page_{}", i)));
+                }
+
+                page_label.set_label(&format!(
+                    "Page {} of {}",
+                    *current_page.lock().unwrap() + 1,
+                    page_boxes.lock().unwrap().len()
+                ));
+
+                filter_entry.set_text("");
+                filter_entry.grab_focus();
             }
         }
     });

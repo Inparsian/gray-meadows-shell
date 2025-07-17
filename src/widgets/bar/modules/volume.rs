@@ -23,7 +23,7 @@ pub fn new() -> gtk4::Box {
     relm4_macros::view! {
         volume_scroll_gesture = gesture::on_vertical_scroll(|delta_y| {
             if let Some(default_speaker) = wireplumber::get_default_speaker() {
-                let new_volume = (default_speaker.node.volume - delta_y as f32 * VOLUME_STEP).clamp(0.0, 1.5);
+                let new_volume = (delta_y as f32).mul_add(-VOLUME_STEP, default_speaker.node.volume).clamp(0.0, 1.5);
 
                 ffi::node_set_volume(default_speaker.node.id, new_volume);
             }

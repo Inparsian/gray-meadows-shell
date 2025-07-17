@@ -80,17 +80,13 @@ where
         })
     };
 
-    let default_player_future = {
+    let default_player_future = MPRIS.default_player.signal().for_each(move |index| {
         let callback = callback.clone();
-
-        MPRIS.default_player.signal().for_each(move |index| {
-            let callback = callback.clone();
-
-            gtk4::glib::source::idle_add_local_once(move || callback(index));
-
-            async {}
-        })
-    };
+        
+        gtk4::glib::source::idle_add_local_once(move || callback(index));
+        
+        async {}
+    });
 
     gtk4::glib::MainContext::default().spawn_local(players_future);
     gtk4::glib::MainContext::default().spawn_local(default_player_future);

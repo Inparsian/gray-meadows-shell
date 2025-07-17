@@ -92,7 +92,7 @@ async fn translate_future(text: String, autocorrect: bool) {
                 .await
                 .map_err(|e| e.to_string());
 
-            send_ui_event(&UiEvent::TranslationFinished(translation_result.clone()));
+            send_ui_event(&UiEvent::TranslationFinished(translation_result));
 
             // Keep a hold of the working state for a while longer to prevent
             // an infinite translation loop due to buffer change signals.
@@ -260,7 +260,8 @@ pub fn new() -> gtk4::Box {
             return;
         }
 
-        if let Some(source_id) = WORKER_TIMEOUT.lock().unwrap().take() {
+        let timeout = WORKER_TIMEOUT.lock().unwrap().take();
+        if let Some(source_id) = timeout {
             source_id.remove();
         }
 
@@ -280,68 +281,60 @@ pub fn new() -> gtk4::Box {
 
     // Start our event receiver task
     let receiver = subscribe_to_ui_events();
-    gtk4::glib::spawn_future_local({
-        let output_buffer = output_buffer.clone();
-        let input_text_view = input_text_view.clone();
-        let language_buttons = language_buttons.clone();
-        let main_ui_revealer = main_ui_revealer.clone();
-        let select_ui_revealer = select_ui_revealer.clone();
+    gtk4::glib::spawn_future_local(async move {
+        while let Ok(event) = receiver.recv().await {
+            match event {
+                UiEvent::TranslationStarted => {
+                    output_buffer.set_text("Translating...");
+                    input_text_view.set_editable(false);
+                },
 
-        async move {
-            while let Ok(event) = receiver.recv().await {
-                match event {
-                    UiEvent::TranslationStarted => {
-                        output_buffer.set_text("Translating...");
-                        input_text_view.set_editable(false);
-                    },
+                UiEvent::TranslationFinished(result) => {
+                    if let Ok(res) = result {
+                        output_buffer.set_text(&res.to.text);
 
-                    UiEvent::TranslationFinished(result) => {
-                        if let Ok(res) = result {
-                            output_buffer.set_text(&res.to.text);
+                        // Set the auto-detected language if applicable
+                        if SOURCE_LANG.lock().unwrap().as_ref().unwrap() == &*AUTO_LANG {
+                            let mut auto_detected_lang = AUTO_DETECTED_LANG.lock().unwrap();
 
-                            // Set the auto-detected language if applicable
-                            if SOURCE_LANG.lock().unwrap().as_ref().unwrap() == &*AUTO_LANG {
-                                let mut auto_detected_lang = AUTO_DETECTED_LANG.lock().unwrap();
+                            *auto_detected_lang = Some(res.from.language.clone());
 
-                                *auto_detected_lang = Some(res.from.language.clone());
-
-                                language_buttons.set_source_label(&format!("Auto ({})", res.from.language.name));
-                            }
-                        } else {
-                            output_buffer.set_text(&format!("Translation failed:\n{}", result.unwrap_err()));
+                            language_buttons.set_source_label(&format!("Auto ({})", res.from.language.name));
                         }
-
-                        input_text_view.set_editable(true);
-                    },
-
-                    UiEvent::SourceLanguageChanged(lang) => {
-                        language_buttons.set_source_label(lang.as_ref().map_or("Source...", |l| &l.name));
-                    },
-
-                    UiEvent::TargetLanguageChanged(lang) => {
-                        language_buttons.set_target_label(lang.as_ref().map_or("Target...", |l| &l.name));
-                    },
-
-                    UiEvent::LanguageSelectRevealChanged(reveal) => {
-                        let was_already_open = reveal == *REVEAL.lock().unwrap();
-
-                        main_ui_revealer.set_reveal_child(was_already_open || reveal == LanguageSelectReveal::None);
-                        select_ui_revealer.set_reveal_child(!was_already_open && reveal != LanguageSelectReveal::None);
-
-                        if [LanguageSelectReveal::Source, LanguageSelectReveal::Target].contains(&reveal) {
-                            select_ui_stack.set_visible_child_name(match reveal {
-                                LanguageSelectReveal::Target => "target",
-                                LanguageSelectReveal::Source => "source",
-                                _ => unreachable!()
-                            });
-                        }
-
-                        *REVEAL.lock().unwrap() = if was_already_open {
-                            LanguageSelectReveal::None
-                        } else {
-                            reveal
-                        };
+                    } else {
+                        output_buffer.set_text(&format!("Translation failed:\n{}", result.unwrap_err()));
                     }
+
+                    input_text_view.set_editable(true);
+                },
+
+                UiEvent::SourceLanguageChanged(lang) => {
+                    language_buttons.set_source_label(lang.as_ref().map_or("Source...", |l| &l.name));
+                },
+
+                UiEvent::TargetLanguageChanged(lang) => {
+                    language_buttons.set_target_label(lang.as_ref().map_or("Target...", |l| &l.name));
+                },
+
+                UiEvent::LanguageSelectRevealChanged(reveal) => {
+                    let was_already_open = reveal == *REVEAL.lock().unwrap();
+
+                    main_ui_revealer.set_reveal_child(was_already_open || reveal == LanguageSelectReveal::None);
+                    select_ui_revealer.set_reveal_child(!was_already_open && reveal != LanguageSelectReveal::None);
+
+                    if [LanguageSelectReveal::Source, LanguageSelectReveal::Target].contains(&reveal) {
+                        select_ui_stack.set_visible_child_name(match reveal {
+                            LanguageSelectReveal::Target => "target",
+                            LanguageSelectReveal::Source => "source",
+                            _ => unreachable!()
+                        });
+                    }
+
+                    *REVEAL.lock().unwrap() = if was_already_open {
+                        LanguageSelectReveal::None
+                    } else {
+                        reveal
+                    };
                 }
             }
         }

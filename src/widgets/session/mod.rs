@@ -85,7 +85,6 @@ pub fn new(application: &libadwaita::Application) {
 
     window.add_controller(gesture::on_primary_click({
         let window = window.clone();
-        let session_box = session_box.clone();
 
         move |_, x, y| {
             if window.is_visible() && !session_box.allocation().contains_point(x as i32, y as i32) {
