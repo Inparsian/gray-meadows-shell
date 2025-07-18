@@ -35,7 +35,7 @@ pub fn new() -> gtk4::Box {
         .output()
         .map_or_else(|_| "Unknown User".to_owned(), |output| String::from_utf8_lossy(&output.stdout).trim().to_owned());
 
-    relm4_macros::view! {
+    view! {
         face = gtk4::Image {
             set_pixel_size: 40,
             set_css_classes: &["sidebar-right-header-icon", "generic"],

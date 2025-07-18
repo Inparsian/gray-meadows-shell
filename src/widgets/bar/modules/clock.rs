@@ -7,7 +7,7 @@ use crate::{
 };
 
 pub fn new() -> gtk4::Box {
-    relm4_macros::view! {
+    view! {
         widget = gtk4::Box {
             set_css_classes: &["bar-widget"],
             set_hexpand: false,

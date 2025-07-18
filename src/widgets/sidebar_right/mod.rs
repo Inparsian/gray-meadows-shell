@@ -8,7 +8,7 @@ use crate::{helpers::gesture, ipc, singletons::hyprland};
 pub fn new(application: &libadwaita::Application) {
     let header = header::new();
 
-    relm4_macros::view! {
+    view! {
         right_sidebar_box = gtk4::Box {
             set_css_classes: &["right-sidebar-box"],
             set_orientation: gtk4::Orientation::Vertical,

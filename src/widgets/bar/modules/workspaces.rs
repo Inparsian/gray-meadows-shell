@@ -49,7 +49,7 @@ impl WorkspaceMask {
 pub fn new() -> gtk4::Box {
     let style_provider = gtk4::CssProvider::new();
 
-    relm4_macros::view! {
+    view! {
         workspaces_click_gesture = gesture::on_primary_click(|_, x, _| {
             let ws = (((x - 5.0 - WORKSPACE_PADDING) / (WORKSPACE_WIDTH + WORKSPACE_PADDING)) + 1.0).floor() as i32;
 

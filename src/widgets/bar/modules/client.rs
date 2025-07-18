@@ -25,7 +25,7 @@ fn icon_or(icon_name: Option<&str>) -> Option<&str> {
 pub fn new() -> gtk4::Box {
     let reveal_title = Mutable::new(false);
 
-    relm4_macros::view! {
+    view! {
         reveal_title_gesture = gtk4::EventControllerMotion {
             connect_enter: {
                 let reveal_title = reveal_title.clone();

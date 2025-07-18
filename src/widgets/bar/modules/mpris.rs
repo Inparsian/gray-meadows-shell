@@ -24,7 +24,7 @@ fn get_mpris_player_label_text() -> String {
 pub fn new() -> gtk4::Box {
     let current_art_url = RefCell::new(" ".to_owned());
 
-    relm4_macros::view! {
+    view! {
         widget_middle_click_gesture = gesture::on_middle_click(|_, _, _| {
             let Some(player) = mpris::get_default_player() else {
                 return eprintln!("No MPRIS player available to toggle play/pause.");

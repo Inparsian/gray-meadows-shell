@@ -36,7 +36,7 @@ pub fn new(application: &libadwaita::Application) {
     let reboot_button = session_button("restart_alt", "systemctl reboot || loginctl reboot");
     let shutdown_button = session_button("power_settings_new", "systemctl poweroff || loginctl poweroff");
 
-    relm4_macros::view! {
+    view! {
         session_box = gtk4::Box {
             set_orientation: gtk4::Orientation::Vertical,
             set_spacing: 12,

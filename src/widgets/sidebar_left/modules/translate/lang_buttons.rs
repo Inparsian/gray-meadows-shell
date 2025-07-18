@@ -16,7 +16,7 @@ impl LanguageButtons {
     pub fn new() -> Self {
         let swap_transition_provider = gtk4::CssProvider::new();
 
-        relm4_macros::view! {
+        view! {
             source_lang_button = gtk4::Button {
                 set_label: SOURCE_LANG.lock().unwrap().as_ref().map_or("Source...", |l| &l.name),
                 set_css_classes: &["google-translate-language-select-button", "source-lang"],

@@ -54,7 +54,7 @@ impl SystemTrayItem {
             }
         });
 
-        relm4_macros::view! {
+        view! {
             new_widget = gtk4::Image {
                 set_css_classes: &["bar-tray-item"],
                 set_pixel_size: 14,

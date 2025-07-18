@@ -6,7 +6,7 @@ use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 use crate::{helpers::gesture, ipc, singletons::hyprland};
 
 pub fn new(application: &libadwaita::Application) {
-    relm4_macros::view! {
+    view! {
         left_sidebar_box = gtk4::Box {
             set_css_classes: &["left-sidebar-box"],
             set_orientation: gtk4::Orientation::Vertical,

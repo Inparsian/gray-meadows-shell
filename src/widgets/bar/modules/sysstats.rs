@@ -98,7 +98,7 @@ pub fn new() -> gtk4::Box {
         box_
     };
 
-    relm4_macros::view! {
+    view! {
         detailed_toggle_gesture = gesture::on_primary_click(|_, _, _| DETAILED.set(!DETAILED.get())),
         
         ram_usage_label = gtk4::Label {

@@ -25,7 +25,7 @@ impl OverviewSearchItem {
     pub fn build(&self) -> gtk4::Button {
         let icon = get_pixbuf_or_fallback(&self.icon, "emote-love");
 
-        relm4_macros::view! {
+        view! {
             title = gtk4::Label {
                 set_label: &self.title,
                 set_css_classes: &["overview-search-item-title"],

@@ -72,7 +72,7 @@ pub fn new(application: &libadwaita::Application) {
     let search_results = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
     search_results.set_css_classes(&["overview-search-results"]);
     
-    relm4_macros::view! {
+    view! {
         entry_prompt_revealer = gtk4::Revealer {
             set_transition_type: gtk4::RevealerTransitionType::Crossfade,
             set_reveal_child: true,

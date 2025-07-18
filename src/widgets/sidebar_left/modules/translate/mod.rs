@@ -114,7 +114,7 @@ pub fn new() -> gtk4::Box {
     let source_select_view = lang_select::LanguageSelectView::new(LanguageSelectReveal::Source);
     let target_select_view = lang_select::LanguageSelectView::new(LanguageSelectReveal::Target);
 
-    relm4_macros::view! {
+    view! {
         input_text_view = gtk4::TextView {
             set_wrap_mode: gtk4::WrapMode::WordChar,
             set_hexpand: true,

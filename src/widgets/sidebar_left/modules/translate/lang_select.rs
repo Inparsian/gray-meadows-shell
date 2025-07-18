@@ -95,7 +95,7 @@ fn get_page_boxes(reveal_type: &LanguageSelectReveal, filter: Option<&str>) -> V
     if !page_boxes.is_empty() {
         page_boxes
     } else {
-        relm4_macros::view! {
+        view! {
             no_results_box = gtk4::Box {
                 set_css_classes: &["google-translate-language-select-page"],
                 set_orientation: gtk4::Orientation::Vertical,
@@ -297,9 +297,7 @@ impl LanguageSelectView {
             self.pages_stack.add_named(page_box, Some(&format!("page_{}", i)));
         }
 
-        self.set_page(0)?;
-
-        Ok(())
+        self.set_page(0)
     }
 
     pub fn clear_filter_entry(&self) {
