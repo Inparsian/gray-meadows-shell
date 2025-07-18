@@ -88,8 +88,8 @@ where
         async {}
     });
 
-    gtk4::glib::MainContext::default().spawn_local(players_future);
-    gtk4::glib::MainContext::default().spawn_local(default_player_future);
+    gtk4::glib::spawn_future_local(players_future);
+    gtk4::glib::spawn_future_local(default_player_future);
 }
 
 pub fn activate() {

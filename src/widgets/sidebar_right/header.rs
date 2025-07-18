@@ -104,7 +104,7 @@ pub fn new() -> gtk4::Box {
         async {}
     });
 
-    gtk4::glib::MainContext::default().spawn_local(uptime_future);
+    gtk4::glib::spawn_future_local(uptime_future);
 
     header
 }

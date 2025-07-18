@@ -89,7 +89,7 @@ pub fn new() -> gtk4::Box {
         box_.append(label);
         box_.append(&detailed_reveal);
 
-        gtk4::glib::MainContext::default().spawn_local(DETAILED.signal().for_each(move |detailed| {
+        gtk4::glib::spawn_future_local(DETAILED.signal().for_each(move |detailed| {
             detailed_reveal.set_reveal_child(detailed);
 
             async {}
@@ -198,12 +198,12 @@ pub fn new() -> gtk4::Box {
         async {}
     });
 
-    gtk4::glib::MainContext::default().spawn_local(ram_usage_future);
-    gtk4::glib::MainContext::default().spawn_local(swap_usage_future);
-    gtk4::glib::MainContext::default().spawn_local(cpu_usage_future);
-    gtk4::glib::MainContext::default().spawn_local(cpu_temp_future);
-    gtk4::glib::MainContext::default().spawn_local(gpu_util_future);
-    gtk4::glib::MainContext::default().spawn_local(gpu_temp_future);
+    gtk4::glib::spawn_future_local(ram_usage_future);
+    gtk4::glib::spawn_future_local(swap_usage_future);
+    gtk4::glib::spawn_future_local(cpu_usage_future);
+    gtk4::glib::spawn_future_local(cpu_temp_future);
+    gtk4::glib::spawn_future_local(gpu_util_future);
+    gtk4::glib::spawn_future_local(gpu_temp_future);
 
     BarModuleWrapper::new(&widget)
         .add_controller(detailed_toggle_gesture)

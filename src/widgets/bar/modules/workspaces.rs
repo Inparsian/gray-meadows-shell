@@ -154,8 +154,8 @@ pub fn new() -> gtk4::Box {
         async {}
     });
 
-    gtk4::glib::MainContext::default().spawn_local(workspaces_future);
-    gtk4::glib::MainContext::default().spawn_local(active_workspace_future);
+    gtk4::glib::spawn_future_local(workspaces_future);
+    gtk4::glib::spawn_future_local(active_workspace_future);
 
     BarModuleWrapper::new(&workspaces_box)
         .add_controller(workspaces_click_gesture)
