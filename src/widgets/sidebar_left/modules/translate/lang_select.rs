@@ -1,4 +1,4 @@
-use std::{rc::Rc, sync::Mutex};
+use std::{cell::RefCell, error::Error, rc::Rc};
 use gtk4::prelude::*;
 use relm4::RelmRemoveAllExt;
 
@@ -84,11 +84,11 @@ fn get_page_boxes(reveal_type: &LanguageSelectReveal, filter: Option<&str>) -> V
     }
 
     if !boxes.is_empty() {
-        page_boxes.push(gtk4::Box::new(gtk4::Orientation::Vertical, 6));
-        page_boxes.last_mut().unwrap().set_spacing(6);
-        for box_ in &boxes {
-            page_boxes.last_mut().unwrap().append(box_);
-        }
+        let page_box = gtk4::Box::new(gtk4::Orientation::Vertical, 6);
+        page_box.set_css_classes(&["google-translate-language-select-page"]);
+        page_box.set_spacing(6);
+        boxes.iter().for_each(|box_| page_box.append(box_));
+        page_boxes.push(page_box);
         boxes.clear();
     }
 
@@ -118,208 +118,192 @@ fn get_page_boxes(reveal_type: &LanguageSelectReveal, filter: Option<&str>) -> V
     }
 }
 
-pub fn new(reveal_type: LanguageSelectReveal) -> gtk4::Box {
-    let current_page: Rc<Mutex<usize>> = Rc::new(Mutex::new(0));
-    let page_boxes: Rc<Mutex<Vec<gtk4::Box>>> = Rc::new(Mutex::new(
-        get_page_boxes(&reveal_type, None)
-    ));
+#[derive(Debug, Clone)]
+pub struct LanguageSelectView {
+    reveal_type: LanguageSelectReveal,
+    current_page: Rc<RefCell<usize>>,
+    page_boxes: Rc<RefCell<Vec<gtk4::Box>>>,
+    pages_stack: gtk4::Stack,
+    page_label: gtk4::Label,
+    filter_entry: gtk4::Entry,
+    filter_clear_button: gtk4::Button,
+    widget: gtk4::Box
+}
 
-    relm4_macros::view! {
-        pages_stack = gtk4::Stack {
-            set_css_classes: &["google-translate-language-select-stack"],
-            set_transition_type: gtk4::StackTransitionType::SlideLeftRight,
-            set_transition_duration: 250
-        },
+impl LanguageSelectView {
+    pub fn new(reveal_type: LanguageSelectReveal) -> Self {
+        let view = Self {
+            reveal_type,
+            current_page: Rc::new(RefCell::new(0)),
+            page_boxes: Rc::new(RefCell::new(Vec::new())),
+            pages_stack: gtk4::Stack::new(),
+            page_label: gtk4::Label::new(Some("Page 0 of 0")),
+            filter_clear_button: gtk4::Button::new(),
+            filter_entry: gtk4::Entry::new(),
+            widget: gtk4::Box::new(gtk4::Orientation::Vertical, 12)
+        };
 
-        page_label = gtk4::Label {
-            set_css_classes: &["google-translate-language-select-page-label"],
-            set_label: &format!(
-                "Page {} of {}",
-                *current_page.lock().unwrap() + 1,
-                page_boxes.lock().unwrap().len()
-            ),
-        },
+        view.pages_stack.set_css_classes(&["google-translate-language-select-stack"]);
+        view.pages_stack.set_transition_type(gtk4::StackTransitionType::SlideLeftRight);
+        view.pages_stack.set_transition_duration(250);
 
-        filter_clear_button = gtk4::Button {
-            set_css_classes: &["google-translate-language-select-filter-clear-button"],
-            set_visible: false,
-            connect_clicked: {
-                let filter_entry = filter_entry.clone();
-                move |_| filter_entry.set_text("")
-            },
+        view.page_label.set_css_classes(&["google-translate-language-select-page-label"]);
 
-            gtk4::Label {
-                set_css_classes: &["google-translate-language-select-filter-clear-label"],
-                set_label: "clear"
+        view.filter_clear_button.set_css_classes(&["google-translate-language-select-filter-clear-button"]);
+        view.filter_clear_button.set_visible(false);
+        view.filter_clear_button.set_child(Some(&{
+            let label = gtk4::Label::new(Some("clear"));
+            label.set_css_classes(&["google-translate-language-select-filter-clear-label"]);
+            label
+        }));
+        view.filter_clear_button.connect_clicked({
+            let view = view.clone();
+            move |_| view.clear_filter_entry()
+        });
+
+        view.filter_entry.set_css_classes(&["google-translate-language-select-filter-entry"]);
+        view.filter_entry.set_placeholder_text(Some("Filter languages..."));
+        view.filter_entry.set_hexpand(true);
+        view.filter_entry.connect_changed({
+            let view = view.clone();
+            let filter_clear_button = view.filter_clear_button.clone();
+            move |entry| {
+                let _ = view.update_page_boxes(Some(entry.text().as_str()));
+                filter_clear_button.set_visible(!entry.text().is_empty());
             }
-        },
+        });
 
-        filter_entry = gtk4::Entry {
-            set_css_classes: &["google-translate-language-select-filter-entry"],
-            set_placeholder_text: Some("Filter languages..."),
-            set_hexpand: true,
-            connect_changed: {
-                let pages_stack = pages_stack.clone();
-                let page_boxes = page_boxes.clone();
-                let page_label = page_label.clone();
-                let reveal_type = reveal_type.clone();
-                let current_page = current_page.clone();
-                let filter_clear_button = filter_clear_button.clone();
+        view.widget.set_css_classes(&["google-translate-language-select-box"]);
+        view.widget.set_hexpand(true);
+        view.widget.append(&{
+            let label = gtk4::Label::new(Some(if view.reveal_type == LanguageSelectReveal::Source {
+                "Source Language"
+            } else {
+                "Target Language"
+            }));
 
-                move |entry| {
-                    let filter_text = entry.text().to_string();
-                    let filtered_boxes = get_page_boxes(
-                        &reveal_type,
-                        if filter_text.is_empty() { None } else { Some(&filter_text) }
-                    );
+            label.set_css_classes(&["google-translate-language-select-label"]);
+            label
+        });
 
-                    filter_clear_button.set_visible(!filter_text.is_empty());
+        view.widget.append(&{
+            let filter_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 6);
+            filter_box.set_css_classes(&["google-translate-language-select-filter-box"]);
+            filter_box.append(&view.filter_entry);
+            filter_box.append(&view.filter_clear_button);
+            filter_box
+        });
 
-                    page_boxes.lock().unwrap().clear();
-                    page_boxes.lock().unwrap().extend(filtered_boxes);
-                    
-                    *current_page.lock().unwrap() = 0;
-                    pages_stack.remove_all();
-                    for (i, page_box) in page_boxes.lock().unwrap().iter_mut().enumerate() {
-                        page_box.set_css_classes(&["google-translate-language-select-page"]);
-                        pages_stack.add_named(page_box, Some(&format!("page_{}", i)));
+        view.widget.append(&{
+            let clamp = libadwaita::Clamp::new();
+            clamp.set_width_request(400);
+            clamp.set_maximum_size(400);
+            clamp.set_child(Some(&view.pages_stack));
+            clamp.set_unit(libadwaita::LengthUnit::Px);
+            clamp
+        });
+
+        view.widget.append(&{
+            let nav_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 6);
+            nav_box.set_homogeneous(true);
+            nav_box.append(&{
+                let prev_button = gtk4::Button::new();
+                prev_button.set_css_classes(&["google-translate-language-select-nav-button"]);
+                prev_button.set_label("Previous");
+                prev_button.connect_clicked({
+                    let view = view.clone();
+                    move |_| {
+                        // .max(1) prevents substraction overflow.
+                        let _ = view.set_page(view.get_current_page().max(1) - 1);
                     }
+                });
+                prev_button
+            });
 
-                    pages_stack.set_visible_child_name("page_0");
-                    pages_stack.set_visible_child_name(&format!("page_{}", *current_page.lock().unwrap()));
+            nav_box.append(&view.page_label);
 
-                    page_label.set_label(&format!(
-                        "Page {} of {}",
-                        *current_page.lock().unwrap() + 1,
-                        page_boxes.lock().unwrap().len()
-                    ));
-                }
-            }
-        },
-
-        widget = gtk4::Box {
-            set_css_classes: &["google-translate-language-select-box"],
-            set_orientation: gtk4::Orientation::Vertical,
-            set_spacing: 12,
-            set_hexpand: true,
-
-            gtk4::Label {
-                set_css_classes: &["google-translate-language-select-label"],
-                set_label: if reveal_type == LanguageSelectReveal::Source {
-                    "Source Language"
-                } else {
-                    "Target Language"
-                },
-            },
-
-            gtk4::Box {
-                set_css_classes: &["google-translate-language-select-filter-box"],
-                set_orientation: gtk4::Orientation::Horizontal,
-                set_spacing: 6,
-
-                append: &filter_entry,
-                append: &filter_clear_button
-            },
-
-            libadwaita::Clamp {
-                set_width_request: 400,
-                set_maximum_size: 400,
-                set_child: Some(&pages_stack),
-                set_unit: libadwaita::LengthUnit::Px
-            },
-
-            gtk4::Box {
-                set_orientation: gtk4::Orientation::Horizontal,
-                set_spacing: 6,
-                set_homogeneous: true,
-
-                gtk4::Button {
-                    set_css_classes: &["google-translate-language-select-nav-button"],
-                    set_label: "Previous",
-                    connect_clicked: {
-                        let pages_stack = pages_stack.clone();
-                        let page_label = page_label.clone();
-                        let page_boxes = page_boxes.clone();
-                        let current_page = current_page.clone();
-
-                        move |_| {
-                            if *current_page.lock().unwrap() > 0 {
-                                *current_page.lock().unwrap() -= 1;
-                                pages_stack.set_visible_child_name(&format!("page_{}", current_page.lock().unwrap()));
-                                page_label.set_label(&format!(
-                                    "Page {} of {}",
-                                    *current_page.lock().unwrap() + 1,
-                                    page_boxes.lock().unwrap().len()
-                                ));
-                            }
-                        }
+            nav_box.append(&{
+                let next_button = gtk4::Button::new();
+                next_button.set_css_classes(&["google-translate-language-select-nav-button"]);
+                next_button.set_label("Next");
+                next_button.connect_clicked({
+                    let view = view.clone();
+                    move |_| {
+                        let _ = view.set_page(view.get_current_page() + 1);
                     }
-                },
+                });
+                next_button
+            });
 
-                append: &page_label,
+            nav_box
+        });
 
-                gtk4::Button {
-                    set_css_classes: &["google-translate-language-select-nav-button"],
-                    set_label: "Next",
-                    connect_clicked: {
-                        let pages_stack = pages_stack.clone();
-                        let page_label = page_label.clone();
-                        let page_boxes = page_boxes.clone();
-                        let current_page = current_page.clone();
+        let _ = view.update_page_boxes(None);
 
-                        move |_| {
-                            if *current_page.lock().unwrap() < page_boxes.lock().unwrap().len() - 1 {
-                                *current_page.lock().unwrap() += 1;
-                                pages_stack.set_visible_child_name(&format!("page_{}", current_page.lock().unwrap()));
-                                page_label.set_label(&format!(
-                                    "Page {} of {}",
-                                    *current_page.lock().unwrap() + 1,
-                                    page_boxes.lock().unwrap().len()
-                                ));
-                            }
+        // Start our event receiver task
+        let receiver = subscribe_to_ui_events();
+        gtk4::glib::spawn_future_local({
+            let view = view.clone();
+            async move {
+                while let Ok(event) = receiver.recv().await {
+                    if let UiEvent::LanguageSelectRevealChanged(reveal) = event {
+                        if reveal != view.reveal_type {
+                            continue;
                         }
+
+                        view.clear_filter_entry();
                     }
                 }
             }
-        }
-    };
+        });
 
-    for (i, page_box) in page_boxes.lock().unwrap().iter_mut().enumerate() {
-        page_box.set_css_classes(&["google-translate-language-select-page"]);
-        pages_stack.add_named(page_box, Some(&format!("page_{}", i)));
+        view
     }
-    
-    pages_stack.set_visible_child_name("page_0");
 
-    // Start our event receiver task
-    let receiver = subscribe_to_ui_events();
-    gtk4::glib::spawn_future_local(async move {
-        while let Ok(event) = receiver.recv().await {
-            if let UiEvent::LanguageSelectRevealChanged(reveal) = event {
-                if reveal != reveal_type {
-                    continue;
-                }
+    pub fn get_widget(&self) -> &gtk4::Box {
+        &self.widget
+    }
 
-                *current_page.lock().unwrap() = 0;
-                pages_stack.set_visible_child_name("page_0");
-                pages_stack.remove_all();
+    pub fn get_current_page(&self) -> usize {
+        self.current_page.try_borrow().map_or(0, |page| *page)
+    }
 
-                for (i, page_box) in page_boxes.lock().unwrap().iter_mut().enumerate() {
-                    page_box.set_css_classes(&["google-translate-language-select-page"]);
-                    pages_stack.add_named(page_box, Some(&format!("page_{}", i)));
-                }
+    pub fn get_total_pages(&self) -> usize {
+        self.page_boxes.try_borrow().map_or(0, |boxes| boxes.len())
+    }
 
-                page_label.set_label(&format!(
-                    "Page {} of {}",
-                    *current_page.lock().unwrap() + 1,
-                    page_boxes.lock().unwrap().len()
-                ));
-
-                filter_entry.set_text("");
-                filter_entry.grab_focus();
-            }
+    pub fn set_page(&self, page: usize) -> Result<(), Box<dyn Error>> {
+        {
+            let mut current_page = self.current_page.try_borrow_mut()?;
+            *current_page = page.clamp(0, self.get_total_pages() - 1);
+            self.pages_stack.set_visible_child_name(&format!("page_{}", *current_page));
         }
-    });
 
-    widget
+        self.update_page_label();
+        Ok(())
+    }
+
+    pub fn update_page_label(&self) {
+        self.page_label.set_label(&format!("Page {} of {}", self.get_current_page() + 1, self.get_total_pages()));
+    }
+
+    pub fn update_page_boxes(&self, filter: Option<&str>) -> Result<(), Box<dyn Error>> {
+        let new_boxes = get_page_boxes(&self.reveal_type, filter);
+        self.page_boxes.try_borrow_mut()?.clear();
+        self.page_boxes.try_borrow_mut()?.extend(new_boxes);
+    
+        self.pages_stack.remove_all();
+        for (i, page_box) in self.page_boxes.borrow().iter().enumerate() {
+            self.pages_stack.add_named(page_box, Some(&format!("page_{}", i)));
+        }
+
+        self.set_page(0)?;
+
+        Ok(())
+    }
+
+    pub fn clear_filter_entry(&self) {
+        self.filter_entry.set_text("");
+        self.filter_entry.grab_focus();
+    }
 }

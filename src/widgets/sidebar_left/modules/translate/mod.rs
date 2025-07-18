@@ -111,6 +111,8 @@ pub fn new() -> gtk4::Box {
     let output_buffer = gtk4::TextBuffer::new(None);
 
     let language_buttons = lang_buttons::LanguageButtons::new();
+    let source_select_view = lang_select::LanguageSelectView::new(LanguageSelectReveal::Source);
+    let target_select_view = lang_select::LanguageSelectView::new(LanguageSelectReveal::Target);
 
     relm4_macros::view! {
         input_text_view = gtk4::TextView {
@@ -225,8 +227,8 @@ pub fn new() -> gtk4::Box {
             set_transition_type: gtk4::StackTransitionType::SlideLeftRight,
             set_transition_duration: 250,
 
-            add_named: (&lang_select::new(LanguageSelectReveal::Source), Some("source")),
-            add_named: (&lang_select::new(LanguageSelectReveal::Target), Some("target"))
+            add_named: (source_select_view.get_widget(), Some("source")),
+            add_named: (target_select_view.get_widget(), Some("target"))
         },
 
         select_ui = gtk4::Box {
