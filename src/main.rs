@@ -4,7 +4,6 @@ extern crate relm4_macros;
 mod ipc;
 mod ffi;
 mod helpers;
-mod reactivity;
 mod singletons;
 mod widgets;
 

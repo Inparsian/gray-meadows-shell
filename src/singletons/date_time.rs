@@ -1,37 +1,32 @@
 use futures_signals::signal::Mutable;
 use once_cell::sync::Lazy;
+use chrono::Local;
 
 const DATE_FORMAT: &str = "%a, %m/%d";
 const TIME_FORMAT: &str = "%I:%M %p";
 
+#[derive(Clone, Debug)]
 pub struct DateTime {
-    pub date: futures_signals::signal::Mutable<String>,
-    pub time: futures_signals::signal::Mutable<String>,
+    pub date: String,
+    pub time: String
 }
 
-pub static DATE_TIME: Lazy<DateTime> = Lazy::new(|| {
+pub static DATE_TIME: Lazy<Mutable<DateTime>> = Lazy::new(|| Mutable::new(date_time_now()));
+
+fn date_time_now() -> DateTime {
+    let now = Local::now();
+
     DateTime {
-        date: Mutable::new(chrono::Local::now().format(DATE_FORMAT).to_string()),
-        time: Mutable::new(chrono::Local::now().format(TIME_FORMAT).to_string()),
+        date: now.format(DATE_FORMAT).to_string(),
+        time: now.format(TIME_FORMAT).to_string(),
     }
-});
-
-fn update_datetime() {
-    let now = chrono::Local::now();
-    let date = now.format(DATE_FORMAT).to_string();
-    let time = now.format(TIME_FORMAT).to_string();
-
-    DATE_TIME.date.set(date);
-    DATE_TIME.time.set(time);
 }
 
 pub fn activate() {
-    let future = async move {
+    tokio::spawn(async move {
         loop {
-            update_datetime();
+            DATE_TIME.set(date_time_now());
             tokio::time::sleep(std::time::Duration::from_secs(1)).await;
         }
-    };
-
-    tokio::spawn(future);
+    });
 }
