@@ -80,20 +80,16 @@ impl OverviewSearchItem {
                         let action = action.clone();
                         move |_| {
                             match &action {
-                                OverviewSearchItemAction::Launch(command) => {
-                                    process::launch(command);
-                                },
+                                OverviewSearchItemAction::Launch(command) => process::launch(command),
 
                                 OverviewSearchItemAction::RunCommand(command) => {
                                     std::thread::spawn({
                                         let command = command.clone();
                                     
-                                        move || {
-                                            let _output = std::process::Command::new("bash")
-                                                .arg("-c")
-                                                .arg(command)
-                                                .output();
-                                        }
+                                        move || std::process::Command::new("bash")
+                                            .arg("-c")
+                                            .arg(command)
+                                            .output()
                                     });
                                 },
                             
@@ -102,11 +98,9 @@ impl OverviewSearchItem {
                                     std::thread::spawn({
                                         let text = text.clone();
                                     
-                                        move || {
-                                            let _output = std::process::Command::new("wl-copy")
-                                                .arg(text)
-                                                .output();
-                                        }
+                                        move || std::process::Command::new("wl-copy")
+                                            .arg(text)
+                                            .output()
                                     });
                                 }
                             
