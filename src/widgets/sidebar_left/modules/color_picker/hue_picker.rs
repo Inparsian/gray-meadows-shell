@@ -1,5 +1,4 @@
 use std::{rc::Rc, cell::RefCell};
-
 use futures_signals::signal::{Mutable, SignalExt};
 use gtk4::prelude::*;
 
@@ -10,7 +9,7 @@ pub struct HuePicker {
     pub hsv: Mutable<Hsv>,
     pub widget: gtk4::Box,
     pub trough: gtk4::Box,
-    trough_css_provider: gtk4::CssProvider,
+    trough_css_provider: gtk4::CssProvider
 }
 
 impl HuePicker {

@@ -186,7 +186,7 @@
         .ColorPicker {
             .color-picker-hue {
                 background: linear-gradient(to bottom, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
-                min-height: 338px;
+                min-height: 372px;
                 min-width: 16px;
                 margin-right: 2px;
                 margin-left: 2px;
@@ -197,12 +197,17 @@
                 }
             }
 
-            .color-picker-saturation-lightness {
+            .color-picker-saturation-value {
                 background: $background-color-secondary;
+                min-height: 372px;
+                min-width: 372px;
 
-                .color-picker-saturation-lightness-trough {
-                    min-height: 4px;
-                    min-width: 4px;
+                .color-picker-saturation-value-trough {
+                    transition: border-color 0.25s cubic-bezier(0.5, 0, 0.25, 1);
+                    min-height: 5px;
+                    min-width: 5px;
+                    border-width: 1px;
+                    border-style: solid;
                 }
             }
         }

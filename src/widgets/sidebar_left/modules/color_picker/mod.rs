@@ -14,6 +14,7 @@ pub fn new() -> gtk4::Box {
     });
 
     let hue_picker = hue_picker::HuePicker::new(&hsv);
+    let saturation_value_picker = saturation_value_picker::SaturationValuePicker::new(&hsv);
 
     view! {
         test_hsv_label = gtk4::Label {
@@ -48,7 +49,8 @@ pub fn new() -> gtk4::Box {
                 set_orientation: gtk4::Orientation::Horizontal,
                 set_spacing: 8,
 
-                append: hue_picker.get_widget()
+                append: hue_picker.get_widget(),
+                append: saturation_value_picker.get_widget()
             },
 
             append: &test_hsv_label,
