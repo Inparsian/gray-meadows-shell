@@ -25,7 +25,7 @@ pub fn new() -> gtk4::Box {
     let current_art_url = RefCell::new(" ".to_owned());
 
     view! {
-        widget_middle_click_gesture = gesture::on_middle_click(|_, _, _| {
+        widget_middle_click_gesture = gesture::on_middle_up(|_, _, _| {
             let Some(player) = mpris::get_default_player() else {
                 return eprintln!("No MPRIS player available to toggle play/pause.");
             };
@@ -35,7 +35,7 @@ pub fn new() -> gtk4::Box {
             }
         }),
 
-        widget_right_click_gesture = gesture::on_secondary_click(|_, _, _| {
+        widget_right_click_gesture = gesture::on_secondary_up(|_, _, _| {
             let Some(player) = mpris::get_default_player() else {
                 return eprintln!("No MPRIS player available to skip to next track.");
             };

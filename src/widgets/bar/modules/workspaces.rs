@@ -50,7 +50,7 @@ pub fn new() -> gtk4::Box {
     let style_provider = gtk4::CssProvider::new();
 
     view! {
-        workspaces_click_gesture = gesture::on_primary_click(|_, x, _| {
+        workspaces_click_gesture = gesture::on_primary_up(|_, x, _| {
             let ws = (((x - 5.0 - WORKSPACE_PADDING) / (WORKSPACE_WIDTH + WORKSPACE_PADDING)) + 1.0).floor() as i32;
 
             if ws >= 1 && ws <= SHOWN_WORKSPACES as i32 {
@@ -86,7 +86,12 @@ pub fn new() -> gtk4::Box {
                         };
 
                         if let Some(color) = scss::get_color(color_variable_name) {
-                            cr.set_source_rgba(color.red, color.green, color.blue, color.alpha);
+                            cr.set_source_rgba(
+                                color.red as f64 / 255.0,
+                                color.green as f64 / 255.0,
+                                color.blue as f64 / 255.0,
+                                color.alpha as f64 / 255.0
+                            );
 
                             cr.rectangle(
                                 ((workspace_x + (WORKSPACE_WIDTH / 4.0)) + 2.0).ceil(),
@@ -103,7 +108,12 @@ pub fn new() -> gtk4::Box {
                     if let Some(color) = scss::get_color("foreground-color-primary") {
                         let active_workspace_x = (active_ws - 1.0).mul_add(WORKSPACE_WIDTH + WORKSPACE_PADDING, WORKSPACE_PADDING) + 1.0;
 
-                        cr.set_source_rgba(color.red, color.green, color.blue, color.alpha);
+                        cr.set_source_rgba(
+                            color.red as f64 / 255.0,
+                            color.green as f64 / 255.0,
+                            color.blue as f64 / 255.0,
+                            color.alpha as f64 / 255.0
+                        );
 
                         cr.rectangle(
                             ((active_workspace_x + (WORKSPACE_WIDTH / 4.0)) - 1.0).ceil(),

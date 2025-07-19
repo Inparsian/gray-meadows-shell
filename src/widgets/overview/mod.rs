@@ -216,7 +216,7 @@ pub fn new(application: &libadwaita::Application) {
         move |_| { entry.grab_focus(); }
     });
 
-    window.add_controller(gesture::on_primary_click({
+    window.add_controller(gesture::on_primary_up({
         let window = window.clone();
         move |_, x, y| {
             if window.is_visible() && !overview_box.allocation().contains_point(x as i32, y as i32) {

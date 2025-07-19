@@ -83,7 +83,7 @@ pub fn new(application: &libadwaita::Application) {
         }
     };
 
-    window.add_controller(gesture::on_primary_click({
+    window.add_controller(gesture::on_primary_up({
         let window = window.clone();
 
         move |_, x, y| {

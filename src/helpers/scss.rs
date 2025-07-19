@@ -2,7 +2,7 @@ use std::sync::Mutex;
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-use crate::helpers::{color, filesystem};
+use crate::{color::{is_valid_hex_color, model::Rgba}, helpers::filesystem};
 
 const VAR_REGEX: &str = r"^\$([a-zA-Z0-9_-]+):\s*([a-zA-Z0-9#() ,.-]+);$";
 
@@ -10,7 +10,7 @@ pub static SCSS_VARS: Lazy<Mutex<ScssVars>> = Lazy::new(|| Mutex::new(ScssVars::
 
 pub struct ScssVars {
     string_vars: std::collections::HashMap<String, String>,
-    color_vars: std::collections::HashMap<String, color::Rgba>,
+    color_vars: std::collections::HashMap<String, Rgba>,
 }
 
 impl ScssVars {
@@ -25,7 +25,7 @@ impl ScssVars {
         self.string_vars.insert(name, value);
     }
 
-    pub fn add_color(&mut self, name: String, value: color::Rgba) {
+    pub fn add_color(&mut self, name: String, value: Rgba) {
         self.color_vars.insert(name, value);
     }
 
@@ -34,7 +34,7 @@ impl ScssVars {
         self.string_vars.get(name)
     }
 
-    pub fn get_color(&self, name: &str) -> Option<&color::Rgba> {
+    pub fn get_color(&self, name: &str) -> Option<&Rgba> {
         self.color_vars.get(name)
     }
 }
@@ -53,8 +53,8 @@ pub fn refresh_variables() {
                 let name = caps[1].to_string();
                 let value = caps[2].to_string();
 
-                if color::is_valid_hex_color(&value) {
-                    vars.add_color(name, color::Rgba::from_hex(&value));
+                if is_valid_hex_color(&value) {
+                    vars.add_color(name, Rgba::from_hex(&value));
                 } else {
                     vars.add_string(name, value);
                 }
@@ -77,7 +77,7 @@ pub fn escape_html(input: char) -> String {
     }
 }
 
-pub fn get_color(name: &str) -> Option<color::Rgba> {
+pub fn get_color(name: &str) -> Option<Rgba> {
     let scss_vars = SCSS_VARS.lock().unwrap();
     scss_vars.get_color(name).cloned()
 }

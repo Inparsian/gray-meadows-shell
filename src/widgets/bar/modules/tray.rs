@@ -30,7 +30,7 @@ impl SystemTrayItem {
 
         self.popover_menu = Some(popover_menu);
 
-        let default_activate = gesture::on_primary_click({
+        let default_activate = gesture::on_primary_up({
             let service = self.service.clone();
         
             move |_, x, y| {
@@ -40,7 +40,7 @@ impl SystemTrayItem {
             }
         });
 
-        let menus_activate = gesture::on_secondary_click({
+        let menus_activate = gesture::on_secondary_up({
             let service = self.service.clone();
             let popover_menu = self.popover_menu.clone();
 

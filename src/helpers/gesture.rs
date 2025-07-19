@@ -30,7 +30,33 @@ where
     controller
 }
 
-fn on_button_click<F>(button: u32, on_click: F) -> gtk4::GestureClick
+pub fn on_motion<F>(on_motion: F) -> gtk4::EventControllerMotion
+where
+    F: Fn(f64, f64) + 'static,
+{
+    let controller = gtk4::EventControllerMotion::new();
+
+    controller.connect_motion(move |_, x, y| {
+        on_motion(x, y);
+    });
+
+    controller
+}
+
+fn on_button_down<F>(button: u32, on_click: F) -> gtk4::GestureClick
+where
+    F: Fn(i32, f64, f64) + 'static,
+{
+    let controller = gtk4::GestureClick::new();
+    controller.set_button(button);
+    controller.connect_pressed(move |_, n_press, x, y| {
+        on_click(n_press, x, y);
+    });
+
+    controller
+}
+
+fn on_button_up<F>(button: u32, on_click: F) -> gtk4::GestureClick
 where
     F: Fn(i32, f64, f64) + 'static,
 {
@@ -43,23 +69,30 @@ where
     controller
 }
 
-pub fn on_primary_click<F>(on_click: F) -> gtk4::GestureClick
+pub fn on_primary_down<F>(on_down: F) -> gtk4::GestureClick
 where
     F: Fn(i32, f64, f64) + 'static,
 {
-    on_button_click(gdk4::ffi::GDK_BUTTON_PRIMARY.try_into().unwrap(), on_click)
+    on_button_down(gdk4::ffi::GDK_BUTTON_PRIMARY.try_into().unwrap(), on_down)
 }
 
-pub fn on_secondary_click<F>(on_click: F) -> gtk4::GestureClick
+pub fn on_primary_up<F>(on_up: F) -> gtk4::GestureClick
 where
     F: Fn(i32, f64, f64) + 'static,
 {
-    on_button_click(gdk4::ffi::GDK_BUTTON_SECONDARY.try_into().unwrap(), on_click)
+    on_button_up(gdk4::ffi::GDK_BUTTON_PRIMARY.try_into().unwrap(), on_up)
 }
 
-pub fn on_middle_click<F>(on_click: F) -> gtk4::GestureClick
+pub fn on_secondary_up<F>(on_up: F) -> gtk4::GestureClick
 where
     F: Fn(i32, f64, f64) + 'static,
 {
-    on_button_click(gdk4::ffi::GDK_BUTTON_MIDDLE.try_into().unwrap(), on_click)
+    on_button_up(gdk4::ffi::GDK_BUTTON_SECONDARY.try_into().unwrap(), on_up)
+}
+
+pub fn on_middle_up<F>(on_up: F) -> gtk4::GestureClick
+where
+    F: Fn(i32, f64, f64) + 'static,
+{
+    on_button_up(gdk4::ffi::GDK_BUTTON_MIDDLE.try_into().unwrap(), on_up)
 }

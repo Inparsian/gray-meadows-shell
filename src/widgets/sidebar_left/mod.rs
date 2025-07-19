@@ -13,7 +13,7 @@ static TABS: [&str; 2] = [
 ];
 
 pub fn new(application: &libadwaita::Application) {
-    let current_tab = Mutable::new(Some("translate".to_owned()));
+    let current_tab = Mutable::new(Some("color_picker".to_owned()));
 
     view! {
         content = gtk4::Stack {
@@ -78,7 +78,7 @@ pub fn new(application: &libadwaita::Application) {
         async {}
     });
 
-    window.add_controller(gesture::on_primary_click({
+    window.add_controller(gesture::on_primary_up({
         let window = window.clone();
 
         move |_, x, y| {

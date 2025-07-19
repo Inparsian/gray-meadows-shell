@@ -182,6 +182,30 @@
                 }
             }
         }
+
+        .ColorPicker {
+            .color-picker-hue {
+                background: linear-gradient(to bottom, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+                min-height: 338px;
+                min-width: 16px;
+                margin-right: 2px;
+                margin-left: 2px;
+
+                .color-picker-hue-trough {
+                    min-height: 4px;
+                    background: #ffffff;
+                }
+            }
+
+            .color-picker-saturation-lightness {
+                background: #1b1b1b;
+
+                .color-picker-saturation-lightness-trough {
+                    min-height: 4px;
+                    min-width: 4px;
+                }
+            }
+        }
     }
 }
 

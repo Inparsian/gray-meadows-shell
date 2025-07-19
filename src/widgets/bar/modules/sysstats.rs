@@ -99,7 +99,7 @@ pub fn new() -> gtk4::Box {
     };
 
     view! {
-        detailed_toggle_gesture = gesture::on_primary_click(|_, _, _| DETAILED.set(!DETAILED.get())),
+        detailed_toggle_gesture = gesture::on_primary_up(|_, _, _| DETAILED.set(!DETAILED.get())),
         
         ram_usage_label = gtk4::Label {
             set_label: &get_ram_usage_label_text(),
