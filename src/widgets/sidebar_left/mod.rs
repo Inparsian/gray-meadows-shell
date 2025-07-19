@@ -22,8 +22,7 @@ pub fn new(application: &libadwaita::Application) {
             set_transition_duration: 150,
 
             add_named: (&modules::translate::new(), Some("translate")),
-            // !!! I'm adding the module legit right now as we speak but it will be mostly empty !!!
-            add_named: (&modules::translate::new(), Some("color_picker"))
+            add_named: (&modules::color_picker::new(), Some("color_picker"))
         },
 
         left_sidebar_box = gtk4::Box {
