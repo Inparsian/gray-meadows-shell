@@ -73,8 +73,8 @@ impl HuePicker {
     }
 
     pub fn handle_click(&self, y: f64) {
-        let clamped_y = y.clamp(0.0, self.widget.allocated_height() as f64);
-        let hue = (clamped_y / self.widget.allocated_height() as f64) * 360.0;
+        let clamped_y = y.clamp(0.0, self.widget.height() as f64);
+        let hue = (clamped_y / self.widget.height() as f64) * 360.0;
 
         self.hsv.set(Hsv {
             hue,
@@ -85,8 +85,8 @@ impl HuePicker {
 
     pub fn update_trough_position(&self) {
         let hue = self.hsv.get().hue;
-        let widget_height = self.widget.allocated_height() as f64;
-        let trough_height = self.trough.allocated_height() as f64;
+        let widget_height = self.widget.height() as f64;
+        let trough_height = self.trough.height() as f64;
         let trough_pos = ((widget_height - trough_height) * (hue / 360.0)).round() as i32;
 
         self.trough_css_provider.load_from_data(&format!("

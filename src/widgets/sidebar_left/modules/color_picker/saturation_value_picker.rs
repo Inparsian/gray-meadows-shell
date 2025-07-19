@@ -1,4 +1,4 @@
-use std::{rc::Rc, cell::RefCell};
+use std::{cell::RefCell, rc::Rc};
 use futures_signals::signal::{Mutable, SignalExt};
 use gtk4::prelude::*;
 
@@ -84,10 +84,10 @@ impl SaturationValuePicker {
     }
 
     pub fn handle_click(&self, x: f64, y: f64) {
-        let clamped_x = x.clamp(0.0, self.widget.allocated_width() as f64);
-        let clamped_y = y.clamp(0.0, self.widget.allocated_height() as f64);
-        let saturation = (clamped_x / self.widget.allocated_width() as f64) * 100.0;
-        let value = (clamped_y / self.widget.allocated_height() as f64).mul_add(-100.0, 100.0);
+        let clamped_x = x.clamp(0.0, self.widget.width() as f64);
+        let clamped_y = y.clamp(0.0, self.widget.height() as f64);
+        let saturation = (clamped_x / self.widget.width() as f64) * 100.0;
+        let value = (clamped_y / self.widget.height() as f64).mul_add(-100.0, 100.0);
 
         self.hsv.set(Hsv {
             hue: self.hsv.get().hue,
@@ -114,11 +114,8 @@ impl SaturationValuePicker {
         let saturation = self.hsv.get().saturation;
         let value = self.hsv.get().value;
 
-        let widget_width = self.widget.allocated_width() as f64;
-        let widget_height = self.widget.allocated_height() as f64;
-
-        let trough_width = self.trough.allocated_width() as f64;
-        let trough_height = self.trough.allocated_height() as f64;
+        let (widget_width, widget_height) = (self.widget.width() as f64, self.widget.height() as f64);
+        let (trough_width, trough_height) = (self.trough.width() as f64, self.trough.height() as f64);
 
         let trough_pos_x = widget_width.mul_add(saturation / 100.0, -(trough_width / 2.0)).round() as i32;
         let trough_pos_y = (widget_height.mul_add(-(value / 100.0), widget_height) - (trough_height / 2.0)).round() as i32;
