@@ -149,14 +149,15 @@ impl OverviewSearchModule for OverviewTextModule {
             let result = digest(query, &operation);
             
             if query != result {
-                results.push(OverviewSearchItem {
-                    title: result.clone(),
-                    subtitle: Some(format!("Operation: {}", format!("{:?}", operation).to_lowercase())),
-                    icon: "text-x-generic".to_owned(),
-                    action: OverviewSearchItemAction::Copy(result),
-                    action_text: "copy".to_owned(),
-                    query: None
-                });
+                results.push(OverviewSearchItem::new(
+                    format!("text-result-{}", format!("{:?}", operation).to_lowercase()),
+                    result.clone(),
+                    Some(format!("Operation: {}", format!("{:?}", operation).to_lowercase())),
+                    "text-x-generic".to_owned(),
+                    "copy".to_owned(),
+                    OverviewSearchItemAction::Copy(result),
+                    None
+                ));
             }
         }
 

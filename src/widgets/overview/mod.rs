@@ -1,11 +1,13 @@
 mod item;
+mod list;
 mod modules;
 
+use std::{cell::RefCell, rc::Rc};
 use freedesktop_desktop_entry::get_languages_from_env;
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 use once_cell::sync::Lazy;
-use relm4::RelmRemoveAllExt;
+use regex::Regex;
 use urlencoding::encode;
 
 use crate::{
@@ -14,7 +16,8 @@ use crate::{
     singletons::{apps, hyprland},
     widgets::overview::{
         item::{OverviewSearchItem, OverviewSearchItemAction},
-        modules::{OverviewSearchModule, validate_input, input_without_extensions}
+        list::{get_button_from_row, OverviewSearchList},
+        modules::{input_without_extensions, validate_input, OverviewSearchModule}
     }
 };
 
@@ -23,6 +26,10 @@ static MODULES: Lazy<Vec<&(dyn OverviewSearchModule + Send + Sync)>> = Lazy::new
     &modules::text::OverviewTextModule,
     &modules::terminal::OverviewTerminalModule
 ]);
+
+static ALPHANUMERIC_SYMBOLIC_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new("^[a-zA-Z0-9 ~!@#$%^&*()_+\\-=\\[\\]{}|;':\",./<>?]+$").expect("Failed to compile alphanumeric symbolic regex")
+});
 
 fn generate_search_results(query: &str) -> Vec<OverviewSearchItem> {
     let mut results = Vec::new();
@@ -44,33 +51,34 @@ fn generate_search_results(query: &str) -> Vec<OverviewSearchItem> {
         if let Some(entry) = desktops.get(i) {
             let entry = &entry.entry;
 
-            results.push(OverviewSearchItem {
-                title: entry.name(&locales).unwrap_or_default().to_string(),
-                subtitle: None,
-                icon: entry.icon().map(|icon| icon.to_owned()).unwrap_or_default(),
-                action: OverviewSearchItemAction::Launch(entry.exec().unwrap_or_default().to_owned()),
-                action_text: "launch".to_owned(),
-                query: Some(query.to_owned())
-            });
+            results.push(OverviewSearchItem::new(
+                "application-result".to_owned(),
+                entry.name(&locales).unwrap_or_default().to_string(),
+                None,
+                entry.icon().map(|icon| icon.to_owned()).unwrap_or_default(),
+                "launch".to_owned(),
+                OverviewSearchItemAction::Launch(entry.exec().unwrap_or_default().to_owned()),
+                Some(query.to_owned())
+            ));
         }
     }
 
     // web search as final fallback
-    results.push(OverviewSearchItem {
-        title: query.to_owned(),
-        subtitle: Some("Search the web".to_owned()),
-        icon: "search".to_owned(),
-        action: OverviewSearchItemAction::RunCommand(format!("xdg-open https://duckduckgo.com/?q={}", encode(query))),
-        action_text: "search".to_owned(),
-        query: None
-    });
+    results.push(OverviewSearchItem::new(
+        "web-search".to_owned(),
+        query.to_owned(),
+        Some("Search the web".to_owned()),
+        "search".to_owned(),
+        "search".to_owned(),
+        OverviewSearchItemAction::RunCommand(format!("xdg-open https://duckduckgo.com/?q={}", encode(query))),
+        None
+    ));
 
     results
 }
 
 pub fn new(application: &libadwaita::Application) {
-    let search_results = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
-    search_results.set_css_classes(&["overview-search-results"]);
+    let search_results = Rc::new(RefCell::new(OverviewSearchList::new()));
     
     view! {
         entry_prompt_revealer = gtk4::Revealer {
@@ -91,7 +99,7 @@ pub fn new(application: &libadwaita::Application) {
             libadwaita::Clamp {
                 set_width_request: 0,
                 set_maximum_size: 0,
-                set_child: Some(&search_results)
+                set_child: Some(&search_results.borrow().get_widget())
             },
         },
 
@@ -109,17 +117,15 @@ pub fn new(application: &libadwaita::Application) {
             connect_activate: {
                 let search_results = search_results.clone();
 
-                move |entry| {
-                    let text = entry.text().to_string();
-                    if !text.is_empty() {
-                        search_results.first_child().map(|child| child.activate());
-                    }
+                move |entry| if !entry.text().to_string().is_empty() {
+                    search_results.borrow().get_widget().first_child().map(|child| child.activate());
                 }
             },
 
             connect_changed: {
                 let entry_box = entry_box.clone();
                 let entry_prompt_revealer = entry_prompt_revealer.clone();
+                let search_results = search_results.clone();
                 let search_results_revealer = search_results_revealer.clone();
 
                 move |entry| {
@@ -132,12 +138,34 @@ pub fn new(application: &libadwaita::Application) {
                         search_results_revealer.set_reveal_child(true);
                         entry_box.style_context().add_class("entry-extended");
 
-                        // Clear previous results
-                        search_results.remove_all();
+                        let results = generate_search_results(&entry.text());
 
-                        for item in generate_search_results(&entry.text()) {
-                            search_results.append(&item.build());
+                        // Insert the new items into the search results list
+                        let mut search_results_mut = search_results.borrow_mut();
+                        for (i, item) in results.iter().enumerate() {
+                            if let Some(existing_item) = search_results_mut.items.iter_mut().find(|i| i.smart_compare(item)) {
+                                if item.exact_id_comp_has() {
+                                    if item.query.is_some() && existing_item.query != item.query {
+                                        existing_item.query = item.query.clone();
+                                        existing_item.set_title_markup();
+                                    }
+                                } else {
+                                    existing_item.set_title_label(&item.title);
+                                    existing_item.action = item.action.clone();
+                                }
+                            } else {
+                                search_results_mut.insert(item, i);
+                            }
                         }
+
+                        // Remove items that are not in results
+                        for (i, item) in search_results_mut.items.clone().iter().enumerate().rev() {
+                            if !results.iter().any(|r| r.smart_compare(item)) {
+                                search_results_mut.remove(i);
+                            }
+                        }
+
+                        search_results_mut.lock();
                     }
                 }
             }
@@ -178,29 +206,108 @@ pub fn new(application: &libadwaita::Application) {
 
     entry_box.append(&entry_overlay);
 
+    window.connect_unmap({
+        let entry = entry.clone();
+        move |_| { entry.set_text(""); }
+    });
+
+    window.connect_map({
+        let entry = entry.clone();
+        move |_| { entry.grab_focus(); }
+    });
+
     window.add_controller(gesture::on_primary_click({
         let window = window.clone();
-        let entry = entry.clone();
-
         move |_, x, y| {
             if window.is_visible() && !overview_box.allocation().contains_point(x as i32, y as i32) {
                 window.hide();
-                entry.set_text("");
             }
         }
     }));
 
     window.add_controller(gesture::on_key_press({
         let window = window.clone();
-        let entry = entry.clone();
+        let search_results = search_results.clone();
 
         move |val, _| {
             if val.name() == Some("Escape".into()) {
                 window.hide();
-                entry.set_text("");
+            }
+
+            // ListBoxRow steals the events for the Arrow Keys if it's focused, so
+            // we can assume that it isn't focused if an event for Down is triggered
+            // on the window
+            else if val.name() == Some("Down".into()) {
+                let first_child = search_results.borrow().get_widget().first_child();
+
+                first_child.map(|child| child.downcast_ref::<gtk4::ListBoxRow>().map(|row| {
+                    row.grab_focus();
+
+                    if let Some(button) = get_button_from_row(row) {
+                        button.grab_focus();
+                    }
+                }));
             }
         }
     }));
+
+    {
+        let search_results_widget = search_results.borrow().get_widget();
+        search_results_widget.add_controller(gesture::on_key_press({
+            let search_results_widget = search_results_widget.clone();
+
+            move |val, _| {
+                if val.name() == Some("Up".into()) {
+                    let first_child = search_results_widget.first_child();
+
+                    first_child.map(|child| child.downcast_ref::<gtk4::ListBoxRow>().map(|row| {
+                        let button = get_button_from_row(row);
+
+                        if button.is_some_and(|b| b.has_focus()) {
+                            entry.grab_focus_without_selecting();
+                        }
+                    }));
+                }
+
+                else if ["Left", "Right", "BackSpace", "Delete"].contains(&val.name().unwrap_or_default().as_str()) {
+                    entry.grab_focus_without_selecting();
+
+                    let text = entry.text().to_string();
+                    match val.name().as_deref() {
+                        Some("Left" | "Right") => {
+                            let pos = match val.name().as_deref() {
+                                Some("Left") => text.len().saturating_sub(1),
+                                Some("Right") => text.len(),
+                                _ => 0
+                            };
+                    
+                            entry.select_region(pos as i32, pos as i32);
+                        },
+
+                        Some("BackSpace") => {
+                            if !text.is_empty() {
+                                let new_text = text[..text.len().saturating_sub(1)].to_string();
+                                entry.set_text(&new_text);
+                                entry.select_region(new_text.len() as i32, new_text.len() as i32);
+                            }
+                        },
+
+                        _ => {}
+                    }
+                }
+
+                // Assume the user wants to continue typing if the key is... well, on the keyboard
+                else if ALPHANUMERIC_SYMBOLIC_REGEX.is_match(&val.to_unicode().unwrap_or_default().to_string()) {
+                    entry.grab_focus_without_selecting();
+
+                    let mut text = entry.text().to_string();
+                    text.push(val.to_unicode().unwrap_or_default());
+                    entry.set_text(&text);
+                    entry.select_region(text.len() as i32, text.len() as i32);
+                }
+            }
+        }));
+    }
 
     ipc::listen_for_messages_local(move |message| {
         if message.as_str() == "toggle_overview" {
@@ -208,17 +315,14 @@ pub fn new(application: &libadwaita::Application) {
 
             if window.is_visible() {
                 window.hide();
-                entry.set_text("");
             } else {
                 window.set_monitor(monitor.as_ref());
                 window.show();
-                entry.grab_focus();
             }
         }
 
         else if message.as_str() == "hide_overview" {
             window.hide();
-            entry.set_text("");
         }
     });
 }

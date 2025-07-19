@@ -96,13 +96,14 @@ impl OverviewSearchModule for OverviewCalculatorModule {
         let unlocalized = ffi::unlocalizeExpression(query.to_owned());
         let result = add_suffix_to_notation(&ffi::calculateAndPrint(unlocalized, 1000));
 
-        vec![OverviewSearchItem {
-            title: result.clone(),
-            subtitle: Some("Math result".to_owned()),
-            icon: "accessories-calculator".to_owned(),
-            action: OverviewSearchItemAction::Copy(result),
-            action_text: "calculate".to_owned(),
-            query: None
-        }]
+        vec![OverviewSearchItem::new(
+            "calculator-result".to_owned(),
+            result.clone(),
+            Some("Math result".to_owned()),
+            "accessories-calculator".to_owned(),
+            "copy".to_owned(),
+            OverviewSearchItemAction::Copy(result),
+            None
+        )]
     }
 }

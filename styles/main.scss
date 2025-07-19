@@ -225,6 +225,22 @@
         padding: 8px;
         min-width: 448px;
 
+        .overview-search-item-row {
+            padding: 0px;
+        }
+
+        .overview-search-item-revealer {
+            transition: opacity 0.175s cubic-bezier(0.5, 0, 0, 1);
+
+            &.revealed {
+                opacity: 1;
+            }
+
+            &:not(.revealed) {
+                opacity: 0;
+            }
+        }
+
         .overview-search-item {
             @include large-text;
             background: $background-color-primary;
