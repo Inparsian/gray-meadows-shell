@@ -82,7 +82,7 @@ pub fn new() -> gtk4::Box {
                         let color_variable_name = if WORKSPACE_MASK.lock().unwrap().mask & (1 << i) != 0 {
                             "foreground-color-primary"
                         } else {
-                            "foreground-color-third"
+                            "foreground-color-quinary"
                         };
 
                         if let Some(color) = scss::get_color(color_variable_name) {

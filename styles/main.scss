@@ -102,12 +102,12 @@
                 border-radius: 0px;
 
                 &:hover, &:focus {
-                    background: $background-color-third;
+                    background: $background-color-tertiary;
                     outline: none;
                 }
 
                 &:active {
-                    background: $background-color-fourth;
+                    background: $background-color-quaternary;
                 }
 
                 .material-icons {
@@ -132,14 +132,14 @@
                     border-radius: 0px;
 
                     &:hover {
-                        background: $background-color-third;
+                        background: $background-color-tertiary;
                     }
                 }
             }
 
             .google-translate-language-select-filter-box {
                 background: $background-color-secondary;
-                border: 1px solid $background-color-third;
+                border: 1px solid $background-color-tertiary;
                 padding: 8px;
 
                 .google-translate-language-select-filter-entry {
@@ -159,15 +159,15 @@
                     min-height: 0px;
                     margin-left: 4px;
                     padding: 0px;
-                    color: #777;
+                    color: $foreground-color-quaternary;
 
                     &:hover, &:focus {
-                        color: #888;
+                        color: $foreground-color-tertiary;
                         outline: none;
                     }
 
                     &:active {
-                        color: #aaa;
+                        color: $foreground-color-secondary;
                     }
                 }
             }
@@ -198,7 +198,7 @@
             }
 
             .color-picker-saturation-lightness {
-                background: #1b1b1b;
+                background: $background-color-secondary;
 
                 .color-picker-saturation-lightness-trough {
                     min-height: 4px;
@@ -227,7 +227,7 @@
             min-width: 40px;
             min-height: 40px;
             background: $background-color-secondary;
-            border: 1px solid $background-color-third;
+            border: 1px solid $background-color-tertiary;
         }
 
         .sidebar-right-header-label {
@@ -252,12 +252,12 @@
             font-weight: normal;
 
             &:hover, &:focus {
-                background: $background-color-third;
+                background: $background-color-tertiary;
                 outline: none;
             }
 
             &:active {
-                background: $background-color-fourth;
+                background: $background-color-quaternary;
             }
         }
     }
@@ -288,7 +288,7 @@
 
             selection {
                 background-color: $foreground-color-select;
-                color: $background-color-fourth;
+                color: $background-color-quaternary;
             }
 
             caret-color: transparent;
@@ -332,7 +332,7 @@
             border-radius: 0px;
 
             &:hover, &:focus {
-                background: $background-color-third;
+                background: $background-color-tertiary;
                 outline: none;
             }
 
@@ -349,7 +349,7 @@
             }
 
             &:active {
-                background: $background-color-fourth;
+                background: $background-color-quaternary;
             }
 
             .overview-search-item-box {
@@ -408,12 +408,12 @@
         min-height: 96px;
 
         &:hover, &:focus {
-            background: $background-color-third;
+            background: $background-color-tertiary;
             outline: none;
         }
 
         &:active {
-            background: $background-color-fourth;
+            background: $background-color-quaternary;
         }
 
         .session-button-icon {
@@ -547,7 +547,7 @@
                             }
 
                             &:active {
-                                background: $background-color-third;
+                                background: $background-color-tertiary;
                             }
                         }
                     }
