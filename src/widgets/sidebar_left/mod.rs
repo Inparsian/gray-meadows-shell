@@ -1,19 +1,16 @@
-pub mod tabs;
 pub mod modules;
 
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
-use futures_signals::signal::{Mutable, SignalExt};
+use futures_signals::signal::SignalExt;
 
-use crate::{helpers::gesture, ipc, singletons::hyprland};
-
-static TABS: [&str; 2] = [
-    "translate",
-    "color_picker"
-];
+use crate::{helpers::gesture, ipc, singletons::hyprland, widgets::common::tabs};
 
 pub fn new(application: &libadwaita::Application) {
-    let current_tab = Mutable::new(Some("color_picker".to_owned()));
+    let tabs = tabs::Tabs::new("sidebar-left-tab", true);
+    tabs.current_tab.set(Some("color_picker".to_owned()));
+    tabs.add_tab("translate", "translate".to_owned(), "g_translate");
+    tabs.add_tab("color picker", "color_picker".to_owned(), "palette");
 
     view! {
         content = gtk4::Stack {
@@ -32,26 +29,7 @@ pub fn new(application: &libadwaita::Application) {
             set_hexpand: true,
             set_vexpand: true,
 
-            gtk4::Box {
-                set_orientation: gtk4::Orientation::Horizontal,
-                set_spacing: 0,
-                add_controller: gesture::on_vertical_scroll({
-                    let current_tab = current_tab.clone();
-
-                    move |dy| {
-                        let current_tab_index = TABS.iter().position(|&tab| tab == current_tab.get_cloned().unwrap_or_default()).unwrap_or(0);
-                        if dy < 0.0 && current_tab_index > 0 {
-                            current_tab.set(Some(TABS[current_tab_index - 1].to_owned()));
-                        } else if dy > 0.0 && current_tab_index < TABS.len() - 1 {
-                            current_tab.set(Some(TABS[current_tab_index + 1].to_owned()));
-                        }
-                    }
-                }),
-
-                append: &tabs::new("translate", "translate".to_owned(), "g_translate", &current_tab),
-                append: &tabs::new("color picker", "color_picker".to_owned(), "palette", &current_tab)
-            },
-
+            append: &tabs.widget,
             append: &content
         },
 
@@ -72,7 +50,7 @@ pub fn new(application: &libadwaita::Application) {
         }
     };
 
-    let current_tab_future = current_tab.signal_cloned().for_each(move |tab| {
+    let current_tab_future = tabs.current_tab.signal_cloned().for_each(move |tab| {
         content.set_visible_child_name(tab.unwrap_or_default().as_str());
 
         async {}

@@ -1,3 +1,4 @@
+pub mod common;
 pub mod bar;
 pub mod overview;
 pub mod session;
