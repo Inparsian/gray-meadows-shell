@@ -4,13 +4,11 @@ use futures_signals::signal::{Mutable, SignalExt};
 
 use crate::helpers::gesture;
 
-#[derive(Clone)]
 pub struct Tab {
     pub name: String,
     pub widget: gtk4::Button
 }
 
-#[derive(Clone)]
 pub struct Tabs {
     pub tab_class_name: String,
     pub only_current_tab_visible: bool,
