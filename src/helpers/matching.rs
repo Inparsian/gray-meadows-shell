@@ -1,5 +1,3 @@
-#![allow(dead_code)]
-
 pub fn lazy_match(haystack: &str, needle: &str) -> bool {
     let mut needle_chars: Vec<char> = needle.chars().collect();
     needle_chars.dedup();
@@ -15,8 +13,6 @@ pub fn lazy_match(haystack: &str, needle: &str) -> bool {
 
 pub fn lazy_match_indices(haystack: &str, needle: &str) -> Vec<(usize, usize)> {
     let mut needle_chars: Vec<char> = needle.chars().collect();
-    needle_chars.dedup();
-
     let mut indices: Vec<(usize, usize)> = Vec::new();
 
     for (i, c) in haystack.chars().enumerate() {
