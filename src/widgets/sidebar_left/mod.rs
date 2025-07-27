@@ -4,13 +4,13 @@ use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 use futures_signals::signal::SignalExt;
 
-use crate::{helpers::gesture, ipc, singletons::hyprland, widgets::common::tabs};
+use crate::{helpers::gesture, ipc, singletons::hyprland, widgets::common::tabs::{TabSize, Tabs}};
 
 pub fn new(application: &libadwaita::Application) {
-    let tabs = tabs::Tabs::new("sidebar-left-tab", true);
+    let tabs = Tabs::new(TabSize::Large, true);
     tabs.current_tab.set(Some("color_picker".to_owned()));
-    tabs.add_tab("translate", "translate".to_owned(), "g_translate");
-    tabs.add_tab("color picker", "color_picker".to_owned(), "palette");
+    tabs.add_tab("translate", "translate".to_owned(), Some("g_translate"));
+    tabs.add_tab("color picker", "color_picker".to_owned(), Some("palette"));
 
     view! {
         content = gtk4::Stack {

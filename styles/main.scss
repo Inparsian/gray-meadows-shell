@@ -1,5 +1,6 @@
 @import "user.scss";
 @import "mixins.scss";
+@import "common.scss";
 
 .dot-separator {
     background: $foreground-color-primary;
@@ -21,62 +22,6 @@
         color: $foreground-color-primary;
         padding: 8px;
         min-width: 400px;
-
-        .sidebar-left-tab {
-            background: transparent;
-            padding-top: 4px;
-            padding-bottom: 4px;
-            padding-left: 8px;
-            padding-right: 8px;
-            border-radius: 0px;
-            color: $foreground-color-primary;
-            font-weight: normal;
-            min-width: 16px;
-            min-height: 16px;
-    
-            transition-property: border-bottom, color;
-            transition-duration: 0.25s;
-    
-            &:not(.active) {
-                border-bottom: 1px solid transparent;
-                color: rgba($foreground-color-primary, 0.6666666667);
-            
-                &:hover, &:focus {
-                    color: rgba($foreground-color-primary, 0.8);
-                    outline: none;
-                }
-            
-                &:active {
-                    color: rgba($foreground-color-primary, 0.9333333333);
-                }
-            }
-        
-            &.active {
-                border-bottom: 1px solid $foreground-color-primary;
-                color: $foreground-color-primary;
-            
-                &:hover, &:focus {
-                    color: $foreground-color-primary-focus;
-                    outline: none;
-                }
-            
-                &:active {
-                    color: $foreground-color-primary-active;
-                }
-            }
-        
-            .sidebar-left-tab-icon {
-                @include material-icons;
-                font-size: 20px;
-                margin-bottom: 3px;
-            }
-        
-            .sidebar-left-tab-label {
-                @include large-text;
-                margin-left: 6px;
-                font-weight: normal;
-            }
-        }
 
         .sidebar-left-content {
             padding: 8px;
