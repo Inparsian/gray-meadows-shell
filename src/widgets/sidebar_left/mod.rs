@@ -12,8 +12,8 @@ pub fn new(application: &libadwaita::Application) {
     tabs.add_tab("color picker", "color_picker".to_owned(), Some("palette"));
 
     let tabs_stack = TabsStack::new(&tabs, None);
-    tabs_stack.add_tab(Some("translate"), modules::translate::new());
-    tabs_stack.add_tab(Some("color_picker"), modules::color_picker::new());
+    tabs_stack.add_tab(Some("translate"), &modules::translate::new());
+    tabs_stack.add_tab(Some("color_picker"), &modules::color_picker::new());
 
     view! {
         left_sidebar_box = gtk4::Box {

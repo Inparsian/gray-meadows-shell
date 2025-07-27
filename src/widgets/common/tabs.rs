@@ -83,7 +83,6 @@ impl Tabs {
                 .label(label)
                 .css_classes(["tab-label".to_owned()])
                 .xalign(0.0)
-                .ellipsize(gtk4::pango::EllipsizeMode::End)
                 .build();
 
             if self.only_current_tab_visible {
@@ -181,7 +180,7 @@ impl TabsStack {
         Self { widget }
     }
 
-    pub fn add_tab(&self, name: Option<&str>, widget: impl IsA<gtk4::Widget>) {
-        self.widget.add_named(&widget, name);
+    pub fn add_tab(&self, name: Option<&str>, widget: &impl IsA<gtk4::Widget>) {
+        self.widget.add_named(widget, name);
     }
 }

@@ -4,7 +4,7 @@ mod saturation_value_picker;
 use futures_signals::signal::{Mutable, SignalExt};
 use gtk4::prelude::*;
 
-use crate::color::model::Hsv;
+use crate::{color::model::Hsv, widgets::common::tabs::{TabSize, Tabs, TabsStack}};
 
 pub fn new() -> gtk4::Box {
     let hsv = Mutable::new(Hsv {
@@ -15,6 +15,14 @@ pub fn new() -> gtk4::Box {
 
     let hue_picker = hue_picker::HuePicker::new(&hsv);
     let saturation_value_picker = saturation_value_picker::SaturationValuePicker::new(&hsv);
+
+    let tabs = Tabs::new(TabSize::Normal, false);
+    tabs.current_tab.set(Some("hsv".to_owned()));
+    tabs.add_tab("HSV", "hsv".to_owned(), None);
+    tabs.add_tab("RGBA", "rgba".to_owned(), None);
+    tabs.add_tab("HEX", "hex".to_owned(), None);
+
+    let tabs_stack = TabsStack::new(&tabs, None);
 
     view! {
         test_hsv_label = gtk4::Label {
@@ -53,11 +61,14 @@ pub fn new() -> gtk4::Box {
                 append: saturation_value_picker.get_widget()
             },
 
-            append: &test_hsv_label,
-            append: &test_rgba_label,
-            append: &test_hex_label
+            append: &tabs.widget,
+            append: &tabs_stack.widget
         }
     }
+
+    tabs_stack.add_tab(Some("hsv"), &test_hsv_label);
+    tabs_stack.add_tab(Some("rgba"), &test_rgba_label);
+    tabs_stack.add_tab(Some("hex"), &test_hex_label);
 
     let hsv_future = hsv.signal().for_each(move |hsv| {
         let rgba = hsv.as_rgba();
