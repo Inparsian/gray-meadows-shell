@@ -154,3 +154,34 @@ impl Tabs {
         widget
     }
 }
+
+pub struct TabsStack {
+    pub widget: gtk4::Stack
+}
+
+impl TabsStack {
+    pub fn new(tabs: &Tabs, class_name: Option<&str>) -> Self {
+        let widget = gtk4::Stack::new();
+        widget.set_transition_type(gtk4::StackTransitionType::SlideLeftRight);
+        widget.set_transition_duration(150);
+        widget.set_css_classes(&[class_name.unwrap_or("tabs-stack")]);
+
+        let tabs_future = tabs.current_tab.signal_cloned().for_each({
+            let widget = widget.clone();
+
+            move |tab| {
+                widget.set_visible_child_name(tab.as_deref().unwrap_or_default());
+                
+                async {}
+            }
+        });
+
+        gtk4::glib::spawn_future_local(tabs_future);
+
+        Self { widget }
+    }
+
+    pub fn add_tab(&self, name: Option<&str>, widget: impl IsA<gtk4::Widget>) {
+        self.widget.add_named(&widget, name);
+    }
+}

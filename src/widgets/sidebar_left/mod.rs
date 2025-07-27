@@ -2,9 +2,8 @@ pub mod modules;
 
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
-use futures_signals::signal::SignalExt;
 
-use crate::{helpers::gesture, ipc, singletons::hyprland, widgets::common::tabs::{TabSize, Tabs}};
+use crate::{helpers::gesture, ipc, singletons::hyprland, widgets::common::tabs::{TabSize, Tabs, TabsStack}};
 
 pub fn new(application: &libadwaita::Application) {
     let tabs = Tabs::new(TabSize::Large, true);
@@ -12,16 +11,11 @@ pub fn new(application: &libadwaita::Application) {
     tabs.add_tab("translate", "translate".to_owned(), Some("g_translate"));
     tabs.add_tab("color picker", "color_picker".to_owned(), Some("palette"));
 
+    let tabs_stack = TabsStack::new(&tabs, None);
+    tabs_stack.add_tab(Some("translate"), modules::translate::new());
+    tabs_stack.add_tab(Some("color_picker"), modules::color_picker::new());
+
     view! {
-        content = gtk4::Stack {
-            set_css_classes: &["sidebar-left-content"],
-            set_transition_type: gtk4::StackTransitionType::SlideLeftRight,
-            set_transition_duration: 150,
-
-            add_named: (&modules::translate::new(), Some("translate")),
-            add_named: (&modules::color_picker::new(), Some("color_picker"))
-        },
-
         left_sidebar_box = gtk4::Box {
             set_css_classes: &["left-sidebar-box"],
             set_orientation: gtk4::Orientation::Vertical,
@@ -30,7 +24,7 @@ pub fn new(application: &libadwaita::Application) {
             set_vexpand: true,
 
             append: &tabs.widget,
-            append: &content
+            append: &tabs_stack.widget
         },
 
         window = gtk4::ApplicationWindow {
@@ -49,12 +43,6 @@ pub fn new(application: &libadwaita::Application) {
             set_child: Some(&left_sidebar_box)
         }
     };
-
-    let current_tab_future = tabs.current_tab.signal_cloned().for_each(move |tab| {
-        content.set_visible_child_name(tab.unwrap_or_default().as_str());
-
-        async {}
-    });
 
     window.add_controller(gesture::on_primary_up({
         let window = window.clone();
@@ -92,6 +80,4 @@ pub fn new(application: &libadwaita::Application) {
             window.hide();
         }
     });
-
-    gtk4::glib::spawn_future_local(current_tab_future);
 }
