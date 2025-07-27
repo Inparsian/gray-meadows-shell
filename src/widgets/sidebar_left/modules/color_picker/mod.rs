@@ -21,30 +21,15 @@ pub fn new() -> gtk4::Box {
     tabs.add_tab("HSV", "hsv".to_owned(), None);
     tabs.add_tab("RGBA", "rgba".to_owned(), None);
     tabs.add_tab("HEX", "hex".to_owned(), None);
+    tabs.add_tab("INT", "int".to_owned(), None);
 
     let tabs_stack = TabsStack::new(&tabs, None);
 
     view! {
-        test_hsv_label = gtk4::Label {
-            set_text: {
-                let hsv = hsv.get_cloned();
-                &format!("HSV: {:.2}, {:.2}, {:.2}", hsv.hue, hsv.saturation, hsv.value)
-            }
-        },
-        
-        test_rgba_label = gtk4::Label {
-            set_text: {
-                let rgba = hsv.get_cloned().as_rgba();
-                &format!("RGBA: {:.2}, {:.2}, {:.2}, {:.2}", rgba.red, rgba.green, rgba.blue, rgba.alpha)
-            }
-        },
-
-        test_hex_label = gtk4::Label {
-            set_text: {
-                let hsv = hsv.get_cloned().as_hex();
-                &format!("Hex: {}", hsv)
-            }
-        },
+        test_hsv_label = gtk4::Label {},
+        test_rgba_label = gtk4::Label {},
+        test_hex_label = gtk4::Label {},
+        test_int_label = gtk4::Label {},
 
         widget = gtk4::Box {
             set_css_classes: &["ColorPicker"],
@@ -69,14 +54,17 @@ pub fn new() -> gtk4::Box {
     tabs_stack.add_tab(Some("hsv"), &test_hsv_label);
     tabs_stack.add_tab(Some("rgba"), &test_rgba_label);
     tabs_stack.add_tab(Some("hex"), &test_hex_label);
+    tabs_stack.add_tab(Some("int"), &test_int_label);
 
     let hsv_future = hsv.signal().for_each(move |hsv| {
         let rgba = hsv.as_rgba();
         let hex = hsv.as_hex();
+        let int = hsv.as_int();
 
         test_hsv_label.set_text(&format!("HSV: {:.2}, {:.2}, {:.2}", hsv.hue, hsv.saturation, hsv.value));
         test_rgba_label.set_text(&format!("RGBA: {:.2}, {:.2}, {:.2}, {:.2}", rgba.red, rgba.green, rgba.blue, rgba.alpha));
         test_hex_label.set_text(&format!("Hex: {}", hex));
+        test_int_label.set_text(&format!("Int: {}", int));
 
         async {}
     });

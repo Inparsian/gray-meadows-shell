@@ -86,4 +86,9 @@ impl Hsv {
             bb.round() as u8
         )
     }
+
+    pub fn as_int(self) -> u32 {
+        // hex -> int
+        u32::from_str_radix(self.as_hex().trim_start_matches('#'), 16).unwrap_or(0)
+    }
 }
