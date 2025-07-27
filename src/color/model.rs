@@ -98,6 +98,11 @@ impl Hsv {
         let hex = self.as_hex();
         Hsl::from_hex(&hex)
     }
+
+    pub fn as_cmyk(&self) -> Cmyk {
+        let hex = self.as_hex();
+        Cmyk::from_hex(&hex)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -176,5 +181,47 @@ impl Hsl {
             gg.round() as u8,
             bb.round() as u8
         )
+    }
+}
+
+pub struct Cmyk {
+    pub cyan: u8,
+    pub magenta: u8,
+    pub yellow: u8,
+    pub black: u8
+}
+
+impl Cmyk {
+    pub fn from_hex(hex: &str) -> Self {
+        let rgba = Rgba::from_hex(hex);
+        let r_normalized = rgba.red as f64 / 255.0;
+        let g_normalized = rgba.green as f64 / 255.0;
+        let b_normalized = rgba.blue as f64 / 255.0;
+
+        let black = 1.0 - r_normalized.max(g_normalized).max(b_normalized);
+        let cyan = (1.0 - r_normalized - black) / (1.0 - black);
+        let magenta = (1.0 - g_normalized - black) / (1.0 - black);
+        let yellow = (1.0 - b_normalized - black) / (1.0 - black);
+
+        Self {
+            cyan: (cyan * 100.0).round() as u8,
+            magenta: (magenta * 100.0).round() as u8,
+            yellow: (yellow * 100.0).round() as u8,
+            black: (black * 100.0).round() as u8
+        }
+    }
+
+    #[allow(dead_code)] // TODO: Remove when CMYK -> HSV conversion is implemented in the GUI
+    pub fn as_hex(&self) -> String {
+        let cdiv = self.cyan as f64 / 100.0;
+        let mdiv = self.magenta as f64 / 100.0;
+        let ydiv = self.yellow as f64 / 100.0;
+        let kdiv = self.black as f64 / 100.0;
+
+        let r = (1.0 - cdiv.mul_add(1.0 - kdiv, kdiv)) * 255.0;
+        let g = (1.0 - mdiv.mul_add(1.0 - kdiv, kdiv)) * 255.0;
+        let b = (1.0 - ydiv.mul_add(1.0 - kdiv, kdiv)) * 255.0;
+
+        format!("#{:02x}{:02x}{:02x}", r.round() as u8, g.round() as u8, b.round() as u8)
     }
 }
