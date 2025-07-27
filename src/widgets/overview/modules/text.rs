@@ -18,6 +18,12 @@ enum TextOperation {
     Hex // hex
 }
 
+fn all_operations() -> Vec<TextOperation> {
+    use self::TextOperation::*;
+
+    vec![Uppercase, Lowercase, Reverse, Shuffle, Mock, Vaporwave, Uwu, Leet, Rot13, Binary, Hex]
+}
+
 fn digest(input: &str, operation: &TextOperation) -> String {
     match operation {
         TextOperation::Uppercase => input.to_uppercase(),
@@ -101,7 +107,7 @@ fn digest(input: &str, operation: &TextOperation) -> String {
                     let first = if c.is_ascii_lowercase() { 
                         b'a' 
                     } else { 
-                        b'A' 
+                        b'A'
                     };
 
                     (((c as u8 - first + 13) % 26) + first) as char
@@ -133,19 +139,7 @@ impl OverviewSearchModule for OverviewTextModule {
     fn run(&self, query: &str) -> Vec<OverviewSearchItem> {
         let mut results = Vec::new();
 
-        for operation in [
-            TextOperation::Uppercase,
-            TextOperation::Lowercase,
-            TextOperation::Reverse,
-            TextOperation::Shuffle,
-            TextOperation::Mock,
-            TextOperation::Vaporwave,
-            TextOperation::Uwu,
-            TextOperation::Leet,
-            TextOperation::Rot13,
-            TextOperation::Binary,
-            TextOperation::Hex
-        ] {
+        for operation in all_operations() {
             let result = digest(query, &operation);
             
             if query != result {
