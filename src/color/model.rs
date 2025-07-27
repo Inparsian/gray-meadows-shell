@@ -116,38 +116,40 @@ impl Hsl {
     pub fn from_hex(hex: &str) -> Self {
         let rgba = Rgba::from_hex(hex);
 
-        let max = rgba.red.max(rgba.green).max(rgba.blue) as f64;
-        let min = rgba.red.min(rgba.green).min(rgba.blue) as f64;
+        let r_normalized = rgba.red as f64 / 255.0;
+        let g_normalized = rgba.green as f64 / 255.0;
+        let b_normalized = rgba.blue as f64 / 255.0;
+
+        let max = r_normalized.max(g_normalized).max(b_normalized);
+        let min = r_normalized.min(g_normalized).min(b_normalized);
         let delta = max - min;
 
-        let lightness = f64::midpoint(max, min) * 100.0;
-
-        let mut hue = if delta < FLOAT_TOLERANCE {
+        let hue = if delta == 0.0 {
             0.0
-        } else if (max - rgba.red as f64).abs() < FLOAT_TOLERANCE {
-            ((rgba.green as f64 - rgba.blue as f64) / delta) % 6.0 * 60.0
-        } else if (max - rgba.green as f64).abs() < FLOAT_TOLERANCE {
-            ((rgba.blue as f64 - rgba.red as f64) / delta + 2.0) * 60.0
+        } else if (max - r_normalized).abs() < FLOAT_TOLERANCE {
+            ((g_normalized - b_normalized) / delta + (if g_normalized < b_normalized { 6.0 } else { 0.0 })) * 60.0
+        } else if (max - g_normalized).abs() < FLOAT_TOLERANCE {
+            ((b_normalized - r_normalized) / delta + 2.0) * 60.0
         } else {
-            ((rgba.red as f64 - rgba.green as f64) / delta + 4.0) * 60.0
+            ((r_normalized - g_normalized) / delta + 4.0) * 60.0
         };
 
-        if hue < 0.0 {
-            hue += 360.0;
-        }
+        let lightness = f64::midpoint(max, min);
 
-        let saturation = if (max - min).abs() < FLOAT_TOLERANCE { 
-            0.0 
-        } else if lightness < 50.0 { 
-            (delta / (max + min)) * 100.0 
-        } else { 
-            (delta / (2.0 - max - min)) * 100.0 
+        let saturation = if delta > 0.0 {
+            delta / if lightness <= 0.5 {
+                max + min
+            } else {
+                2.0 - max - min
+            }
+        } else {
+            0.0
         };
 
         Self {
             hue,
-            saturation,
-            lightness
+            saturation: (saturation * 100.0).round(),
+            lightness: (lightness * 100.0).round()
         }
     }
 
