@@ -109,42 +109,22 @@ pub struct Hsl {
 
 impl Hsl {
     pub fn from_hex(hex: &str) -> Self {
-        let hex = hex.trim_start_matches('#');
-        let mut components: Vec<u8> = match hex.len() {
-            3 | 4 => hex.chars()
-                .map(|c| u8::from_str_radix(&c.to_string().repeat(2), 16).unwrap_or_default())
-                .collect(),
+        let rgba = Rgba::from_hex(hex);
 
-            6 | 8 => (0..hex.len()).step_by(2)
-                .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).unwrap_or_default())
-                .collect(),
-
-            _ => vec![0, 0, 0, 255], // Default to black with full opacity
-        };
-
-        // Default alpha to 255 if not provided
-        if components.len() == 3 {
-            components.push(255);
-        }
-
-        let r = components[0] as f64 / 255.0;
-        let g = components[1] as f64 / 255.0;
-        let b = components[2] as f64 / 255.0;
-
-        let max = r.max(g).max(b);
-        let min = r.min(g).min(b);
+        let max = rgba.red.max(rgba.green).max(rgba.blue) as f64;
+        let min = rgba.red.min(rgba.green).min(rgba.blue) as f64;
         let delta = max - min;
 
         let lightness = f64::midpoint(max, min) * 100.0;
 
         let mut hue = if delta < FLOAT_TOLERANCE {
             0.0
-        } else if (max - r).abs() < FLOAT_TOLERANCE {
-            ((g - b) / delta) % 6.0 * 60.0
-        } else if (max - g).abs() < FLOAT_TOLERANCE {
-            ((b - r) / delta + 2.0) * 60.0
+        } else if (max - rgba.red as f64).abs() < FLOAT_TOLERANCE {
+            ((rgba.green as f64 - rgba.blue as f64) / delta) % 6.0 * 60.0
+        } else if (max - rgba.green as f64).abs() < FLOAT_TOLERANCE {
+            ((rgba.blue as f64 - rgba.red as f64) / delta + 2.0) * 60.0
         } else {
-            ((r - g) / delta + 4.0) * 60.0
+            ((rgba.red as f64 - rgba.green as f64) / delta + 4.0) * 60.0
         };
 
         if hue < 0.0 {
