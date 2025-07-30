@@ -151,6 +151,66 @@
                     border-style: solid;
                 }
             }
+
+            .color-picker-tabs-stack {
+                padding: 0px;
+            }
+
+            .color-picker-entry {
+                background: #1b1b1b;
+                border-radius: 0px;
+                min-width: 0px;
+                min-height: 0px;
+                padding: 8px;
+                border: 1px solid #242424;
+                box-shadow: none;
+            }
+
+            .color-picker-spinbutton {
+                background: #1b1b1b;
+                color: #E2E2E2;
+                border: 1px solid #242424;
+                min-height: 0px;
+                min-width: 0px;
+                padding: 0px;
+                border-radius: 0px;
+                box-shadow: none;
+
+                entry {
+                    background: transparent;
+                    color: #E2E2E2;
+                    padding: 8px;
+                    min-height: 0px;
+                    min-width: 0px;
+                    border-radius: 0px;
+                    outline: none;
+                    box-shadow: none;
+                }
+
+                button {
+                    background: transparent;
+                    color: #777;
+                    border: 0px;
+                    border-radius: 0px;
+                    padding: 0px;
+                    padding-right: 4px;
+                    min-height: 0px;
+                    min-width: 0px;
+
+                    &:hover {
+                        color: #888;
+                        outline: none;
+                    }
+
+                    &:active {
+                        color: #aaa;
+                    }
+
+                    .material-icons {
+                        font-size: 16px;
+                    }
+                }
+            }
         }
     }
 }

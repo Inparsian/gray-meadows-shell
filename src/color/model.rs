@@ -96,6 +96,34 @@ pub struct Hsv {
 }
 
 impl Hsv {
+    pub fn from_hex(hex: &str) -> Self {
+        let rgba = Rgba::from_hex(hex);
+
+        let max = rgba.red.max(rgba.green).max(rgba.blue) as f64;
+        let min = rgba.red.min(rgba.green).min(rgba.blue) as f64;
+        let delta = max - min;
+
+        let hue = if delta == 0.0 {
+            0.0
+        } else if (max - rgba.red as f64).abs() < FLOAT_TOLERANCE {
+            ((rgba.green as f64 - rgba.blue as f64) / delta + (if rgba.green < rgba.blue { 6.0 } else { 0.0 })) * 60.0
+        } else if (max - rgba.green as f64).abs() < FLOAT_TOLERANCE {
+            ((rgba.blue as f64 - rgba.red as f64) / delta + 2.0) * 60.0
+        } else {
+            ((rgba.red as f64 - rgba.green as f64) / delta + 4.0) * 60.0
+        };
+
+        let saturation = if max == 0.0 {
+            0.0
+        } else {
+            (delta / max) * 100.0
+        };
+
+        let value = (max / 255.0) * 100.0;
+
+        Self { hue, saturation, value }
+    }
+
     pub fn as_hex(&self) -> String {
         let chroma = (self.value / 100.0) * (self.saturation / 100.0);
         let intermediate = chroma * (1.0 - ((self.hue / 60.0) % 2.0 - 1.0).abs());
