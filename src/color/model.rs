@@ -43,6 +43,49 @@ impl Rgba {
             format!("#{:02x}{:02x}{:02x}", self.red, self.green, self.blue)
         }
     }
+
+    pub fn as_linear(&self) -> LinearRgba {
+        fn gamma_to_linear(value: f64) -> f64 {
+            if value <= 0.04045 {
+                value / 12.92
+            } else {
+                ((value + 0.055) / 1.055).powf(2.4)
+            }
+        }
+
+        LinearRgba {
+            red: gamma_to_linear(self.red as f64 / 255.0),
+            green: gamma_to_linear(self.green as f64 / 255.0),
+            blue: gamma_to_linear(self.blue as f64 / 255.0),
+            alpha: self.alpha as f64 / 255.0
+        }
+    }
+}
+
+pub struct LinearRgba {
+    pub red: f64,
+    pub green: f64,
+    pub blue: f64,
+    pub alpha: f64
+}
+
+impl LinearRgba {
+    pub fn as_rgba(&self) -> Rgba {
+        fn linear_to_gamma(value: f64) -> u8 {
+            if value <= 0.0031308 {
+                (value * 12.92 * 255.0).round() as u8
+            } else {
+                ((1.055 * value.powf(1.0 / 2.4)) - 0.055).mul_add(255.0, 0.0).round() as u8
+            }
+        }
+
+        Rgba {
+            red: linear_to_gamma(self.red),
+            green: linear_to_gamma(self.green),
+            blue: linear_to_gamma(self.blue),
+            alpha: (self.alpha * 255.0).round() as u8
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
