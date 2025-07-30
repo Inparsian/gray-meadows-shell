@@ -21,7 +21,7 @@ pub fn new() -> gtk4::Box {
     tabs.current_tab.set(Some("hsv".to_owned()));
     tabs.add_tab("HEX", "hex".to_owned(), None);
     tabs.add_tab("INT", "int".to_owned(), None);
-    tabs.add_tab("RGBA", "rgba".to_owned(), None);
+    tabs.add_tab("RGB", "rgb".to_owned(), None);
     tabs.add_tab("HSV", "hsv".to_owned(), None);
     tabs.add_tab("HSL", "hsl".to_owned(), None);
     tabs.add_tab("CMYK", "cmyk".to_owned(), None);
@@ -29,6 +29,7 @@ pub fn new() -> gtk4::Box {
 
     let tabs_stack = TabsStack::new(&tabs, Some("color-picker-tabs-stack"));
 
+    // !! These will be separated into their own modules later
     let mut hex_fields = Fields::new();
     hex_fields.add_field(fields::FieldType::Entry, {
         let hsv = hsv.clone();
@@ -50,8 +51,41 @@ pub fn new() -> gtk4::Box {
         }
     });
 
+    let mut rgb_fields = Fields::new();
+    rgb_fields.add_field(fields::FieldType::SpinButton(gtk4::Adjustment::new(0.0, 0.0, 255.0, 1.0, 10.0, 0.0)), {
+        let hsv = hsv.clone();
+        move |result| {
+            if let fields::FieldUpdate::Float(value) = result {
+                let mut rgba = hsv.get().as_rgba();
+                rgba.red = value as u8;
+                hsv.set(Hsv::from_hex(&rgba.as_hex()));
+            }
+        }
+    });
+
+    rgb_fields.add_field(fields::FieldType::SpinButton(gtk4::Adjustment::new(0.0, 0.0, 255.0, 1.0, 10.0, 0.0)), {
+        let hsv = hsv.clone();
+        move |result| {
+            if let fields::FieldUpdate::Float(value) = result {
+                let mut rgba = hsv.get().as_rgba();
+                rgba.green = value as u8;
+                hsv.set(Hsv::from_hex(&rgba.as_hex()));
+            }
+        }
+    });
+
+    rgb_fields.add_field(fields::FieldType::SpinButton(gtk4::Adjustment::new(0.0, 0.0, 255.0, 1.0, 10.0, 0.0)), {
+        let hsv = hsv.clone();
+        move |result| {
+            if let fields::FieldUpdate::Float(value) = result {
+                let mut rgba = hsv.get().as_rgba();
+                rgba.blue = value as u8;
+                hsv.set(Hsv::from_hex(&rgba.as_hex()));
+            }
+        }
+    });
+
     view! {
-        test_rgba_label = gtk4::Label {},
         test_hsv_label = gtk4::Label {},
         test_hsl_label = gtk4::Label {},
         test_cmyk_label = gtk4::Label {},
@@ -79,7 +113,7 @@ pub fn new() -> gtk4::Box {
 
     tabs_stack.add_tab(Some("hex"), &hex_fields.widget);
     tabs_stack.add_tab(Some("int"), &int_fields.widget);
-    tabs_stack.add_tab(Some("rgba"), &test_rgba_label);
+    tabs_stack.add_tab(Some("rgb"), &rgb_fields.widget);
     tabs_stack.add_tab(Some("hsv"), &test_hsv_label);
     tabs_stack.add_tab(Some("hsl"), &test_hsl_label);
     tabs_stack.add_tab(Some("cmyk"), &test_cmyk_label);
@@ -95,7 +129,11 @@ pub fn new() -> gtk4::Box {
 
         hex_fields.update(vec![fields::FieldUpdate::Text(hex)]);
         int_fields.update(vec![fields::FieldUpdate::Text(int.to_string())]);
-        test_rgba_label.set_text(&format!("RGBA: {:.2}, {:.2}, {:.2}, {:.2}", rgba.red, rgba.green, rgba.blue, rgba.alpha));
+        rgb_fields.update(vec![
+            fields::FieldUpdate::Float(rgba.red as f64), 
+            fields::FieldUpdate::Float(rgba.green as f64),
+            fields::FieldUpdate::Float(rgba.blue as f64)
+        ]);
         test_hsv_label.set_text(&format!("HSV: {:.2}, {:.2}, {:.2}", hsv.hue, hsv.saturation, hsv.value));
         test_hsl_label.set_text(&format!("HSL: {:.2}, {:.2}, {:.2}", hsl.hue, hsl.saturation, hsl.lightness));
         test_cmyk_label.set_text(&format!("CMYK: {:.2}, {:.2}, {:.2}, {:.2}", cmyk.cyan, cmyk.magenta, cmyk.yellow, cmyk.black));

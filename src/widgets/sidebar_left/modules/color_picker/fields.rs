@@ -87,12 +87,11 @@ pub struct Fields {
 
 impl Fields {
     pub fn new() -> Self {
-        let widget = gtk4::Box::new(gtk4::Orientation::Vertical, 12);
+        let widget = gtk4::Box::new(gtk4::Orientation::Horizontal, 8);
         widget.set_css_classes(&["color-picker-fields-box"]);
         widget.set_hexpand(true);
         widget.set_valign(gtk4::Align::Start);
         widget.set_homogeneous(true);
-        widget.set_spacing(8);
 
         Self {
             widget,
