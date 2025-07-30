@@ -85,8 +85,41 @@ pub fn new() -> gtk4::Box {
         }
     });
 
+    let mut hsv_fields = Fields::new();
+    hsv_fields.add_field(fields::FieldType::SpinButton(gtk4::Adjustment::new(0.0, 0.0, 360.0, 1.0, 10.0, 0.0)), {
+        let hsv = hsv.clone();
+        move |result| {
+            if let fields::FieldUpdate::Float(value) = result {
+                let mut hsv_value = hsv.get();
+                hsv_value.hue = value;
+                hsv.set(hsv_value);
+            }
+        }
+    });
+
+    hsv_fields.add_field(fields::FieldType::SpinButton(gtk4::Adjustment::new(0.0, 0.0, 100.0, 1.0, 10.0, 0.0)), {
+        let hsv = hsv.clone();
+        move |result| {
+            if let fields::FieldUpdate::Float(value) = result {
+                let mut hsv_value = hsv.get();
+                hsv_value.saturation = value;
+                hsv.set(hsv_value);
+            }
+        }
+    });
+
+    hsv_fields.add_field(fields::FieldType::SpinButton(gtk4::Adjustment::new(0.0, 0.0, 100.0, 1.0, 10.0, 0.0)), {
+        let hsv = hsv.clone();
+        move |result| {
+            if let fields::FieldUpdate::Float(value) = result {
+                let mut hsv_value = hsv.get();
+                hsv_value.value = value;
+                hsv.set(hsv_value);
+            }
+        }
+    });
+
     view! {
-        test_hsv_label = gtk4::Label {},
         test_hsl_label = gtk4::Label {},
         test_cmyk_label = gtk4::Label {},
         test_oklch_label = gtk4::Label {},
@@ -114,7 +147,7 @@ pub fn new() -> gtk4::Box {
     tabs_stack.add_tab(Some("hex"), &hex_fields.widget);
     tabs_stack.add_tab(Some("int"), &int_fields.widget);
     tabs_stack.add_tab(Some("rgb"), &rgb_fields.widget);
-    tabs_stack.add_tab(Some("hsv"), &test_hsv_label);
+    tabs_stack.add_tab(Some("hsv"), &hsv_fields.widget);
     tabs_stack.add_tab(Some("hsl"), &test_hsl_label);
     tabs_stack.add_tab(Some("cmyk"), &test_cmyk_label);
     tabs_stack.add_tab(Some("oklch"), &test_oklch_label);
@@ -134,7 +167,11 @@ pub fn new() -> gtk4::Box {
             fields::FieldUpdate::Float(rgba.green as f64),
             fields::FieldUpdate::Float(rgba.blue as f64)
         ]);
-        test_hsv_label.set_text(&format!("HSV: {:.2}, {:.2}, {:.2}", hsv.hue, hsv.saturation, hsv.value));
+        hsv_fields.update(vec![
+            fields::FieldUpdate::Float(hsv.hue),
+            fields::FieldUpdate::Float(hsv.saturation),
+            fields::FieldUpdate::Float(hsv.value)
+        ]);
         test_hsl_label.set_text(&format!("HSL: {:.2}, {:.2}, {:.2}", hsl.hue, hsl.saturation, hsl.lightness));
         test_cmyk_label.set_text(&format!("CMYK: {:.2}, {:.2}, {:.2}, {:.2}", cmyk.cyan, cmyk.magenta, cmyk.yellow, cmyk.black));
         test_oklch_label.set_text(&format!("OKLCH: {:.4}, {:.4}, {:.2}", oklch.lightness, oklch.chroma, oklch.hue));
