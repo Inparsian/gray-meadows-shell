@@ -5,7 +5,7 @@ mod fields;
 use futures_signals::signal::{Mutable, SignalExt};
 use gtk4::prelude::*;
 
-use crate::{color::model::Hsv, widgets::{common::tabs::{TabSize, Tabs, TabsStack}, sidebar_left::modules::color_picker::fields::Fields}};
+use crate::{color::model::{int_to_hex, Hsv}, widgets::{common::tabs::{TabSize, Tabs, TabsStack}, sidebar_left::modules::color_picker::fields::Fields}};
 
 pub fn new() -> gtk4::Box {
     let hsv = Mutable::new(Hsv {
@@ -39,8 +39,18 @@ pub fn new() -> gtk4::Box {
         }
     });
 
+    let mut int_fields = Fields::new();
+    int_fields.add_field(fields::FieldType::Entry, {
+        let hsv = hsv.clone();
+        move |result| {
+            if let fields::FieldUpdate::Text(int) = result {
+                let hex = int_to_hex(int.parse().unwrap_or(0));
+                hsv.set(Hsv::from_hex(&hex));
+            }
+        }
+    });
+
     view! {
-        test_int_label = gtk4::Label {},
         test_rgba_label = gtk4::Label {},
         test_hsv_label = gtk4::Label {},
         test_hsl_label = gtk4::Label {},
@@ -68,7 +78,7 @@ pub fn new() -> gtk4::Box {
     }
 
     tabs_stack.add_tab(Some("hex"), &hex_fields.widget);
-    tabs_stack.add_tab(Some("int"), &test_int_label);
+    tabs_stack.add_tab(Some("int"), &int_fields.widget);
     tabs_stack.add_tab(Some("rgba"), &test_rgba_label);
     tabs_stack.add_tab(Some("hsv"), &test_hsv_label);
     tabs_stack.add_tab(Some("hsl"), &test_hsl_label);
@@ -84,7 +94,7 @@ pub fn new() -> gtk4::Box {
         let oklch = hsv.as_oklch();
 
         hex_fields.update(vec![fields::FieldUpdate::Text(hex)]);
-        test_int_label.set_text(&format!("Int: {}", int));
+        int_fields.update(vec![fields::FieldUpdate::Text(int.to_string())]);
         test_rgba_label.set_text(&format!("RGBA: {:.2}, {:.2}, {:.2}, {:.2}", rgba.red, rgba.green, rgba.blue, rgba.alpha));
         test_hsv_label.set_text(&format!("HSV: {:.2}, {:.2}, {:.2}", hsv.hue, hsv.saturation, hsv.value));
         test_hsl_label.set_text(&format!("HSL: {:.2}, {:.2}, {:.2}", hsl.hue, hsl.saturation, hsl.lightness));

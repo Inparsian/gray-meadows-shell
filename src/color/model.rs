@@ -361,3 +361,7 @@ impl Oklch {
         rgba.as_hex()
     }
 }
+
+pub fn int_to_hex(int: u32) -> String {
+    format!("#{:06x}", int)
+}
