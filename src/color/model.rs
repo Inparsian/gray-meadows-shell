@@ -44,7 +44,7 @@ impl Rgba {
         }
     }
 
-    pub fn as_linear(&self) -> LinearRgba {
+    pub fn as_linear(self) -> LinearRgba {
         fn gamma_to_linear(value: f64) -> f64 {
             if value <= 0.04045 {
                 value / 12.92
@@ -72,10 +72,10 @@ pub struct LinearRgba {
 impl LinearRgba {
     pub fn as_rgba(&self) -> Rgba {
         fn linear_to_gamma(value: f64) -> u8 {
-            if value <= 0.0031308 {
+            if value <= 0.003_130_8 {
                 (value * 12.92 * 255.0).round() as u8
             } else {
-                ((1.055 * value.powf(1.0 / 2.4)) - 0.055).mul_add(255.0, 0.0).round() as u8
+                1.055_f64.mul_add(value.powf(1.0 / 2.4), -0.055).mul_add(255.0, 0.0).round() as u8
             }
         }
 
@@ -145,6 +145,11 @@ impl Hsv {
     pub fn as_cmyk(&self) -> Cmyk {
         let hex = self.as_hex();
         Cmyk::from_hex(&hex)
+    }
+
+    pub fn as_oklch(&self) -> Oklch {
+        let hex = self.as_hex();
+        Oklch::from_hex(&hex)
     }
 }
 
@@ -268,5 +273,63 @@ impl Cmyk {
         let b = (1.0 - ydiv.mul_add(1.0 - kdiv, kdiv)) * 255.0;
 
         format!("#{:02x}{:02x}{:02x}", r.round() as u8, g.round() as u8, b.round() as u8)
+    }
+}
+
+pub struct Oklch {
+    pub lightness: f64,
+    pub chroma: f64,
+    pub hue: f64
+}
+
+impl Oklch {
+    pub fn from_hex(hex: &str) -> Self {
+        let rgba = Rgba::from_hex(hex);
+        let linear_rgba = rgba.as_linear();
+
+        // Linear RGB -> Cube-rooted LMS
+        let lms_l = 0.051_457_565_3_f64.mul_add(linear_rgba.blue, 0.412_165_612_0_f64.mul_add(linear_rgba.red, 0.536_275_208_0 * linear_rgba.green)).cbrt();
+        let lms_m = 0.107_406_579_0_f64.mul_add(linear_rgba.blue, 0.211_859_107_0_f64.mul_add(linear_rgba.red, 0.680_718_958_4 * linear_rgba.green)).cbrt();
+        let lms_s = 0.629_323_455_7_f64.mul_add(linear_rgba.blue, 0.088_309_794_7_f64.mul_add(linear_rgba.red, 0.281_847_417_4 * linear_rgba.green)).cbrt();
+
+        // LMS -> Oklab
+        let lightness = 0.004_072_046_8_f64.mul_add(-lms_s, 0.210_454_255_3_f64.mul_add(lms_l, 0.793_617_785_0 * lms_m));
+        let ok_a = 0.450_593_709_9_f64.mul_add(lms_s, 1.977_998_495_1_f64.mul_add(lms_l, -(2.428_592_205_0 * lms_m)));
+        let ok_b = 0.808_675_766_0_f64.mul_add(-lms_s, 0.025_904_037_1_f64.mul_add(lms_l, 0.782_771_766_2 * lms_m));
+
+        // Oklab -> Oklch
+        let chroma = ok_a.hypot(ok_b);
+        let hue = if chroma == 0.0 {
+            0.0
+        } else {
+            (ok_b.atan2(ok_a).to_degrees() + 360.0) % 360.0
+        };
+
+        Self { lightness, chroma, hue }
+    }
+
+    #[allow(dead_code)] // TODO: Remove when OKLCH -> HSV conversion is implemented in the GUI
+    pub fn as_hex(&self) -> String {
+        // Oklch -> Oklab - L is the same.
+        let hue_rad = self.hue.to_radians();
+        let ok_a = self.chroma * hue_rad.cos();
+        let ok_b = self.chroma * hue_rad.sin();
+
+        // Oklab -> Cube-rooted LMS
+        let lms_l = 0.215_803_757_3_f64.mul_add(ok_b, 0.396_337_777_4_f64.mul_add(ok_a, self.lightness)).cbrt();
+        let lms_m = 0.063_854_172_8_f64.mul_add(-ok_b, 0.105_561_345_8_f64.mul_add(-ok_a, self.lightness)).cbrt();
+        let lms_s = 1.291_485_548_0_f64.mul_add(-ok_b, 0.089_484_177_5_f64.mul_add(-ok_a, self.lightness)).cbrt();
+
+        // Cube-rooted LMS -> Linear RGB
+        let lrgb = LinearRgba {
+            red: 0.230_969_929_2_f64.mul_add(lms_s, 4.076_741_662_1_f64.mul_add(lms_l, -(3.307_711_591_3 * lms_m))),
+            green: 0.341_319_396_5_f64.mul_add(-lms_s, (-1.268_438_004_6_f64).mul_add(lms_l, 2.609_757_401_1 * lms_m)),
+            blue: 1.707_614_701_0_f64.mul_add(lms_s, (-0.004_196_086_3_f64).mul_add(lms_l, -(0.703_418_614_7 * lms_m))),
+            alpha: 1.0
+        };
+
+        // Linear RGB -> sRGBA -> Hex
+        let rgba = lrgb.as_rgba();
+        rgba.as_hex()
     }
 }
