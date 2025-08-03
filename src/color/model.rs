@@ -229,7 +229,6 @@ impl Hsl {
         }
     }
 
-    #[allow(dead_code)] // TODO: Remove when HSL -> HSV conversion is implemented in the GUI
     pub fn as_hex(&self) -> String {
         let chroma = (self.lightness / 100.0).abs().mul_add(-2.0, 1.0) * (self.saturation / 100.0);
         let intermediate = chroma * (1.0 - ((self.hue / 60.0) % 2.0 - 1.0).abs());
@@ -289,7 +288,6 @@ impl Cmyk {
         }
     }
 
-    #[allow(dead_code)] // TODO: Remove when CMYK -> HSV conversion is implemented in the GUI
     pub fn as_hex(&self) -> String {
         let cdiv = self.cyan as f64 / 100.0;
         let mdiv = self.magenta as f64 / 100.0;
@@ -336,19 +334,18 @@ impl Oklch {
         Self { lightness, chroma, hue }
     }
 
-    #[allow(dead_code)] // TODO: Remove when OKLCH -> HSV conversion is implemented in the GUI
     pub fn as_hex(&self) -> String {
         // Oklch -> Oklab - L is the same.
         let hue_rad = self.hue.to_radians();
         let ok_a = self.chroma * hue_rad.cos();
         let ok_b = self.chroma * hue_rad.sin();
 
-        // Oklab -> Cube-rooted LMS
-        let lms_l = 0.215_803_757_3_f64.mul_add(ok_b, 0.396_337_777_4_f64.mul_add(ok_a, self.lightness)).cbrt();
-        let lms_m = 0.063_854_172_8_f64.mul_add(-ok_b, 0.105_561_345_8_f64.mul_add(-ok_a, self.lightness)).cbrt();
-        let lms_s = 1.291_485_548_0_f64.mul_add(-ok_b, 0.089_484_177_5_f64.mul_add(-ok_a, self.lightness)).cbrt();
+        // Oklab -> Cubed LMS
+        let lms_l = 0.215_803_757_3_f64.mul_add(ok_b, 0.396_337_777_4_f64.mul_add(ok_a, self.lightness)).powi(3);
+        let lms_m = 0.063_854_172_8_f64.mul_add(-ok_b, 0.105_561_345_8_f64.mul_add(-ok_a, self.lightness)).powi(3);
+        let lms_s = 1.291_485_548_0_f64.mul_add(-ok_b, 0.089_484_177_5_f64.mul_add(-ok_a, self.lightness)).powi(3);
 
-        // Cube-rooted LMS -> Linear RGB
+        // Cubed LMS -> Linear RGB
         let lrgb = LinearRgba {
             red: 0.230_969_929_2_f64.mul_add(lms_s, 4.076_741_662_1_f64.mul_add(lms_l, -(3.307_711_591_3 * lms_m))),
             green: 0.341_319_396_5_f64.mul_add(-lms_s, (-1.268_438_004_6_f64).mul_add(lms_l, 2.609_757_401_1 * lms_m)),
@@ -357,8 +354,7 @@ impl Oklch {
         };
 
         // Linear RGB -> sRGBA -> Hex
-        let rgba = lrgb.as_rgba();
-        rgba.as_hex()
+        lrgb.as_rgba().as_hex()
     }
 }
 

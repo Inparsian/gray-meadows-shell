@@ -6,7 +6,7 @@ static LOCK_HOLD_DURATION: Duration = Duration::from_millis(2);
 #[derive(Debug, Clone)]
 pub enum FieldType {
     Entry,
-    SpinButton(gtk4::Adjustment)
+    SpinButton(u32, f64, gtk4::Adjustment)
 }
 
 #[derive(Debug, Clone)]
@@ -44,8 +44,9 @@ impl Field {
                 entry.upcast()
             },
 
-            FieldType::SpinButton(adjustment) => {
-                let spin_button = gtk4::SpinButton::new(Some(&adjustment), 1.0, 0);
+            FieldType::SpinButton(digits, step, adjustment) => {
+                let spin_button = gtk4::SpinButton::new(Some(&adjustment), step, digits);
+                spin_button.set_increments(step, step);
                 spin_button.set_css_classes(&["color-picker-spinbutton"]);
 
                 spin_button.connect_value_changed({

@@ -52,7 +52,7 @@ pub fn new() -> gtk4::Box {
     });
 
     let mut rgb_fields = Fields::new();
-    rgb_fields.add_field(fields::FieldType::SpinButton(gtk4::Adjustment::new(0.0, 0.0, 255.0, 1.0, 10.0, 0.0)), {
+    rgb_fields.add_field(fields::FieldType::SpinButton(0, 1.0, gtk4::Adjustment::new(0.0, 0.0, 255.0, 1.0, 1.0, 0.0)), {
         let hsv = hsv.clone();
         move |result| {
             if let fields::FieldUpdate::Float(value) = result {
@@ -63,7 +63,7 @@ pub fn new() -> gtk4::Box {
         }
     });
 
-    rgb_fields.add_field(fields::FieldType::SpinButton(gtk4::Adjustment::new(0.0, 0.0, 255.0, 1.0, 10.0, 0.0)), {
+    rgb_fields.add_field(fields::FieldType::SpinButton(0, 1.0, gtk4::Adjustment::new(0.0, 0.0, 255.0, 1.0, 1.0, 0.0)), {
         let hsv = hsv.clone();
         move |result| {
             if let fields::FieldUpdate::Float(value) = result {
@@ -74,7 +74,7 @@ pub fn new() -> gtk4::Box {
         }
     });
 
-    rgb_fields.add_field(fields::FieldType::SpinButton(gtk4::Adjustment::new(0.0, 0.0, 255.0, 1.0, 10.0, 0.0)), {
+    rgb_fields.add_field(fields::FieldType::SpinButton(0, 1.0, gtk4::Adjustment::new(0.0, 0.0, 255.0, 1.0, 1.0, 0.0)), {
         let hsv = hsv.clone();
         move |result| {
             if let fields::FieldUpdate::Float(value) = result {
@@ -86,7 +86,7 @@ pub fn new() -> gtk4::Box {
     });
 
     let mut hsv_fields = Fields::new();
-    hsv_fields.add_field(fields::FieldType::SpinButton(gtk4::Adjustment::new(0.0, 0.0, 360.0, 1.0, 10.0, 0.0)), {
+    hsv_fields.add_field(fields::FieldType::SpinButton(2, 0.33, gtk4::Adjustment::new(0.0, 0.0, 360.0, 0.33, 0.33, 0.0)), {
         let hsv = hsv.clone();
         move |result| {
             if let fields::FieldUpdate::Float(value) = result {
@@ -97,7 +97,7 @@ pub fn new() -> gtk4::Box {
         }
     });
 
-    hsv_fields.add_field(fields::FieldType::SpinButton(gtk4::Adjustment::new(0.0, 0.0, 100.0, 1.0, 10.0, 0.0)), {
+    hsv_fields.add_field(fields::FieldType::SpinButton(2, 0.33, gtk4::Adjustment::new(0.0, 0.0, 100.0, 0.33, 0.33, 0.0)), {
         let hsv = hsv.clone();
         move |result| {
             if let fields::FieldUpdate::Float(value) = result {
@@ -108,7 +108,7 @@ pub fn new() -> gtk4::Box {
         }
     });
 
-    hsv_fields.add_field(fields::FieldType::SpinButton(gtk4::Adjustment::new(0.0, 0.0, 100.0, 1.0, 10.0, 0.0)), {
+    hsv_fields.add_field(fields::FieldType::SpinButton(2, 0.33, gtk4::Adjustment::new(0.0, 0.0, 100.0, 0.33, 0.33, 0.0)), {
         let hsv = hsv.clone();
         move |result| {
             if let fields::FieldUpdate::Float(value) = result {
@@ -119,11 +119,120 @@ pub fn new() -> gtk4::Box {
         }
     });
 
-    view! {
-        test_hsl_label = gtk4::Label {},
-        test_cmyk_label = gtk4::Label {},
-        test_oklch_label = gtk4::Label {},
+    let mut hsl_fields = Fields::new();
+    hsl_fields.add_field(fields::FieldType::SpinButton(2, 0.33, gtk4::Adjustment::new(0.0, 0.0, 360.0, 0.33, 0.33, 0.0)), {
+        let hsv = hsv.clone();
+        move |result| {
+            if let fields::FieldUpdate::Float(value) = result {
+                let mut hsl_value = hsv.get().as_hsl();
+                hsl_value.hue = value;
+                hsv.set(Hsv::from_hex(&hsl_value.as_hex()));
+            }
+        }
+    });
 
+    hsl_fields.add_field(fields::FieldType::SpinButton(2, 0.33, gtk4::Adjustment::new(0.0, 0.0, 100.0, 0.33, 0.33, 0.0)), {
+        let hsv = hsv.clone();
+        move |result| {
+            if let fields::FieldUpdate::Float(value) = result {
+                let mut hsl_value = hsv.get().as_hsl();
+                hsl_value.saturation = value;
+                hsv.set(Hsv::from_hex(&hsl_value.as_hex()));
+            }
+        }
+    });
+
+    hsl_fields.add_field(fields::FieldType::SpinButton(2, 0.33, gtk4::Adjustment::new(0.0, 0.0, 100.0, 0.33, 0.33, 0.0)), {
+        let hsv = hsv.clone();
+        move |result| {
+            if let fields::FieldUpdate::Float(value) = result {
+                let mut hsl_value = hsv.get().as_hsl();
+                hsl_value.lightness = value;
+                hsv.set(Hsv::from_hex(&hsl_value.as_hex()));
+            }
+        }
+    });
+
+    let mut cmyk_fields = Fields::new();
+    cmyk_fields.add_field(fields::FieldType::SpinButton(0, 1.0, gtk4::Adjustment::new(0.0, 0.0, 100.0, 1.0, 1.0, 0.0)), {
+        let hsv = hsv.clone();
+        move |result| {
+            if let fields::FieldUpdate::Float(value) = result {
+                let mut cmyk_value = hsv.get().as_cmyk();
+                cmyk_value.cyan = value as u8;
+                hsv.set(Hsv::from_hex(&cmyk_value.as_hex()));
+            }
+        }
+    });
+
+    cmyk_fields.add_field(fields::FieldType::SpinButton(0, 1.0, gtk4::Adjustment::new(0.0, 0.0, 100.0, 1.0, 1.0, 0.0)), {
+        let hsv = hsv.clone();
+        move |result| {
+            if let fields::FieldUpdate::Float(value) = result {
+                let mut cmyk_value = hsv.get().as_cmyk();
+                cmyk_value.magenta = value as u8;
+                hsv.set(Hsv::from_hex(&cmyk_value.as_hex()));
+            }
+        }
+    });
+
+    cmyk_fields.add_field(fields::FieldType::SpinButton(0, 1.0, gtk4::Adjustment::new(0.0, 0.0, 100.0, 1.0, 1.0, 0.0)), {
+        let hsv = hsv.clone();
+        move |result| {
+            if let fields::FieldUpdate::Float(value) = result {
+                let mut cmyk_value = hsv.get().as_cmyk();
+                cmyk_value.yellow = value as u8;
+                hsv.set(Hsv::from_hex(&cmyk_value.as_hex()));
+            }
+        }
+    });
+
+    cmyk_fields.add_field(fields::FieldType::SpinButton(0, 1.0, gtk4::Adjustment::new(0.0, 0.0, 100.0, 1.0, 1.0, 0.0)), {
+        let hsv = hsv.clone();
+        move |result| {
+            if let fields::FieldUpdate::Float(value) = result {
+                let mut cmyk_value = hsv.get().as_cmyk();
+                cmyk_value.black = value as u8;
+                hsv.set(Hsv::from_hex(&cmyk_value.as_hex()));
+            }
+        }
+    });
+
+    let mut oklch_fields = Fields::new();
+    oklch_fields.add_field(fields::FieldType::SpinButton(4, 0.033, gtk4::Adjustment::new(0.0, 0.0, 100.0, 0.033, 0.033, 0.0)), {
+        let hsv = hsv.clone();
+        move |result| {
+            if let fields::FieldUpdate::Float(value) = result {
+                let mut oklch_value = hsv.get().as_oklch();
+                oklch_value.lightness = value;
+                hsv.set(Hsv::from_hex(&oklch_value.as_hex()));
+            }
+        }
+    });
+
+    oklch_fields.add_field(fields::FieldType::SpinButton(4, 0.033, gtk4::Adjustment::new(0.0, 0.0, 100.0, 0.033, 0.033, 0.0)), {
+        let hsv = hsv.clone();
+        move |result| {
+            if let fields::FieldUpdate::Float(value) = result {
+                let mut oklch_value = hsv.get().as_oklch();
+                oklch_value.chroma = value;
+                hsv.set(Hsv::from_hex(&oklch_value.as_hex()));
+            }
+        }
+    });
+
+    oklch_fields.add_field(fields::FieldType::SpinButton(2, 0.33, gtk4::Adjustment::new(0.0, 0.0, 360.0, 0.33, 0.33, 0.0)), {
+        let hsv = hsv.clone();
+        move |result| {
+            if let fields::FieldUpdate::Float(value) = result {
+                let mut oklch_value = hsv.get().as_oklch();
+                oklch_value.hue = value;
+                hsv.set(Hsv::from_hex(&oklch_value.as_hex()));
+            }
+        }
+    });
+
+    view! {
         widget = gtk4::Box {
             set_css_classes: &["ColorPicker"],
             set_orientation: gtk4::Orientation::Vertical,
@@ -148,9 +257,9 @@ pub fn new() -> gtk4::Box {
     tabs_stack.add_tab(Some("int"), &int_fields.widget);
     tabs_stack.add_tab(Some("rgb"), &rgb_fields.widget);
     tabs_stack.add_tab(Some("hsv"), &hsv_fields.widget);
-    tabs_stack.add_tab(Some("hsl"), &test_hsl_label);
-    tabs_stack.add_tab(Some("cmyk"), &test_cmyk_label);
-    tabs_stack.add_tab(Some("oklch"), &test_oklch_label);
+    tabs_stack.add_tab(Some("hsl"), &hsl_fields.widget);
+    tabs_stack.add_tab(Some("cmyk"), &cmyk_fields.widget);
+    tabs_stack.add_tab(Some("oklch"), &oklch_fields.widget);
 
     let hsv_future = hsv.signal().for_each(move |hsv| {
         let hex = hsv.as_hex();
@@ -172,9 +281,22 @@ pub fn new() -> gtk4::Box {
             fields::FieldUpdate::Float(hsv.saturation),
             fields::FieldUpdate::Float(hsv.value)
         ]);
-        test_hsl_label.set_text(&format!("HSL: {:.2}, {:.2}, {:.2}", hsl.hue, hsl.saturation, hsl.lightness));
-        test_cmyk_label.set_text(&format!("CMYK: {:.2}, {:.2}, {:.2}, {:.2}", cmyk.cyan, cmyk.magenta, cmyk.yellow, cmyk.black));
-        test_oklch_label.set_text(&format!("OKLCH: {:.4}, {:.4}, {:.2}", oklch.lightness, oklch.chroma, oklch.hue));
+        hsl_fields.update(vec![
+            fields::FieldUpdate::Float(hsl.hue),
+            fields::FieldUpdate::Float(hsl.saturation),
+            fields::FieldUpdate::Float(hsl.lightness)
+        ]);
+        cmyk_fields.update(vec![
+            fields::FieldUpdate::Float(cmyk.cyan as f64),
+            fields::FieldUpdate::Float(cmyk.magenta as f64),
+            fields::FieldUpdate::Float(cmyk.yellow as f64),
+            fields::FieldUpdate::Float(cmyk.black as f64)
+        ]);
+        oklch_fields.update(vec![
+            fields::FieldUpdate::Float(oklch.lightness),
+            fields::FieldUpdate::Float(oklch.chroma),
+            fields::FieldUpdate::Float(oklch.hue)
+        ]);
 
         async {}
     });
