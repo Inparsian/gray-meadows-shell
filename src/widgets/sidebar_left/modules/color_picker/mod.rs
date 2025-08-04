@@ -5,7 +5,7 @@ mod fields;
 use futures_signals::signal::{Mutable, SignalExt};
 use gtk4::prelude::*;
 
-use crate::{color::model::{int_to_hex, Hsv}, widgets::{common::tabs::{TabSize, Tabs, TabsStack}, sidebar_left::modules::color_picker::fields::Fields}};
+use crate::{color::model::{int_to_hex, Hsv}, ipc, widgets::{common::tabs::{TabSize, Tabs, TabsStack}, sidebar_left::modules::color_picker::fields::Fields}};
 
 pub fn new() -> gtk4::Box {
     let hsv = Mutable::new(Hsv {
@@ -203,6 +203,20 @@ pub fn new() -> gtk4::Box {
         oklch_fields.update(vec![Float(oklch.lightness), Float(oklch.chroma), Float(oklch.hue)]);
 
         async {}
+    });
+
+    // Listen for IPC messages to update the HSV value
+    ipc::listen_for_messages_local(move |message| {
+        let mut split_whitespace_iterator = message.split_whitespace();
+        if let Some(message) = split_whitespace_iterator.next() {
+            if message == "color_picker_set_hex" {
+                if let Some(hex) = split_whitespace_iterator.next() {
+                    let hsv_value = Hsv::from_hex(hex);
+
+                    hsv.set(hsv_value);
+                }
+            }
+        }
     });
 
     gtk4::glib::spawn_future_local(hsv_future);
