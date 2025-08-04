@@ -230,34 +230,26 @@ impl Hsl {
     }
 
     pub fn as_hex(&self) -> String {
-        let chroma = (self.lightness / 100.0).abs().mul_add(-2.0, 1.0) * (self.saturation / 100.0);
+        let chroma = (1.0 - 2.0_f64.mul_add(self.lightness / 100.0, -1.0).abs()) * (self.saturation / 100.0);
         let intermediate = chroma * (1.0 - ((self.hue / 60.0) % 2.0 - 1.0).abs());
-        let match_value = (self.lightness / 100.0) - chroma / 2.0;
+        let match_value = (self.lightness / 100.0) - (chroma / 2.0);
 
-        let (red_prime, green_prime, blue_prime) = if self.hue < 60.0 {
-            (chroma, intermediate, 0.0)
+        let normalize = |value: f64| ((value + match_value) * 255.0).round() as u8;
+        let (rr, gg, bb) = if self.hue < 60.0 {
+            (normalize(chroma), normalize(intermediate), 0)
         } else if self.hue < 120.0 {
-            (intermediate, chroma, 0.0)
+            (normalize(intermediate), normalize(chroma), 0)
         } else if self.hue < 180.0 {
-            (0.0, chroma, intermediate)
+            (0, normalize(chroma), normalize(intermediate))
         } else if self.hue < 240.0 {
-            (0.0, intermediate, chroma)
+            (0, normalize(intermediate), normalize(chroma))
         } else if self.hue < 300.0 {
-            (intermediate, 0.0, chroma)
+            (normalize(intermediate), 0, normalize(chroma))
         } else {
-            (chroma, 0.0, intermediate)
+            (normalize(chroma), 0, normalize(intermediate))
         };
 
-        let rr = (red_prime + match_value) * 255.0;
-        let gg = (green_prime + match_value) * 255.0;
-        let bb = (blue_prime + match_value) * 255.0;
-
-        format!(
-            "#{:02x}{:02x}{:02x}",
-            rr.round() as u8,
-            gg.round() as u8,
-            bb.round() as u8
-        )
+        format!("#{:02x}{:02x}{:02x}", rr, gg, bb)
     }
 }
 

@@ -186,7 +186,7 @@ pub fn new() -> gtk4::Box {
 
     let hsv_future = hsv.signal().for_each(move |hsv| {
         use fields::FieldUpdate::*;
-        
+
         let hex = hsv.as_hex();
         let int = hsv.as_int();
         let rgba = hsv.as_rgba();
