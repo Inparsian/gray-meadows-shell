@@ -58,6 +58,11 @@ impl HuePicker {
 
         widget.add_controller(gesture::on_primary_up(move |_, _, _| *clicked.borrow_mut() = false));
 
+        widget.add_controller(gesture::on_vertical_scroll({
+            let picker = picker.clone();
+            move |y| picker.handle_scroll(y * 5.0)
+        }));
+
         let hsv_future = hsv.signal().for_each({
             let picker = picker.clone();
             move |_| {
@@ -70,6 +75,19 @@ impl HuePicker {
         gtk4::glib::spawn_future_local(hsv_future);
 
         picker
+    }
+
+    pub fn handle_scroll(&self, y: f64) {
+        let mut hue = (self.hsv.get().hue + y) % 360.0;
+        if hue < 0.0 {
+            hue += 360.0;
+        }
+
+        self.hsv.set(Hsv {
+            hue,
+            saturation: self.hsv.get().saturation,
+            value: self.hsv.get().value,
+        });
     }
 
     pub fn handle_click(&self, y: f64) {
