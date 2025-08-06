@@ -65,19 +65,36 @@ pub fn new(application: &libadwaita::Application) {
     }));
 
     ipc::listen_for_messages_local(move |message| {
-        if message.as_str() == "toggle_left_sidebar" {
-            let monitor = hyprland::get_active_monitor();
+        let mut split_whitespace_iterator = message.split_whitespace();
+        if let Some(message) = split_whitespace_iterator.next() {
+            if message == "change_left_sidebar_tab" {
+                if let Some(tab) = split_whitespace_iterator.next() {
+                    if tabs.items.try_borrow().is_ok_and(|vec| vec.iter().any(|t| t.name == tab)) {
+                        tabs.current_tab.set(Some(tab.to_owned()));
+                    }
+                }
+            }
 
-            if window.is_visible() {
-                window.hide();
-            } else {
+            else if message == "toggle_left_sidebar" {
+                let monitor = hyprland::get_active_monitor();
+
+                if window.is_visible() {
+                    window.hide();
+                } else {
+                    window.set_monitor(monitor.as_ref());
+                    window.show();
+                }
+            }
+
+            else if message == "show_left_sidebar" {
+                let monitor = hyprland::get_active_monitor();
                 window.set_monitor(monitor.as_ref());
                 window.show();
             }
-        }
 
-        else if message.as_str() == "hide_left_sidebar" {
-            window.hide();
+            else if message == "hide_left_sidebar" {
+                window.hide();
+            }
         }
     });
 }
