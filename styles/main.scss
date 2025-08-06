@@ -211,6 +211,30 @@
                     }
                 }
             }
+
+            .color-picker-transform-copy-button {
+                background-color: $background-color-primary-semitrans;
+                color: $foreground-color-primary;
+                font-weight: 900;
+                border-radius: 0px;
+                border: 0px;
+                min-height: 0px;
+                min-width: 0px;
+                outline: none;
+                box-shadow: none;
+
+                &:hover, &:focus {
+                    background-color: $background-color-primary-semitrans-hover;
+                }
+
+                &:active {
+                    background-color: $background-color-primary-semitrans-active;
+                }
+            }
+
+            .color-picker-transform-color {
+                min-height: 32px;
+            }
         }
     }
 }

@@ -43,6 +43,32 @@ where
     controller
 }
 
+pub fn on_enter<F>(on_enter: F) -> gtk4::EventControllerMotion
+where
+    F: Fn(f64, f64) + 'static,
+{
+    let controller = gtk4::EventControllerMotion::new();
+
+    controller.connect_enter(move |_, x, y| {
+        on_enter(x, y);
+    });
+
+    controller
+}
+
+pub fn on_leave<F>(on_leave: F) -> gtk4::EventControllerMotion
+where
+    F: Fn() + 'static,
+{
+    let controller = gtk4::EventControllerMotion::new();
+
+    controller.connect_leave(move |_| {
+        on_leave();
+    });
+
+    controller
+}
+
 fn on_button_down<F>(button: u32, on_click: F) -> gtk4::GestureClick
 where
     F: Fn(i32, f64, f64) + 'static,
