@@ -7,10 +7,10 @@ use futures_signals::signal::{Mutable, SignalExt};
 use gtk4::prelude::*;
 
 use crate::{
-    color::model::{int_to_hex, Hsv},
+    color::{model::{int_to_hex, Hsv}, LighterDarkerResult},
     helpers::gesture,
     ipc,
-    widgets::{common::tabs::{TabSize, Tabs, TabsStack}, sidebar_left::modules::color_picker::fields::Fields}
+    widgets::{common::{dynamic_grid::DynamicGrid, tabs::{TabSize, Tabs, TabsStack}}, sidebar_left::modules::color_picker::fields::Fields}
 };
 
 #[derive(Debug, Clone)]
@@ -150,6 +150,61 @@ pub fn get_analogous_color_boxes(hsv: &Mutable<Hsv>, count: u32, color_tabs: &Ta
     box_container
 }
 
+pub fn get_lighter_darker_color_boxes(hsv: &Mutable<Hsv>, count: u32, color_tabs: &Tabs) -> DynamicGrid {
+    let mut grid = DynamicGrid::new(4);
+    let mut boxes: Vec<(ColorBox, gtk4::Label)> = Vec::new();
+
+    for _ in 0..=count {
+        let color_box = get_color_box(hsv.get(), color_tabs);
+        let label = gtk4::Label::new(Some("0%"));
+        let box_ = gtk4::Box::new(gtk4::Orientation::Horizontal, 8);
+        box_.append(&color_box.widget);
+        box_.append(&label);
+
+        grid.append(&box_);
+        boxes.push((color_box, label));
+    }
+
+    let hsv_future = hsv.signal().for_each({
+        let boxes = boxes.clone();
+        let color = hsv.get();
+
+        move |hsv| {
+            let lighter_darker_colors = crate::color::get_lighter_darker_colors(hsv, count);
+            let default_result = LighterDarkerResult {
+                hsv: color,
+                lightness: 0.0,
+                is_original: false
+            };
+            
+            for (i, (color_box, label)) in boxes.iter().enumerate() {
+                let new_color = lighter_darker_colors.get(i).unwrap_or(&default_result);
+
+                color_box.css_provider.load_from_data(&format!(
+                    ".color-picker-transform-color {{ background-color: {}; }}",
+                    new_color.hsv.as_hex()
+                ));
+
+                label.set_label(&format!("{:<4}", format!("{:.0}%", new_color.lightness)));
+
+                if new_color.is_original {
+                    label.set_css_classes(&["color-picker-transform-color-label", "original"]);
+                } else {
+                    label.set_css_classes(&["color-picker-transform-color-label"]);
+                }
+
+                let _ = color_box.hsv.try_borrow_mut().map(|mut c| *c = new_color.hsv);
+            }
+
+            async {}
+        }
+    });
+
+    gtk4::glib::spawn_future_local(hsv_future);
+
+    grid
+}
+
 pub fn new() -> gtk4::Box {
     let hsv = Mutable::new(Hsv {
         hue: 0.0,
@@ -175,11 +230,11 @@ pub fn new() -> gtk4::Box {
     transform_tabs.add_tab("ANALOGOUS", "analogous".to_owned(), None);
     transform_tabs.add_tab("TRIADIC", "triadic".to_owned(), None);
     transform_tabs.add_tab("TETRADIC", "tetradic".to_owned(), None);
+    transform_tabs.add_tab("LIGHTNESS", "lighter_darker".to_owned(), None);
 
     let color_tabs_stack = TabsStack::new(&color_tabs, Some("color-picker-tabs-stack"));
     let transform_tabs_stack = TabsStack::new(&transform_tabs, Some("color-picker-tabs-stack"));
 
-    // !! These will be separated into their own modules later
     macro_rules! create_entry_field {
         ($fields:ident, $hsv:ident, $convert:expr) => {
             $fields.add_field(fields::FieldType::Entry, {
@@ -360,6 +415,7 @@ pub fn new() -> gtk4::Box {
     transform_tabs_stack.add_tab(Some("analogous"), &get_analogous_color_boxes(&hsv, 5, &color_tabs));
     transform_tabs_stack.add_tab(Some("triadic"), &get_analogous_color_boxes(&hsv, 3, &color_tabs));
     transform_tabs_stack.add_tab(Some("tetradic"), &get_analogous_color_boxes(&hsv, 4, &color_tabs));
+    transform_tabs_stack.add_tab(Some("lighter_darker"), &get_lighter_darker_color_boxes(&hsv, 20, &color_tabs).grid);
 
     // Listen for IPC messages to update the HSV value
     ipc::listen_for_messages_local(move |message| {

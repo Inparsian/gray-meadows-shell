@@ -232,6 +232,15 @@
                 }
             }
 
+            .color-picker-transform-color-label {
+                color: $foreground-color-quaternary;
+                margin-right: 8px;
+
+                &.original {
+                    color: $foreground-color-primary;
+                }
+            }
+
             .color-picker-transform-color {
                 min-height: 32px;
             }

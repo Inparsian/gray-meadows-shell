@@ -252,20 +252,20 @@ impl Hsl {
 
         let normalize = |value: f64| ((value + match_value) * 255.0).round() as u8;
         let (rr, gg, bb) = if self.hue < 60.0 {
-            (normalize(chroma), normalize(intermediate), 0)
+            (chroma, intermediate, 0.0)
         } else if self.hue < 120.0 {
-            (normalize(intermediate), normalize(chroma), 0)
+            (intermediate, chroma, 0.0)
         } else if self.hue < 180.0 {
-            (0, normalize(chroma), normalize(intermediate))
+            (0.0, chroma, intermediate)
         } else if self.hue < 240.0 {
-            (0, normalize(intermediate), normalize(chroma))
+            (0.0, intermediate, chroma)
         } else if self.hue < 300.0 {
-            (normalize(intermediate), 0, normalize(chroma))
+            (intermediate, 0.0, chroma)
         } else {
-            (normalize(chroma), 0, normalize(intermediate))
+            (chroma, 0.0, intermediate)
         };
 
-        format!("#{:02x}{:02x}{:02x}", rr, gg, bb)
+        format!("#{:02x}{:02x}{:02x}", normalize(rr), normalize(gg), normalize(bb))
     }
 }
 

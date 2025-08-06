@@ -59,6 +59,26 @@ pub fn get_lighter_darker_colors(base_hsv: Hsv, count: u32) -> Vec<LighterDarker
         a_diff.partial_cmp(&b_diff).unwrap_or(std::cmp::Ordering::Equal)
     }).cloned();
 
+    // Remove the color that is closest to the original from the list
+    // to ensure the count is correct. If the original lightness is divisible
+    // by exactly 5, it'll have been deduped already at this point.
+    if let Some(original) = original_color {
+        if (original.lightness % 5.0) >= FLOAT_TOLERANCE {
+            let _ = colors.iter().enumerate()
+                .filter(|(_, c)| (c.lightness % 5.0).abs() <= FLOAT_TOLERANCE)
+                .min_by(|(_, a), (_, b)| {
+                    let a_diff = (a.lightness - original.lightness).abs();
+                    let b_diff = (b.lightness - original.lightness).abs();
+                    a_diff.partial_cmp(&b_diff).unwrap_or(std::cmp::Ordering::Equal)
+                })
+                .map(|(i, _)| i)
+                .is_some_and(|i| {
+                    colors.remove(i);
+                    true
+                });
+        }
+    }
+
     colors.into_iter().map(|hsl| {
         LighterDarkerResult {
             hsv: Hsv::from_hex(&hsl.as_hex()),
