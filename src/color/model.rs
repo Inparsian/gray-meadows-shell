@@ -36,6 +36,14 @@ impl Rgba {
         }
     }
 
+    pub fn as_string(self) -> String {
+        if self.alpha < 255 {
+            format!("rgba({}, {}, {}, {:.2})", self.red, self.green, self.blue, self.alpha as f64 / 255.0)
+        } else {
+            format!("rgb({}, {}, {})", self.red, self.green, self.blue)
+        }
+    }
+
     pub fn as_hex(self) -> String {
         if self.alpha < 1 {
             format!("#{:02x}{:02x}{:02x}{:02x}", self.red, self.green, self.blue, self.alpha)
@@ -122,6 +130,10 @@ impl Hsv {
         let value = (max / 255.0) * 100.0;
 
         Self { hue, saturation, value }
+    }
+
+    pub fn as_string(&self) -> String {
+        format!("hsv({:.2}, {:.2}%, {:.2}%)", self.hue, self.saturation, self.value)
     }
 
     pub fn as_hex(&self) -> String {
@@ -229,6 +241,10 @@ impl Hsl {
         }
     }
 
+    pub fn as_string(&self) -> String {
+        format!("hsl({:.2}, {:.2}%, {:.2}%)", self.hue, self.saturation, self.lightness)
+    }
+
     pub fn as_hex(&self) -> String {
         let chroma = (1.0 - 2.0_f64.mul_add(self.lightness / 100.0, -1.0).abs()) * (self.saturation / 100.0);
         let intermediate = chroma * (1.0 - ((self.hue / 60.0) % 2.0 - 1.0).abs());
@@ -280,6 +296,10 @@ impl Cmyk {
         }
     }
 
+    pub fn as_string(&self) -> String {
+        format!("cmyk({}%, {}%, {}%, {}%)", self.cyan, self.magenta, self.yellow, self.black)
+    }
+
     pub fn as_hex(&self) -> String {
         let cdiv = self.cyan as f64 / 100.0;
         let mdiv = self.magenta as f64 / 100.0;
@@ -324,6 +344,10 @@ impl Oklch {
         };
 
         Self { lightness, chroma, hue }
+    }
+
+    pub fn as_string(&self) -> String {
+        format!("oklch({:.4} {:.4} {:.2})", self.lightness, self.chroma, self.hue)
     }
 
     pub fn as_hex(&self) -> String {

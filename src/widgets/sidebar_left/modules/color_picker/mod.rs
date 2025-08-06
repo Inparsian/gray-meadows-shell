@@ -20,8 +20,9 @@ pub struct ColorBox {
     pub hsv: Rc<RefCell<Hsv>>
 }
 
-pub fn get_color_box(hsv: Hsv, _color_tabs: &Tabs) -> ColorBox {
+pub fn get_color_box(hsv: Hsv, color_tabs: &Tabs) -> ColorBox {
     let hsv = Rc::new(RefCell::new(hsv));
+    let current_tab = &color_tabs.current_tab;
 
     let (widget, css_provider) = {
         view! {
@@ -34,8 +35,24 @@ pub fn get_color_box(hsv: Hsv, _color_tabs: &Tabs) -> ColorBox {
                 set_css_classes: &["color-picker-transform-copy-button"],
                 connect_clicked: {
                     let hsv = hsv.clone();
+                    let current_tab = current_tab.clone();
                     move |_| {
-                        println!("Copied color: {}", hsv.borrow().as_hex());
+                        let hsv = hsv.borrow();
+                        let text = match current_tab.get_cloned().as_deref() {
+                            Some("int") => hsv.as_int().to_string(),
+                            Some("rgb") => hsv.as_rgba().as_string(),
+                            Some("hsv") => hsv.as_string(),
+                            Some("hsl") => hsv.as_hsl().as_string(),
+                            Some("cmyk") => hsv.as_cmyk().as_string(),
+                            Some("oklch") => hsv.as_oklch().as_string(),
+                            _ => hsv.as_hex()
+                        };
+
+                        // TODO: Do this without wl-copy?
+                        std::thread::spawn(move || std::process::Command::new("wl-copy")
+                            .arg(text)
+                            .output()
+                        );
                     }
                 },
 
