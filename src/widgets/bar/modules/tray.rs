@@ -105,6 +105,7 @@ impl SystemTray {
     fn new() -> Self {
         let box_ = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
         box_.set_css_classes(&["bar-widget", "bar-tray"]);
+        box_.set_visible(false);
         box_.set_hexpand(false);
 
         let items = Vec::new();
@@ -115,10 +116,19 @@ impl SystemTray {
         }
     }
 
+    fn update_visibility(&self) {
+        if self.items.is_empty() {
+            self.box_.hide();
+        } else {
+            self.box_.show();
+        }
+    }
+
     fn add_item(&mut self, service: String) {
         let item = SystemTrayItem::new(service);
 
         self.items.push(item);
+        self.update_visibility();
     }
 
     fn build_item(&mut self, service: &str) {
@@ -148,6 +158,8 @@ impl SystemTray {
             if let Some(widget) = item.widget {
                 self.box_.remove(&widget);
             }
+
+            self.update_visibility();
         }
     }
 
