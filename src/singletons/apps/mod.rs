@@ -5,7 +5,7 @@ use freedesktop_desktop_entry::{default_paths, get_languages_from_env, Iter, Des
 use notify::{event::{AccessKind, AccessMode}, EventKind, Watcher};
 use once_cell::sync::Lazy;
 
-use crate::helpers::matching;
+use crate::{helpers::{matching, process}, SQL_CONNECTION};
 
 pub struct WeightedDesktopEntry {
     pub entry: DesktopEntry,
@@ -88,6 +88,16 @@ pub fn refresh_desktops() {
 
     for entry in entries {
         desktops.push(entry);
+    }
+}
+
+/// This is a function that will invoke process::launch and tell SQLite to
+/// increment the runs count for a desktop entry. Use this for launch tracking.
+pub fn launch_and_track(command: &str) {
+    process::launch(command);
+
+    if let Some(sqlite) = SQL_CONNECTION.get() {
+        let _ = sqlite.increment_runs(command);
     }
 }
 

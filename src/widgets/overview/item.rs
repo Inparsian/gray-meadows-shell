@@ -1,6 +1,6 @@
 use gtk4::prelude::*;
 
-use crate::{helpers::{matching, process, scss}, ipc, singletons::apps::pixbuf::get_pixbuf_or_fallback};
+use crate::{helpers::{matching, scss}, ipc, singletons::apps::{self, pixbuf::get_pixbuf_or_fallback}};
 
 pub static ITEM_ANIMATION_DURATION: u32 = 175;
 
@@ -80,7 +80,7 @@ impl OverviewSearchItem {
                         let action = action.clone();
                         move |_| {
                             match &action {
-                                OverviewSearchItemAction::Launch(command) => process::launch(command),
+                                OverviewSearchItemAction::Launch(command) => apps::launch_and_track(command),
 
                                 OverviewSearchItemAction::RunCommand(command) => {
                                     std::thread::spawn({

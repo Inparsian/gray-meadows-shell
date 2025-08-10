@@ -26,7 +26,7 @@ impl SqliteWrapper {
     #[allow(dead_code)]
     pub fn get_runs(&self, command: &str) -> Result<i64, sqlite::Error> {
         let connection = self.connection.lock().unwrap();
-        let statement = format!("SELECT runs FROM desktop_runs WHERE command = '{}'", command.replace('\'', "''"));
+        let statement = format!("SELECT * FROM desktop_runs WHERE command = '{}'", command.replace('\'', "''"));
 
         let mut cursor = connection.prepare(&statement)?;
         if cursor.next()? == sqlite::State::Row {
@@ -43,8 +43,8 @@ impl SqliteWrapper {
     /// Increments the run count for a given command, or inserts it if it doesn't exist.
     #[allow(dead_code)]
     pub fn increment_runs(&self, command: &str) -> Result<(), sqlite::Error> {
-        let connection = self.connection.lock().unwrap();
         let runs = self.get_runs(command).unwrap_or(0);
+        let connection = self.connection.lock().unwrap();
         let statement = if runs > 0 {
             format!("UPDATE desktop_runs SET runs = {} WHERE command = '{}'", runs + 1, command.replace('\'', "''"))
         } else {
