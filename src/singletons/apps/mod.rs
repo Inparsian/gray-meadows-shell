@@ -9,7 +9,7 @@ use crate::{helpers::{matching, process}, SQL_CONNECTION};
 
 pub struct WeightedDesktopEntry {
     pub entry: DesktopEntry,
-    weight: usize,
+    pub weight: usize,
 }
 
 pub static DESKTOPS: Lazy<Mutex<Vec<DesktopEntry>>> = Lazy::new(|| Mutex::new(Vec::new()));
@@ -22,51 +22,65 @@ pub fn activate() {
     }
 }
 
+pub fn calculate_weight(entry: &DesktopEntry, query: &str) -> usize {
+    // Fixed weights:
+    // 1. Exact match (10000)
+    // 2. Lazy match, contains all characters, length match (500)
+    // 3. Fuzzy match (30)
+    // 4. Lazy match (10)
+    //
+    // Dynamic weights:
+    // 5. Beginning match (100)
+    // 6. String inclusion bonus (query.length * 4)
+    // 7. Launch count bonus (runs / 4, minimum 2x multiplier)
+    let locales = get_languages_from_env();
+    let name = entry.name(&locales).map(|c| c.to_string()).unwrap_or_default().to_lowercase();
+    let query = &query.trim().to_lowercase();
+
+    let lazy_match = matching::lazy_match(&name, query);
+    let contains_all = name.chars().all(|c| query.contains(c));
+
+    let mut weight = if name == *query {
+        10000
+    } else if lazy_match && contains_all && query.len() == name.len() {
+        500
+    } else if matching::fuzzy_match(&name, query) {
+        30
+    } else if lazy_match {
+        10
+    } else {
+        0
+    };
+
+    if name.starts_with(query) {
+        weight += 100;
+    }
+
+    if name.contains(query) {
+        weight += query.len() * 4;
+    }
+
+    // How many times has this entry been run?
+    if weight > 0 {
+        if let Some(sqlite) = SQL_CONNECTION.get() {
+            if let Ok(runs) = sqlite.get_runs(entry.exec().unwrap_or_default()) {
+                if runs > 0 {
+                    weight *= std::cmp::max(2, (runs / 4) as usize);
+                }
+            }
+        }
+    }
+
+    weight
+}
+
 pub fn query_desktops(query: &str) -> Vec<WeightedDesktopEntry> {
     let desktops = DESKTOPS.lock().unwrap();
-    let locales = get_languages_from_env();
 
     let mut weighted = desktops.iter()
-        .map(|entry| {
-            // Fixed weights:
-            // 1. Exact match (10000)
-            // 2. Lazy match, contains all characters, length match (500)
-            // 3. Fuzzy match (30)
-            // 4. Lazy match (10)
-            //
-            // Dynamic weights:
-            // 5. Beginning match (100)
-            // 6. String inclusion bonus (query.length * 4)
-            let name = entry.name(&locales).map(|c| c.to_string()).unwrap_or_default().to_lowercase();
-            let query = &query.trim().to_lowercase();
-
-            let lazy_match = matching::lazy_match(&name, query);
-            let contains_all = name.chars().all(|c| query.contains(c));
-
-            let mut weight = if name == *query {
-                10000
-            } else if lazy_match && contains_all && query.len() == name.len() {
-                500
-            } else if matching::fuzzy_match(&name, query) {
-                30
-            } else if lazy_match {
-                10
-            } else {
-                0
-            };
-
-            if name.starts_with(query) {
-                weight += 100;
-            }
-
-            if name.contains(query) {
-                weight += query.len() * 4;
-            }
-
-            WeightedDesktopEntry {
-                entry: entry.clone(),
-                weight
-            }
+        .map(|entry| WeightedDesktopEntry {
+            entry: entry.clone(),
+            weight: calculate_weight(entry, query)
         })
         .filter(|entry| entry.weight > 0)
         .collect::<Vec<_>>();
