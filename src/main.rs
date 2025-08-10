@@ -7,11 +7,15 @@ mod ffi;
 mod helpers;
 mod singletons;
 mod widgets;
+mod sql;
 
 use gtk4::prelude::*;
 use libadwaita::Application;
 use notify::{EventKind, event::{AccessKind, AccessMode}, Watcher};
+use once_cell::sync::OnceCell;
 use std::{cell::RefCell, path::Path};
+
+use crate::sql::SqliteWrapper;
 
 pub struct GrayMeadows {
     provider: gtk4::CssProvider,
@@ -24,6 +28,8 @@ thread_local! {
         icon_theme: gtk4::IconTheme::default()
     });
 }
+
+pub static SQL_CONNECTION: OnceCell<SqliteWrapper> = OnceCell::new();
 
 pub fn bundle_apply_scss() {
     gtk4::glib::MainContext::default().invoke(|| {
@@ -118,6 +124,15 @@ async fn main() {
                     std::process::exit(1);
                 }
             });
+
+            let connection = SqliteWrapper::new();
+            if let Ok(connection) = connection {
+                let _ = SQL_CONNECTION.set(connection);
+                println!("SQLite connection established successfully, storing data in {}/sqlite.db", helpers::filesystem::get_config_directory());
+            } else {
+                eprintln!("Failed to establish SQLite connection: {:?}", connection.unwrap_err());
+                std::process::exit(1);
+            }
 
             let _ = gtk4::init();
 
