@@ -121,8 +121,6 @@ async fn main() {
 
             let _ = gtk4::init();
 
-            singletons::activate_all();
-
             gtk4::style_context_add_provider_for_display(
                 &gdk4::Display::default().expect("Failed to get default display"),
                 &APP.with(|app| app.borrow().provider.clone()),
@@ -139,6 +137,8 @@ async fn main() {
 
             bundle_apply_scss();
             watch_scss();
+
+            singletons::activate_all();
 
             let application = Application::new(
                 Some("sn.inpr.gray_meadows_shell"),
