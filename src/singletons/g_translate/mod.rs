@@ -2,14 +2,13 @@
 pub mod language;
 pub mod result;
 
-use std::sync::Mutex;
-use once_cell::sync::Lazy;
+use std::sync::{Mutex, LazyLock};
 use serde::Serialize;
 
 use crate::singletons::g_translate::{language::Language, result::GoogleTranslateResult};
 
-pub static SESSION: Lazy<Mutex<GoogleTranslateSession>> = Lazy::new(|| Mutex::new(GoogleTranslateSession::default()));
-static LENGTH_REGEX: Lazy<regex::Regex> = Lazy::new(|| regex::Regex::new(r"^(\d+)").unwrap());
+pub static SESSION: LazyLock<Mutex<GoogleTranslateSession>> = LazyLock::new(|| Mutex::new(GoogleTranslateSession::default()));
+static LENGTH_REGEX: LazyLock<regex::Regex> = LazyLock::new(|| regex::Regex::new(r"^(\d+)").unwrap());
 
 #[derive(Debug, Clone, Default, Serialize)]
 pub struct GoogleTranslateSession {

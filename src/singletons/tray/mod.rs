@@ -1,6 +1,5 @@
-use once_cell::sync::{Lazy, OnceCell};
+use std::sync::{Arc, Mutex, LazyLock, OnceLock};
 use tokio::sync::broadcast;
-use std::sync::{Arc, Mutex};
 
 use crate::singletons::tray::{bus::BusEvent, wrapper::{
     sn_item::StatusNotifierItem,
@@ -13,11 +12,11 @@ pub mod bus;
 pub mod icon;
 pub mod tray_menu;
 
-static SENDER: Lazy<broadcast::Sender<BusEvent>> = Lazy::new(|| {
+static SENDER: LazyLock<broadcast::Sender<BusEvent>> = LazyLock::new(|| {
     broadcast::channel(1).0
 });
 
-pub static ITEMS: OnceCell<Arc<Mutex<Vec<StatusNotifierItem>>>> = OnceCell::new();
+pub static ITEMS: OnceLock<Arc<Mutex<Vec<StatusNotifierItem>>>> = OnceLock::new();
 
 pub fn activate() {
     let watcher = StatusNotifierWatcher::new();

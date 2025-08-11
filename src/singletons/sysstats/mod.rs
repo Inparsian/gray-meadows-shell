@@ -3,22 +3,21 @@ mod gpu {
     pub mod nvidia;
 }
 
+use std::{time::Duration, sync::{Mutex, LazyLock}};
 use futures_signals::signal::Mutable;
 use nvml_wrapper::enum_wrappers::device::TemperatureSensor;
-use once_cell::sync::Lazy;
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind};
-use std::{time::Duration, sync::Mutex};
 
 const REFRESH_INTERVAL: Duration = Duration::from_secs(1);
 
-static SYS: Lazy<Mutex<sysinfo::System>> = Lazy::new(|| {
+static SYS: LazyLock<Mutex<sysinfo::System>> = LazyLock::new(|| {
     Mutex::new(sysinfo::System::new_with_specifics(sysinfo::RefreshKind::nothing()
         .with_memory(MemoryRefreshKind::nothing().with_ram().with_swap())
         .with_cpu(CpuRefreshKind::nothing().with_cpu_usage())
     ))
 });
 
-pub static SYS_STATS: Lazy<Mutex<SysStats>> = Lazy::new(|| Mutex::new(SysStats::default()));
+pub static SYS_STATS: LazyLock<Mutex<SysStats>> = LazyLock::new(|| Mutex::new(SysStats::default()));
 
 #[derive(Default)]
 pub struct SysStats {

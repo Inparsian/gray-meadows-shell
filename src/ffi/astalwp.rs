@@ -1,7 +1,7 @@
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 use tokio::sync::broadcast;
 
-pub static CHANNEL: Lazy<broadcast::Sender<WpEvent>> = Lazy::new(|| {
+pub static CHANNEL: LazyLock<broadcast::Sender<WpEvent>> = LazyLock::new(|| {
     let (sender, _) = broadcast::channel(100);
     sender
 });

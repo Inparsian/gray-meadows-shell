@@ -1024,7 +1024,6 @@ dependencies = [
  "lm-sensors",
  "notify",
  "nvml-wrapper",
- "once_cell",
  "rand 0.9.1",
  "regex",
  "relm4",

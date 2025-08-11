@@ -1,5 +1,4 @@
-use std::sync::Mutex;
-use once_cell::sync::{OnceCell, Lazy};
+use std::sync::{Mutex, OnceLock, LazyLock};
 use tokio::sync::broadcast;
 
 use crate::ffi::astalwp::{ffi, CHANNEL, WpEvent};
@@ -18,9 +17,9 @@ const POSSIBLE_ENDPOINT_PROPERTIES: [&str; 1] = [
     "is-default"
 ];
 
-static SENDER: Lazy<broadcast::Sender<WpEvent>> = Lazy::new(|| broadcast::channel(1).0);
-static NODES: OnceCell<Mutex<Vec<ffi::Node>>> = once_cell::sync::OnceCell::new();
-static ENDPOINTS: OnceCell<Mutex<Vec<ffi::Endpoint>>> = once_cell::sync::OnceCell::new();
+static SENDER: LazyLock<broadcast::Sender<WpEvent>> = LazyLock::new(|| broadcast::channel(1).0);
+static NODES: OnceLock<Mutex<Vec<ffi::Node>>> = OnceLock::new();
+static ENDPOINTS: OnceLock<Mutex<Vec<ffi::Endpoint>>> = OnceLock::new();
 
 pub fn subscribe() -> tokio::sync::broadcast::Receiver<WpEvent> {
     SENDER.subscribe()

@@ -1,9 +1,8 @@
 pub mod pixbuf;
 
-use std::{path::{Path, PathBuf}, sync::Mutex};
+use std::{path::{Path, PathBuf}, sync::{Mutex, LazyLock}};
 use freedesktop_desktop_entry::{default_paths, get_languages_from_env, Iter, DesktopEntry};
 use notify::{event::{AccessKind, AccessMode}, EventKind, Watcher};
-use once_cell::sync::Lazy;
 
 use crate::{helpers::{matching, process}, SQL_CONNECTION};
 
@@ -12,7 +11,7 @@ pub struct WeightedDesktopEntry {
     pub weight: usize,
 }
 
-pub static DESKTOPS: Lazy<Mutex<Vec<DesktopEntry>>> = Lazy::new(|| Mutex::new(Vec::new()));
+pub static DESKTOPS: LazyLock<Mutex<Vec<DesktopEntry>>> = LazyLock::new(|| Mutex::new(Vec::new()));
 
 pub fn activate() {
     refresh_desktops();

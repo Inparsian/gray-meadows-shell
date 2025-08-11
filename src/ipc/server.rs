@@ -1,11 +1,11 @@
 use std::io::{self, Read, Write};
 use std::os::unix::net::{UnixListener, UnixStream};
-use once_cell::sync::OnceCell;
+use std::sync::OnceLock;
 use tokio::sync::broadcast;
 
 use crate::ipc;
 
-static SENDER: OnceCell<broadcast::Sender<String>> = OnceCell::new();
+static SENDER: OnceLock<broadcast::Sender<String>> = OnceLock::new();
 
 pub fn drop_socket() -> io::Result<()> {
     std::fs::remove_file(ipc::get_socket_path())

@@ -1,5 +1,5 @@
+use std::sync::LazyLock;
 use futures_signals::signal::Mutable;
-use once_cell::sync::Lazy;
 use chrono::Local;
 
 const DATE_FORMAT: &str = "%a, %m/%d";
@@ -11,7 +11,7 @@ pub struct DateTime {
     pub time: String
 }
 
-pub static DATE_TIME: Lazy<Mutable<DateTime>> = Lazy::new(|| Mutable::new(date_time_now()));
+pub static DATE_TIME: LazyLock<Mutable<DateTime>> = LazyLock::new(|| Mutable::new(date_time_now()));
 
 fn date_time_now() -> DateTime {
     let now = Local::now();

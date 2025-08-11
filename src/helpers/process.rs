@@ -1,9 +1,8 @@
-use std::{ffi::CString, path::Path};
-use once_cell::sync::Lazy;
+use std::{ffi::CString, path::Path, sync::LazyLock};
 use regex::Regex;
 use libc::{open, close, setsid, dup2, O_RDWR, STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO};
 
-static FIELD_CODE_REGEX: Lazy<Regex> = Lazy::new(|| {
+static FIELD_CODE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new("%[fFuUdDnNiIcCkvVm]").expect("Failed to compile field code regex")
 });
 

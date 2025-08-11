@@ -3,11 +3,10 @@ mod list;
 mod modules;
 mod windows;
 
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, sync::LazyLock};
 use freedesktop_desktop_entry::get_languages_from_env;
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
-use once_cell::sync::Lazy;
 use regex::Regex;
 use urlencoding::encode;
 
@@ -23,13 +22,13 @@ use crate::{
     }
 };
 
-static MODULES: Lazy<Vec<&(dyn OverviewSearchModule + Send + Sync)>> = Lazy::new(|| vec![
+static MODULES: LazyLock<Vec<&(dyn OverviewSearchModule + Send + Sync)>> = LazyLock::new(|| vec![
     &modules::calculator::OverviewCalculatorModule,
     &modules::text::OverviewTextModule,
     &modules::terminal::OverviewTerminalModule
 ]);
 
-static ALPHANUMERIC_SYMBOLIC_REGEX: Lazy<Regex> = Lazy::new(|| {
+static ALPHANUMERIC_SYMBOLIC_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new("^[a-zA-Z0-9 ~!@#$%^&*()_+\\-=\\[\\]{}|;':\",./<>?]+$").expect("Failed to compile alphanumeric symbolic regex")
 });
 

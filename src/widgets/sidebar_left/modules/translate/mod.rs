@@ -1,8 +1,7 @@
 mod lang_buttons;
 mod lang_select;
 
-use std::{sync::Mutex, time::Duration};
-use once_cell::sync::Lazy;
+use std::{sync::{Mutex, LazyLock}, time::Duration};
 use gtk4::prelude::*;
 use tokio::sync::broadcast;
 
@@ -11,15 +10,13 @@ use crate::singletons::g_translate::{
     result::GoogleTranslateResult, translate
 };
 
-static WORKER_TIMEOUT: Lazy<Mutex<Option<gtk4::glib::SourceId>>> = Lazy::new(|| Mutex::new(None));
-static WORKING: Lazy<Mutex<bool>> = Lazy::new(|| Mutex::new(false));
-
-static SOURCE_LANG: Lazy<Mutex<Option<Language>>> = Lazy::new(|| Mutex::new(language::get_by_name("English")));
-static TARGET_LANG: Lazy<Mutex<Option<Language>>> = Lazy::new(|| Mutex::new(language::get_by_name("Spanish")));
-static AUTO_DETECTED_LANG: Lazy<Mutex<Option<Language>>> = Lazy::new(|| Mutex::new(None));
-static REVEAL: Lazy<Mutex<LanguageSelectReveal>> = Lazy::new(|| Mutex::new(LanguageSelectReveal::None));
-
-static UI_EVENT_CHANNEL: Lazy<broadcast::Sender<UiEvent>> = Lazy::new(|| {
+static WORKER_TIMEOUT: LazyLock<Mutex<Option<gtk4::glib::SourceId>>> = LazyLock::new(|| Mutex::new(None));
+static WORKING: LazyLock<Mutex<bool>> = LazyLock::new(|| Mutex::new(false));
+static SOURCE_LANG: LazyLock<Mutex<Option<Language>>> = LazyLock::new(|| Mutex::new(language::get_by_name("English")));
+static TARGET_LANG: LazyLock<Mutex<Option<Language>>> = LazyLock::new(|| Mutex::new(language::get_by_name("Spanish")));
+static AUTO_DETECTED_LANG: LazyLock<Mutex<Option<Language>>> = LazyLock::new(|| Mutex::new(None));
+static REVEAL: LazyLock<Mutex<LanguageSelectReveal>> = LazyLock::new(|| Mutex::new(LanguageSelectReveal::None));
+static UI_EVENT_CHANNEL: LazyLock<broadcast::Sender<UiEvent>> = LazyLock::new(|| {
     broadcast::channel(100).0
 });
 

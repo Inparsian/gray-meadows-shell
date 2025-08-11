@@ -1,7 +1,7 @@
+use std::sync::OnceLock;
 use nvml_wrapper::{Nvml, error::NvmlError};
-use once_cell::sync::OnceCell;
 
-pub static NVML: OnceCell<Nvml> = OnceCell::new();
+pub static NVML: OnceLock<Nvml> = OnceLock::new();
 
 pub fn init_nvml() -> Result<(), NvmlError> {
     let _ = NVML.set(Nvml::init()?);

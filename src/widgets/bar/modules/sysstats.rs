@@ -1,6 +1,6 @@
+use std::sync::LazyLock;
 use futures_signals::signal::{Mutable, SignalExt};
 use gtk4::prelude::*;
-use once_cell::sync::Lazy;
 
 use crate::{
     helpers::{gesture, unit},
@@ -11,7 +11,7 @@ use crate::{
 const SWAP_SHOW_THRESHOLD: f64 = 5.0; // Show swap usage only if it's above this threshold, 
                                       // indicating that the system is under memory pressure.
 
-static DETAILED: Lazy<Mutable<bool>> = Lazy::new(|| Mutable::new(false));                                      
+static DETAILED: LazyLock<Mutable<bool>> = LazyLock::new(|| Mutable::new(false));
 
 fn format_percentage(percentage: f64) -> String {
     if percentage <= 100.0 {

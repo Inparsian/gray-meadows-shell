@@ -1,4 +1,4 @@
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Language {
@@ -6,10 +6,10 @@ pub struct Language {
     pub code: String
 }
 
-pub static AUTO_LANG: Lazy<Language> = Lazy::new(|| Language { code: "auto".into(), name: "Automatic".into() });
+pub static AUTO_LANG: LazyLock<Language> = LazyLock::new(|| Language { code: "auto".into(), name: "Automatic".into() });
 
 // Our dictionary of languages
-pub static LANGUAGES: Lazy<Vec<Language>> = Lazy::new(|| vec![
+pub static LANGUAGES: LazyLock<Vec<Language>> = LazyLock::new(|| vec![
     Language { code: "af".into(), name: "Afrikaans".into() },
     Language { code: "sq".into(), name: "Albanian".into() },
     Language { code: "am".into(), name: "Amharic".into() },

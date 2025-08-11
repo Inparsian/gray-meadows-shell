@@ -1,6 +1,6 @@
+use std::sync::LazyLock;
 use futures_signals::signal::Mutable;
 use gdk4::prelude::MonitorExt;
-use once_cell::sync::Lazy;
 use hyprland::{
     async_closure,
     data::{Client, Workspace, Workspaces, Monitor},
@@ -18,7 +18,7 @@ pub struct Hyprland {
     pub workspaces: Mutable<Option<Workspaces>>,
 }
 
-pub static HYPRLAND: Lazy<Hyprland> = Lazy::new(Hyprland::default);
+pub static HYPRLAND: LazyLock<Hyprland> = LazyLock::new(Hyprland::default);
 
 fn refresh_active_client() {
     HYPRLAND.active_client.set(Client::get_active().ok().unwrap_or(None));

@@ -1,9 +1,8 @@
-use std::sync::Mutex;
+use std::sync::{Mutex, LazyLock};
 use futures_signals::signal::SignalExt;
 use gtk4::prelude::*;
 use ::hyprland::dispatch;
 use ::hyprland::dispatch::{Dispatch, DispatchType, WorkspaceIdentifierWithSpecial};
-use once_cell::sync::Lazy;
 
 use crate::{
     singletons::hyprland,
@@ -17,7 +16,7 @@ const WORKSPACE_HEIGHT: f64 = 13.0;
 const WORKSPACE_Y: f64 = 5.0;
 const WORKSPACE_PADDING: f64 = 1.0;
 
-static WORKSPACE_MASK: Lazy<Mutex<WorkspaceMask>> = Lazy::new(|| Mutex::new(WorkspaceMask::default()));
+static WORKSPACE_MASK: LazyLock<Mutex<WorkspaceMask>> = LazyLock::new(|| Mutex::new(WorkspaceMask::default()));
 
 #[derive(Clone, Default)]
 struct WorkspaceMask {

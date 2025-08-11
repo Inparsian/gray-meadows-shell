@@ -2,10 +2,9 @@ pub mod mpris_player;
 mod mpris_metadata;
 mod mpris_dbus;
 
-use std::{rc::Rc, time::Duration};
+use std::{rc::Rc, time::Duration, sync::LazyLock};
 use dbus::{channel::MatchingReceiver, message::{MatchRule, MessageType}};
 use futures_signals::{signal::SignalExt, signal_vec::{SignalVecExt, VecDiff}};
-use once_cell::sync::Lazy;
 
 const MPRIS_DBUS_PREFIX: &str = "org.mpris.MediaPlayer2";
 const MPRIS_DBUS_PATH: &str = "/org/mpris/MediaPlayer2";
@@ -16,7 +15,7 @@ pub struct Mpris {
     pub default_player: futures_signals::signal::Mutable<usize>
 }
 
-pub static MPRIS: Lazy<Mpris> = Lazy::new(Mpris::default);
+pub static MPRIS: LazyLock<Mpris> = LazyLock::new(Mpris::default);
 
 fn assert_default_player() {
     if MPRIS.default_player.get() > MPRIS.players.lock_ref().len() {

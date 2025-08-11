@@ -9,11 +9,10 @@ mod singletons;
 mod widgets;
 mod sql;
 
+use std::{cell::RefCell, sync::OnceLock, path::Path};
 use gtk4::prelude::*;
 use libadwaita::Application;
 use notify::{EventKind, event::{AccessKind, AccessMode}, Watcher};
-use once_cell::sync::OnceCell;
-use std::{cell::RefCell, path::Path};
 
 use crate::sql::SqliteWrapper;
 
@@ -29,7 +28,7 @@ thread_local! {
     });
 }
 
-pub static SQL_CONNECTION: OnceCell<SqliteWrapper> = OnceCell::new();
+pub static SQL_CONNECTION: OnceLock<SqliteWrapper> = OnceLock::new();
 
 pub fn bundle_apply_scss() {
     gtk4::glib::MainContext::default().invoke(|| {

@@ -1,12 +1,11 @@
-use std::sync::Mutex;
-use once_cell::sync::Lazy;
+use std::sync::{Mutex, LazyLock};
 use regex::Regex;
 
 use crate::{color::{is_valid_hex_color, model::Rgba}, helpers::filesystem};
 
 const VAR_REGEX: &str = r"^\$([a-zA-Z0-9_-]+):\s*([a-zA-Z0-9#() ,.-]+);$";
 
-pub static SCSS_VARS: Lazy<Mutex<ScssVars>> = Lazy::new(|| Mutex::new(ScssVars::new()));
+pub static SCSS_VARS: LazyLock<Mutex<ScssVars>> = LazyLock::new(|| Mutex::new(ScssVars::new()));
 
 pub struct ScssVars {
     string_vars: std::collections::HashMap<String, String>,
