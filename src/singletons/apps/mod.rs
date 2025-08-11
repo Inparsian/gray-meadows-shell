@@ -74,6 +74,18 @@ pub fn calculate_weight(entry: &DesktopEntry, query: &str) -> usize {
     weight
 }
 
+pub fn get_from_command(command: &str) -> Option<DesktopEntry> {
+    let desktops = DESKTOPS.lock().unwrap();
+
+    for entry in desktops.iter() {
+        if entry.exec() == Some(command) {
+            return Some(entry.clone());
+        }
+    }
+
+    None
+}
+
 pub fn query_desktops(query: &str) -> Vec<WeightedDesktopEntry> {
     let desktops = DESKTOPS.lock().unwrap();
 

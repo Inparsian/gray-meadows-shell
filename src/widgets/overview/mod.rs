@@ -1,6 +1,7 @@
 mod item;
 mod list;
 mod modules;
+mod windows;
 
 use std::{cell::RefCell, rc::Rc};
 use freedesktop_desktop_entry::get_languages_from_env;
@@ -17,7 +18,8 @@ use crate::{
     widgets::overview::{
         item::{OverviewSearchItem, OverviewSearchItemAction},
         list::{get_button_from_row, OverviewSearchList},
-        modules::{input_without_extensions, validate_input, OverviewSearchModule}
+        modules::{input_without_extensions, validate_input, OverviewSearchModule},
+        windows::frequent::OverviewFrequentWindow
     }
 };
 
@@ -79,7 +81,8 @@ fn generate_search_results(query: &str) -> Vec<OverviewSearchItem> {
 
 pub fn new(application: &libadwaita::Application) {
     let search_results = Rc::new(RefCell::new(OverviewSearchList::new()));
-    
+    let frequent_window = OverviewFrequentWindow::new();
+
     view! {
         entry_prompt_revealer = gtk4::Revealer {
             set_transition_type: gtk4::RevealerTransitionType::Crossfade,
@@ -101,6 +104,23 @@ pub fn new(application: &libadwaita::Application) {
                 set_maximum_size: 0,
                 set_child: Some(&search_results.borrow().get_widget())
             },
+        },
+
+        windows = gtk4::Box {
+            set_css_classes: &["overview-windows-box"],
+            set_orientation: gtk4::Orientation::Horizontal,
+            set_spacing: 12,
+            set_hexpand: true,
+            set_vexpand: true,
+
+            append: &frequent_window.widget,
+        },
+
+        windows_revealer = gtk4::Revealer {
+            set_transition_type: gtk4::RevealerTransitionType::SlideDown,
+            set_transition_duration: 250,
+            set_reveal_child: true,
+            set_child: Some(&windows)
         },
 
         entry_box = gtk4::Box {
@@ -127,14 +147,17 @@ pub fn new(application: &libadwaita::Application) {
                 let entry_prompt_revealer = entry_prompt_revealer.clone();
                 let search_results = search_results.clone();
                 let search_results_revealer = search_results_revealer.clone();
+                let windows_revealer = windows_revealer.clone();
 
                 move |entry| {
                     if entry.text().is_empty() {
                         entry_prompt_revealer.set_reveal_child(true);
+                        windows_revealer.set_reveal_child(true);
                         search_results_revealer.set_reveal_child(false);
                         entry_box.style_context().remove_class("entry-extended");
                     } else {
                         entry_prompt_revealer.set_reveal_child(false);
+                        windows_revealer.set_reveal_child(false);
                         search_results_revealer.set_reveal_child(true);
                         entry_box.style_context().add_class("entry-extended");
 
@@ -179,13 +202,14 @@ pub fn new(application: &libadwaita::Application) {
 
         overview_box = gtk4::Box {
             set_orientation: gtk4::Orientation::Vertical,
-            set_spacing: 8,
+            set_spacing: 0,
             set_halign: gtk4::Align::Center,
             set_valign: gtk4::Align::Center,
             set_hexpand: true,
 
             append: &entry_box,
             append: &search_results_revealer,
+            append: &windows_revealer
         },
 
         window = gtk4::ApplicationWindow {
@@ -318,6 +342,9 @@ pub fn new(application: &libadwaita::Application) {
             } else {
                 window.set_monitor(monitor.as_ref());
                 window.show();
+
+                // Tell the windows to update their contents
+                frequent_window.update();
             }
         }
 

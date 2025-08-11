@@ -315,6 +315,7 @@
 
     .entry-box {
         background: $background-color-primary;
+        margin-bottom: 8px;
         min-width: 294px;
         transition: all 0.25s cubic-bezier(0.5, 0, 0, 1);
         padding: 16px;
@@ -338,6 +339,44 @@
 
             .entry-prompt {
                 caret-color: $foreground-color-select;
+            }
+        }
+    }
+
+    .overview-window {
+        background: $background-color-primary;
+        border: 1px solid $border-color-primary;
+        padding: 8px;
+        min-width: 336px;
+
+        .overview-window-header {
+            @include large-text;
+            margin: 8px;
+            color: $foreground-color-select;
+        }
+
+        .overview-window-button {
+            @include large-text;
+            background: $background-color-primary;
+            color: $foreground-color-primary;
+            border-radius: 0px;
+            padding-top: 8px;
+            padding-bottom: 8px;
+            padding-left: 12px;
+            padding-right: 12px;
+            font-weight: normal;
+
+            .overview-window-button-icon {
+                margin-right: 16px;
+            }
+
+            &:hover, &:focus {
+                background: $background-color-tertiary;
+                outline: none;
+            }
+
+            &:active {
+                background: $background-color-quaternary;
             }
         }
     }

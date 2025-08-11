@@ -22,6 +22,20 @@ impl SqliteWrapper {
         })
     }
 
+    /// Gets the top commands sorted by runs descending.
+    pub fn get_top_commands(&self, limit: usize) -> Result<Vec<(String, i64)>, sqlite::Error> {
+        let connection = self.connection.lock().unwrap();
+        let statement = format!("SELECT command, runs FROM desktop_runs ORDER BY runs DESC LIMIT {}", limit);
+        let mut cursor = connection.prepare(&statement)?;
+        let mut results = Vec::new();
+        while cursor.next()? == sqlite::State::Row {
+            let command = cursor.read::<String, _>(0)?;
+            let runs = cursor.read::<i64, _>(1)?;
+            results.push((command, runs));
+        }
+        Ok(results)
+    }
+
     /// Fetches the number of runs for a given command.
     pub fn get_runs(&self, command: &str) -> Result<i64, sqlite::Error> {
         let connection = self.connection.lock().unwrap();
