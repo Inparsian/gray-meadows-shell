@@ -20,87 +20,83 @@ pub fn get_color_box(hsv: Hsv, color_tabs: &Tabs) -> ColorBox {
     let hsv = Rc::new(RefCell::new(hsv));
     let current_tab = &color_tabs.current_tab;
 
-    let (widget, css_provider) = {
-        view! {
-            color_box = gtk4::Box {
-                set_css_classes: &["color-picker-transform-color"],
-                set_hexpand: true,
-            },
+    view! {
+        color_box = gtk4::Box {
+            set_css_classes: &["color-picker-transform-color"],
+            set_hexpand: true,
+        },
 
-            color_copy_button = gtk4::Button {
-                set_css_classes: &["color-picker-transform-copy-button"],
-                connect_clicked: {
-                    let hsv = hsv.clone();
-                    let current_tab = current_tab.clone();
-                    move |_| {
-                        let hsv = hsv.borrow();
-                        let text = match current_tab.get_cloned().as_deref() {
-                            Some("int") => hsv.as_int().to_string(),
-                            Some("rgb") => hsv.as_rgba().as_string(),
-                            Some("hsv") => hsv.as_string(),
-                            Some("hsl") => hsv.as_hsl().as_string(),
-                            Some("cmyk") => hsv.as_cmyk().as_string(),
-                            Some("oklch") => hsv.as_oklch().as_string(),
-                            _ => hsv.as_hex()
-                        };
+        color_copy_button = gtk4::Button {
+            set_css_classes: &["color-picker-transform-copy-button"],
+            connect_clicked: {
+                let hsv = hsv.clone();
+                let current_tab = current_tab.clone();
+                move |_| {
+                    let hsv = hsv.borrow();
+                    let text = match current_tab.get_cloned().as_deref() {
+                        Some("int") => hsv.as_int().to_string(),
+                        Some("rgb") => hsv.as_rgba().as_string(),
+                        Some("hsv") => hsv.as_string(),
+                        Some("hsl") => hsv.as_hsl().as_string(),
+                        Some("cmyk") => hsv.as_cmyk().as_string(),
+                        Some("oklch") => hsv.as_oklch().as_string(),
+                        _ => hsv.as_hex()
+                    };
 
-                        // TODO: Do this without wl-copy?
-                        std::thread::spawn(move || std::process::Command::new("wl-copy")
-                            .arg(text)
-                            .output()
-                        );
-                    }
-                },
-
-                add_controller: gesture::on_secondary_up({
-                    let hsv = hsv.clone();
-                    move |_, _, _| {
-                        let _ = ipc::client::send_message(&format!("color_picker_set_hex {}", hsv.borrow().as_hex()));
-                    }
-                }),
-
-                gtk4::Label {
-                    set_css_classes: &["material-icons"],
-                    set_label: "content_copy",
-                    set_hexpand: true
+                    // TODO: Do this without wl-copy?
+                    std::thread::spawn(move || std::process::Command::new("wl-copy")
+                        .arg(text)
+                        .output()
+                    );
                 }
             },
 
-            color_copy_button_revealer = gtk4::Revealer {
-                set_transition_type: gtk4::RevealerTransitionType::Crossfade,
-                set_transition_duration: 200,
-                set_reveal_child: false,
-                add_controller: gesture::on_enter({
-                    let revealer = color_copy_button_revealer.clone();
-                    move |_, _| {
-                        revealer.set_reveal_child(true);
-                    }
-                }),
+            add_controller: gesture::on_secondary_up({
+                let hsv = hsv.clone();
+                move |_, _, _| {
+                    let _ = ipc::client::send_message(&format!("color_picker_set_hex {}", hsv.borrow().as_hex()));
+                }
+            }),
 
-                add_controller: gesture::on_leave({
-                    let revealer = color_copy_button_revealer.clone();
-                    move || {
-                        revealer.set_reveal_child(false);
-                    }
-                }),
-
-                set_child: Some(&color_copy_button)
-            },
-
-            color_overlay = gtk4::Overlay {
-                set_child: Some(&color_box),
-                add_overlay: &color_copy_button_revealer
+            gtk4::Label {
+                set_css_classes: &["material-icons"],
+                set_label: "content_copy",
+                set_hexpand: true
             }
-        };
+        },
 
-        let css_provider = gtk4::CssProvider::new();
-        color_box.style_context().add_provider(
-            &css_provider,
-            gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
-        );
+        color_copy_button_revealer = gtk4::Revealer {
+            set_transition_type: gtk4::RevealerTransitionType::Crossfade,
+            set_transition_duration: 200,
+            set_reveal_child: false,
+            add_controller: gesture::on_enter({
+                let revealer = color_copy_button_revealer.clone();
+                move |_, _| {
+                    revealer.set_reveal_child(true);
+                }
+            }),
 
-        (color_overlay, css_provider)
+            add_controller: gesture::on_leave({
+                let revealer = color_copy_button_revealer.clone();
+                move || {
+                    revealer.set_reveal_child(false);
+                }
+            }),
+
+            set_child: Some(&color_copy_button)
+        },
+
+        widget = gtk4::Overlay {
+            set_child: Some(&color_box),
+            add_overlay: &color_copy_button_revealer
+        }
     };
+
+    let css_provider = gtk4::CssProvider::new();
+    color_box.style_context().add_provider(
+        &css_provider,
+        gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
+    );
 
     ColorBox {
         widget,
