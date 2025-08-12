@@ -51,7 +51,10 @@ pub fn launch(input: &str) {
         .collect();
 
     if !argv.is_empty() {
-        let argv_paths: Vec<&Path> = argv.iter().map(AsRef::as_ref).collect();
+        let argv_paths: Vec<&Path> = argv.iter()
+            .map(AsRef::as_ref)
+            .filter(|path: &&Path| !path.as_os_str().is_empty())
+            .collect();
 
         if let Err(err) = gtk4::glib::spawn_async(
             None::<&str>,
