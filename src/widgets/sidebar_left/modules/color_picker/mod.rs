@@ -1,209 +1,16 @@
 mod hue_picker;
 mod saturation_value_picker;
 mod fields;
+mod color_boxes;
 
-use std::{rc::Rc, cell::RefCell};
 use futures_signals::signal::{Mutable, SignalExt};
-use gtk4::prelude::*;
+use gtk4::{Adjustment, prelude::*};
 
 use crate::{
-    color::{model::{int_to_hex, Hsv}, LighterDarkerResult},
-    helpers::gesture,
+    color::model::{int_to_hex, Hsv},
     ipc,
-    widgets::{common::{dynamic_grid::DynamicGrid, tabs::{TabSize, Tabs, TabsStack}}, sidebar_left::modules::color_picker::fields::Fields}
+    widgets::{common::{tabs::{TabSize, Tabs, TabsStack}}, sidebar_left::modules::color_picker::fields::Fields}
 };
-
-#[derive(Debug, Clone)]
-pub struct ColorBox {
-    pub widget: gtk4::Overlay,
-    pub css_provider: gtk4::CssProvider,
-    pub hsv: Rc<RefCell<Hsv>>
-}
-
-pub fn get_color_box(hsv: Hsv, color_tabs: &Tabs) -> ColorBox {
-    let hsv = Rc::new(RefCell::new(hsv));
-    let current_tab = &color_tabs.current_tab;
-
-    let (widget, css_provider) = {
-        view! {
-            color_box = gtk4::Box {
-                set_css_classes: &["color-picker-transform-color"],
-                set_hexpand: true,
-            },
-
-            color_copy_button = gtk4::Button {
-                set_css_classes: &["color-picker-transform-copy-button"],
-                connect_clicked: {
-                    let hsv = hsv.clone();
-                    let current_tab = current_tab.clone();
-                    move |_| {
-                        let hsv = hsv.borrow();
-                        let text = match current_tab.get_cloned().as_deref() {
-                            Some("int") => hsv.as_int().to_string(),
-                            Some("rgb") => hsv.as_rgba().as_string(),
-                            Some("hsv") => hsv.as_string(),
-                            Some("hsl") => hsv.as_hsl().as_string(),
-                            Some("cmyk") => hsv.as_cmyk().as_string(),
-                            Some("oklch") => hsv.as_oklch().as_string(),
-                            _ => hsv.as_hex()
-                        };
-
-                        // TODO: Do this without wl-copy?
-                        std::thread::spawn(move || std::process::Command::new("wl-copy")
-                            .arg(text)
-                            .output()
-                        );
-                    }
-                },
-
-                add_controller: gesture::on_secondary_up({
-                    let hsv = hsv.clone();
-                    move |_, _, _| {
-                        let _ = ipc::client::send_message(&format!("color_picker_set_hex {}", hsv.borrow().as_hex()));
-                    }
-                }),
-
-                gtk4::Label {
-                    set_css_classes: &["material-icons"],
-                    set_label: "content_copy",
-                    set_hexpand: true
-                }
-            },
-
-            color_copy_button_revealer = gtk4::Revealer {
-                set_transition_type: gtk4::RevealerTransitionType::Crossfade,
-                set_transition_duration: 200,
-                set_reveal_child: false,
-                add_controller: gesture::on_enter({
-                    let revealer = color_copy_button_revealer.clone();
-                    move |_, _| {
-                        revealer.set_reveal_child(true);
-                    }
-                }),
-
-                add_controller: gesture::on_leave({
-                    let revealer = color_copy_button_revealer.clone();
-                    move || {
-                        revealer.set_reveal_child(false);
-                    }
-                }),
-
-                set_child: Some(&color_copy_button)
-            },
-
-            color_overlay = gtk4::Overlay {
-                set_child: Some(&color_box),
-                add_overlay: &color_copy_button_revealer
-            }
-        };
-
-        let css_provider = gtk4::CssProvider::new();
-        color_box.style_context().add_provider(
-            &css_provider,
-            gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
-        );
-
-        (color_overlay, css_provider)
-    };
-
-    ColorBox {
-        widget,
-        css_provider,
-        hsv
-    }
-}
-
-pub fn get_analogous_color_boxes(hsv: &Mutable<Hsv>, count: u32, color_tabs: &Tabs) -> gtk4::Box {
-    let box_container = gtk4::Box::new(gtk4::Orientation::Horizontal, 8);
-    let mut boxes: Vec<ColorBox> = Vec::new();
-
-    for _ in 0..count {
-        let color_box = get_color_box(hsv.get(), color_tabs);
-
-        box_container.append(&color_box.widget);
-        boxes.push(color_box);
-    }
-
-    let hsv_future = hsv.signal().for_each({
-        let boxes = boxes.clone();
-        let color = hsv.get();
-
-        move |hsv| {
-            let analogous_colors = crate::color::get_analogous_colors(hsv, count);
-            for (i, color_box) in boxes.iter().enumerate() {
-                let new_color = analogous_colors.get(i).unwrap_or(&color);
-
-                color_box.css_provider.load_from_data(&format!(
-                    ".color-picker-transform-color {{ background-color: {}; }}",
-                    new_color.as_hex()
-                ));
-
-                let _ = color_box.hsv.try_borrow_mut().map(|mut c| *c = *new_color);
-            }
-
-            async {}
-        }
-    });
-
-    gtk4::glib::spawn_future_local(hsv_future);
-
-    box_container
-}
-
-pub fn get_lighter_darker_color_boxes(hsv: &Mutable<Hsv>, count: u32, color_tabs: &Tabs) -> DynamicGrid {
-    let mut grid = DynamicGrid::new(4);
-    let mut boxes: Vec<(ColorBox, gtk4::Label)> = Vec::new();
-
-    for _ in 0..=count {
-        let color_box = get_color_box(hsv.get(), color_tabs);
-        let label = gtk4::Label::new(Some("0%"));
-        let box_ = gtk4::Box::new(gtk4::Orientation::Horizontal, 8);
-        box_.append(&color_box.widget);
-        box_.append(&label);
-
-        grid.append(&box_);
-        boxes.push((color_box, label));
-    }
-
-    let hsv_future = hsv.signal().for_each({
-        let boxes = boxes.clone();
-        let color = hsv.get();
-
-        move |hsv| {
-            let lighter_darker_colors = crate::color::get_lighter_darker_colors(hsv, count);
-            let default_result = LighterDarkerResult {
-                hsv: color,
-                lightness: 0.0,
-                is_original: false
-            };
-            
-            for (i, (color_box, label)) in boxes.iter().enumerate() {
-                let new_color = lighter_darker_colors.get(i).unwrap_or(&default_result);
-
-                color_box.css_provider.load_from_data(&format!(
-                    ".color-picker-transform-color {{ background-color: {}; }}",
-                    new_color.hsv.as_hex()
-                ));
-
-                label.set_label(&format!("{:<4}", format!("{:.0}%", new_color.lightness)));
-
-                if new_color.is_original {
-                    label.set_css_classes(&["color-picker-transform-color-label", "original"]);
-                } else {
-                    label.set_css_classes(&["color-picker-transform-color-label"]);
-                }
-
-                let _ = color_box.hsv.try_borrow_mut().map(|mut c| *c = new_color.hsv);
-            }
-
-            async {}
-        }
-    });
-
-    gtk4::glib::spawn_future_local(hsv_future);
-
-    grid
-}
 
 pub fn new() -> gtk4::Box {
     let hsv = Mutable::new(Hsv {
@@ -271,90 +78,90 @@ pub fn new() -> gtk4::Box {
     });
 
     let mut rgb_fields = Fields::new();
-    create_spin_field!(rgb_fields, 0, 1.0, gtk4::Adjustment::new(0.0, 0.0, 255.0, 1.0, 1.0, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
+    create_spin_field!(rgb_fields, 0, 1.0, Adjustment::new(0.0, 0.0, 255.0, 1.0, 1.0, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
         let mut rgba = hsv.get().as_rgba();
         rgba.red = value as u8;
         Hsv::from_hex(&rgba.as_hex())
     });
-    create_spin_field!(rgb_fields, 0, 1.0, gtk4::Adjustment::new(0.0, 0.0, 255.0, 1.0, 1.0, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
+    create_spin_field!(rgb_fields, 0, 1.0, Adjustment::new(0.0, 0.0, 255.0, 1.0, 1.0, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
         let mut rgba = hsv.get().as_rgba();
         rgba.green = value as u8;
         Hsv::from_hex(&rgba.as_hex())
     });
-    create_spin_field!(rgb_fields, 0, 1.0, gtk4::Adjustment::new(0.0, 0.0, 255.0, 1.0, 1.0, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
+    create_spin_field!(rgb_fields, 0, 1.0, Adjustment::new(0.0, 0.0, 255.0, 1.0, 1.0, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
         let mut rgba = hsv.get().as_rgba();
         rgba.blue = value as u8;
         Hsv::from_hex(&rgba.as_hex())
     });
 
     let mut hsv_fields = Fields::new();
-    create_spin_field!(hsv_fields, 2, 0.33, gtk4::Adjustment::new(0.0, 0.0, 360.0, 0.33, 0.33, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
+    create_spin_field!(hsv_fields, 2, 0.33, Adjustment::new(0.0, 0.0, 360.0, 0.33, 0.33, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
         let mut hsv_value = hsv.get();
         hsv_value.hue = value;
         hsv_value
     });
-    create_spin_field!(hsv_fields, 2, 0.33, gtk4::Adjustment::new(0.0, 0.0, 100.0, 0.33, 0.33, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
+    create_spin_field!(hsv_fields, 2, 0.33, Adjustment::new(0.0, 0.0, 100.0, 0.33, 0.33, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
         let mut hsv_value = hsv.get();
         hsv_value.saturation = value;
         hsv_value
     });
-    create_spin_field!(hsv_fields, 2, 0.33, gtk4::Adjustment::new(0.0, 0.0, 100.0, 0.33, 0.33, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
+    create_spin_field!(hsv_fields, 2, 0.33, Adjustment::new(0.0, 0.0, 100.0, 0.33, 0.33, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
         let mut hsv_value = hsv.get();
         hsv_value.value = value;
         hsv_value
     });
 
     let mut hsl_fields = Fields::new();
-    create_spin_field!(hsl_fields, 2, 0.33, gtk4::Adjustment::new(0.0, 0.0, 360.0, 0.33, 0.33, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
+    create_spin_field!(hsl_fields, 2, 0.33, Adjustment::new(0.0, 0.0, 360.0, 0.33, 0.33, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
         let mut hsl_value = hsv.get().as_hsl();
         hsl_value.hue = value;
         Hsv::from_hex(&hsl_value.as_hex())
     });
-    create_spin_field!(hsl_fields, 2, 0.33, gtk4::Adjustment::new(0.0, 0.0, 100.0, 0.33, 0.33, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
+    create_spin_field!(hsl_fields, 2, 0.33, Adjustment::new(0.0, 0.0, 100.0, 0.33, 0.33, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
         let mut hsl_value = hsv.get().as_hsl();
         hsl_value.saturation = value;
         Hsv::from_hex(&hsl_value.as_hex())
     });
-    create_spin_field!(hsl_fields, 2, 0.33, gtk4::Adjustment::new(0.0, 0.0, 100.0, 0.33, 0.33, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
+    create_spin_field!(hsl_fields, 2, 0.33, Adjustment::new(0.0, 0.0, 100.0, 0.33, 0.33, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
         let mut hsl_value = hsv.get().as_hsl();
         hsl_value.lightness = value;
         Hsv::from_hex(&hsl_value.as_hex())
     });
 
     let mut cmyk_fields = Fields::new();
-    create_spin_field!(cmyk_fields, 0, 1.0, gtk4::Adjustment::new(0.0, 0.0, 100.0, 1.0, 1.0, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
+    create_spin_field!(cmyk_fields, 0, 1.0, Adjustment::new(0.0, 0.0, 100.0, 1.0, 1.0, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
         let mut cmyk_value = hsv.get().as_cmyk();
         cmyk_value.cyan = value as u8;
         Hsv::from_hex(&cmyk_value.as_hex())
     });
-    create_spin_field!(cmyk_fields, 0, 1.0, gtk4::Adjustment::new(0.0, 0.0, 100.0, 1.0, 1.0, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
+    create_spin_field!(cmyk_fields, 0, 1.0, Adjustment::new(0.0, 0.0, 100.0, 1.0, 1.0, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
         let mut cmyk_value = hsv.get().as_cmyk();
         cmyk_value.magenta = value as u8;
         Hsv::from_hex(&cmyk_value.as_hex())
     });
-    create_spin_field!(cmyk_fields, 0, 1.0, gtk4::Adjustment::new(0.0, 0.0, 100.0, 1.0, 1.0, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
+    create_spin_field!(cmyk_fields, 0, 1.0, Adjustment::new(0.0, 0.0, 100.0, 1.0, 1.0, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
         let mut cmyk_value = hsv.get().as_cmyk();
         cmyk_value.yellow = value as u8;
         Hsv::from_hex(&cmyk_value.as_hex())
     });
-    create_spin_field!(cmyk_fields, 0, 1.0, gtk4::Adjustment::new(0.0, 0.0, 100.0, 1.0, 1.0, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
+    create_spin_field!(cmyk_fields, 0, 1.0, Adjustment::new(0.0, 0.0, 100.0, 1.0, 1.0, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
         let mut cmyk_value = hsv.get().as_cmyk();
         cmyk_value.black = value as u8;
         Hsv::from_hex(&cmyk_value.as_hex())
     });
 
     let mut oklch_fields = Fields::new();
-    create_spin_field!(oklch_fields, 4, 0.033, gtk4::Adjustment::new(0.0, 0.0, 100.0, 0.033, 0.033, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
+    create_spin_field!(oklch_fields, 4, 0.033, Adjustment::new(0.0, 0.0, 100.0, 0.033, 0.033, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
         let mut oklch_value = hsv.get().as_oklch();
         oklch_value.lightness = value;
         Hsv::from_hex(&oklch_value.as_hex())
     });
-    create_spin_field!(oklch_fields, 4, 0.033, gtk4::Adjustment::new(0.0, 0.0, 100.0, 0.033, 0.033, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
+    create_spin_field!(oklch_fields, 4, 0.033, Adjustment::new(0.0, 0.0, 100.0, 0.033, 0.033, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
         let mut oklch_value = hsv.get().as_oklch();
         oklch_value.chroma = value;
         Hsv::from_hex(&oklch_value.as_hex())
     });
-    create_spin_field!(oklch_fields, 2, 0.33, gtk4::Adjustment::new(0.0, 0.0, 360.0, 0.33, 0.33, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
+    create_spin_field!(oklch_fields, 2, 0.33, Adjustment::new(0.0, 0.0, 360.0, 0.33, 0.33, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
         let mut oklch_value = hsv.get().as_oklch();
         oklch_value.hue = value;
         Hsv::from_hex(&oklch_value.as_hex())
@@ -394,15 +201,13 @@ pub fn new() -> gtk4::Box {
     let hsv_future = hsv.signal().for_each(move |hsv| {
         use fields::FieldUpdate::*;
 
-        let hex = hsv.as_hex();
-        let int = hsv.as_int();
         let rgba = hsv.as_rgba();
         let hsl = hsv.as_hsl();
         let cmyk = hsv.as_cmyk();
         let oklch = hsv.as_oklch();
 
-        hex_fields.update(vec![Text(hex)]);
-        int_fields.update(vec![Text(int.to_string())]);
+        hex_fields.update(vec![Text(hsv.as_hex())]);
+        int_fields.update(vec![Text(hsv.as_int().to_string())]);
         rgb_fields.update(vec![Float(rgba.red as f64), Float(rgba.green as f64), Float(rgba.blue as f64)]);
         hsv_fields.update(vec![Float(hsv.hue), Float(hsv.saturation), Float(hsv.value)]);
         hsl_fields.update(vec![Float(hsl.hue), Float(hsl.saturation), Float(hsl.lightness)]);
@@ -412,10 +217,10 @@ pub fn new() -> gtk4::Box {
         async {}
     });
 
-    transform_tabs_stack.add_tab(Some("analogous"), &get_analogous_color_boxes(&hsv, 5, &color_tabs));
-    transform_tabs_stack.add_tab(Some("triadic"), &get_analogous_color_boxes(&hsv, 3, &color_tabs));
-    transform_tabs_stack.add_tab(Some("tetradic"), &get_analogous_color_boxes(&hsv, 4, &color_tabs));
-    transform_tabs_stack.add_tab(Some("lighter_darker"), &get_lighter_darker_color_boxes(&hsv, 20, &color_tabs).grid);
+    transform_tabs_stack.add_tab(Some("analogous"), &color_boxes::get_analogous_color_boxes(&hsv, 5, &color_tabs));
+    transform_tabs_stack.add_tab(Some("triadic"), &color_boxes::get_analogous_color_boxes(&hsv, 3, &color_tabs));
+    transform_tabs_stack.add_tab(Some("tetradic"), &color_boxes::get_analogous_color_boxes(&hsv, 4, &color_tabs));
+    transform_tabs_stack.add_tab(Some("lighter_darker"), &color_boxes::get_lighter_darker_color_boxes(&hsv, 20, &color_tabs).grid);
 
     // Listen for IPC messages to update the HSV value
     ipc::listen_for_messages_local(move |message| {
