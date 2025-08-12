@@ -18,7 +18,7 @@ use crate::{
         item::{OverviewSearchItem, OverviewSearchItemAction},
         list::{get_button_from_row, OverviewSearchList},
         modules::{input_without_extensions, validate_input, OverviewSearchModule},
-        windows::frequent::OverviewFrequentWindow
+        windows::{frequent::OverviewFrequentWindow, recent::OverviewRecentWindow}
     }
 };
 
@@ -81,6 +81,7 @@ fn generate_search_results(query: &str) -> Vec<OverviewSearchItem> {
 pub fn new(application: &libadwaita::Application) {
     let search_results = Rc::new(RefCell::new(OverviewSearchList::new()));
     let frequent_window = OverviewFrequentWindow::new();
+    let recent_window = OverviewRecentWindow::new();
 
     view! {
         entry_prompt_revealer = gtk4::Revealer {
@@ -108,11 +109,12 @@ pub fn new(application: &libadwaita::Application) {
         windows = gtk4::Box {
             set_css_classes: &["overview-windows-box"],
             set_orientation: gtk4::Orientation::Horizontal,
-            set_spacing: 12,
+            set_spacing: 8,
             set_hexpand: true,
             set_vexpand: true,
 
             append: &frequent_window.widget,
+            append: &recent_window.widget
         },
 
         windows_revealer = gtk4::Revealer {
@@ -344,6 +346,7 @@ pub fn new(application: &libadwaita::Application) {
 
                 // Tell the windows to update their contents
                 frequent_window.update();
+                recent_window.update();
             }
         }
 

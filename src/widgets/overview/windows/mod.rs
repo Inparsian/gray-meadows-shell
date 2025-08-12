@@ -4,6 +4,28 @@ use gtk4::prelude::*;
 use crate::{ipc, singletons::apps::{self, pixbuf::get_pixbuf_or_fallback}};
 
 pub mod frequent;
+pub mod recent;
+
+pub fn build_window(label: &str) -> (gtk4::Box, gtk4::Box) {
+    let widget = gtk4::Box::new(gtk4::Orientation::Vertical, 12);
+    widget.set_css_classes(&["overview-window"]);
+    widget.set_hexpand(true);
+    widget.set_vexpand(true);
+    widget.set_halign(gtk4::Align::Center);
+    widget.set_valign(gtk4::Align::Center);
+
+    let header = gtk4::Label::new(Some(label));
+    header.set_css_classes(&["overview-window-header"]);
+    widget.append(&header);
+
+    let children = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+    children.set_css_classes(&["overview-window-children"]);
+    children.set_hexpand(true);
+    children.set_vexpand(true);
+    widget.append(&children);
+
+    (widget, children)
+}
 
 pub fn make_item_from_command(command: &str) -> Option<gtk4::Button> {
     let locales = get_languages_from_env();
