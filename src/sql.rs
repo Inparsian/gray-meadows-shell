@@ -36,6 +36,20 @@ impl SqliteWrapper {
         Ok(results)
     }
 
+    /// Gets the most recently run commands sorted from most recent to least recent.
+    pub fn get_recent_commands(&self, limit: usize) -> Result<Vec<(String, i64)>, sqlite::Error> {
+        let connection = self.connection.lock().unwrap();
+        let statement = format!("SELECT command, runs FROM desktop_runs ORDER BY last_run DESC LIMIT {}", limit);
+        let mut cursor = connection.prepare(&statement)?;
+        let mut results = Vec::new();
+        while cursor.next()? == sqlite::State::Row {
+            let command = cursor.read::<String, _>(0)?;
+            let runs = cursor.read::<i64, _>(1)?;
+            results.push((command, runs));
+        }
+        Ok(results)
+    }
+
     /// Fetches the number of runs for a given command.
     pub fn get_runs(&self, command: &str) -> Result<i64, sqlite::Error> {
         let connection = self.connection.lock().unwrap();
@@ -58,7 +72,12 @@ impl SqliteWrapper {
         let runs = self.get_runs(command).unwrap_or(0);
         let connection = self.connection.lock().unwrap();
         let statement = if runs > 0 {
-            format!("UPDATE desktop_runs SET runs = {} WHERE command = '{}'", runs + 1, command.replace('\'', "''"))
+            format!("
+                UPDATE desktop_runs SET
+                    runs = {},
+                    last_run = CURRENT_TIMESTAMP
+                WHERE command = '{}'
+            ", runs + 1, command.replace('\'', "''"))
         } else {
             format!("INSERT INTO desktop_runs (command, runs) VALUES ('{}', 1)", command.replace('\'', "''"))
         };
@@ -82,7 +101,8 @@ pub fn establish_connection() -> Result<Connection, Box<dyn std::error::Error>> 
     connection.execute("
         CREATE TABLE IF NOT EXISTS desktop_runs (
             command TEXT NOT NULL,
-            runs INTEGER NOT NULL DEFAULT 0
+            runs INTEGER NOT NULL DEFAULT 0,
+            last_run TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ")?;
 
