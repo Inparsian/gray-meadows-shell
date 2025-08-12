@@ -25,7 +25,8 @@ use crate::{
 static MODULES: LazyLock<Vec<&(dyn OverviewSearchModule + Send + Sync)>> = LazyLock::new(|| vec![
     &modules::calculator::OverviewCalculatorModule,
     &modules::text::OverviewTextModule,
-    &modules::terminal::OverviewTerminalModule
+    &modules::terminal::OverviewTerminalModule,
+    &modules::hashing::OverviewHashingModule
 ]);
 
 static ALPHANUMERIC_SYMBOLIC_REGEX: LazyLock<Regex> = LazyLock::new(|| {
