@@ -39,7 +39,7 @@ pub fn handle_master_message(msg: &Message) {
 
                 if let Some(sender) = sender {
                     let mut players_mut = MPRIS.players.lock_mut();
-                    let player_index = players_mut.iter().position(|p| sender == (&p.owner).into())
+                    let player_index = players_mut.iter().position(|p| sender == BusName::new(&p.owner).unwrap())
                         .unwrap_or(usize::MAX); // Default to an impossible index if not found
 
                     if let Some(player) = players_mut.get(player_index) {

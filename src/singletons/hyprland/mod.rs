@@ -2,7 +2,6 @@ use std::sync::LazyLock;
 use futures_signals::signal::Mutable;
 use gdk4::prelude::MonitorExt;
 use hyprland::{
-    async_closure,
     data::{Client, Workspace, Workspaces, Monitor},
     event_listener::AsyncEventListener,
     shared::{HyprData, HyprDataActive, HyprDataActiveOptional}
@@ -41,17 +40,17 @@ pub fn activate() {
     tokio::spawn(async move {
         let mut event_listener = AsyncEventListener::new();
 
-        event_listener.add_window_closed_handler(async_closure! { |_| refresh_active_client() });
-        event_listener.add_active_window_changed_handler(async_closure! { |_| refresh_active_client() });
-        event_listener.add_float_state_changed_handler(async_closure! { |_| refresh_active_client() });
-        event_listener.add_window_title_changed_handler(async_closure! { |_| refresh_active_client() });
-        event_listener.add_fullscreen_state_changed_handler(async_closure! { |_| refresh_active_client() });
-        event_listener.add_workspace_added_handler(async_closure! { |_| refresh_workspaces() });
-        event_listener.add_workspace_deleted_handler(async_closure! { |_| refresh_workspaces() });
-        event_listener.add_workspace_moved_handler(async_closure! { |_| refresh_workspaces() });
-        event_listener.add_workspace_changed_handler(async_closure! { |_| refresh_active_workspace() });
-        event_listener.add_active_monitor_changed_handler(async_closure! { |_| refresh_active_workspace() });
-
+        event_listener.add_window_closed_handler(|_| Box::pin(async { refresh_active_client() }));
+        event_listener.add_active_window_changed_handler(|_| Box::pin(async { refresh_active_client() }));
+        event_listener.add_float_state_changed_handler(|_| Box::pin(async { refresh_active_client() }));
+        event_listener.add_window_title_changed_handler(|_| Box::pin(async { refresh_active_client() }));
+        event_listener.add_fullscreen_state_changed_handler(|_| Box::pin(async { refresh_active_client() }));
+        event_listener.add_workspace_added_handler(|_| Box::pin(async { refresh_workspaces() }));
+        event_listener.add_workspace_deleted_handler(|_| Box::pin(async { refresh_workspaces() }));
+        event_listener.add_workspace_moved_handler(|_| Box::pin(async { refresh_workspaces() }));
+        event_listener.add_workspace_changed_handler(|_| Box::pin(async { refresh_active_workspace() }));
+        event_listener.add_active_monitor_changed_handler(|_| Box::pin(async { refresh_active_workspace() }));
+        
         let _ = event_listener.start_listener_async().await;
     });
 }

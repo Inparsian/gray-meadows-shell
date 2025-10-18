@@ -1,5 +1,5 @@
 use std::{sync::{Arc, Mutex}, time::Duration};
-use dbus::{blocking, channel::MatchingReceiver, message::MatchRule, MessageType, Path};
+use dbus::{blocking, channel::MatchingReceiver, message::MatchRule, MessageType};
 use dbus_crossroads::{Crossroads, IfaceToken};
 
 use crate::singletons::tray::{bus::{self, BusEvent}, proxy::{self, watcher::OrgKdeStatusNotifierWatcher}};
@@ -161,7 +161,7 @@ impl StatusNotifierWatcher {
 
                                         if let Some(item) = items.lock().unwrap().iter_mut().find(|item| item.service == service) {
                                             match msg.path() {
-                                                Some(path) if path == Path::from(bus::ITEM_DBUS_OBJECT) => {
+                                                Some(path) if path == *bus::ITEM_DBUS_OBJECT => {
                                                     item.pass_update(&member);
 
                                                     sender.send(BusEvent::ItemUpdated(member, item.clone())).unwrap();

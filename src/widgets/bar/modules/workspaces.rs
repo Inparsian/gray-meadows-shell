@@ -2,7 +2,7 @@ use std::sync::{Mutex, LazyLock};
 use futures_signals::signal::SignalExt;
 use gtk4::prelude::*;
 use ::hyprland::dispatch;
-use ::hyprland::dispatch::{Dispatch, DispatchType, WorkspaceIdentifierWithSpecial};
+use ::hyprland::dispatch::WorkspaceIdentifierWithSpecial;
 
 use crate::{
     singletons::hyprland,
