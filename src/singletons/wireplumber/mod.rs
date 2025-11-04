@@ -121,7 +121,9 @@ pub fn activate() {
                 WpEvent::CreateStream(node) => {
                     let node_cloned = node.clone();
                     let _ = NODES.get().map(|nodes| {
-                        let _ = nodes.lock().map(|mut nodes| nodes.push(node));
+                        if let Ok(mut nodes) = nodes.lock() {
+                            nodes.push(node);
+                        }
                     });
 
                     let _ = SENDER.send(WpEvent::CreateStream(node_cloned));
@@ -129,7 +131,9 @@ pub fn activate() {
 
                 WpEvent::RemoveStream(node) => {
                     let _ = NODES.get().map(|nodes| {
-                        let _ = nodes.lock().map(|mut nodes| nodes.retain(|n| n.id != node.id));
+                        if let Ok(mut nodes) = nodes.lock() {
+                            nodes.retain(|n| n.id != node.id);
+                        }
                     });
 
                     let _ = SENDER.send(WpEvent::RemoveStream(node));
@@ -138,7 +142,9 @@ pub fn activate() {
                 WpEvent::CreateMicrophone(endpoint) => {
                     let endpoint_cloned = endpoint.clone();
                     let _ = ENDPOINTS.get().map(|endpoints| {
-                        let _ = endpoints.lock().map(|mut endpoints| endpoints.push(endpoint));
+                        if let Ok(mut endpoints) = endpoints.lock() {
+                            endpoints.push(endpoint);
+                        }
                     });
 
                     let _ = SENDER.send(WpEvent::CreateMicrophone(endpoint_cloned));
@@ -146,7 +152,9 @@ pub fn activate() {
 
                 WpEvent::RemoveMicrophone(endpoint) => {
                     let _ = ENDPOINTS.get().map(|endpoints| {
-                        let _ = endpoints.lock().map(|mut endpoints| endpoints.retain(|e| e.node.id != endpoint.node.id));
+                        if let Ok(mut endpoints) = endpoints.lock() {
+                            endpoints.retain(|e| e.node.id != endpoint.node.id);
+                        }
                     });
 
                     let _ = SENDER.send(WpEvent::RemoveMicrophone(endpoint));
@@ -155,7 +163,9 @@ pub fn activate() {
                 WpEvent::CreateSpeaker(endpoint) => {
                     let endpoint_cloned = endpoint.clone();
                     let _ = ENDPOINTS.get().map(|endpoints| {
-                        let _ = endpoints.lock().map(|mut endpoints| endpoints.push(endpoint));
+                        if let Ok(mut endpoints) = endpoints.lock() {
+                            endpoints.push(endpoint);
+                        }
                     });
 
                     let _ = SENDER.send(WpEvent::CreateSpeaker(endpoint_cloned));
@@ -163,7 +173,9 @@ pub fn activate() {
 
                 WpEvent::RemoveSpeaker(endpoint) => {
                     let _ = ENDPOINTS.get().map(|endpoints| {
-                        let _ = endpoints.lock().map(|mut endpoints| endpoints.retain(|e| e.node.id != endpoint.node.id));
+                        if let Ok(mut endpoints) = endpoints.lock() {
+                            endpoints.retain(|e| e.node.id != endpoint.node.id);
+                        }
                     });
 
                     let _ = SENDER.send(WpEvent::RemoveSpeaker(endpoint));
