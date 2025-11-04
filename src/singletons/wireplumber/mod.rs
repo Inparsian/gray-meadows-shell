@@ -119,14 +119,13 @@ pub fn activate() {
                 },
 
                 WpEvent::CreateStream(node) => {
-                    let node_cloned = node.clone();
                     let _ = NODES.get().map(|nodes| {
                         if let Ok(mut nodes) = nodes.lock() {
-                            nodes.push(node);
+                            nodes.push(node.clone());
                         }
                     });
 
-                    let _ = SENDER.send(WpEvent::CreateStream(node_cloned));
+                    let _ = SENDER.send(WpEvent::CreateStream(node));
                 },
 
                 WpEvent::RemoveStream(node) => {
@@ -140,14 +139,13 @@ pub fn activate() {
                 },
 
                 WpEvent::CreateMicrophone(endpoint) => {
-                    let endpoint_cloned = endpoint.clone();
                     let _ = ENDPOINTS.get().map(|endpoints| {
                         if let Ok(mut endpoints) = endpoints.lock() {
-                            endpoints.push(endpoint);
+                            endpoints.push(endpoint.clone());
                         }
                     });
 
-                    let _ = SENDER.send(WpEvent::CreateMicrophone(endpoint_cloned));
+                    let _ = SENDER.send(WpEvent::CreateMicrophone(endpoint));
                 },
 
                 WpEvent::RemoveMicrophone(endpoint) => {
@@ -161,14 +159,13 @@ pub fn activate() {
                 },
 
                 WpEvent::CreateSpeaker(endpoint) => {
-                    let endpoint_cloned = endpoint.clone();
                     let _ = ENDPOINTS.get().map(|endpoints| {
                         if let Ok(mut endpoints) = endpoints.lock() {
-                            endpoints.push(endpoint);
+                            endpoints.push(endpoint.clone());
                         }
                     });
 
-                    let _ = SENDER.send(WpEvent::CreateSpeaker(endpoint_cloned));
+                    let _ = SENDER.send(WpEvent::CreateSpeaker(endpoint));
                 },
 
                 WpEvent::RemoveSpeaker(endpoint) => {
