@@ -89,14 +89,12 @@ impl MprisPlayer {
     where
         T: 'static + Clone + RefArg,
     {
-        let metadata: Result<arg::PropMap, Error> = mpris_dbus::get_dbus_property::<arg::PropMap>(self, "Metadata");
-
-        if let Ok(metadata) = metadata {
-            arg::prop_cast(&metadata, key)
+        match mpris_dbus::get_dbus_property::<arg::PropMap>(self, "Metadata") {
+            Ok(metadata) => arg::prop_cast(&metadata, key)
                 .ok_or(Error::new_failed(&format!("Property '{}' not found in metadata", key)))
-                .cloned()
-        } else {
-            Err(Error::new_failed(&format!("Failed to get metadata property '{}': {:?}", key, metadata.err())))
+                .cloned(),
+            
+            Err(err) => Err(Error::new_failed(&format!("Failed to get metadata property '{}': {}", key, err)))
         }
     }
 

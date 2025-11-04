@@ -156,13 +156,12 @@ impl DbusMenu {
             std::time::Duration::from_millis(5000),
         );
         
-        let result: Result<RawLayout, Error> = proxy.method_call(bus::DBUSMENU_BUS, "GetLayout", (0, 10, Vec::<String>::new(),));
-
-        if let Ok(layout) = result {
-            Ok(Menu::from_raw(&layout))
-        } else {
-            eprintln!("Failed to get menu layout: {:?}", result);
-            Err(Error::new_failed("Failed to get menu layout"))
+        match proxy.method_call(bus::DBUSMENU_BUS, "GetLayout", (0, 10, Vec::<String>::new(),)) {
+            Ok(layout) => Ok(Menu::from_raw(&layout)),
+            Err(err) => {
+                eprintln!("Failed to get menu layout: {}", err);
+                Err(Error::new_failed("Failed to get menu layout"))
+            }
         }
     }
 }

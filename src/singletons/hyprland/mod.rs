@@ -56,9 +56,7 @@ pub fn activate() {
 }
 
 pub fn get_active_monitor() -> Option<gdk4::Monitor> {
-    let monitor = Monitor::get_active();
-
-    if let Ok(monitor) = monitor {
+    if let Ok(monitor) = Monitor::get_active() {
         // Get the gdk4::Monitor from the display.
         let monitors = display::get_all_monitors(&gdk4::Display::default()?);
 

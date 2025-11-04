@@ -289,19 +289,23 @@ pub fn new() -> gtk4::Box {
                 },
 
                 UiEvent::TranslationFinished(result) => {
-                    if let Ok(res) = result {
-                        output_buffer.set_text(&res.to.text);
+                    match result {
+                        Ok(res) => {
+                            output_buffer.set_text(&res.to.text);
 
-                        // Set the auto-detected language if applicable
-                        if SOURCE_LANG.lock().unwrap().as_ref().unwrap() == &*AUTO_LANG {
-                            let mut auto_detected_lang = AUTO_DETECTED_LANG.lock().unwrap();
+                            // Set the auto-detected language if applicable
+                            if SOURCE_LANG.lock().unwrap().as_ref().unwrap() == &*AUTO_LANG {
+                                let mut auto_detected_lang = AUTO_DETECTED_LANG.lock().unwrap();
 
-                            *auto_detected_lang = Some(res.from.language.clone());
+                                *auto_detected_lang = Some(res.from.language.clone());
 
-                            language_buttons.set_source_label(&format!("Auto ({})", res.from.language.name));
+                                language_buttons.set_source_label(&format!("Auto ({})", res.from.language.name));
+                            }
+                        },
+
+                        Err(err_msg) => {
+                            output_buffer.set_text(&format!("Translation failed:\n{}", err_msg));
                         }
-                    } else {
-                        output_buffer.set_text(&format!("Translation failed:\n{}", result.unwrap_err()));
                     }
 
                     input_text_view.set_editable(true);

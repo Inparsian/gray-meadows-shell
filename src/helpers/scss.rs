@@ -44,9 +44,8 @@ pub fn refresh_variables() {
 
     let styles_dir = filesystem::get_styles_directory();
     let user_styles_path = format!("{}/user.scss", styles_dir);
-    let content = std::fs::read_to_string(user_styles_path);
 
-    if let Ok(content) = content {
+    if let Ok(content) = std::fs::read_to_string(user_styles_path) {
         for line in content.lines() {
             if let Some(caps) = regex.captures(line) {
                 let name = caps[1].to_string();

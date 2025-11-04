@@ -154,26 +154,26 @@ pub fn new() -> gtk4::Box {
                     };
 
                     // Make pixbuf from album art
-                    let pixbuf = gtk4::gdk_pixbuf::Pixbuf::from_file(&*art_url);
+                    match gtk4::gdk_pixbuf::Pixbuf::from_file(&*art_url) {
+                        Ok(pixbuf) => {
+                            if let Some(scaled_pixbuf) = pixbuf.scale_simple(ALBUM_ART_WIDTH, ALBUM_ART_HEIGHT, gtk4::gdk_pixbuf::InterpType::Tiles) {
+                                scaled_pixbuf.saturate_and_pixelate(
+                                    &scaled_pixbuf,
+                                    0.0,
+                                    false
+                                );
 
-                    if let Ok(pixbuf) = pixbuf {
-                        let scaled_pixbuf = pixbuf.scale_simple(ALBUM_ART_WIDTH, ALBUM_ART_HEIGHT, gtk4::gdk_pixbuf::InterpType::Tiles);
-                        
-                        if let Some(scaled_pixbuf) = scaled_pixbuf {
-                            scaled_pixbuf.saturate_and_pixelate(
-                                &scaled_pixbuf,
-                                0.0,
-                                false
-                            );
+                                current_album_art.set_from_pixbuf(Some(&scaled_pixbuf));
+                            } else {
+                                eprintln!("Failed to scale album art from file: {}", art_url);
+                                make_blank_art();
+                            }
+                        },
 
-                            current_album_art.set_from_pixbuf(Some(&scaled_pixbuf));
-                        } else {
-                            eprintln!("Failed to scale album art from file: {}", art_url);
+                        Err(e) => {
+                            eprintln!("Failed to load album art from file: {}: {}", art_url, e);
                             make_blank_art();
                         }
-                    } else {
-                        eprintln!("Failed to load album art from file: {}", art_url);
-                        make_blank_art();
                     }
                 }
             } else if !(*current_art_url.borrow()).is_empty() {

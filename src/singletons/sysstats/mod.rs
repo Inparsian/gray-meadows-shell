@@ -53,18 +53,14 @@ impl SysStats {
 
         // Refresh GPU stats if NVML is initialized
         if let Ok(device) = gpu::nvidia::get_device_by_index(0) {
-            let util = device.utilization_rates();
-            if let Ok(util) = util {
-                self.gpu_utilization.set(util.gpu as f64);
-            } else {
-                eprintln!("Failed to get GPU utilization: {:?}", util.unwrap_err());
+            match device.utilization_rates() {
+                Ok(util) => self.gpu_utilization.set(util.gpu as f64),
+                Err(err) => eprintln!("Failed to get GPU utilization: {:?}", err)
             }
-        
-            let temp = device.temperature(TemperatureSensor::Gpu);
-            if let Ok(temp) = temp {
-                self.gpu_temperature.set(temp as f64);
-            } else {
-                eprintln!("Failed to get GPU temperature: {:?}", temp.unwrap_err());
+
+            match device.temperature(TemperatureSensor::Gpu) {
+                Ok(temp) => self.gpu_temperature.set(temp as f64),
+                Err(err) => eprintln!("Failed to get GPU temperature: {:?}", err)
             }
         }
     }

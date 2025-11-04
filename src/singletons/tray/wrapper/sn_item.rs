@@ -98,17 +98,15 @@ impl StatusNotifierItem {
         try_set_prop!(bool, "ItemIsMenu", item_is_menu);
 
         // tooltip
-        if let Ok(tool_tip) = self.try_get_prop::<RawToolTip>("ToolTip") {
-            self.tool_tip = ToolTip::from_tuple(tool_tip);
-        } else {
-            eprintln!("Failed to get ToolTip property");
+        match self.try_get_prop::<RawToolTip>("ToolTip") {
+            Ok(tool_tip) => self.tool_tip = ToolTip::from_tuple(tool_tip),
+            Err(err) => eprintln!("Failed to get ToolTip property: {}", err),
         }
 
         // menu
-        if let Ok(menu) = self.try_get_prop::<Path>("Menu") {
-            self.menu = super::dbus_menu::DbusMenu::new(self.service.clone(), menu.to_string());
-        } else {
-            eprintln!("Failed to get Menu property");
+        match self.try_get_prop::<Path>("Menu") {
+            Ok(menu) => self.menu = super::dbus_menu::DbusMenu::new(self.service.clone(), menu.to_string()),
+            Err(err) => eprintln!("Failed to get Menu property: {}", err),
         }
 
         Ok(())

@@ -124,13 +124,15 @@ async fn main() {
                 }
             });
 
-            let connection = SqliteWrapper::new();
-            if let Ok(connection) = connection {
-                let _ = SQL_CONNECTION.set(connection);
-                println!("SQLite connection established successfully, storing data in {}/sqlite.db", helpers::filesystem::get_config_directory());
-            } else {
-                eprintln!("Failed to establish SQLite connection: {:?}", connection.unwrap_err());
-                std::process::exit(1);
+            match SqliteWrapper::new() {
+                Ok(connection) => {
+                    let _ = SQL_CONNECTION.set(connection);
+                    println!("SQLite connection established successfully, storing data in {}/sqlite.db", helpers::filesystem::get_config_directory());
+                }
+                Err(e) => {
+                    eprintln!("Failed to establish SQLite connection: {:?}", e);
+                    std::process::exit(1);
+                }
             }
 
             let _ = gtk4::init();

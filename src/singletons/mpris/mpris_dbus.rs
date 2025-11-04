@@ -62,20 +62,20 @@ pub fn handle_master_message(msg: &Message) {
 }
 
 fn ready_dbus_message(player: &MprisPlayer, method: &str) -> Result<(Connection, Message), Error> {
-    let message = Message::new_method_call(
+    match Message::new_method_call(
         &*player.bus,
         "/org/mpris/MediaPlayer2",
         "org.mpris.MediaPlayer2.Player",
         method
-    );
+    ) {
+        Ok(message) => {
+            let connection = Connection::new_session()
+                .map_err(|e| Error::new_failed(&format!("Failed to connect to D-Bus: {}", e)))?;
 
-    if let Ok(message) = message {
-        let connection = Connection::new_session()
-            .map_err(|e| Error::new_failed(&format!("Failed to connect to D-Bus: {}", e)))?;
+            Ok((connection, message))
+        },
 
-        Ok((connection, message))
-    } else {
-        Err(Error::new_failed(&format!("Failed to create D-Bus message for method '{}': {}", method, message.err().unwrap())))
+        Err(err) => Err(Error::new_failed(&format!("Failed to create D-Bus message for method '{}': {}", method, err)))
     }
 }
 
