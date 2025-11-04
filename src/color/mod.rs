@@ -4,7 +4,6 @@ const FLOAT_TOLERANCE: f64 = 0.0001;
 
 pub mod model;
 
-#[allow(dead_code)]
 pub struct LighterDarkerResult {
     pub hsv: Hsv,
     pub lightness: f64,
@@ -18,7 +17,6 @@ pub fn is_valid_hex_color(hex: &str) -> bool {
     (len == 6 || len == 8 || len == 3 || len == 4) && hex.chars().all(|c| c.is_ascii_hexdigit())
 }
 
-#[allow(dead_code)]
 pub fn get_analogous_colors(hsv: Hsv, count: u32) -> Vec<Hsv> {
     let mut colors = Vec::new();
     let step = 360.0 / count as f64;
@@ -32,7 +30,6 @@ pub fn get_analogous_colors(hsv: Hsv, count: u32) -> Vec<Hsv> {
     colors
 }
 
-#[allow(dead_code)]
 pub fn get_lighter_darker_colors(base_hsv: Hsv, count: u32) -> Vec<LighterDarkerResult> {
     let mut colors: Vec<model::Hsl> = vec![base_hsv.as_hsl()];
 
