@@ -49,18 +49,18 @@ pub fn activate() {
                 WpEvent::UpdateNode(id, property_name) => {
                     if let Some(node) = get_node(id) {
                         let _ = NODES.get().map(|nodes| {
-                            let mut nodes = nodes.lock().unwrap();
-
-                            if let Some(existing_node) = nodes.iter_mut().find(|n| n.id == node.id) {
-                                match property_name.as_str() {
-                                    "description" => existing_node.description = ffi::node_get_description(id),
-                                    "icon" => existing_node.icon = ffi::node_get_icon(id),
-                                    "mute" => existing_node.mute = ffi::node_get_mute(id),
-                                    "name" => existing_node.name = ffi::node_get_name(id),
-                                    "path" => existing_node.path = ffi::node_get_path(id),
-                                    "serial" => existing_node.serial = ffi::node_get_serial(id),
-                                    "volume" => existing_node.volume = ffi::node_get_volume(id),
-                                    _ => {}
+                            if let Ok(mut nodes) = nodes.lock() {
+                                if let Some(existing_node) = nodes.iter_mut().find(|n| n.id == node.id) {
+                                    match property_name.as_str() {
+                                        "description" => existing_node.description = ffi::node_get_description(id),
+                                        "icon" => existing_node.icon = ffi::node_get_icon(id),
+                                        "mute" => existing_node.mute = ffi::node_get_mute(id),
+                                        "name" => existing_node.name = ffi::node_get_name(id),
+                                        "path" => existing_node.path = ffi::node_get_path(id),
+                                        "serial" => existing_node.serial = ffi::node_get_serial(id),
+                                        "volume" => existing_node.volume = ffi::node_get_volume(id),
+                                        _ => {}
+                                    }
                                 }
                             }
                         });
@@ -74,7 +74,7 @@ pub fn activate() {
                 WpEvent::UpdateEndpoint(id, property_name) => {
                     if let Some(endpoint) = get_endpoint(id) {
                         let _ = ENDPOINTS.get().map(|endpoints| {
-                            if let Ok(mut endpoints) = endpoints.try_lock() {
+                            if let Ok(mut endpoints) = endpoints.lock() {
                                 let endpoint_node_id = endpoint.node.id;
                             
                                 if let Some(endpoint_index) = endpoints.iter().position(|e| e.node.id == endpoint_node_id) {
@@ -121,7 +121,7 @@ pub fn activate() {
                 WpEvent::CreateStream(node) => {
                     let node_cloned = node.clone();
                     let _ = NODES.get().map(|nodes| {
-                        nodes.lock().unwrap().push(node);
+                        let _ = nodes.lock().map(|mut nodes| nodes.push(node));
                     });
 
                     let _ = SENDER.send(WpEvent::CreateStream(node_cloned));
@@ -129,7 +129,7 @@ pub fn activate() {
 
                 WpEvent::RemoveStream(node) => {
                     let _ = NODES.get().map(|nodes| {
-                        nodes.lock().unwrap().retain(|n| n.id != node.id);
+                        let _ = nodes.lock().map(|mut nodes| nodes.retain(|n| n.id != node.id));
                     });
 
                     let _ = SENDER.send(WpEvent::RemoveStream(node));
@@ -138,7 +138,7 @@ pub fn activate() {
                 WpEvent::CreateMicrophone(endpoint) => {
                     let endpoint_cloned = endpoint.clone();
                     let _ = ENDPOINTS.get().map(|endpoints| {
-                        endpoints.lock().unwrap().push(endpoint);
+                        let _ = endpoints.lock().map(|mut endpoints| endpoints.push(endpoint));
                     });
 
                     let _ = SENDER.send(WpEvent::CreateMicrophone(endpoint_cloned));
@@ -146,7 +146,7 @@ pub fn activate() {
 
                 WpEvent::RemoveMicrophone(endpoint) => {
                     let _ = ENDPOINTS.get().map(|endpoints| {
-                        endpoints.lock().unwrap().retain(|e| e.node.id != endpoint.node.id);
+                        let _ = endpoints.lock().map(|mut endpoints| endpoints.retain(|e| e.node.id != endpoint.node.id));
                     });
 
                     let _ = SENDER.send(WpEvent::RemoveMicrophone(endpoint));
@@ -155,7 +155,7 @@ pub fn activate() {
                 WpEvent::CreateSpeaker(endpoint) => {
                     let endpoint_cloned = endpoint.clone();
                     let _ = ENDPOINTS.get().map(|endpoints| {
-                        endpoints.lock().unwrap().push(endpoint);
+                        let _ = endpoints.lock().map(|mut endpoints| endpoints.push(endpoint));
                     });
 
                     let _ = SENDER.send(WpEvent::CreateSpeaker(endpoint_cloned));
@@ -163,7 +163,7 @@ pub fn activate() {
 
                 WpEvent::RemoveSpeaker(endpoint) => {
                     let _ = ENDPOINTS.get().map(|endpoints| {
-                        endpoints.lock().unwrap().retain(|e| e.node.id != endpoint.node.id);
+                        let _ = endpoints.lock().map(|mut endpoints| endpoints.retain(|e| e.node.id != endpoint.node.id));
                     });
 
                     let _ = SENDER.send(WpEvent::RemoveSpeaker(endpoint));
