@@ -88,7 +88,7 @@ impl SqliteWrapper {
 }
 
 pub fn establish_connection() -> Result<Connection, Box<dyn std::error::Error>> {
-    let config_dir = crate::helpers::filesystem::get_config_directory()?;
+    let config_dir = crate::helpers::filesystem::get_config_directory();
     let db_path = format!("{}/sqlite.db", config_dir);
 
     if !std::path::Path::new(&config_dir).exists() {
