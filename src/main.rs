@@ -9,12 +9,11 @@ mod singletons;
 mod widgets;
 mod sql;
 
-use std::{cell::RefCell, sync::OnceLock, path::Path};
+use std::{cell::RefCell, path::Path, sync::{Mutex, OnceLock}};
 use gtk4::prelude::*;
 use libadwaita::Application;
 use notify::{EventKind, event::{AccessKind, AccessMode}, Watcher};
-
-use crate::sql::SqliteWrapper;
+use sqlite::Connection;
 
 pub struct GrayMeadows {
     provider: gtk4::CssProvider,
@@ -28,7 +27,7 @@ thread_local! {
     });
 }
 
-pub static SQL_CONNECTION: OnceLock<SqliteWrapper> = OnceLock::new();
+pub static SQL_CONNECTION: OnceLock<Mutex<Connection>> = OnceLock::new();
 
 pub fn bundle_apply_scss() {
     gtk4::glib::MainContext::default().invoke(|| {
@@ -124,9 +123,9 @@ async fn main() {
                 }
             });
 
-            match SqliteWrapper::new() {
+            match sql::establish_connection() {
                 Ok(connection) => {
-                    let _ = SQL_CONNECTION.set(connection);
+                    let _ = SQL_CONNECTION.set(Mutex::new(connection));
                     println!("SQLite connection established successfully, storing data in {}/sqlite.db", helpers::filesystem::get_config_directory());
                 }
                 Err(e) => {

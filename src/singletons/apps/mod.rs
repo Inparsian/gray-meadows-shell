@@ -4,7 +4,7 @@ use std::{path::{Path, PathBuf}, sync::{Mutex, LazyLock}};
 use freedesktop_desktop_entry::{default_paths, get_languages_from_env, Iter, DesktopEntry};
 use notify::{event::{AccessKind, AccessMode}, EventKind, Watcher};
 
-use crate::{helpers::{matching, process}, SQL_CONNECTION};
+use crate::{helpers::{matching, process}, sql::wrappers::commands};
 
 pub struct WeightedDesktopEntry {
     pub entry: DesktopEntry,
@@ -61,11 +61,9 @@ pub fn calculate_weight(entry: &DesktopEntry, query: &str) -> usize {
 
     // How many times has this entry been run?
     if weight > 0 {
-        if let Some(sqlite) = SQL_CONNECTION.get() {
-            if let Ok(runs) = sqlite.get_runs(entry.exec().unwrap_or_default()) {
-                if runs > 0 {
-                    weight *= std::cmp::max(2, (runs / 4) as usize);
-                }
+        if let Ok(runs) = commands::get_runs(entry.exec().unwrap_or_default()) {
+            if runs > 0 {
+                weight *= std::cmp::max(2, (runs / 4) as usize);
             }
         }
     }
@@ -121,9 +119,7 @@ pub fn refresh_desktops() {
 pub fn launch_and_track(command: &str) {
     process::launch(command);
 
-    if let Some(sqlite) = SQL_CONNECTION.get() {
-        let _ = sqlite.increment_runs(command);
-    }
+    let _ = commands::increment_runs(command);
 }
 
 pub fn watch_desktops(path: &PathBuf) {

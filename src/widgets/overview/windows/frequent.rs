@@ -1,7 +1,7 @@
 use gtk4::prelude::*;
 use relm4::RelmIterChildrenExt;
 
-use crate::SQL_CONNECTION;
+use crate::{sql::wrappers::commands};
 
 pub struct OverviewFrequentWindow {
     pub widget: gtk4::Box,
@@ -24,12 +24,10 @@ impl OverviewFrequentWindow {
         });
 
         // Get the frequently launched applications
-        if let Some(connection) = SQL_CONNECTION.get() {
-            if let Ok(entries) = connection.get_top_commands(10) {
-                for entry in entries {
-                    if let Some(button) = super::make_item_from_command(&entry.0) {
-                        self.children.append(&button);
-                    }
+        if let Ok(entries) = commands::get_top_commands(10) {
+            for entry in entries {
+                if let Some(button) = super::make_item_from_command(&entry.0) {
+                    self.children.append(&button);
                 }
             }
         }
