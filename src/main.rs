@@ -160,10 +160,7 @@ async fn main() {
                 Default::default(),
             );
 
-            application.connect_activate(|app| {
-                activate(app);
-            });
-
+            application.connect_activate(activate);
             application.run();
         }
     } else {

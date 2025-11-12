@@ -76,15 +76,13 @@ pub fn get_lighter_darker_colors(base_hsv: Hsv, count: u32) -> Vec<LighterDarker
         }
     }
 
-    colors.into_iter().map(|hsl| {
-        LighterDarkerResult {
-            hsv: Hsv::from_hex(&hsl.as_hex()),
-            lightness: hsl.lightness,
-            is_original: original_color.as_ref().is_some_and(|oc| 
-                (oc.hue - hsl.hue).abs() < FLOAT_TOLERANCE && 
-                (oc.saturation - hsl.saturation).abs() < FLOAT_TOLERANCE && 
-                (oc.lightness - hsl.lightness).abs() < FLOAT_TOLERANCE
-            )
-        }
+    colors.into_iter().map(|hsl| LighterDarkerResult {
+        hsv: Hsv::from_hex(&hsl.as_hex()),
+        lightness: hsl.lightness,
+        is_original: original_color.as_ref().is_some_and(|oc| 
+            (oc.hue - hsl.hue).abs() < FLOAT_TOLERANCE && 
+            (oc.saturation - hsl.saturation).abs() < FLOAT_TOLERANCE && 
+            (oc.lightness - hsl.lightness).abs() < FLOAT_TOLERANCE
+        )
     }).collect()
 }

@@ -71,16 +71,12 @@ pub fn get_color_box(hsv: Hsv, color_tabs: &Tabs) -> ColorBox {
             set_reveal_child: false,
             add_controller: gesture::on_enter({
                 let revealer = color_copy_button_revealer.clone();
-                move |_, _| {
-                    revealer.set_reveal_child(true);
-                }
+                move |_, _| revealer.set_reveal_child(true)
             }),
 
             add_controller: gesture::on_leave({
                 let revealer = color_copy_button_revealer.clone();
-                move || {
-                    revealer.set_reveal_child(false);
-                }
+                move || revealer.set_reveal_child(false)
             }),
 
             set_child: Some(&color_copy_button)
