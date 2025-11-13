@@ -2,6 +2,7 @@
 // A wired device was introspected with `dbus-codegen-rust --crossroads -s -d org.freedesktop.NetworkManager -p /org/freedesktop/NetworkManager/Devices/3`
 // A wireless device was introspected with `dbus-codegen-rust --crossroads -s -d org.freedesktop.NetworkManager -p /org/freedesktop/NetworkManager/Devices/4`
 // see https://github.com/diwic/dbus-rs
+#![allow(dead_code)]
 use dbus as dbus;
 #[allow(unused_imports)]
 use dbus::arg;

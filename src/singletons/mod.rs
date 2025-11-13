@@ -7,6 +7,7 @@ pub mod wireplumber;
 pub mod apps;
 pub mod calculator;
 pub mod g_translate;
+pub mod networkmanager;
 
 pub fn activate_all() {
     date_time::activate();
