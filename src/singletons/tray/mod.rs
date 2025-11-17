@@ -13,7 +13,7 @@ pub mod icon;
 pub mod tray_menu;
 
 static SENDER: LazyLock<broadcast::Sender<BusEvent>> = LazyLock::new(|| {
-    broadcast::channel(1).0
+    broadcast::channel(100).0
 });
 
 pub static ITEMS: OnceLock<Arc<Mutex<Vec<StatusNotifierItem>>>> = OnceLock::new();

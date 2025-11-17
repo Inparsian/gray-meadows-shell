@@ -53,7 +53,7 @@ impl Default for StatusNotifierWatcher {
 impl StatusNotifierWatcher {
     /// Creates a new `StatusNotifierWatcher` with an empty list of items.
     pub fn new() -> Self {
-        let (sender, _) = tokio::sync::broadcast::channel(1);
+        let (sender, _) = tokio::sync::broadcast::channel(100);
 
         StatusNotifierWatcher {
             items: Arc::new(Mutex::new(Vec::new())),

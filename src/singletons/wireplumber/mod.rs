@@ -17,7 +17,7 @@ const POSSIBLE_ENDPOINT_PROPERTIES: [&str; 1] = [
     "is-default"
 ];
 
-static SENDER: LazyLock<broadcast::Sender<WpEvent>> = LazyLock::new(|| broadcast::channel(1).0);
+static SENDER: LazyLock<broadcast::Sender<WpEvent>> = LazyLock::new(|| broadcast::channel(100).0);
 static NODES: OnceLock<Mutex<Vec<ffi::Node>>> = OnceLock::new();
 static ENDPOINTS: OnceLock<Mutex<Vec<ffi::Endpoint>>> = OnceLock::new();
 
