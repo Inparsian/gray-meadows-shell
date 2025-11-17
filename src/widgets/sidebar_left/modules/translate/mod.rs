@@ -133,12 +133,12 @@ pub fn new() -> gtk4::Box {
             set_hexpand: true,
 
             gtk4::ScrolledWindow {
-                set_height_request: 400,
+                set_vexpand: true,
                 set_child: Some(&input_text_view)
             },
 
             gtk4::ScrolledWindow {
-                set_height_request: 400,
+                set_vexpand: true,
                 set_child: Some(&output_text_view)
             },
 
@@ -212,13 +212,6 @@ pub fn new() -> gtk4::Box {
             }
         },
 
-        main_ui_revealer = gtk4::Revealer {
-            set_reveal_child: REVEAL.lock().unwrap().clone() == LanguageSelectReveal::None,
-            set_transition_type: gtk4::RevealerTransitionType::SlideDown,
-            set_transition_duration: 250,
-            set_child: Some(&main_ui)
-        },
-
         select_ui_stack = gtk4::Stack {
             set_hexpand: true,
             set_transition_type: gtk4::StackTransitionType::SlideLeftRight,
@@ -235,11 +228,15 @@ pub fn new() -> gtk4::Box {
             append: &select_ui_stack
         },
 
-        select_ui_revealer = gtk4::Revealer {
-            set_reveal_child: REVEAL.lock().unwrap().clone() != LanguageSelectReveal::None,
-            set_transition_type: gtk4::RevealerTransitionType::SlideDown,
+        ui_stack = gtk4::Stack {
+            set_hexpand: true,
+            set_transition_type: gtk4::StackTransitionType::SlideUpDown,
             set_transition_duration: 250,
-            set_child: Some(&select_ui)
+
+            add_named: (&select_ui, Some("select")),
+            add_named: (&main_ui, Some("main")),
+            
+            set_visible_child_name: "main"
         },
 
         widget = gtk4::Box {
@@ -249,8 +246,7 @@ pub fn new() -> gtk4::Box {
             set_hexpand: true,
 
             append: &language_buttons.container,
-            append: &select_ui_revealer,
-            append: &main_ui_revealer,
+            append: &ui_stack,
         }
     };
 
@@ -322,8 +318,11 @@ pub fn new() -> gtk4::Box {
                 UiEvent::LanguageSelectRevealChanged(reveal) => {
                     let was_already_open = reveal == *REVEAL.lock().unwrap();
 
-                    main_ui_revealer.set_reveal_child(was_already_open || reveal == LanguageSelectReveal::None);
-                    select_ui_revealer.set_reveal_child(!was_already_open && reveal != LanguageSelectReveal::None);
+                    ui_stack.set_visible_child_name(if was_already_open || reveal == LanguageSelectReveal::None {
+                        "main"
+                    } else {
+                        "select"
+                    });
 
                     if [LanguageSelectReveal::Source, LanguageSelectReveal::Target].contains(&reveal) {
                         select_ui_stack.set_visible_child_name(match reveal {

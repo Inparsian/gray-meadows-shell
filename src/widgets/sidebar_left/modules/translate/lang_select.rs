@@ -87,6 +87,7 @@ fn get_page_boxes(reveal_type: &LanguageSelectReveal, filter: Option<&str>) -> V
         let page_box = gtk4::Box::new(gtk4::Orientation::Vertical, 6);
         page_box.set_css_classes(&["google-translate-language-select-page"]);
         page_box.set_spacing(6);
+        page_box.set_vexpand(true);
         boxes.iter().for_each(|box_| page_box.append(box_));
         page_boxes.push(page_box);
         boxes.clear();
