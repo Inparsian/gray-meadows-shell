@@ -64,11 +64,9 @@ pub fn new() -> gtk4::Box {
                 },
             
                 WpEvent::RemoveSpeaker(endpoint) => {
-                    let default_speaker = wireplumber::get_default_speaker();
-                
-                    if let Some(speaker) = default_speaker {
-                        if speaker.node.id == endpoint.node.id {
-                            let _ = tx.send(speaker.node.volume).await;
+                    if let Some(default_speaker) = wireplumber::get_default_speaker() {
+                        if default_speaker.node.id == endpoint.node.id {
+                            let _ = tx.send(default_speaker.node.volume).await;
                         }
                     }
                 },
@@ -79,14 +77,10 @@ pub fn new() -> gtk4::Box {
                     }
                 },
             
-                WpEvent::UpdateEndpoint(id, property_name) => {
-                    if property_name == "volume" {
-                        let default_speaker = wireplumber::get_default_speaker();
-                    
-                        if let Some(speaker) = default_speaker {
-                            if speaker.node.id == id {
-                                let _ = tx.send(speaker.node.volume).await;
-                            }
+                WpEvent::UpdateEndpoint(id, property_name) => if property_name == "volume" {
+                    if let Some(default_speaker) = wireplumber::get_default_speaker() {
+                        if default_speaker.node.id == id {
+                            let _ = tx.send(default_speaker.node.volume).await;
                         }
                     }
                 },
