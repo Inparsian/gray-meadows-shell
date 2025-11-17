@@ -109,6 +109,13 @@ where
     on_button_up(gdk4::ffi::GDK_BUTTON_PRIMARY.try_into().unwrap(), on_up)
 }
 
+pub fn on_secondary_down<F>(on_down: F) -> gtk4::GestureClick
+where
+    F: Fn(i32, f64, f64) + 'static,
+{
+    on_button_down(gdk4::ffi::GDK_BUTTON_SECONDARY.try_into().unwrap(), on_down)
+}
+
 pub fn on_secondary_up<F>(on_up: F) -> gtk4::GestureClick
 where
     F: Fn(i32, f64, f64) + 'static,

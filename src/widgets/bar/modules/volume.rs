@@ -29,7 +29,7 @@ pub fn new() -> gtk4::Box {
             }
         }),
 
-        volume_click_gesture = gesture::on_primary_up(|_, _, _| {
+        volume_click_gesture = gesture::on_primary_down(|_, _, _| {
             let _ = ipc::client::send_message("toggle_right_sidebar");
         }),
 
