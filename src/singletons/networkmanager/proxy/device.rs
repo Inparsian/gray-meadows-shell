@@ -2,7 +2,7 @@
 // A wired device was introspected with `dbus-codegen-rust --crossroads -s -d org.freedesktop.NetworkManager -p /org/freedesktop/NetworkManager/Devices/3`
 // A wireless device was introspected with `dbus-codegen-rust --crossroads -s -d org.freedesktop.NetworkManager -p /org/freedesktop/NetworkManager/Devices/4`
 // see https://github.com/diwic/dbus-rs
-#![allow(dead_code)]
+#![allow(dead_code, deprecated)]
 use dbus as dbus;
 #[allow(unused_imports)]
 use dbus::arg;
@@ -110,7 +110,7 @@ where T: OrgFreedesktopNetworkManagerDeviceStatistics + Send + 'static
     cr.register("org.freedesktop.NetworkManager.Device.Statistics", |b| {
         b.property::<u32, _>("RefreshRateMs")
             .get(|_, t: &mut T| t.refresh_rate_ms())
-            .set(|_, t: &mut T, value| t.set_refresh_rate_ms(value).map(|_| None));
+            .set(|_, t: &mut T, value| t.set_refresh_rate_ms(value).map(|()| None));
         b.property::<u64, _>("TxBytes")
             .get(|_, t: &mut T| t.tx_bytes());
         b.property::<u64, _>("RxBytes")
@@ -344,10 +344,10 @@ where T: OrgFreedesktopNetworkManagerDevice + Send + 'static
             .get(|_, t: &mut T| t.dhcp6_config());
         b.property::<bool, _>("Managed")
             .get(|_, t: &mut T| t.managed())
-            .set(|_, t: &mut T, value| t.set_managed(value).map(|_| None));
+            .set(|_, t: &mut T, value| t.set_managed(value).map(|()| None));
         b.property::<bool, _>("Autoconnect")
             .get(|_, t: &mut T| t.autoconnect())
-            .set(|_, t: &mut T, value| t.set_autoconnect(value).map(|_| None));
+            .set(|_, t: &mut T, value| t.set_autoconnect(value).map(|()| None));
         b.property::<bool, _>("FirmwareMissing")
             .get(|_, t: &mut T| t.firmware_missing());
         b.property::<bool, _>("NmPluginMissing")
