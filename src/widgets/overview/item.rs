@@ -1,3 +1,4 @@
+use gdk4::glib::SignalHandlerId;
 use gtk4::prelude::*;
 
 use crate::{helpers::{matching, scss}, ipc, singletons::apps::{self, pixbuf::get_pixbuf_or_fallback}};
@@ -21,7 +22,7 @@ pub enum OverviewSearchItemAction {
     Custom(fn())
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct OverviewSearchItem {
     pub id: String,
     pub title: String,
@@ -32,7 +33,28 @@ pub struct OverviewSearchItem {
     pub query: Option<String>,
     row: gtk4::ListBoxRow,
     widget: gtk4::Revealer,
+    button: gtk4::Button,
+    button_click_handler_id: Option<SignalHandlerId>,
     title_label: gtk4::Label
+}
+
+impl Clone for OverviewSearchItem {
+    fn clone(&self) -> Self {
+        OverviewSearchItem {
+            id: self.id.clone(),
+            title: self.title.clone(),
+            subtitle: self.subtitle.clone(),
+            icon: self.icon.clone(),
+            action_text: self.action_text.clone(),
+            action: self.action.clone(),
+            query: self.query.clone(),
+            row: self.row.clone(),
+            widget: self.widget.clone(),
+            button: self.button.clone(),
+            button_click_handler_id: None,
+            title_label: self.title_label.clone(),
+        }
+    }
 }
 
 impl OverviewSearchItem {
@@ -68,85 +90,51 @@ impl OverviewSearchItem {
                 }
             },
 
+            button = gtk4::Button {
+                set_css_classes: &["overview-search-item"],
+            
+                connect_has_focus_notify: {
+                    let action_slide_revealer = action_slide_revealer.clone();
+                    move |button| action_slide_revealer.set_reveal_child(button.has_focus())
+                },
+            
+                gtk4::Box {
+                    set_css_classes: &["overview-search-item-box"],
+                    set_orientation: gtk4::Orientation::Horizontal,
+                    set_hexpand: true,
+                
+                    gtk4::Image {
+                        set_from_pixbuf: icon_pixbuf.as_ref(),
+                        set_pixel_size: 24,
+                        set_css_classes: &["overview-search-item-icon"],
+                    },
+                
+                    gtk4::Box {
+                        set_orientation: gtk4::Orientation::Vertical,
+                        set_valign: gtk4::Align::Center,
+                        set_hexpand: true,
+                    
+                        gtk4::Label {
+                            set_label: subtitle.as_ref().unwrap_or(&String::new()).as_str(),
+                            set_visible: subtitle.is_some(),
+                            set_css_classes: &["overview-search-item-subtitle"],
+                            set_xalign: 0.0,
+                            set_ellipsize: gtk4::pango::EllipsizeMode::End
+                        },
+
+                        append: &title_label
+                    },
+                
+                    append: &action_slide_revealer
+                }
+            },
+
             widget = gtk4::Revealer {
                 set_transition_type: gtk4::RevealerTransitionType::SlideDown,
                 set_css_classes: &["overview-search-item-revealer"],
                 set_transition_duration: ITEM_ANIMATION_DURATION,
                 set_reveal_child: false,
-
-                gtk4::Button {
-                    set_css_classes: &["overview-search-item"],
-                    connect_clicked: {
-                        let action = action.clone();
-                        move |_| {
-                            match &action {
-                                OverviewSearchItemAction::Launch(command) => apps::launch_and_track(command),
-
-                                OverviewSearchItemAction::RunCommand(command) => {
-                                    std::thread::spawn({
-                                        let command = command.clone();
-                                    
-                                        move || std::process::Command::new("bash")
-                                            .arg("-c")
-                                            .arg(command)
-                                            .output()
-                                    });
-                                },
-                            
-                                // TODO: Do this without wl-copy?
-                                OverviewSearchItemAction::Copy(text) => {
-                                    std::thread::spawn({
-                                        let text = text.clone();
-                                    
-                                        move || std::process::Command::new("wl-copy")
-                                            .arg(text)
-                                            .output()
-                                    });
-                                }
-                            
-                                OverviewSearchItemAction::Custom(func) => func()
-                            }
-                        
-                            // Hide the overview after clicking an item
-                            let _ = ipc::client::send_message("hide_overview");
-                        }
-                    },
-                
-                    connect_has_focus_notify: {
-                        let action_slide_revealer = action_slide_revealer.clone();
-                        move |button| action_slide_revealer.set_reveal_child(button.has_focus())
-                    },
-                
-                    gtk4::Box {
-                        set_css_classes: &["overview-search-item-box"],
-                        set_orientation: gtk4::Orientation::Horizontal,
-                        set_hexpand: true,
-                    
-                        gtk4::Image {
-                            set_from_pixbuf: icon_pixbuf.as_ref(),
-                            set_pixel_size: 24,
-                            set_css_classes: &["overview-search-item-icon"],
-                        },
-                    
-                        gtk4::Box {
-                            set_orientation: gtk4::Orientation::Vertical,
-                            set_valign: gtk4::Align::Center,
-                            set_hexpand: true,
-                        
-                            gtk4::Label {
-                                set_label: subtitle.as_ref().unwrap_or(&String::new()).as_str(),
-                                set_visible: subtitle.is_some(),
-                                set_css_classes: &["overview-search-item-subtitle"],
-                                set_xalign: 0.0,
-                                set_ellipsize: gtk4::pango::EllipsizeMode::End
-                            },
-
-                            append: &title_label
-                        },
-                    
-                        append: &action_slide_revealer
-                    }
-                }
+                set_child: Some(&button)
             },
 
             row = gtk4::ListBoxRow {
@@ -155,7 +143,7 @@ impl OverviewSearchItem {
             }
         }
 
-        let item = Self {
+        let mut item = Self {
             id,
             title,
             subtitle,
@@ -165,9 +153,12 @@ impl OverviewSearchItem {
             query,
             row,
             widget,
+            button,
+            button_click_handler_id: None,
             title_label
         };
 
+        item.connect_button_clicked();
         item.set_title_markup();
         item
     }
@@ -248,5 +239,59 @@ impl OverviewSearchItem {
 
             self.title_label.set_markup(&chars.join(""));
         }
+    }
+
+    pub fn connect_button_clicked(&mut self) {
+        self.button_click_handler_id = Some(self.button.connect_clicked({
+            let action = self.action.clone();
+            move |_| {
+                match &action {
+                    OverviewSearchItemAction::Launch(command) => apps::launch_and_track(command),
+
+                    OverviewSearchItemAction::RunCommand(command) => {
+                        std::thread::spawn({
+                            let command = command.clone();
+                        
+                            move || std::process::Command::new("bash")
+                                .arg("-c")
+                                .arg(command)
+                                .output()
+                        });
+                    },
+                
+                    // TODO: Do this without wl-copy?
+                    OverviewSearchItemAction::Copy(text) => {
+                        std::thread::spawn({
+                            let text = text.clone();
+                        
+                            move || std::process::Command::new("wl-copy")
+                                .arg(text)
+                                .output()
+                        });
+                    }
+                
+                    OverviewSearchItemAction::Custom(func) => func()
+                }
+            
+                // Hide the overview after clicking an item
+                let _ = ipc::client::send_message("hide_overview");
+            }
+        }));
+    }
+
+    pub fn set_action(&mut self, action: OverviewSearchItemAction) {
+        if self.action == action {
+            return;
+        }
+
+        self.action = action;
+
+        // Update the button's clicked handler accordingly.
+        let button = self.button.clone();
+        if let Some(handler_id) = self.button_click_handler_id.take() {
+            button.disconnect(handler_id);
+        }
+        
+        self.connect_button_clicked();
     }
 }
