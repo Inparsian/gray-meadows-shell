@@ -78,6 +78,7 @@ pub fn new() -> gtk4::Box {
         current_album_art = gtk4::Image {
             set_width_request: ALBUM_ART_WIDTH,
             set_height_request: ALBUM_ART_HEIGHT,
+            set_pixel_size: ALBUM_ART_WIDTH,
         },
 
         paused_overlay = gtk4::CenterBox {
