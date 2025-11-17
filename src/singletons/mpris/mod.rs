@@ -6,6 +6,8 @@ use std::{rc::Rc, time::Duration, sync::LazyLock};
 use dbus::{channel::MatchingReceiver, message::{MatchRule, MessageType}};
 use futures_signals::{signal::SignalExt, signal_vec::{SignalVecExt, VecDiff}};
 
+use crate::ipc;
+
 const MPRIS_DBUS_PREFIX: &str = "org.mpris.MediaPlayer2";
 const MPRIS_DBUS_PATH: &str = "/org/mpris/MediaPlayer2";
 
@@ -156,4 +158,18 @@ pub fn activate() {
     });
 
     tokio::spawn(future);
+
+    // Monitor IPC commands for controlling MPRIS players
+    ipc::listen_for_messages(move |message| {
+        match message.as_str() {
+            "mpris_next" => { let _ = crate::singletons::mpris::get_default_player().map(|p| p.next()); },
+            "mpris_previous" => { let _ = crate::singletons::mpris::get_default_player().map(|p| p.previous()); },
+            "mpris_play_pause" => { let _ = crate::singletons::mpris::get_default_player().map(|p| p.play_pause()); },
+            "mpris_play" => { let _ = crate::singletons::mpris::get_default_player().map(|p| p.play()); },
+            "mpris_pause" => { let _ = crate::singletons::mpris::get_default_player().map(|p| p.pause()); },
+            "mpris_volume_up" => { let _ = crate::singletons::mpris::get_default_player().map(|p| p.adjust_volume(0.05)); },
+            "mpris_volume_down" => { let _ = crate::singletons::mpris::get_default_player().map(|p| p.adjust_volume(-0.05)); },
+            _ => {},
+        }
+    });
 }
