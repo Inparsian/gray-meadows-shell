@@ -63,7 +63,7 @@ impl SystemTrayItem {
             }
         };
 
-        if let Some(item) = crate::singletons::tray::get_item(&self.service) {
+        if let Some(item) = crate::singletons::tray::try_get_item(&self.service) {
             new_widget.set_from_pixbuf(make_icon_pixbuf(Some(&item.icon_pixmap)).as_ref());
             
             if !item.tool_tip.title.is_empty() {
@@ -77,7 +77,7 @@ impl SystemTrayItem {
     }
 
     pub fn update(&self, member: &str) {
-        if let (Some(widget), Some(item)) = (&self.widget, crate::singletons::tray::get_item(&self.service)) {
+        if let (Some(widget), Some(item)) = (&self.widget, crate::singletons::tray::try_get_item(&self.service)) {
             match member {
                 "NewToolTip" => {
                     if !item.tool_tip.title.is_empty() {

@@ -38,12 +38,6 @@ pub fn subscribe() -> tokio::sync::broadcast::Receiver<bus::BusEvent> {
     SENDER.subscribe()
 }
 
-pub fn get_item(service: &str) -> Option<StatusNotifierItem> {
-    ITEMS.get()?.lock().unwrap().iter()
-        .find(|item| item.service == service)
-        .cloned()
-}
-
 pub fn try_get_item(service: &str) -> Option<StatusNotifierItem> {
     ITEMS.get()?.try_lock().map_or(None, |items| items.iter()
         .find(|item| item.service == service)
