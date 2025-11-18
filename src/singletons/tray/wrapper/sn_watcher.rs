@@ -1,4 +1,4 @@
-use std::{sync::{Arc, Mutex}, time::Duration};
+use std::{sync::{Arc, RwLock}, time::Duration};
 use dbus::{blocking, channel::MatchingReceiver, message::MatchRule, MessageType};
 use dbus_crossroads::{Crossroads, IfaceToken};
 
@@ -9,7 +9,7 @@ use super::sn_item::StatusNotifierItem;
 /// https://www.freedesktop.org/wiki/Specifications/StatusNotifierItem/StatusNotifierWatcher/
 #[derive(Debug, Clone)]
 pub struct StatusNotifierWatcher {
-    items: Arc<Mutex<Vec<StatusNotifierItem>>>,
+    items: Arc<RwLock<Vec<StatusNotifierItem>>>,
     sender: tokio::sync::broadcast::Sender<BusEvent>,
     // We don't implement the rest of the fields for simplicity's sake.
 }
@@ -20,7 +20,9 @@ impl OrgKdeStatusNotifierWatcher for StatusNotifierWatcher {
 
         self.sender.send(BusEvent::ItemRegistered(item.clone())).unwrap();
 
-        self.items.lock().unwrap().push(item);
+        self.items.try_write()
+            .map(|mut items| items.push(item))
+            .map_err(|_| dbus::MethodErr::failed(&"Failed to acquire write lock on items list"))?;
 
         Ok(())
     }
@@ -30,7 +32,7 @@ impl OrgKdeStatusNotifierWatcher for StatusNotifierWatcher {
     }
 
     fn registered_status_notifier_items(&self) -> Result<Vec<String>, dbus::MethodErr> {
-        Ok(self.items.lock().unwrap().iter().map(|item| item.service.clone()).collect())
+        Ok(self.items.try_read().map(|items| items.iter().map(|item| item.service.clone()).collect()).unwrap_or_default())
     }
 
     fn is_status_notifier_host_registered(&self) -> Result<bool, dbus::MethodErr> {
@@ -56,7 +58,7 @@ impl StatusNotifierWatcher {
         let (sender, _) = tokio::sync::broadcast::channel(100);
 
         StatusNotifierWatcher {
-            items: Arc::new(Mutex::new(Vec::new())),
+            items: Arc::new(RwLock::new(Vec::new())),
             sender,
         }
     }
@@ -69,11 +71,11 @@ impl StatusNotifierWatcher {
         self.sender.subscribe()
     }
 
-    /// Retrieves an Arc to the items list's Mutex.
+    /// Retrieves an Arc to the items list's RwLock.
     /// 
     /// You should call this before calling `serve`, so you can access the items list
     /// while the watcher is serving.
-    pub fn items(&self) -> Arc<Mutex<Vec<StatusNotifierItem>>> {
+    pub fn items(&self) -> Arc<RwLock<Vec<StatusNotifierItem>>> {
         Arc::clone(&self.items)
     }
 
@@ -144,12 +146,12 @@ impl StatusNotifierWatcher {
 
                                         if let (Some(old_owner), Some(new_owner)) = (old_owner, new_owner) {
                                             if new_owner.is_empty() && !old_owner.is_empty() {
-                                                let mut lock = items.lock().unwrap();
-                                            
-                                                if let Some(index) = lock.iter().position(|item| item.service == old_owner) {
-                                                    let item = lock.remove(index);
-                                                
-                                                    sender.send(BusEvent::ItemUnregistered(item)).unwrap();
+                                                if let Ok(mut writer) = items.try_write() {
+                                                    if let Some(index) = writer.iter().position(|item| item.service == old_owner) {
+                                                        let item = writer.remove(index);
+                                                        
+                                                        sender.send(BusEvent::ItemUnregistered(item)).unwrap();
+                                                    }
                                                 }
                                             }
                                         }
@@ -159,15 +161,17 @@ impl StatusNotifierWatcher {
                                     else {
                                         let service = msg.sender().unwrap().to_string();
 
-                                        if let Some(item) = items.lock().unwrap().iter_mut().find(|item| item.service == service) {
-                                            match msg.path() {
-                                                Some(path) if path == *bus::ITEM_DBUS_OBJECT => {
-                                                    item.pass_update(&member);
+                                        if let Ok(mut writer) = items.try_write() {
+                                            if let Some(item) = writer.iter_mut().find(|item| item.service == service) {
+                                                match msg.path() {
+                                                    Some(path) if path == *bus::ITEM_DBUS_OBJECT => {
+                                                        item.pass_update(&member);
 
-                                                    sender.send(BusEvent::ItemUpdated(member, item.clone())).unwrap();
-                                                },
+                                                        sender.send(BusEvent::ItemUpdated(member, item.clone())).unwrap();
+                                                    },
 
-                                                _ => {}
+                                                    _ => {}
+                                                }
                                             }
                                         }
                                     }

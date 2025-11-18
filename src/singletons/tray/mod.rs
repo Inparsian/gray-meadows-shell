@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex, LazyLock, OnceLock};
+use std::sync::{Arc, LazyLock, OnceLock, RwLock};
 use tokio::sync::broadcast;
 
 use crate::singletons::tray::{bus::BusEvent, wrapper::{
@@ -16,7 +16,7 @@ static SENDER: LazyLock<broadcast::Sender<BusEvent>> = LazyLock::new(|| {
     broadcast::channel(100).0
 });
 
-pub static ITEMS: OnceLock<Arc<Mutex<Vec<StatusNotifierItem>>>> = OnceLock::new();
+pub static ITEMS: OnceLock<Arc<RwLock<Vec<StatusNotifierItem>>>> = OnceLock::new();
 
 pub fn activate() {
     let watcher = StatusNotifierWatcher::new();
@@ -38,8 +38,9 @@ pub fn subscribe() -> tokio::sync::broadcast::Receiver<bus::BusEvent> {
     SENDER.subscribe()
 }
 
-pub fn try_get_item(service: &str) -> Option<StatusNotifierItem> {
-    ITEMS.get()?.try_lock().map_or(None, |items| items.iter()
+pub fn try_read_item(service: &str) -> Option<StatusNotifierItem> {
+    let items = ITEMS.get()?.try_read().ok()?;
+    items.iter()
         .find(|item| item.service == service)
-        .cloned())
+        .cloned()
 }

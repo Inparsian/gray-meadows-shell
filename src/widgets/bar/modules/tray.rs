@@ -34,7 +34,7 @@ impl SystemTrayItem {
             let service = self.service.clone();
         
             move |_, x, y| {
-                if let Some(item) = tray::try_get_item(&service) {
+                if let Some(item) = tray::try_read_item(&service) {
                     let _ = item.activate(x as i32, y as i32);
                 }
             }
@@ -45,7 +45,7 @@ impl SystemTrayItem {
             let popover_menu = self.popover_menu.clone();
 
             move |_, _, _| if let Some(popover_menu) = &popover_menu {
-                if let Some((model, actions)) = tray::try_get_item(&service).and_then(tray_menu::build_gio_dbus_menu_model) {
+                if let Some((model, actions)) = tray::try_read_item(&service).and_then(tray_menu::build_gio_dbus_menu_model) {
                     popover_menu.set_menu_model(Some(&model));
                     popover_menu.insert_action_group("dbusmenu", Some(&actions));
                 }
@@ -63,7 +63,7 @@ impl SystemTrayItem {
             }
         };
 
-        if let Some(item) = crate::singletons::tray::try_get_item(&self.service) {
+        if let Some(item) = crate::singletons::tray::try_read_item(&self.service) {
             new_widget.set_from_pixbuf(make_icon_pixbuf(Some(&item.icon_pixmap)).as_ref());
             
             if !item.tool_tip.title.is_empty() {
@@ -77,7 +77,7 @@ impl SystemTrayItem {
     }
 
     pub fn update(&self, member: &str) {
-        if let (Some(widget), Some(item)) = (&self.widget, crate::singletons::tray::try_get_item(&self.service)) {
+        if let (Some(widget), Some(item)) = (&self.widget, crate::singletons::tray::try_read_item(&self.service)) {
             match member {
                 "NewToolTip" => {
                     if !item.tool_tip.title.is_empty() {
@@ -175,7 +175,7 @@ pub fn new() -> gtk4::Box {
     // We may have missed some items that were registered before we start listening.
     // Fetch the current items and register them.
     if let Some(items) = crate::singletons::tray::ITEMS.get() {
-        for item in items.lock().unwrap().iter() {
+        for item in &items.try_read().map_or(Vec::new(), |items| items.clone()) {
             tray.add_item(item.service.clone());
         }
 
