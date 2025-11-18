@@ -176,7 +176,10 @@ pub fn new(application: &libadwaita::Application) {
                                     }
                                 } else {
                                     existing_item.set_title_label(&item.title);
-                                    existing_item.set_action(item.action.clone());
+
+                                    if let Ok(action) = item.action.try_borrow() {
+                                        existing_item.set_action(action.clone());
+                                    }
                                 }
                             } else {
                                 search_results_mut.insert(item, i);

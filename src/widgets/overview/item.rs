@@ -1,4 +1,4 @@
-use gdk4::glib::SignalHandlerId;
+use std::{cell::RefCell, rc::Rc};
 use gtk4::prelude::*;
 
 use crate::{helpers::{matching, scss}, ipc, singletons::apps::{self, pixbuf::get_pixbuf_or_fallback}};
@@ -22,39 +22,18 @@ pub enum OverviewSearchItemAction {
     Custom(fn())
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct OverviewSearchItem {
     pub id: String,
     pub title: String,
     pub subtitle: Option<String>,
     pub icon: String,
     pub action_text: String,
-    pub action: OverviewSearchItemAction,
+    pub action: Rc<RefCell<OverviewSearchItemAction>>,
     pub query: Option<String>,
     row: gtk4::ListBoxRow,
     widget: gtk4::Revealer,
-    button: gtk4::Button,
-    button_click_handler_id: Option<SignalHandlerId>,
     title_label: gtk4::Label
-}
-
-impl Clone for OverviewSearchItem {
-    fn clone(&self) -> Self {
-        OverviewSearchItem {
-            id: self.id.clone(),
-            title: self.title.clone(),
-            subtitle: self.subtitle.clone(),
-            icon: self.icon.clone(),
-            action_text: self.action_text.clone(),
-            action: self.action.clone(),
-            query: self.query.clone(),
-            row: self.row.clone(),
-            widget: self.widget.clone(),
-            button: self.button.clone(),
-            button_click_handler_id: None,
-            title_label: self.title_label.clone(),
-        }
-    }
 }
 
 impl OverviewSearchItem {
@@ -68,6 +47,7 @@ impl OverviewSearchItem {
         query: Option<String>
     ) -> Self {
         let icon_pixbuf = get_pixbuf_or_fallback(&icon, "emote-love");
+        let action = Rc::new(RefCell::new(action));
 
         view! {
             title_label = gtk4::Label {
@@ -92,6 +72,13 @@ impl OverviewSearchItem {
 
             button = gtk4::Button {
                 set_css_classes: &["overview-search-item"],
+
+                connect_clicked: {
+                    let action = action.clone();
+                    move |_| if let Ok(action) = action.try_borrow() {
+                        run_action(&action);
+                    }
+                },
             
                 connect_has_focus_notify: {
                     let action_slide_revealer = action_slide_revealer.clone();
@@ -143,7 +130,7 @@ impl OverviewSearchItem {
             }
         }
 
-        let mut item = Self {
+        let item = Self {
             id,
             title,
             subtitle,
@@ -153,12 +140,9 @@ impl OverviewSearchItem {
             query,
             row,
             widget,
-            button,
-            button_click_handler_id: None,
             title_label
         };
 
-        item.connect_button_clicked();
         item.set_title_markup();
         item
     }
@@ -173,7 +157,10 @@ impl OverviewSearchItem {
         self.subtitle == other.subtitle &&
         self.icon == other.icon &&
         self.action_text == other.action_text &&
-        self.action == other.action
+        match (self.action.try_borrow(), other.action.try_borrow()) {
+            (Ok(a), Ok(b)) => a.clone() == b.clone(),
+            _ => false
+        }
     }
 
     pub fn id_eq(&self, other: &Self) -> bool {
@@ -241,57 +228,42 @@ impl OverviewSearchItem {
         }
     }
 
-    pub fn connect_button_clicked(&mut self) {
-        self.button_click_handler_id = Some(self.button.connect_clicked({
-            let action = self.action.clone();
-            move |_| {
-                match &action {
-                    OverviewSearchItemAction::Launch(command) => apps::launch_and_track(command),
+    pub fn set_action(&self, action: OverviewSearchItemAction) {
+        if let Ok(mut act) = self.action.try_borrow_mut() {
+            *act = action;
+        }
+    }
+}
 
-                    OverviewSearchItemAction::RunCommand(command) => {
-                        std::thread::spawn({
-                            let command = command.clone();
-                        
-                            move || std::process::Command::new("bash")
-                                .arg("-c")
-                                .arg(command)
-                                .output()
-                        });
-                    },
-                
-                    // TODO: Do this without wl-copy?
-                    OverviewSearchItemAction::Copy(text) => {
-                        std::thread::spawn({
-                            let text = text.clone();
-                        
-                            move || std::process::Command::new("wl-copy")
-                                .arg(text)
-                                .output()
-                        });
-                    }
-                
-                    OverviewSearchItemAction::Custom(func) => func()
-                }
+pub fn run_action(action: &OverviewSearchItemAction) {
+    match action {
+        OverviewSearchItemAction::Launch(command) => apps::launch_and_track(command),
+
+        OverviewSearchItemAction::RunCommand(command) => {
+            std::thread::spawn({
+                let command = command.clone();
             
-                // Hide the overview after clicking an item
-                let _ = ipc::client::send_message("hide_overview");
-            }
-        }));
+                move || std::process::Command::new("bash")
+                    .arg("-c")
+                    .arg(command)
+                    .output()
+            });
+        },
+    
+        // TODO: Do this without wl-copy?
+        OverviewSearchItemAction::Copy(text) => {
+            std::thread::spawn({
+                let text = text.clone();
+            
+                move || std::process::Command::new("wl-copy")
+                    .arg(text)
+                    .output()
+            });
+        }
+    
+        OverviewSearchItemAction::Custom(func) => func()
     }
 
-    pub fn set_action(&mut self, action: OverviewSearchItemAction) {
-        if self.action == action {
-            return;
-        }
-
-        self.action = action;
-
-        // Update the button's clicked handler accordingly.
-        let button = self.button.clone();
-        if let Some(handler_id) = self.button_click_handler_id.take() {
-            button.disconnect(handler_id);
-        }
-        
-        self.connect_button_clicked();
-    }
+    // Hide the overview after clicking an item
+    let _ = ipc::client::send_message("hide_overview");
 }
