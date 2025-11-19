@@ -3,7 +3,7 @@ use gtk4::prelude::*;
 
 use crate::{
     helpers::gesture,
-    singletons::tray::{self, bus::BusEvent, icon::make_icon_pixbuf, subscribe, tray_menu},
+    singletons::tray::{self, bus::BusEvent, icon::make_icon_pixbuf, subscribe, tray_menu, wrapper::{dbus_menu::Menu, sn_item::StatusNotifierItem}},
     widgets::bar::wrapper::BarModuleWrapper
 };
 
@@ -45,12 +45,32 @@ impl SystemTrayItem {
             let popover_menu = self.popover_menu.clone();
 
             move |_, _, _| if let Some(popover_menu) = &popover_menu {
-                if let Some((model, actions)) = tray::try_read_item(&service).and_then(tray_menu::build_gio_dbus_menu_model) {
-                    popover_menu.set_menu_model(Some(&model));
-                    popover_menu.insert_action_group("dbusmenu", Some(&actions));
-                }
+                let (sender, receiver) = async_channel::bounded::<(StatusNotifierItem, Menu)>(1);
 
-                popover_menu.popup();
+                tokio::spawn({
+                    let service = service.clone();
+                    async move {
+                        if let Some(item) = tray::try_read_item(&service) {
+                            if let Ok(menu_layout) = item.menu.get_layout() {
+                                let _ = sender.send((item, menu_layout)).await;
+                            }
+                        }
+                    }
+                });
+
+                gtk4::glib::spawn_future_local({
+                    let popover_menu = popover_menu.clone();
+                    async move {
+                        if let Ok((item, layout)) = receiver.recv().await {
+                            if let Some((model, actions)) = tray_menu::build_gio_dbus_menu_model_with_layout(item, &layout) {
+                                popover_menu.set_menu_model(Some(&model));
+                                popover_menu.insert_action_group("dbusmenu", Some(&actions));
+                            }
+
+                            popover_menu.popup();
+                        }
+                    }
+                });
             }
         });
 
