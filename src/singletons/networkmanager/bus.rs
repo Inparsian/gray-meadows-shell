@@ -4,7 +4,7 @@ pub const NM_MANAGER_PATH: &str = "/org/freedesktop/NetworkManager";
 pub const NM_DEVICES_PATH: &str = "/org/freedesktop/NetworkManager/Devices";
 pub const NM_ACCESSPOINT_PATH: &str = "/org/freedesktop/NetworkManager/AccessPoint";
 
-use crate::singletons::networkmanager::enums::*;
+use crate::singletons::networkmanager::{enums::*, wrapper::device::NetworkManagerDevice};
 
 #[allow(clippy::enum_variant_names)]
 #[derive(Debug, Clone)]
@@ -13,17 +13,17 @@ pub enum BusEvent {
     StateChanged(NetworkManagerState),
 
     /// A NetworkManager device was added.
-    DeviceAdded(String),
+    DeviceAdded(NetworkManagerDevice),
 
     /// A NetworkManager device was removed.
-    DeviceRemoved(String),
+    DeviceRemoved(NetworkManagerDevice),
 
     /// The state of a NetworkManager device has changed.
     DeviceStateChanged(String, NetworkManagerDeviceState, NetworkManagerDeviceStateReason),
 
     /// A wireless device has discovered an access point.
-    AccessPointAdded(String, String),
+    AccessPointAdded(NetworkManagerDevice, String),
 
     /// A wireless device has lost an access point.
-    AccessPointRemoved(String, String),
+    AccessPointRemoved(NetworkManagerDevice, String),
 }
