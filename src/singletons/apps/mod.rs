@@ -8,7 +8,7 @@ use crate::{helpers::{matching, process}, sql::wrappers::commands};
 
 pub struct WeightedDesktopEntry {
     pub entry: DesktopEntry,
-    pub weight: usize,
+    pub weight: f32,
 }
 
 pub static DESKTOPS: LazyLock<Mutex<Vec<DesktopEntry>>> = LazyLock::new(|| Mutex::new(Vec::new()));
@@ -21,7 +21,7 @@ pub fn activate() {
     }
 }
 
-pub fn calculate_weight(entry: &DesktopEntry, query: &str) -> usize {
+pub fn calculate_weight(entry: &DesktopEntry, query: &str) -> f32 {
     // Fixed weights:
     // 1. Exact match (10000)
     // 2. Lazy match, contains all characters, length match (500)
@@ -29,9 +29,9 @@ pub fn calculate_weight(entry: &DesktopEntry, query: &str) -> usize {
     // 4. Lazy match (10)
     //
     // Dynamic weights:
-    // 5. Beginning match (100)
+    // 5. Beginning match (query.length * 5)
     // 6. String inclusion bonus (query.length * 4)
-    // 7. Launch count bonus (runs / 4, minimum 2x multiplier)
+    // 7. Launch count bonus (runs / 4, minimum 1.25x multiplier)
     let locales = get_languages_from_env();
     let name = entry.name(&locales).map(|c| c.to_string()).unwrap_or_default().to_lowercase();
     let query = &query.trim().to_lowercase();
@@ -40,30 +40,30 @@ pub fn calculate_weight(entry: &DesktopEntry, query: &str) -> usize {
     let contains_all = name.chars().all(|c| query.contains(c));
 
     let mut weight = if name == *query {
-        10000
+        10000.0
     } else if lazy_match && contains_all && query.len() == name.len() {
-        500
+        500.0
     } else if matching::fuzzy_match(&name, query) {
-        30
+        30.0
     } else if lazy_match {
-        10
+        10.0
     } else {
-        0
+        0.0
     };
 
     if name.starts_with(query) {
-        weight += 100;
+        weight += query.len() as f32 * 5.0;
     }
 
     if name.contains(query) {
-        weight += query.len() * 4;
+        weight += query.len() as f32 * 4.0;
     }
 
     // How many times has this entry been run?
-    if weight > 0 {
+    if weight > 0.0 {
         if let Ok(runs) = commands::get_runs(entry.exec().unwrap_or_default()) {
             if runs > 0 {
-                weight *= std::cmp::max(2, (runs / 4) as usize);
+                weight *= f32::max(1.25, runs as f32 / 4.0);
             }
         }
     }
@@ -91,10 +91,10 @@ pub fn query_desktops(query: &str) -> Vec<WeightedDesktopEntry> {
             entry: entry.clone(),
             weight: calculate_weight(entry, query)
         })
-        .filter(|entry| entry.weight > 0)
+        .filter(|entry| entry.weight > 0.0)
         .collect::<Vec<_>>();
 
-    weighted.sort_by(|a, b| b.weight.cmp(&a.weight));
+    weighted.sort_by(|a, b| b.weight.partial_cmp(&a.weight).unwrap_or(std::cmp::Ordering::Equal));
 
     weighted
 }
