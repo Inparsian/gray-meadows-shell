@@ -19,4 +19,5 @@ pub fn activate_all() {
     apps::activate();
     calculator::activate();
     g_translate::activate();
+    networkmanager::activate();
 }
