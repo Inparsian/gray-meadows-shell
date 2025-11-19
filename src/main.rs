@@ -8,6 +8,7 @@ mod helpers;
 mod singletons;
 mod widgets;
 mod sql;
+mod dbus;
 
 use std::{cell::RefCell, path::Path, sync::{Mutex, OnceLock}};
 use gtk4::prelude::*;

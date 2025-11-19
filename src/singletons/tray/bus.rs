@@ -8,8 +8,6 @@ pub const ITEM_DBUS_BUS: &str = "org.kde.StatusNotifierItem";
 pub const ITEM_DBUS_OBJECT: &str = "/StatusNotifierItem";
 pub const DBUSMENU_BUS: &str = "com.canonical.dbusmenu";
 // DBUSMENU_OBJECT is not a constant here because it can vary based on the item
-pub const FREEDESKTOP_DBUS_BUS: &str = "org.freedesktop.DBus";
-pub const FREEDESKTOP_DBUS_OBJECT: &str = "/org/freedesktop/DBus";
 
 #[allow(clippy::enum_variant_names)]
 #[derive(Debug, Clone)]

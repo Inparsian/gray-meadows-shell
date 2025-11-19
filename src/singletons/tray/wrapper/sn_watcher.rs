@@ -1,8 +1,8 @@
 use std::{sync::{Arc, RwLock}, time::Duration};
-use dbus::{blocking, channel::MatchingReceiver, message::MatchRule, MessageType};
+use dbus::{blocking, message::MatchRule, MessageType};
 use dbus_crossroads::{Crossroads, IfaceToken};
 
-use crate::singletons::tray::{bus::{self, BusEvent}, proxy::{self, watcher::OrgKdeStatusNotifierWatcher}};
+use crate::{dbus::start_monitoring, singletons::tray::{bus::{self, BusEvent}, proxy::{self, watcher::OrgKdeStatusNotifierWatcher}}};
 
 use super::sn_item::StatusNotifierItem;
 
@@ -111,99 +111,69 @@ impl StatusNotifierWatcher {
     ///
     /// Meant to be used internally in serve.
     fn monitor_items(&self) -> Result<(), dbus::Error> {
-        std::thread::spawn({
+        let rule = MatchRule::new()
+            .with_type(MessageType::Signal);
+
+        start_monitoring(rule, false, {
             let items = self.items();
             let sender = self.sender.clone();
 
-            move || {
-                let connection = blocking::Connection::new_session().expect("Failed to create D-Bus connection");
-                let proxy = connection.with_proxy(
-                    bus::FREEDESKTOP_DBUS_BUS,
-                    bus::FREEDESKTOP_DBUS_OBJECT,
-                    std::time::Duration::from_millis(5000),
-                );
+            move |msg: &dbus::Message| {
+                if let Some(member) = msg.member() {
+                    let member = member.to_string();
 
-                // Start monitoring dbus for new MPRIS players + MPRIS player changes
-                let rule = MatchRule::new()
-                    .with_type(MessageType::Signal);
+                    // Handle item unregistration signals
+                    if member == "NameOwnerChanged" {
+                        let (_, old_owner, new_owner) = msg.get3::<String, String, String>();
 
-                let become_monitor_result: Result<(), dbus::Error> =
-                    proxy.method_call("org.freedesktop.DBus.Monitoring", "BecomeMonitor", (vec![rule.match_str()], 0_u32));
+                        if let (Some(old_owner), Some(new_owner)) = (old_owner, new_owner) {
+                            if new_owner.is_empty() && !old_owner.is_empty() {
+                                if let Ok(mut writer) = items.write() {
+                                    if let Some(index) = writer.iter().position(|item| item.service == old_owner) {
+                                        let item = writer.remove(index);
 
-                match become_monitor_result {
-                    Ok(()) => {
-                        // Listen for signals
-                        connection.start_receive(rule, Box::new({
-                            let items = items.clone();
-                            
-                            move |msg, _| {
-                                if let Some(member) = msg.member() {
-                                    let member = member.to_string();
+                                        std::thread::spawn({
+                                            let sender = sender.clone();
 
-                                    // Handle item unregistration signals
-                                    if member == "NameOwnerChanged" {
-                                        let (_, old_owner, new_owner) = msg.get3::<String, String, String>();
-
-                                        if let (Some(old_owner), Some(new_owner)) = (old_owner, new_owner) {
-                                            if new_owner.is_empty() && !old_owner.is_empty() {
-                                                if let Ok(mut writer) = items.write() {
-                                                    if let Some(index) = writer.iter().position(|item| item.service == old_owner) {
-                                                        let item = writer.remove(index);
-
-                                                        std::thread::spawn({
-                                                            let sender = sender.clone();
-
-                                                            move || {
-                                                                std::thread::sleep(Duration::from_millis(2));
-                                                                sender.send(BusEvent::ItemUnregistered(item)).unwrap();
-                                                            }
-                                                        });
-                                                    }
-                                                }
+                                            move || {
+                                                std::thread::sleep(Duration::from_millis(2));
+                                                sender.send(BusEvent::ItemUnregistered(item)).unwrap();
                                             }
-                                        }
-                                    }
-                                    
-                                    // Handle update signals from items
-                                    else {
-                                        let service = msg.sender().unwrap().to_string();
-
-                                        if let Ok(mut writer) = items.write() {
-                                            if let Some(item) = writer.iter_mut().find(|item| item.service == service) {
-                                                match msg.path() {
-                                                    Some(path) if path == *bus::ITEM_DBUS_OBJECT => {
-                                                        let (member_name, updated_item) = {
-                                                            item.pass_update(&member);
-                                                            (member.clone(), item.clone())
-                                                        };
-
-                                                        std::thread::spawn({
-                                                            let sender = sender.clone();
-
-                                                            move || {
-                                                                std::thread::sleep(Duration::from_millis(2));
-                                                                sender.send(BusEvent::ItemUpdated(member_name, updated_item)).unwrap();
-                                                            }
-                                                        });
-                                                    },
-
-                                                    _ => {}
-                                                }
-                                            }
-                                        }
+                                        });
                                     }
                                 }
-
-                                true
                             }
-                        }));
-                    },
-                
-                    Err(err) => eprintln!("Failed to become a monitor for StatusNotifierWatcher: {}", err),
-                }
-            
-                loop {
-                    connection.process(Duration::from_secs(1)).unwrap();
+                        }
+                    }
+                    
+                    // Handle update signals from items
+                    else {
+                        let service = msg.sender().unwrap().to_string();
+
+                        if let Ok(mut writer) = items.write() {
+                            if let Some(item) = writer.iter_mut().find(|item| item.service == service) {
+                                match msg.path() {
+                                    Some(path) if path == *bus::ITEM_DBUS_OBJECT => {
+                                        let (member_name, updated_item) = {
+                                            item.pass_update(&member);
+                                            (member.clone(), item.clone())
+                                        };
+
+                                        std::thread::spawn({
+                                            let sender = sender.clone();
+
+                                            move || {
+                                                std::thread::sleep(Duration::from_millis(2));
+                                                sender.send(BusEvent::ItemUpdated(member_name, updated_item)).unwrap();
+                                            }
+                                        });
+                                    },
+
+                                    _ => {}
+                                }
+                            }
+                        }
+                    }
                 }
             }
         });
