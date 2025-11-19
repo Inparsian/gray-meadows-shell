@@ -146,11 +146,18 @@ impl StatusNotifierWatcher {
 
                                         if let (Some(old_owner), Some(new_owner)) = (old_owner, new_owner) {
                                             if new_owner.is_empty() && !old_owner.is_empty() {
-                                                if let Ok(mut writer) = items.try_write() {
+                                                if let Ok(mut writer) = items.write() {
                                                     if let Some(index) = writer.iter().position(|item| item.service == old_owner) {
                                                         let item = writer.remove(index);
-                                                        
-                                                        sender.send(BusEvent::ItemUnregistered(item)).unwrap();
+
+                                                        std::thread::spawn({
+                                                            let sender = sender.clone();
+
+                                                            move || {
+                                                                std::thread::sleep(Duration::from_millis(2));
+                                                                sender.send(BusEvent::ItemUnregistered(item)).unwrap();
+                                                            }
+                                                        });
                                                     }
                                                 }
                                             }
@@ -161,13 +168,23 @@ impl StatusNotifierWatcher {
                                     else {
                                         let service = msg.sender().unwrap().to_string();
 
-                                        if let Ok(mut writer) = items.try_write() {
+                                        if let Ok(mut writer) = items.write() {
                                             if let Some(item) = writer.iter_mut().find(|item| item.service == service) {
                                                 match msg.path() {
                                                     Some(path) if path == *bus::ITEM_DBUS_OBJECT => {
-                                                        item.pass_update(&member);
+                                                        let (member_name, updated_item) = {
+                                                            item.pass_update(&member);
+                                                            (member.clone(), item.clone())
+                                                        };
 
-                                                        sender.send(BusEvent::ItemUpdated(member, item.clone())).unwrap();
+                                                        std::thread::spawn({
+                                                            let sender = sender.clone();
+
+                                                            move || {
+                                                                std::thread::sleep(Duration::from_millis(2));
+                                                                sender.send(BusEvent::ItemUpdated(member_name, updated_item)).unwrap();
+                                                            }
+                                                        });
                                                     },
 
                                                     _ => {}
