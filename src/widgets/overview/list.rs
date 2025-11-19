@@ -95,4 +95,16 @@ impl OverviewSearchList {
             });
         }
     }
+
+    pub fn move_item(&mut self, from: usize, to: usize) {
+        if from < self.items.len() && to < self.items.len() && from != to {
+            let item = self.items.remove(from);
+            self.items.insert(to, item);
+
+            // Update the ListBox
+            let row = self.widget.row_at_index(from as i32).unwrap();
+            self.widget.remove(&row);
+            self.widget.insert(&row, to as i32);
+        }
+    }
 }

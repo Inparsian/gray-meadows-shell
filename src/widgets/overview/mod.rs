@@ -168,11 +168,17 @@ pub fn new(application: &libadwaita::Application) {
                         // Insert the new items into the search results list
                         let mut search_results_mut = search_results.borrow_mut();
                         for (i, item) in results.iter().enumerate() {
-                            if let Some(existing_item) = search_results_mut.items.iter_mut().find(|i| i.smart_compare(item)) {
+                            if let Some(index) = search_results_mut.items.iter().position(|r| r.smart_compare(item)) {
+                                let existing_item = &mut search_results_mut.items[index];
                                 if item.exact_id_comp_has() {
                                     if item.query.is_some() && existing_item.query != item.query {
                                         existing_item.query = item.query.clone();
                                         existing_item.set_title_markup();
+                                    }
+
+                                    // Move this item if its position has changed
+                                    if index != i {
+                                        search_results_mut.move_item(index, i);
                                     }
                                 } else {
                                     existing_item.set_title_label(&item.title);
