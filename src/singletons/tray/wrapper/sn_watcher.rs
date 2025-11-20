@@ -15,11 +15,21 @@ pub struct StatusNotifierWatcher {
 }
 
 impl OrgKdeStatusNotifierWatcher for StatusNotifierWatcher {
-    fn register_status_notifier_item(&mut self, service: String) -> Result<(), dbus::MethodErr> {
-        let item = StatusNotifierItem::new(service);
+    fn register_status_notifier_item(&mut self, service: String, sender: Option<dbus::strings::BusName>) -> Result<(), dbus::MethodErr> {
+        let item = if service[0..1].eq(":") {
+            StatusNotifierItem::new(service)
+        } else if let Some(sender) = sender {
+            // This item is intending to register a custom item bus name, register the sender instead
+            StatusNotifierItem::new_with_path(
+                sender.to_string(),
+                service,
+            )
+        } else {
+            return Err(dbus::MethodErr::failed(&"Invalid service name or sender"));
+        };
 
         self.sender.send(BusEvent::ItemRegistered(item.clone())).unwrap();
-
+        
         self.items.try_write()
             .map(|mut items| items.push(item))
             .map_err(|_| dbus::MethodErr::failed(&"Failed to acquire write lock on items list"))?;

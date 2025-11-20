@@ -95,7 +95,7 @@ where T: OrgFreedesktopDBusPeer + Send + 'static
 }
 
 pub trait OrgKdeStatusNotifierWatcher {
-    fn register_status_notifier_item(&mut self, service: String) -> Result<(), dbus::MethodErr>;
+    fn register_status_notifier_item(&mut self, service: String, sender: Option<dbus::strings::BusName>) -> Result<(), dbus::MethodErr>;
     fn register_status_notifier_host(&mut self, service: String) -> Result<(), dbus::MethodErr>;
     fn registered_status_notifier_items(&self) -> Result<Vec<String>, dbus::MethodErr>;
     fn is_status_notifier_host_registered(&self) -> Result<bool, dbus::MethodErr>;
@@ -200,8 +200,9 @@ where T: OrgKdeStatusNotifierWatcher + Send + 'static
         b.signal::<(String,), _>("StatusNotifierItemUnregistered", ("service",));
         b.signal::<(), _>("StatusNotifierHostRegistered", ());
         b.signal::<(), _>("StatusNotifierHostUnregistered", ());
-        b.method("RegisterStatusNotifierItem", ("service",), (), |_, t: &mut T, (service,)| {
-            t.register_status_notifier_item(service,)
+        b.method("RegisterStatusNotifierItem", ("service",), (), |ctx: &mut dbus_crossroads::Context, t: &mut T, (service,)| {
+            let sender = ctx.message().sender();
+            t.register_status_notifier_item(service,sender,)
         });
         b.method("RegisterStatusNotifierHost", ("service",), (), |_, t: &mut T, (service,)| {
             t.register_status_notifier_host(service,)

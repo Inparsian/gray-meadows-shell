@@ -30,6 +30,7 @@ impl ToolTip {
 #[derive(Default, Clone, Debug)]
 pub struct StatusNotifierItem {
     pub service: String,
+    pub path: String,
 
     // Properties to store in memory so we don't have to query D-Bus every time.
     pub category: String,
@@ -49,16 +50,22 @@ pub struct StatusNotifierItem {
 }
 
 impl StatusNotifierItem {
-    /// Creates a new `StatusNotifierItem` with the given service name.
-    pub fn new(service: String) -> Self {
+    /// Creates a new `StatusNotifierItem` with the given service name and path.
+    pub fn new_with_path(service: String, path: String) -> Self {
         let mut item = StatusNotifierItem {
             service,
+            path,
             ..Self::default()
         };
 
         let _ = item.sync();
 
         item
+    }
+
+    /// Creates a new `StatusNotifierItem` with the given service name and the default item path.
+    pub fn new(service: String) -> Self {
+        Self::new_with_path(service, bus::ITEM_DBUS_OBJECT.to_owned())
     }
 
     /// Performs synchronization of the StatusNotifierItem with the D-Bus service.
@@ -193,7 +200,7 @@ impl StatusNotifierItem {
         let connection = blocking::Connection::new_session()?;
         let proxy = connection.with_proxy(
             self.service.clone(),
-            bus::ITEM_DBUS_OBJECT,
+            self.path.clone(),
             std::time::Duration::from_millis(5000),
         );
         
