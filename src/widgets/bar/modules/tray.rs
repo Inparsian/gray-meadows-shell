@@ -3,7 +3,7 @@ use gtk4::prelude::*;
 
 use crate::{
     helpers::gesture,
-    singletons::tray::{self, bus::BusEvent, icon::make_icon_pixbuf, subscribe, tray_menu, wrapper::{dbus_menu::Menu, sn_item::StatusNotifierItem}},
+    singletons::{apps::pixbuf::get_pixbuf_or_fallback, tray::{self, bus::BusEvent, icon::make_icon_pixbuf, subscribe, tray_menu, wrapper::{dbus_menu::Menu, sn_item::StatusNotifierItem}}},
     widgets::bar::wrapper::BarModuleWrapper
 };
 
@@ -84,7 +84,12 @@ impl SystemTrayItem {
         };
 
         if let Some(item) = crate::singletons::tray::try_read_item(&self.service) {
-            new_widget.set_from_pixbuf(make_icon_pixbuf(Some(&item.icon_pixmap)).as_ref());
+            if !item.icon_pixmap.is_empty() {
+                new_widget.set_from_pixbuf(make_icon_pixbuf(Some(&item.icon_pixmap)).as_ref());
+            } else {
+                let icon_pixbuf = get_pixbuf_or_fallback(&item.icon_name, "emote-love");
+                new_widget.set_from_pixbuf(icon_pixbuf.as_ref());
+            }
             
             if !item.tool_tip.title.is_empty() {
                 new_widget.set_tooltip_text(Some(&item.tool_tip.title));
