@@ -111,7 +111,12 @@ impl SystemTrayItem {
                 },
 
                 "NewIcon" => {
-                    widget.set_from_pixbuf(make_icon_pixbuf(Some(&item.icon_pixmap)).as_ref());
+                    if !item.icon_pixmap.is_empty() {
+                        widget.set_from_pixbuf(make_icon_pixbuf(Some(&item.icon_pixmap)).as_ref());
+                    } else {
+                        let icon_pixbuf = get_pixbuf_or_fallback(&item.icon_name, "emote-love");
+                        widget.set_from_pixbuf(icon_pixbuf.as_ref());
+                    }
                 },
 
                 _ => {}
