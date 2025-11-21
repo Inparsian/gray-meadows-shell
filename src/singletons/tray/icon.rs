@@ -1,14 +1,14 @@
 use crate::singletons::tray::proxy::item::RawPixmap;
 
 // Rationale: Some icons have the possibility of being absurdly large (e.g. 1024x1024). This may not seem like an
-// issue at first, however, compared to a measly 32x32 icon, which has a total of 4096 (32^2*4) ARGB values, a
+// issue at first, however, compared to a measly 28x28 icon, which has a total of 3136 (28^2*4) ARGB values, a
 // 1024x1024 icon has a total of 4,194,304 (1024^2*4) ARGB values.
 //
 // That is a LOT of data to store in memory AND convert to a Pixbuf. Not only does this lead to huge performance
 // issues, but the detail in icons that large are imperceptible when they're resized to a smaller size, so this also
 // leads to unnecessary memory usage.
-const C_WIDTH: u32 = 32;
-const C_HEIGHT: u32 = 32;
+const C_WIDTH: u32 = 28;
+const C_HEIGHT: u32 = 28;
 
 pub fn compress_icon_pixmap(pixmap: Option<&Vec<RawPixmap>>) -> Option<Vec<RawPixmap>> {
     let argb32_icon = pixmap?;
