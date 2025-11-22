@@ -112,3 +112,44 @@ pub enum NetworkManagerDeviceStateReason {
     UnmanagedUserSettings = 76,
     UnmanagedUserUdev = 77,
 }
+
+/// https://www.networkmanager.dev/docs/api/latest/nm-dbus-types.html#NM80211ApFlags
+#[derive(Debug, Clone)]
+pub enum NetworkManager80211ApFlags {
+    None = 0x0000_0000,
+    Privacy = 0x0000_0001,
+    Wps = 0x0000_0002,
+    WpsPbc = 0x0000_0004,
+    WpsPin = 0x0000_0008,
+}
+
+/// https://www.networkmanager.dev/docs/api/latest/nm-dbus-types.html#NM80211ApSecurityFlags
+#[derive(Debug, Clone)]
+pub enum NetworkManager80211ApSecurityFlags {
+    None = 0x0000_0000,
+    PairWEP40 = 0x0000_0001,
+    PairWEP104 = 0x0000_0002,
+    PairTKIP = 0x0000_0004,
+    PairCCMP = 0x0000_0008,
+    GroupWEP40 = 0x0000_0010,
+    GroupWEP104 = 0x0000_0020,
+    GroupTKIP = 0x0000_0040,
+    GroupCCMP = 0x0000_0080,
+    KeyMgmtPSK = 0x0000_0100,
+    KeyMgmt8021X = 0x0000_0200,
+    KeyMgmtSAE = 0x0000_0400,
+    KeyMgmtOWE = 0x0000_0800,
+    KeyMgmtOWETM = 0x0000_1000, // since 1.26
+    KeyMgmtEAPSuiteB192 = 0x0000_2000, // since 1.30
+}
+
+/// https://www.networkmanager.dev/docs/api/latest/nm-dbus-types.html#NMDeviceInterfaceFlags
+#[derive(Debug, Clone)]
+pub enum NetworkManagerDeviceInterfaceFlags {
+    None = 0,
+    Up = 0x1,
+    LowerUp = 0x2,
+    Promisc = 0x4,
+    Carrier = 0x10000,
+    LldpCLientEnabled = 0x20000
+}

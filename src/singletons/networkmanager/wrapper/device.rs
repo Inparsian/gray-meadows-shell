@@ -1,5 +1,7 @@
 #![allow(dead_code)]
-use crate::singletons::networkmanager::enums::*;
+use std::sync::{Arc, RwLock};
+
+use crate::singletons::networkmanager::{enums::*, wrapper::access_point::NetworkManagerAccessPoint};
 
 #[derive(Debug, Clone)]
 pub enum NetworkManagerDeviceType {
@@ -15,11 +17,22 @@ pub struct NetworkManagerDeviceWired {
 
 #[derive(Debug, Clone)]
 pub struct NetworkManagerDeviceWireless {
+    pub access_points: Arc<RwLock<Vec<NetworkManagerAccessPoint>>>,
+    pub active_access_point: String, // by bssid
 }
 
 #[derive(Debug, Clone)]
 pub struct NetworkManagerDevice {
     pub device_type: NetworkManagerDeviceType,
-    pub state: (NetworkManagerDeviceState, NetworkManagerDeviceStateReason)
+    pub hw_address: String,
+    pub perm_hw_address: String,
+    pub state: (NetworkManagerDeviceState, NetworkManagerDeviceStateReason),
+    pub flags: u32, // a bitmap, see enums
+}
+
+impl NetworkManagerDevice {
+    pub fn flags_has_bit(&self, bit: NetworkManagerDeviceInterfaceFlags) -> bool {
+        (self.flags & (bit as u32)) != 0
+    }
 }
 
