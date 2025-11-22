@@ -68,17 +68,13 @@ impl SaturationValuePicker {
 
         widget.add_controller(gesture::on_primary_up(move |_, _, _| *clicked.borrow_mut() = false));
 
-        let hsv_future = hsv.signal().for_each({
+        gtk4::glib::spawn_future_local({
             let picker = picker.clone();
-            move |_| {
+            signal!(hsv, (_) {
                 picker.update_background_hue();
                 picker.update_trough();
-
-                async {}
-            }
+            })
         });
-
-        gtk4::glib::spawn_future_local(hsv_future);
 
         picker
     }

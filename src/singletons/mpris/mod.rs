@@ -47,10 +47,10 @@ where
 {
     let callback = Rc::new(callback);
 
-    let players_future = {
+    gtk4::glib::spawn_future_local({
         let callback = callback.clone();
 
-        MPRIS.players.signal_vec_cloned().for_each(move |change| {
+        signal_vec_cloned!(MPRIS.players, (change) {
             let run_callback = || {
                 let callback = callback.clone();
 
@@ -76,21 +76,14 @@ where
 
                 _ => {}
             }
-
-            async {}
         })
-    };
+    });
 
-    let default_player_future = MPRIS.default_player.signal().for_each(move |index| {
+    gtk4::glib::spawn_future_local(signal!(MPRIS.default_player, (index) {
         let callback = callback.clone();
         
         gtk4::glib::source::idle_add_local_once(move || callback(index));
-        
-        async {}
-    });
-
-    gtk4::glib::spawn_future_local(players_future);
-    gtk4::glib::spawn_future_local(default_player_future);
+    }));
 }
 
 pub fn activate() {
@@ -126,13 +119,11 @@ pub fn activate() {
     start_monitoring(rule, false, mpris_dbus::handle_master_message);
 
     // Monitor the MPRIS players for changes
-    tokio::spawn(MPRIS.players.signal_vec_cloned().for_each(|change| {
+    tokio::spawn(signal_vec_cloned!(MPRIS.players, (change) {
         match change {
             VecDiff::RemoveAt {..} | VecDiff::Pop {} | VecDiff::Clear {} => assert_default_player(),
             _ => {}
         }
-
-        async {}
     }));
 
     // Monitor IPC commands for controlling MPRIS players

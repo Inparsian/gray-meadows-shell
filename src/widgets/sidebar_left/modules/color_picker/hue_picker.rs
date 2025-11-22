@@ -63,16 +63,10 @@ impl HuePicker {
             move |y| picker.handle_scroll(y * 5.0)
         }));
 
-        let hsv_future = hsv.signal().for_each({
+        gtk4::glib::spawn_future_local({
             let picker = picker.clone();
-            move |_| {
-                picker.update_trough_position();
-
-                async {}
-            }
+            signal!(hsv, (_) { picker.update_trough_position(); })
         });
-
-        gtk4::glib::spawn_future_local(hsv_future);
 
         picker
     }

@@ -1,5 +1,7 @@
 #[macro_use(view)]
 extern crate relm4_macros;
+#[macro_use]
+mod macros;
 
 mod color;
 mod ipc;

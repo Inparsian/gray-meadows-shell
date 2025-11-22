@@ -20,14 +20,10 @@ pub fn new() -> gtk4::Box {
         }
     }
 
-    let date_time_future = DATE_TIME.signal_cloned().for_each(move |date_time| {
+    gtk4::glib::spawn_future_local(signal_cloned!(DATE_TIME, (date_time) {
         time_label.set_label(&date_time.time);
         date_label.set_label(&date_time.date);
-
-        async {}
-    });
-
-    gtk4::glib::spawn_future_local(date_time_future);
+    }));
 
     BarModuleWrapper::new(&widget).get_widget()
 }

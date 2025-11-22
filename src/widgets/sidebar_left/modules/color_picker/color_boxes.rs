@@ -112,11 +112,10 @@ pub fn get_analogous_color_boxes(hsv: &Mutable<Hsv>, count: u32, color_tabs: &Ta
         boxes.push(color_box);
     }
 
-    let hsv_future = hsv.signal().for_each({
+    gtk4::glib::spawn_future_local({
         let boxes = boxes.clone();
         let color = hsv.get();
-
-        move |hsv| {
+        signal!(hsv, (hsv) {
             let analogous_colors = crate::color::get_analogous_colors(hsv, count);
             for (i, color_box) in boxes.iter().enumerate() {
                 let new_color = analogous_colors.get(i).unwrap_or(&color);
@@ -128,12 +127,8 @@ pub fn get_analogous_color_boxes(hsv: &Mutable<Hsv>, count: u32, color_tabs: &Ta
 
                 let _ = color_box.hsv.try_borrow_mut().map(|mut c| *c = *new_color);
             }
-
-            async {}
-        }
+        })
     });
-
-    gtk4::glib::spawn_future_local(hsv_future);
 
     box_container
 }
@@ -153,11 +148,10 @@ pub fn get_lighter_darker_color_boxes(hsv: &Mutable<Hsv>, count: u32, color_tabs
         boxes.push((color_box, label));
     }
 
-    let hsv_future = hsv.signal().for_each({
+    gtk4::glib::spawn_future_local({
         let boxes = boxes.clone();
         let color = hsv.get();
-
-        move |hsv| {
+        signal!(hsv, (hsv) {
             let lighter_darker_colors = crate::color::get_lighter_darker_colors(hsv, count);
             let default_result = LighterDarkerResult {
                 hsv: color,
@@ -183,12 +177,8 @@ pub fn get_lighter_darker_color_boxes(hsv: &Mutable<Hsv>, count: u32, color_tabs
 
                 let _ = color_box.hsv.try_borrow_mut().map(|mut c| *c = new_color.hsv);
             }
-
-            async {}
-        }
+        })
     });
-
-    gtk4::glib::spawn_future_local(hsv_future);
 
     grid
 }

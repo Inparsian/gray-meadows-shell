@@ -108,7 +108,7 @@ pub fn new() -> gtk4::Box {
     }
 
     // Subscribe to Hyprland signals to update the client information
-    let hyprland_active_client_future = hyprland::HYPRLAND.active_client.signal_cloned().for_each(move |client| {
+    gtk4::glib::spawn_future_local(signal_cloned!(hyprland::HYPRLAND.active_client, (client) {
         if let Some(client) = client {
             client_box.set_visible(true);
             workspace_label.set_visible(false);
@@ -137,19 +137,12 @@ pub fn new() -> gtk4::Box {
                 |w| format!("Workspace {}", w.id)
             ));
         }
+    }));
 
-        async {}
-    });
-
-    let reveal_title_future = reveal_title.signal().for_each(move |reveal| {
+    gtk4::glib::spawn_future_local(signal!(reveal_title, (reveal) {
         title_revealer.set_reveal_child(reveal);
         class_revealer.set_reveal_child(!reveal);
-        
-        async {}
-    });
-
-    gtk4::glib::spawn_future_local(hyprland_active_client_future);
-    gtk4::glib::spawn_future_local(reveal_title_future);
+    }));
 
     BarModuleWrapper::new(&widget)
         .add_controller(reveal_title_gesture)

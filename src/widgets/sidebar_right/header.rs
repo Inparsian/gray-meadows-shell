@@ -99,12 +99,9 @@ pub fn new() -> gtk4::Box {
         face.set_from_file(Some(face_path));
     }
 
-    let uptime_future = singletons::sysstats::SYS_STATS.lock().unwrap().uptime.signal().for_each(move |uptime| {
+    gtk4::glib::spawn_future_local(signal!(singletons::sysstats::SYS_STATS.lock().unwrap().uptime, (uptime) {
         uptime_label.set_label(&get_uptime_label_text(Some(uptime)));
-        async {}
-    });
-
-    gtk4::glib::spawn_future_local(uptime_future);
+    }));
 
     header
 }

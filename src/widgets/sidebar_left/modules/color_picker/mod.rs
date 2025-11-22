@@ -198,7 +198,7 @@ pub fn new() -> gtk4::Box {
     color_tabs_stack.add_tab(Some("cmyk"), &cmyk_fields.widget);
     color_tabs_stack.add_tab(Some("oklch"), &oklch_fields.widget);
 
-    let hsv_future = hsv.signal().for_each(move |hsv| {
+    gtk4::glib::spawn_future_local(signal!(hsv, (hsv) {
         use fields::FieldUpdate::*;
 
         let rgba = hsv.as_rgba();
@@ -213,9 +213,7 @@ pub fn new() -> gtk4::Box {
         hsl_fields.update(vec![Float(hsl.hue), Float(hsl.saturation), Float(hsl.lightness)]);
         cmyk_fields.update(vec![Float(cmyk.cyan as f64), Float(cmyk.magenta as f64), Float(cmyk.yellow as f64), Float(cmyk.black as f64)]);
         oklch_fields.update(vec![Float(oklch.lightness), Float(oklch.chroma), Float(oklch.hue)]);
-
-        async {}
-    });
+    }));
 
     transform_tabs_stack.add_tab(Some("analogous"), &color_boxes::get_analogous_color_boxes(&hsv, 5, &color_tabs));
     transform_tabs_stack.add_tab(Some("triadic"), &color_boxes::get_analogous_color_boxes(&hsv, 3, &color_tabs));
@@ -235,8 +233,6 @@ pub fn new() -> gtk4::Box {
             }
         }
     });
-
-    gtk4::glib::spawn_future_local(hsv_future);
 
     widget
 }

@@ -126,11 +126,11 @@ impl Tabs {
             }
         };
 
-        let current_tab_future = {
+        gtk4::glib::spawn_future_local({
             let widget = widget.clone();
             let only_current_tab_visible = self.only_current_tab_visible;
 
-            current_tab.signal_cloned().for_each(move |tab| {
+            signal_cloned!(current_tab, (tab) {
                 if tab.as_ref() == Some(&name) {
                     widget.add_css_class("active");
                 } else {
@@ -143,12 +143,8 @@ impl Tabs {
                         r.set_reveal_child(tab == Some(name.clone()));
                     }
                 }
-            
-                async {}
             })
-        };
-
-        gtk4::glib::spawn_future_local(current_tab_future);
+        });
 
         widget
     }
@@ -165,17 +161,12 @@ impl TabsStack {
         widget.set_transition_duration(150);
         widget.set_css_classes(&[class_name.unwrap_or("tabs-stack")]);
 
-        let tabs_future = tabs.current_tab.signal_cloned().for_each({
+        gtk4::glib::spawn_future_local({
             let widget = widget.clone();
-
-            move |tab| {
+            signal_cloned!(tabs.current_tab, (tab) {
                 widget.set_visible_child_name(tab.as_deref().unwrap_or_default());
-                
-                async {}
-            }
+            })
         });
-
-        gtk4::glib::spawn_future_local(tabs_future);
 
         Self { widget }
     }

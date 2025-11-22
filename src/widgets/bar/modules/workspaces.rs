@@ -138,17 +138,15 @@ pub fn new() -> gtk4::Box {
 
     workspaces_drawing_area.style_context().add_provider(&style_provider, gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION);
 
-    let workspaces_future = hyprland::HYPRLAND.workspaces.signal_cloned().for_each({
+    gtk4::glib::spawn_future_local({
         let workspaces_drawing_area = workspaces_drawing_area.clone();
-        move |_| {
+        signal_cloned!(hyprland::HYPRLAND.workspaces, (_) {
             WORKSPACE_MASK.lock().unwrap().update();
             workspaces_drawing_area.queue_draw();
-
-            async {}
-        }
+        })
     });
 
-    let active_workspace_future = hyprland::HYPRLAND.active_workspace.signal_cloned().for_each(move |active| {
+    gtk4::glib::spawn_future_local(signal_cloned!(hyprland::HYPRLAND.active_workspace, (active) {
         WORKSPACE_MASK.lock().unwrap().update();
             
         if let Some(active) = active {
@@ -159,12 +157,7 @@ pub fn new() -> gtk4::Box {
         }
 
         workspaces_drawing_area.queue_draw();
-
-        async {}
-    });
-
-    gtk4::glib::spawn_future_local(workspaces_future);
-    gtk4::glib::spawn_future_local(active_workspace_future);
+    }));
 
     BarModuleWrapper::new(&workspaces_box)
         .add_controller(workspaces_click_gesture)

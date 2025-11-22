@@ -89,10 +89,8 @@ pub fn new() -> gtk4::Box {
         box_.append(label);
         box_.append(&detailed_reveal);
 
-        gtk4::glib::spawn_future_local(DETAILED.signal().for_each(move |detailed| {
+        gtk4::glib::spawn_future_local(signal!(DETAILED, (detailed) {
             detailed_reveal.set_reveal_child(detailed);
-
-            async {}
         }));
 
         box_
@@ -159,51 +157,32 @@ pub fn new() -> gtk4::Box {
         }
     }
 
-    let ram_usage_future = singletons::sysstats::SYS_STATS.lock().unwrap().used_memory.signal().for_each(move |_| {
+    gtk4::glib::spawn_future_local(signal!(singletons::sysstats::SYS_STATS.lock().unwrap().used_memory, (_) {
         ram_usage_label.set_label(&get_ram_usage_label_text());
         detailed_ram_usage_label.set_label(&get_detailed_ram_usage_label_text());
+    }));
 
-        async {}
-    });
-
-    let swap_usage_future = singletons::sysstats::SYS_STATS.lock().unwrap().used_swap.signal().for_each(move |_| {
+    gtk4::glib::spawn_future_local(signal!(singletons::sysstats::SYS_STATS.lock().unwrap().used_swap, (_) {
         swap_usage_label.set_label(&get_swap_usage_label_text());
         detailed_swap_usage_label.set_label(&get_detailed_swap_usage_label_text());
         swap_usage_box.set_visible(singletons::sysstats::SYS_STATS.lock().unwrap().swap_usage_percentage() > SWAP_SHOW_THRESHOLD);
+    }));
 
-        async {}
-    });
-
-    let cpu_usage_future = singletons::sysstats::SYS_STATS.lock().unwrap().global_cpu_usage.signal().for_each(move |_| {
+    gtk4::glib::spawn_future_local(signal!(singletons::sysstats::SYS_STATS.lock().unwrap().global_cpu_usage, (_) {
         cpu_usage_label.set_label(&get_cpu_usage_label_text());
+    }));
 
-        async {}
-    });
-
-    let cpu_temp_future = singletons::sysstats::sensors::SENSORS.cpu_temp.signal().for_each(move |_| {
+    gtk4::glib::spawn_future_local(signal!(singletons::sysstats::sensors::SENSORS.cpu_temp, (_) {
         cpu_temperature_label.set_label(&get_cpu_temperature_label_text());
+    }));
 
-        async {}
-    });
-
-    let gpu_util_future = singletons::sysstats::SYS_STATS.lock().unwrap().gpu_utilization.signal().for_each(move |_| {
+    gtk4::glib::spawn_future_local(signal!(singletons::sysstats::SYS_STATS.lock().unwrap().gpu_utilization, (_) {
         gpu_usage_label.set_label(&get_gpu_usage_label_text());
-
-        async {}
-    });
-
-    let gpu_temp_future = singletons::sysstats::SYS_STATS.lock().unwrap().gpu_temperature.signal().for_each(move |_| {
+    }));
+    
+    gtk4::glib::spawn_future_local(signal!(singletons::sysstats::SYS_STATS.lock().unwrap().gpu_temperature, (_) {
         gpu_temperature_label.set_label(&get_gpu_temperature_label_text());
-
-        async {}
-    });
-
-    gtk4::glib::spawn_future_local(ram_usage_future);
-    gtk4::glib::spawn_future_local(swap_usage_future);
-    gtk4::glib::spawn_future_local(cpu_usage_future);
-    gtk4::glib::spawn_future_local(cpu_temp_future);
-    gtk4::glib::spawn_future_local(gpu_util_future);
-    gtk4::glib::spawn_future_local(gpu_temp_future);
+    }));
 
     BarModuleWrapper::new(&widget)
         .add_controller(detailed_toggle_gesture)
