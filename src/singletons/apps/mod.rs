@@ -29,7 +29,7 @@ pub fn calculate_weight(entry: &DesktopEntry, query: &str) -> f32 {
     // 4. Lazy match (10)
     //
     // Dynamic weights:
-    // 5. Beginning match (query.length * 5)
+    // 5. Beginning or end match (query.length * 5)
     // 6. String inclusion bonus (query.length * 4)
     // 7. Launch count bonus (runs / 4, minimum 1.25x multiplier)
     let locales = get_languages_from_env();
@@ -51,7 +51,7 @@ pub fn calculate_weight(entry: &DesktopEntry, query: &str) -> f32 {
         0.0
     };
 
-    if name.starts_with(query) {
+    if name.starts_with(query) || name.ends_with(query) {
         weight += query.len() as f32 * 5.0;
     }
 
