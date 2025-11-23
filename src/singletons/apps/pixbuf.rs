@@ -4,7 +4,7 @@ use gtk4::TextDirection;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use crate::APP;
+use crate::APP_LOCAL;
 
 thread_local! {
     pub static PIXBUF_CACHE: RefCell<HashMap<String, Pixbuf>> = RefCell::new(HashMap::new());
@@ -35,7 +35,7 @@ pub fn get_pixbuf(icon_name: &str) -> Option<Pixbuf> {
         }
 
         // Otherwise, try to load it as an icon from the icon theme
-        let icon_theme = APP.with(|app| app.borrow().icon_theme.clone());
+        let icon_theme = APP_LOCAL.with(|app| app.borrow().icon_theme.clone());
         let icon_paintable = icon_theme.lookup_icon(
             icon_name,
             &[],

@@ -18,6 +18,7 @@ pub fn new(application: &libadwaita::Application) {
             set_vexpand: false,
 
             append: &quicktoggle::keybinds::new(),
+            append: &quicktoggle::gamemode::new(),
         },
 
         right_sidebar_box = gtk4::Box {

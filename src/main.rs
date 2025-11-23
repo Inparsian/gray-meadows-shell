@@ -12,23 +12,33 @@ mod widgets;
 mod sql;
 mod dbus;
 
-use std::{cell::RefCell, path::Path, sync::{Mutex, OnceLock}};
+use std::{cell::RefCell, path::Path, sync::{LazyLock, Mutex, OnceLock}};
+use futures_signals::signal::Mutable;
 use gtk4::prelude::*;
 use libadwaita::Application;
 use notify::{EventKind, event::{AccessKind, AccessMode}, Watcher};
 use sqlite::Connection;
 
-pub struct GrayMeadows {
+pub struct GrayMeadowsLocal {
     provider: gtk4::CssProvider,
     icon_theme: gtk4::IconTheme
 }
 
 thread_local! {
-    pub static APP: RefCell<GrayMeadows> = RefCell::new(GrayMeadows {
+    pub static APP_LOCAL: RefCell<GrayMeadowsLocal> = RefCell::new(GrayMeadowsLocal {
         provider: gtk4::CssProvider::new(),
         icon_theme: gtk4::IconTheme::default()
     });
 }
+
+#[derive(Debug, Clone)]
+pub struct GrayMeadowsGlobal {
+    game_mode: Mutable<bool>,
+}
+
+pub static APP: LazyLock<GrayMeadowsGlobal> = LazyLock::new(|| GrayMeadowsGlobal {
+    game_mode: Mutable::new(false),
+});
 
 pub static SQL_CONNECTION: OnceLock<Mutex<Connection>> = OnceLock::new();
 
@@ -53,7 +63,7 @@ pub fn bundle_apply_scss() {
         let css = std::fs::read_to_string(format!("{}/output.css", styles_path))
             .expect("Failed to read output.css");
 
-        APP.with(|app| app.borrow().provider.load_from_data(&css));
+        APP_LOCAL.with(|app| app.borrow().provider.load_from_data(&css));
         
         // Refresh SCSS variables
         helpers::scss::refresh_variables();
@@ -141,13 +151,13 @@ async fn main() {
 
             gtk4::style_context_add_provider_for_display(
                 &gdk4::Display::default().expect("Failed to get default display"),
-                &APP.with(|app| app.borrow().provider.clone()),
+                &APP_LOCAL.with(|app| app.borrow().provider.clone()),
                 gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
             );
 
             // Add your manual search paths here
             // TODO: Replace this with an automatic search for the currently equipped icon theme
-            APP.with(|app| {
+            APP_LOCAL.with(|app| {
                 let icon_theme = &app.borrow().icon_theme;
                 icon_theme.add_search_path(Path::new("/home/inparsian/.icons/besgnulinux-mono-grey/apps/scalable"));
                 icon_theme.set_theme_name(Some("besgnulinux-mono-grey"));

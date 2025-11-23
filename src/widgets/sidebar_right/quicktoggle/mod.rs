@@ -1,4 +1,5 @@
 pub mod keybinds;
+pub mod gamemode;
 
 use futures_signals::signal::Mutable;
 use gtk4::prelude::*;

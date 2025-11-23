@@ -32,7 +32,6 @@ pub fn call_hyprctl(command: &str) -> Option<String> {
 
 /// Basically call_hyprctl, but using it's built-in batch flag to run multiple commands in
 /// one hyprctl call.
-#[allow(dead_code)]
 pub fn call_hyprctl_batch(commands: &[&str]) -> Option<Vec<String>> {
     let batch_command = commands.join(";");
     let output = std::process::Command::new("hyprctl")
