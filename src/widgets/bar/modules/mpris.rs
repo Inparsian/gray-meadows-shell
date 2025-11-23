@@ -8,17 +8,14 @@ use crate::{
 };
 
 const VOLUME_STEP: f64 = 0.05;
-const ALBUM_ART_WIDTH: i32 = 23; // Expected width of the album art image
-const ALBUM_ART_HEIGHT: i32 = 23; // Expected height of the album art image
-const WIDGET_WIDTH: i32 = 250;
+const ALBUM_ART_WIDTH: i32 = 24; // Expected width of the album art image
+const ALBUM_ART_HEIGHT: i32 = 24; // Expected height of the album art image
+const WIDGET_WIDTH: i32 = 175;
 const MAX_TRACK_WIDTH: i32 = WIDGET_WIDTH - ALBUM_ART_WIDTH;
 
 fn get_mpris_player_label_text() -> String {
     mpris::get_default_player()
-        .map_or_else(|| "No MPRIS players".to_owned(), |player| format!("{} - {}",
-            player.metadata.artist.unwrap_or(vec!["No artist".to_owned()]).join(", "),
-            player.metadata.title.unwrap_or("No title".to_owned())
-        ))
+        .map_or_else(|| "No players".to_owned(), |player| player.metadata.title.unwrap_or("No title".to_owned()))
 }
 
 pub fn new() -> gtk4::Box {
@@ -62,7 +59,7 @@ pub fn new() -> gtk4::Box {
 
         no_players_widget = gtk4::Label {
             set_css_classes: &["bar-mpris-track"],
-            set_label: "No MPRIS players",
+            set_label: "No players",
             set_hexpand: true,
             set_xalign: 0.5
         },
@@ -78,7 +75,7 @@ pub fn new() -> gtk4::Box {
         current_album_art = gtk4::Image {
             set_width_request: ALBUM_ART_WIDTH,
             set_height_request: ALBUM_ART_HEIGHT,
-            set_pixel_size: ALBUM_ART_WIDTH,
+            set_pixel_size: ALBUM_ART_WIDTH - 4,
         },
 
         paused_overlay = gtk4::CenterBox {
