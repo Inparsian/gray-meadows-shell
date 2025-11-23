@@ -1,5 +1,8 @@
+use std::sync::{Arc, Mutex};
 use gdk4::Key;
 use gtk4::{prelude::GestureSingleExt, EventControllerScrollFlags};
+
+type Xy = (f64, f64);
 
 pub fn on_key_press<F>(on_press: F) -> gtk4::EventControllerKey
 where
@@ -95,6 +98,41 @@ where
     controller
 }
 
+fn on_button_full_press<F>(button: u32, on_click: F) -> gtk4::GestureClick
+where
+    F: Fn(i32, Xy, Xy) + 'static,
+{
+    let state = Arc::new(Mutex::new(false));
+    let pressed_xy = Arc::new(Mutex::new((0.0, 0.0)));
+    let released_xy = Arc::new(Mutex::new((0.0, 0.0)));
+
+    let controller = gtk4::GestureClick::new();
+    controller.set_button(button);
+    controller.connect_pressed({
+        let state = state.clone();
+        let pressed_xy = pressed_xy.clone();
+        move |_, _, x, y| {
+            let mut state = state.lock().unwrap();
+            let mut p_xy = pressed_xy.lock().unwrap();
+            *p_xy = (x, y);
+            *state = true;
+        }
+    });
+
+    controller.connect_released(move |_, n_press, x, y| {
+        let mut state = state.lock().unwrap();
+        let mut r_xy = released_xy.lock().unwrap();
+        let p_xy = pressed_xy.lock().unwrap();
+        *r_xy = (x, y);
+        if *state {
+            on_click(n_press, *p_xy, *r_xy);
+            *state = false;
+        }
+    });
+
+    controller
+}
+
 pub fn on_primary_down<F>(on_down: F) -> gtk4::GestureClick
 where
     F: Fn(i32, f64, f64) + 'static,
@@ -107,6 +145,13 @@ where
     F: Fn(i32, f64, f64) + 'static,
 {
     on_button_up(gdk4::ffi::GDK_BUTTON_PRIMARY.try_into().unwrap(), on_up)
+}
+
+pub fn on_primary_full_press<F>(on_full: F) -> gtk4::GestureClick
+where
+    F: Fn(i32, Xy, Xy) + 'static,
+{
+    on_button_full_press(gdk4::ffi::GDK_BUTTON_PRIMARY.try_into().unwrap(), on_full)
 }
 
 pub fn on_secondary_down<F>(on_down: F) -> gtk4::GestureClick

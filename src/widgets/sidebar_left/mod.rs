@@ -44,11 +44,15 @@ pub fn new(application: &libadwaita::Application) {
         }
     };
 
-    window.add_controller(gesture::on_primary_up({
+    window.add_controller(gesture::on_primary_full_press({
         let window = window.clone();
 
-        move |_, x, y| {
-            if window.is_visible() && !left_sidebar_box.allocation().contains_point(x as i32, y as i32) {
+        move |_, p_xy, r_xy| {
+            let allocation = left_sidebar_box.allocation();
+            let (px, py) = (p_xy.0 as i32, p_xy.1 as i32);
+            let (rx, ry) = (r_xy.0 as i32, r_xy.1 as i32);
+
+            if window.is_visible() && !allocation.contains_point(px, py) && !allocation.contains_point(rx, ry) {
                 window.hide();
             }
         }
