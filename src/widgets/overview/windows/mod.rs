@@ -12,7 +12,7 @@ pub fn build_window(label: &str) -> (gtk4::Box, gtk4::Box) {
     widget.set_hexpand(true);
     widget.set_vexpand(true);
     widget.set_halign(gtk4::Align::Center);
-    widget.set_valign(gtk4::Align::Center);
+    widget.set_valign(gtk4::Align::Fill);
 
     let header = gtk4::Label::new(Some(label));
     header.set_css_classes(&["overview-window-header"]);
