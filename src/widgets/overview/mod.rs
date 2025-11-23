@@ -33,35 +33,55 @@ static ALPHANUMERIC_SYMBOLIC_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new("^[a-zA-Z0-9 ~!@#$%^&*()_+\\-=\\[\\]{}|;':\",./<>?]+$").expect("Failed to compile alphanumeric symbolic regex")
 });
 
+fn generate_entry_box_icon_stack() -> gtk4::Stack {
+    let stack = gtk4::Stack::new();
+    stack.set_css_classes(&["entry-box-icon"]);
+    stack.set_transition_type(gtk4::StackTransitionType::SlideDown);
+    stack.set_transition_duration(500);
+
+    let default_label = gtk4::Label::new(Some("search"));
+    stack.add_titled(&default_label, Some("search"), "search");
+    stack.set_visible_child_name("search");
+
+    for module in MODULES.iter() {
+        let label = gtk4::Label::new(Some(module.icon()));
+        stack.add_titled(&label, Some(module.icon()), module.icon());
+    }
+
+    stack
+}
+
 fn generate_search_results(query: &str) -> Vec<OverviewSearchItem> {
     let mut results = Vec::new();
 
-    // Iterate through all modules and collect results
-    for module in MODULES.iter() {
-        if validate_input(*module, query) {
-            let input = input_without_extensions(*module, query);
-            for item in module.run(&input) {
-                results.push(item);
+    if MODULES.iter().any(|module| validate_input(*module, query)) {
+        // Iterate through all modules and collect results
+        for module in MODULES.iter() {
+            if validate_input(*module, query) {
+                let input = input_without_extensions(*module, query);
+                for item in module.run(&input) {
+                    results.push(item);
+                }
             }
         }
-    }
+    } else {
+        // Filter and weigh the applications based on the query
+        let locales = get_languages_from_env();
+        let desktops = apps::query_desktops(query);
+        for i in 0..8 {
+            if let Some(entry) = desktops.get(i) {
+                let entry = &entry.entry;
 
-    // Filter and weigh the applications based on the query
-    let locales = get_languages_from_env();
-    let desktops = apps::query_desktops(query);
-    for i in 0..8 {
-        if let Some(entry) = desktops.get(i) {
-            let entry = &entry.entry;
-
-            results.push(OverviewSearchItem::new(
-                "application-result".to_owned(),
-                entry.name(&locales).unwrap_or_default().to_string(),
-                None,
-                entry.icon().map(|icon| icon.to_owned()).unwrap_or_default(),
-                "launch".to_owned(),
-                OverviewSearchItemAction::Launch(entry.exec().unwrap_or_default().to_owned()),
-                Some(query.to_owned())
-            ));
+                results.push(OverviewSearchItem::new(
+                    "application-result".to_owned(),
+                    entry.name(&locales).unwrap_or_default().to_string(),
+                    None,
+                    entry.icon().map(|icon| icon.to_owned()).unwrap_or_default(),
+                    "launch".to_owned(),
+                    OverviewSearchItemAction::Launch(entry.exec().unwrap_or_default().to_owned()),
+                    Some(query.to_owned())
+                ));
+            }
         }
     }
 
@@ -125,10 +145,13 @@ pub fn new(application: &libadwaita::Application) {
             set_child: Some(&windows)
         },
 
+        entry_box_icon = generate_entry_box_icon_stack(),
+
         entry_box = gtk4::Box {
             set_css_classes: &["entry-box"],
             set_orientation: gtk4::Orientation::Horizontal,
-            set_halign: gtk4::Align::Center
+            set_halign: gtk4::Align::Center,
+            append: &entry_box_icon,
         },
 
         entry = gtk4::Entry {
@@ -157,6 +180,7 @@ pub fn new(application: &libadwaita::Application) {
                         windows_revealer.set_reveal_child(true);
                         search_results_revealer.set_reveal_child(false);
                         entry_box.style_context().remove_class("entry-extended");
+                        entry_box_icon.set_visible_child_name("search");
                     } else {
                         entry_prompt_revealer.set_reveal_child(false);
                         windows_revealer.set_reveal_child(false);
@@ -198,6 +222,16 @@ pub fn new(application: &libadwaita::Application) {
                                 search_results_mut.remove(i);
                             }
                         }
+
+                        // Update the entry box icon if any module extensions matched
+                        let mut matched_icon = "search";
+                        for module in MODULES.iter() {
+                            if validate_input(*module, &entry.text()) {
+                                matched_icon = module.icon();
+                                break;
+                            }
+                        }
+                        entry_box_icon.set_visible_child_name(matched_icon);
 
                         search_results_mut.lock();
                     }

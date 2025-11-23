@@ -7,6 +7,10 @@ impl OverviewSearchModule for OverviewTerminalModule {
         vec!["terminal", "term", "cmd", "t", "$"]
     }
 
+    fn icon(&self) -> &str {
+        "terminal"
+    }
+
     fn run(&self, query: &str) -> Vec<OverviewSearchItem> {
         vec![
             OverviewSearchItem::new(

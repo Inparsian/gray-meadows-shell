@@ -92,6 +92,10 @@ impl OverviewSearchModule for OverviewCalculatorModule {
         vec!["calc", "qalc", "c", "="]
     }
 
+    fn icon(&self) -> &str {
+        "calculate"
+    }
+
     fn run(&self, query: &str) -> Vec<OverviewSearchItem> {
         let unlocalized = ffi::unlocalizeExpression(query.to_owned());
         let result = add_suffix_to_notation(&ffi::calculateAndPrint(unlocalized, 1000));

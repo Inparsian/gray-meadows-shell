@@ -48,6 +48,10 @@ impl OverviewSearchModule for OverviewHashingModule {
         vec!["hash", "h", "#"]
     }
 
+    fn icon(&self) -> &str {
+        "tag"
+    }
+
     fn run(&self, query: &str) -> Vec<OverviewSearchItem> {
         let mut results = Vec::new();
 

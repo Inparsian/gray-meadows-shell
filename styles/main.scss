@@ -361,11 +361,22 @@
         margin-bottom: 8px;
         min-width: 294px;
         transition: all 0.25s cubic-bezier(0.5, 0, 0, 1);
-        padding: 16px;
+        padding-left: 8px;
+        padding-right: 8px;
+        padding-top: 6px;
+        padding-bottom: 6px;
         border: 1px solid $border-color-primary;
+
+        .entry-box-icon {
+            @include material-icons;
+            font-size: 18px;
+            margin-right: 8px;
+            color: $foreground-color-secondary;
+        }
 
         .entry-prompt {
             outline: none;
+            padding-top: 4px;
             background: transparent;
             color: $foreground-color-primary;
 
@@ -378,7 +389,7 @@
         }
 
         &.entry-extended {
-            min-width: 432px;
+            min-width: 448px;
 
             .entry-prompt {
                 caret-color: $foreground-color-select;
@@ -427,8 +438,8 @@
     .overview-search-results {
         background: $background-color-primary;
         border: 1px solid $border-color-primary;
-        padding: 8px;
-        min-width: 448px;
+        padding: 6px;
+        min-width: 452px;
 
         .overview-search-item-row {
             padding: 0px;

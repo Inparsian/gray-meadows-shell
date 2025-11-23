@@ -7,6 +7,7 @@ pub mod hashing;
 
 pub trait OverviewSearchModule {
     fn extensions(&self) -> Vec<&str>;
+    fn icon(&self) -> &str;
     fn run(&self, query: &str) -> Vec<OverviewSearchItem>;
 }
 

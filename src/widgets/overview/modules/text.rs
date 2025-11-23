@@ -136,6 +136,10 @@ impl OverviewSearchModule for OverviewTextModule {
         vec!["text", "txt", "t", "%"]
     }
 
+    fn icon(&self) -> &str {
+        "text_compare"
+    }
+
     fn run(&self, query: &str) -> Vec<OverviewSearchItem> {
         let mut results = Vec::new();
 
