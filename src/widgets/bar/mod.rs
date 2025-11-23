@@ -50,7 +50,7 @@ impl Bar {
                 init_layer_shell: (),
                 set_monitor: Some(monitor),
                 set_default_height: 33,
-                set_layer: Layer::Top,
+                set_layer: Layer::Overlay,
                 set_anchor: (Edge::Left, true),
                 set_anchor: (Edge::Right, true),
                 set_anchor: (Edge::Top, true),

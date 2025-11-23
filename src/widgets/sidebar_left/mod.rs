@@ -33,7 +33,7 @@ pub fn new(application: &libadwaita::Application) {
             init_layer_shell: (),
             set_namespace: Some("left-sidebar"),
             set_monitor: hyprland::get_active_monitor().as_ref(),
-            set_keyboard_mode: KeyboardMode::Exclusive,
+            set_keyboard_mode: KeyboardMode::OnDemand,
             set_layer: Layer::Overlay,
             set_anchor: (Edge::Left, true),
             set_anchor: (Edge::Right, false),
