@@ -299,6 +299,49 @@
                 background: $background-color-quaternary;
             }
         }
+
+        .sidebar-right-quicktoggles {
+            padding: 0px;
+        
+            .sidebar-right-quicktoggle-button {
+                @include material-icons;
+
+                border-radius: 0px;
+                font-size: 16px;
+                padding: 6px;
+                min-width: 20px;
+                min-height: 20px;
+                font-weight: normal;
+
+                &:not(.toggled) {
+                    background: $background-color-primary;
+                    color: $foreground-color-primary;
+
+                    &:hover, &:focus {
+                        background: $background-color-tertiary;
+                        outline: none;
+                    }
+
+                    &:active {
+                        background: $background-color-quaternary;
+                    }
+                }
+
+                &.toggled {
+                    background: $foreground-color-primary;
+                    color: $background-color-primary;
+
+                    &:hover, &:focus {
+                        background: $foreground-color-select;
+                        outline: none;
+                    }
+
+                    &:active {
+                        background: $foreground-color-active;
+                    }
+                }
+            }
+        }
     }
 }
 

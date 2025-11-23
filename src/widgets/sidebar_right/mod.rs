@@ -1,4 +1,5 @@
 mod header;
+mod quicktoggle;
 
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
@@ -9,6 +10,16 @@ pub fn new(application: &libadwaita::Application) {
     let header = header::new();
 
     view! {
+        quick_toggles = gtk4::Box {
+            set_css_classes: &["sidebar-right-quicktoggles"],
+            set_spacing: 4,
+            set_orientation: gtk4::Orientation::Horizontal,
+            set_hexpand: true,
+            set_vexpand: false,
+
+            append: &quicktoggle::keybinds::new(),
+        },
+
         right_sidebar_box = gtk4::Box {
             set_css_classes: &["right-sidebar-box"],
             set_orientation: gtk4::Orientation::Vertical,
@@ -16,7 +27,8 @@ pub fn new(application: &libadwaita::Application) {
             set_hexpand: true,
             set_vexpand: true,
 
-            append: &header
+            append: &header,
+            append: &quick_toggles
         },
 
         window = gtk4::ApplicationWindow {
