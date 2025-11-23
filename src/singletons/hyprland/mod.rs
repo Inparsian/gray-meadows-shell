@@ -30,6 +30,24 @@ pub fn call_hyprctl(command: &str) -> Option<String> {
     output.status.success().then(|| String::from_utf8_lossy(&output.stdout).trim().to_owned())
 }
 
+/// Basically call_hyprctl, but using it's built-in batch flag to run multiple commands in
+/// one hyprctl call.
+#[allow(dead_code)]
+pub fn call_hyprctl_batch(commands: &[&str]) -> Option<Vec<String>> {
+    let batch_command = commands.join(";");
+    let output = std::process::Command::new("hyprctl")
+        .arg("--batch")
+        .arg(batch_command)
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let results: Vec<String> = stdout.lines().map(|line| line.trim().to_owned()).collect();
+    Some(results)
+}
+
 fn refresh_active_client() {
     HYPRLAND.active_client.set(Client::get_active().ok().unwrap_or(None));
 }
