@@ -155,13 +155,13 @@ async fn main() {
                 gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
             );
 
-            // Add your manual search paths here
-            // TODO: Replace this with an automatic search for the currently equipped icon theme
-            APP_LOCAL.with(|app| {
-                let icon_theme = &app.borrow().icon_theme;
-                icon_theme.add_search_path(Path::new("/home/inparsian/.icons/besgnulinux-mono-grey/apps/scalable"));
-                icon_theme.set_theme_name(Some("besgnulinux-mono-grey"));
-            });
+            if let Some(settings) = gtk4::Settings::default() {
+                let current_icon_theme = settings.property::<String>("gtk-icon-theme-name");
+                APP_LOCAL.with(|app| {
+                    let icon_theme = &app.borrow().icon_theme;
+                    icon_theme.set_theme_name(Some(&current_icon_theme));
+                });
+            }
 
             bundle_apply_scss();
             watch_scss();
