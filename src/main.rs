@@ -11,6 +11,7 @@ mod singletons;
 mod widgets;
 mod sql;
 mod dbus;
+mod bind_events;
 
 use std::{cell::RefCell, path::Path, sync::{LazyLock, Mutex, OnceLock}};
 use futures_signals::signal::Mutable;
