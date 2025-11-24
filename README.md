@@ -11,6 +11,8 @@ The To-Do list has been moved to [Trello](https://trello.com/b/bzhLDyI8/gray-mea
 ## Optional features
 
 ### Mouse event handling
+⚠️ **Nevermind, this causes way worse performance issues than I thought, will continue researching this particular area. For the time being just use keyboard shortcuts.**
+
 Due to Wayland's security model, gray-meadows-shell captures mouse events in a bit of a jank way; Instead of hooking into the compositor directly, it instead relies on receiving mouse events from the compositor via IPC. This means that you need to set up your compositor to send mouse events to gray-meadows-shell.
 
 For Hyprland users, add this to your keybinds to enable mouse event handling:
