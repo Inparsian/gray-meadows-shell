@@ -4,9 +4,9 @@ mod quicktoggle;
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
-use crate::{helpers::gesture, ipc, singletons::hyprland};
+use crate::{helpers::gesture, singletons::hyprland};
 
-pub fn new(application: &libadwaita::Application) {
+pub fn new(application: &libadwaita::Application) -> gtk4::ApplicationWindow {
     let header = header::new();
 
     view! {
@@ -73,20 +73,5 @@ pub fn new(application: &libadwaita::Application) {
         }
     }));
 
-    ipc::listen_for_messages_local(move |message| {
-        if message.as_str() == "toggle_right_sidebar" {
-            let monitor = hyprland::get_active_monitor();
-
-            if window.is_visible() {
-                window.hide();
-            } else {
-                window.set_monitor(monitor.as_ref());
-                window.show();
-            }
-        }
-
-        else if message.as_str() == "hide_right_sidebar" {
-            window.hide();
-        }
-    });
+    window
 }

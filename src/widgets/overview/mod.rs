@@ -99,7 +99,7 @@ fn generate_search_results(query: &str) -> Vec<OverviewSearchItem> {
     results
 }
 
-pub fn new(application: &libadwaita::Application) {
+pub fn new(application: &libadwaita::Application) -> gtk4::ApplicationWindow {
     let search_results = Rc::new(RefCell::new(OverviewSearchList::new()));
     let frequent_window = OverviewFrequentWindow::new();
     let recent_window = OverviewRecentWindow::new();
@@ -379,23 +379,12 @@ pub fn new(application: &libadwaita::Application) {
     }
 
     ipc::listen_for_messages_local(move |message| {
-        if message.as_str() == "toggle_overview" {
-            let monitor = hyprland::get_active_monitor();
-
-            if window.is_visible() {
-                window.hide();
-            } else {
-                window.set_monitor(monitor.as_ref());
-                window.show();
-
-                // Tell the windows to update their contents
-                frequent_window.update();
-                recent_window.update();
-            }
-        }
-
-        else if message.as_str() == "hide_overview" {
-            window.hide();
+        if message.as_str() == "update_overview_windows" {
+            // Tell the windows to update their contents
+            frequent_window.update();
+            recent_window.update();
         }
     });
+
+    window
 }

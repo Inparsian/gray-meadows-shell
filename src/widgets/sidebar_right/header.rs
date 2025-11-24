@@ -2,7 +2,7 @@ use std::{path::Path, process::Command};
 use futures_signals::signal::SignalExt;
 use gtk4::prelude::*;
 
-use crate::{helpers::filesystem, ipc, singletons};
+use crate::{window::Window, helpers::filesystem, singletons};
 
 fn parse_uptime_seconds(seconds: u64) -> String {
     let days = seconds / 86400;
@@ -79,8 +79,8 @@ pub fn new() -> gtk4::Box {
                 set_halign: gtk4::Align::End,
                 set_valign: gtk4::Align::Center,
                 connect_clicked: move |_| {
-                    let _ = ipc::client::send_message("hide_right_sidebar");
-                    let _ = ipc::client::send_message("toggle_session");
+                    Window::SidebarRight.hide();
+                    Window::Session.toggle();
                 },
 
                 gtk4::Label {

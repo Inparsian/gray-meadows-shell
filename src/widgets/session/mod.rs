@@ -1,7 +1,7 @@
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
-use crate::{helpers::gesture, ipc, singletons::hyprland};
+use crate::{window::Window, helpers::gesture, singletons::hyprland};
 
 pub fn session_button(icon: &str, command: &str) -> gtk4::Button {
     let icon = icon.to_owned();
@@ -11,8 +11,7 @@ pub fn session_button(icon: &str, command: &str) -> gtk4::Button {
     button.set_valign(gtk4::Align::Center);
     button.set_css_classes(&["session-button"]);
     button.connect_clicked(move |_| {
-        ipc::client::send_message("hide_session")
-            .expect("Failed to send hide_session message");
+        Window::Session.hide();
 
         std::process::Command::new("bash")
             .arg("-c")
@@ -28,7 +27,7 @@ pub fn session_button(icon: &str, command: &str) -> gtk4::Button {
     button
 }
 
-pub fn new(application: &libadwaita::Application) {
+pub fn new(application: &libadwaita::Application) -> gtk4::ApplicationWindow {
     let lock_button = session_button("lock", "loginctl lock-session");
     let logout_button = session_button("logout", "pkill Hyprland || loginctl terminate-user $USER");
     let suspend_button = session_button("remove_circle_outline", "systemctl suspend || loginctl suspend");
@@ -103,20 +102,5 @@ pub fn new(application: &libadwaita::Application) {
         }
     }));
 
-    ipc::listen_for_messages_local(move |message| {
-        if message.as_str() == "toggle_session" {
-            let monitor = hyprland::get_active_monitor();
-
-            if window.is_visible() {
-                window.hide();
-            } else {
-                window.set_monitor(monitor.as_ref());
-                window.show();
-            }
-        }
-
-        else if message.as_str() == "hide_session" {
-            window.hide();
-        }
-    });
+    window
 }

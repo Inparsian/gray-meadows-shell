@@ -5,7 +5,7 @@ use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
 use crate::{helpers::gesture, ipc, singletons::hyprland, widgets::common::tabs::{TabSize, Tabs, TabsStack}};
 
-pub fn new(application: &libadwaita::Application) {
+pub fn new(application: &libadwaita::Application) -> gtk4::ApplicationWindow {
     let tabs = Tabs::new(TabSize::Large, true);
     tabs.current_tab.set(Some("color_picker".to_owned()));
     tabs.add_tab("translate", "translate".to_owned(), Some("g_translate"));
@@ -78,27 +78,8 @@ pub fn new(application: &libadwaita::Application) {
                     }
                 }
             }
-
-            else if message == "toggle_left_sidebar" {
-                let monitor = hyprland::get_active_monitor();
-
-                if window.is_visible() {
-                    window.hide();
-                } else {
-                    window.set_monitor(monitor.as_ref());
-                    window.show();
-                }
-            }
-
-            else if message == "show_left_sidebar" {
-                let monitor = hyprland::get_active_monitor();
-                window.set_monitor(monitor.as_ref());
-                window.show();
-            }
-
-            else if message == "hide_left_sidebar" {
-                window.hide();
-            }
         }
     });
+
+    window
 }

@@ -12,6 +12,7 @@ mod widgets;
 mod sql;
 mod dbus;
 mod bind_events;
+mod window;
 
 use std::{cell::RefCell, path::Path, sync::{LazyLock, Mutex, OnceLock}};
 use futures_signals::signal::Mutable;
@@ -22,13 +23,23 @@ use sqlite::Connection;
 
 pub struct GrayMeadowsLocal {
     provider: gtk4::CssProvider,
-    icon_theme: gtk4::IconTheme
+    icon_theme: gtk4::IconTheme,
+    pub bar_windows: RefCell<Vec<gtk4::ApplicationWindow>>,
+    pub sidebar_left_window: RefCell<Option<gtk4::ApplicationWindow>>,
+    pub sidebar_right_window: RefCell<Option<gtk4::ApplicationWindow>>,
+    pub overview_window: RefCell<Option<gtk4::ApplicationWindow>>,
+    pub session_window: RefCell<Option<gtk4::ApplicationWindow>>
 }
 
 thread_local! {
     pub static APP_LOCAL: RefCell<GrayMeadowsLocal> = RefCell::new(GrayMeadowsLocal {
         provider: gtk4::CssProvider::new(),
-        icon_theme: gtk4::IconTheme::default()
+        icon_theme: gtk4::IconTheme::default(),
+        bar_windows: RefCell::new(Vec::new()),
+        sidebar_left_window: RefCell::new(None),
+        sidebar_right_window: RefCell::new(None),
+        overview_window: RefCell::new(None),
+        session_window: RefCell::new(None)
     });
 }
 
@@ -108,14 +119,19 @@ fn watch_scss() {
 
 fn activate(application: &Application) {
     for monitor in helpers::display::get_all_monitors(&gdk4::Display::default().expect("Failed to get default display")) {
-        let bar = widgets::bar::Bar::new(application, &monitor);
-        bar.window.show();
+        let bar = widgets::bar::new(application, &monitor);
+        bar.show();
+        APP_LOCAL.with(|app| {
+            app.borrow().bar_windows.borrow_mut().push(bar);
+        });
     }
 
-    widgets::overview::new(application);
-    widgets::session::new(application);
-    widgets::sidebar_left::new(application);
-    widgets::sidebar_right::new(application);
+    APP_LOCAL.with(|app| {
+        app.borrow().overview_window.replace(Some(widgets::overview::new(application)));
+        app.borrow().session_window.replace(Some(widgets::session::new(application)));
+        app.borrow().sidebar_left_window.replace(Some(widgets::sidebar_left::new(application)));
+        app.borrow().sidebar_right_window.replace(Some(widgets::sidebar_right::new(application)));
+    });
 }
 
 #[tokio::main]
@@ -168,6 +184,7 @@ async fn main() {
             watch_scss();
 
             singletons::activate_all();
+            window::listen_for_ipc_messages();
 
             let application = Application::new(
                 Some("sn.inpr.gray_meadows_shell"),
