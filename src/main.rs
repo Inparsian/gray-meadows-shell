@@ -185,6 +185,7 @@ async fn main() {
 
             singletons::activate_all();
             window::listen_for_ipc_messages();
+            window::handle_mouse_events();
 
             let application = Application::new(
                 Some("sn.inpr.gray_meadows_shell"),
