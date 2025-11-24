@@ -1,14 +1,18 @@
+use std::sync::{LazyLock, RwLock};
 use gtk4::prelude::*;
 use gtk4_layer_shell::LayerShell;
 
 use crate::{APP_LOCAL, bind_events, ipc, singletons::hyprland};
 
+#[derive(Clone, Eq, PartialEq)]
 pub enum Window {
     Overview,
     Session,
     SidebarLeft,
     SidebarRight,
 }
+
+pub static DONT_DISMISS_WINDOWS: LazyLock<RwLock<Vec<Window>>> = LazyLock::new(|| RwLock::new(Vec::new()));
 
 impl Window {
     fn with(&self, callback: impl FnOnce(&gtk4::ApplicationWindow)) {
@@ -61,6 +65,24 @@ impl Window {
         });
         !was_visible
     }
+
+    pub fn add_to_dont_dismiss(&self) {
+        let mut guard = DONT_DISMISS_WINDOWS.write().unwrap();
+        if !guard.contains(self) {
+            guard.push(self.clone());
+        }
+    }
+
+    pub fn remove_from_dont_dismiss(&self) {
+        let mut guard = DONT_DISMISS_WINDOWS.write().unwrap();
+        if let Some(pos) = guard.iter().position(|w| w == self) {
+            guard.remove(pos);
+        }
+    }
+
+    pub fn dont_dismiss(&self) -> bool {
+        DONT_DISMISS_WINDOWS.read().unwrap().contains(self)
+    }
 }
 
 pub fn handle_mouse_events() {
@@ -69,7 +91,7 @@ pub fn handle_mouse_events() {
             if button == bind_events::MouseButton::Left {
                 gtk4::glib::MainContext::default().invoke(move || {
                     for window in [Window::Overview, Window::Session, Window::SidebarLeft, Window::SidebarRight] {
-                        if !window.is_focused() {
+                        if !window.is_focused() && !window.dont_dismiss() {
                             window.hide();
                         }
                     }
