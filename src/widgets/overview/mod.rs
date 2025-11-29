@@ -199,17 +199,17 @@ pub fn new(application: &libadwaita::Application) -> gtk4::ApplicationWindow {
                                         existing_item.query = item.query.clone();
                                         existing_item.set_title_markup();
                                     }
-
-                                    // Move this item if its position has changed
-                                    if index != i {
-                                        search_results_mut.move_item(index, i);
-                                    }
                                 } else {
                                     existing_item.set_title_label(&item.title);
 
                                     if let Ok(action) = item.action.try_borrow() {
                                         existing_item.set_action(action.clone());
                                     }
+                                }
+
+                                // Move this item if its position has changed
+                                if index != i {
+                                    search_results_mut.move_item(index, i);
                                 }
                             } else {
                                 search_results_mut.insert(item, i);
