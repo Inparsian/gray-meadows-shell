@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 use futures_signals::signal::{Mutable, SignalExt};
 use gtk4::prelude::*;
 
-use crate::{window::Window, color::model::Hsv, helpers::gesture};
+use crate::{color::model::Hsv, helpers::gesture};
 
 #[derive(Debug, Clone)]
 pub struct SaturationValuePicker {
@@ -54,7 +54,6 @@ impl SaturationValuePicker {
             move |_, x, y| {
                 *clicked.borrow_mut() = true;
                 picker.handle_click(x, y);
-                Window::SidebarLeft.add_to_dont_dismiss();
             }
         }));
 
@@ -69,11 +68,6 @@ impl SaturationValuePicker {
 
         widget.add_controller(gesture::on_primary_up(move |_, _, _| {
             *clicked.borrow_mut() = false;
-            // give time for ipc overhead
-            std::thread::spawn(|| {
-                std::thread::sleep(std::time::Duration::from_millis(100));
-                Window::SidebarLeft.remove_from_dont_dismiss();
-            });
         }));
 
         gtk4::glib::spawn_future_local({

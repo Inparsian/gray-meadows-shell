@@ -11,7 +11,6 @@ mod singletons;
 mod widgets;
 mod sql;
 mod dbus;
-mod bind_events;
 mod window;
 
 use std::{cell::RefCell, path::Path, sync::{LazyLock, Mutex, OnceLock}};
@@ -185,7 +184,6 @@ async fn main() {
 
             singletons::activate_all();
             window::listen_for_ipc_messages();
-            window::handle_mouse_events();
 
             let application = Application::new(
                 Some("sn.inpr.gray_meadows_shell"),

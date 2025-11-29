@@ -2,7 +2,7 @@ use std::{rc::Rc, cell::RefCell};
 use futures_signals::signal::{Mutable, SignalExt};
 use gtk4::prelude::*;
 
-use crate::{window::Window, color::model::Hsv, helpers::gesture};
+use crate::{color::model::Hsv, helpers::gesture};
 
 #[derive(Debug, Clone)]
 pub struct HuePicker {
@@ -44,7 +44,6 @@ impl HuePicker {
             move |_, _, y| {
                 *clicked.borrow_mut() = true;
                 picker.handle_click(y);
-                Window::SidebarLeft.add_to_dont_dismiss();
             }
         }));
 
@@ -59,11 +58,6 @@ impl HuePicker {
 
         widget.add_controller(gesture::on_primary_up(move |_, _, _| {
             *clicked.borrow_mut() = false;
-            // give time for ipc overhead
-            std::thread::spawn(|| {
-                std::thread::sleep(std::time::Duration::from_millis(100));
-                Window::SidebarLeft.remove_from_dont_dismiss();
-            });
         }));
 
         widget.add_controller(gesture::on_vertical_scroll({
