@@ -131,16 +131,25 @@ impl Popup {
         popup
     }
 
-    pub fn show(&self) {
-        let monitor = hyprland::get_active_monitor();
-        self.window.set_monitor(monitor.as_ref());
-        self.window.show();
-
-        // set the anchor of this layer shell window to make it occupy the full screen and steal focus
+    pub fn steal_screen(&self) {
         self.window.set_anchor(gtk4_layer_shell::Edge::Left, true);
         self.window.set_anchor(gtk4_layer_shell::Edge::Right, true);
         self.window.set_anchor(gtk4_layer_shell::Edge::Top, true);
         self.window.set_anchor(gtk4_layer_shell::Edge::Bottom, true);
+    }
+
+    pub fn release_screen(&self) {
+        self.window.set_anchor(gtk4_layer_shell::Edge::Left, self.options.anchor_left);
+        self.window.set_anchor(gtk4_layer_shell::Edge::Right, self.options.anchor_right);
+        self.window.set_anchor(gtk4_layer_shell::Edge::Top, self.options.anchor_top);
+        self.window.set_anchor(gtk4_layer_shell::Edge::Bottom, self.options.anchor_bottom);
+    }
+
+    pub fn show(&self) {
+        let monitor = hyprland::get_active_monitor();
+        self.window.set_monitor(monitor.as_ref());
+        self.window.show();
+        self.steal_screen();
 
         gtk4::glib::timeout_add_local_once(std::time::Duration::from_millis(10), {
             let revealer = self.revealer.clone();
@@ -150,12 +159,7 @@ impl Popup {
 
     pub fn hide(&self) {
         self.revealer.set_reveal_child(false);
-
-        // change the anchor of this layer shell window to release focus
-        self.window.set_anchor(gtk4_layer_shell::Edge::Left, self.options.anchor_left);
-        self.window.set_anchor(gtk4_layer_shell::Edge::Right, self.options.anchor_right);
-        self.window.set_anchor(gtk4_layer_shell::Edge::Top, self.options.anchor_top);
-        self.window.set_anchor(gtk4_layer_shell::Edge::Bottom, self.options.anchor_bottom);
+        self.release_screen();
 
         gtk4::glib::timeout_add_local_once(std::time::Duration::from_millis(self.transition_duration as u64), {
             let window = self.window.clone();
