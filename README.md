@@ -13,6 +13,9 @@ Contributions are welcome!
 ## Why the name "Gray Meadows"?
 grayscale color scheme, first screenshot of the agsv2 version used a foggy forest wallpaper. was too lazy to come up with a better name
 
+## Niri support?
+Not any time soon.
+
 ## Recommended icon theme
 Since Gray Meadows is intended to have a monochrome/grayscale aesthetic, I recommend you use an icon theme that matches it. My personal favorite is [Besgnulinux Monochrome](https://www.gnome-look.org/p/2151189/), but any monochrome or grayscale icon theme should work well.
 
@@ -30,3 +33,33 @@ There's no exhaustive list of dependencies at the moment, as this project is sti
 - `libastal-wireplumber` (for WirePlumber support)
 
 If I've missed any, or any of these are redundant, please open an issue or PR and I'll update this list accordingly.
+
+
+
+### Building Gray Meadows
+To build Gray Meadows, you will need to have Rust and Cargo installed on your system.
+1. Clone the repository:
+```bash
+git clone https://github.com/inparsian/gray-meadows-shell.git
+cd gray-meadows-shell
+```
+2. Build the project using Cargo:
+```bash
+cargo build --release
+```
+3. The compiled binary will be located in the `target/release` directory.
+
+## Running Gray Meadows
+To run Gray Meadows, execute the following command from the project root directory:
+```bash
+# To build the project before running it
+cargo run --release
+
+# Or if you just want to execute the binary
+./target/release/gray-meadows-shell
+```
+
+If you wish to run Gray Meadows when Hyprland starts, you can add it to your Hyprland execs:
+```ini
+exec-once = /path/to/gray-meadows-shell/target/release/gray-meadows-shell
+```
