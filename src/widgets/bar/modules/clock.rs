@@ -15,7 +15,7 @@ pub fn new() -> gtk4::Box {
             set_hexpand: false,
 
             append: &time_label,
-            widgets::dot_separator::new() {},
+            widgets::common::dot_separator::new() {},
             append: &date_label
         }
     }

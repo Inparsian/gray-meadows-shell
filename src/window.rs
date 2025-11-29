@@ -1,14 +1,12 @@
 use gtk4::prelude::*;
 use gtk4_layer_shell::LayerShell;
 
-use crate::{APP_LOCAL, ipc, singletons::hyprland};
+use crate::{APP_LOCAL, ipc, singletons::hyprland, widgets::popup::Popup};
 
 #[derive(Clone, Eq, PartialEq)]
 pub enum Window {
     Overview,
-    Session,
-    SidebarLeft,
-    SidebarRight,
+    Session
 }
 
 impl Window {
@@ -16,9 +14,7 @@ impl Window {
         APP_LOCAL.with(|app| {
             let borrow_attempt = match self {
                 Window::Overview => app.borrow().overview_window.borrow().as_ref().cloned(),
-                Window::Session => app.borrow().session_window.borrow().as_ref().cloned(),
-                Window::SidebarLeft => app.borrow().sidebar_left_window.borrow().as_ref().cloned(),
-                Window::SidebarRight => app.borrow().sidebar_right_window.borrow().as_ref().cloned(),
+                Window::Session => app.borrow().session_window.borrow().as_ref().cloned()
             };
 
             if let Some(win) = borrow_attempt {
@@ -58,6 +54,51 @@ impl Window {
     }
 }
 
+#[derive(Clone, Eq, PartialEq)]
+pub enum PopupWindow {
+    SidebarRight,
+    SidebarLeft
+}
+
+impl PopupWindow {
+    fn with(&self, callback: impl FnOnce(&Popup)) {
+        APP_LOCAL.with(|app| {
+            let borrow_attempt = match self {
+                PopupWindow::SidebarRight => app.borrow().sidebar_right_popup.borrow().as_ref().cloned(),
+                PopupWindow::SidebarLeft => app.borrow().sidebar_left_popup.borrow().as_ref().cloned()
+            };
+
+            if let Some(win) = borrow_attempt {
+                callback(&win);
+            }
+        });
+    }
+
+    pub fn show(&self) -> bool {
+        self.with(|popup| popup.show());
+        true
+    }
+
+    pub fn hide(&self) -> bool {
+        self.with(|popup| popup.hide());
+        false
+    }
+
+    pub fn toggle(&self) -> bool {
+        let mut was_visible = false;
+        self.with(|popup| {
+            if popup.is_visible() {
+                popup.hide();
+                was_visible = true;
+            } else {
+                popup.show();
+                was_visible = false;
+            }
+        });
+        !was_visible
+    }
+}
+
 pub fn listen_for_ipc_messages() {
     ipc::listen_for_messages_local(|message| {
         match message.as_str() {
@@ -73,12 +114,12 @@ pub fn listen_for_ipc_messages() {
             "show_session" => Window::Session.show(),
             "hide_session" => Window::Session.hide(),
             "toggle_session" => Window::Session.toggle(),
-            "show_right_sidebar" => Window::SidebarRight.show(),
-            "hide_right_sidebar" => Window::SidebarRight.hide(),
-            "toggle_right_sidebar" => Window::SidebarRight.toggle(),
-            "show_left_sidebar" => Window::SidebarLeft.show(),
-            "hide_left_sidebar" => Window::SidebarLeft.hide(),
-            "toggle_left_sidebar" => Window::SidebarLeft.toggle(),
+            "show_right_sidebar" => PopupWindow::SidebarRight.show(),
+            "hide_right_sidebar" => PopupWindow::SidebarRight.hide(),
+            "toggle_right_sidebar" => PopupWindow::SidebarRight.toggle(),
+            "show_left_sidebar" => PopupWindow::SidebarLeft.show(),
+            "hide_left_sidebar" => PopupWindow::SidebarLeft.hide(),
+            "toggle_left_sidebar" => PopupWindow::SidebarLeft.toggle(),
             _ => false
         };
     });

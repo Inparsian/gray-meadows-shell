@@ -20,14 +20,16 @@ use libadwaita::Application;
 use notify::{EventKind, event::{AccessKind, AccessMode}, Watcher};
 use sqlite::Connection;
 
+use crate::widgets::popup::Popup;
+
 pub struct GrayMeadowsLocal {
     provider: gtk4::CssProvider,
     icon_theme: gtk4::IconTheme,
     pub bar_windows: RefCell<Vec<gtk4::ApplicationWindow>>,
-    pub sidebar_left_window: RefCell<Option<gtk4::ApplicationWindow>>,
-    pub sidebar_right_window: RefCell<Option<gtk4::ApplicationWindow>>,
     pub overview_window: RefCell<Option<gtk4::ApplicationWindow>>,
-    pub session_window: RefCell<Option<gtk4::ApplicationWindow>>
+    pub session_window: RefCell<Option<gtk4::ApplicationWindow>>,
+    pub sidebar_left_popup: RefCell<Option<Popup>>,
+    pub sidebar_right_popup: RefCell<Option<Popup>>
 }
 
 thread_local! {
@@ -35,8 +37,8 @@ thread_local! {
         provider: gtk4::CssProvider::new(),
         icon_theme: gtk4::IconTheme::default(),
         bar_windows: RefCell::new(Vec::new()),
-        sidebar_left_window: RefCell::new(None),
-        sidebar_right_window: RefCell::new(None),
+        sidebar_left_popup: RefCell::new(None),
+        sidebar_right_popup: RefCell::new(None),
         overview_window: RefCell::new(None),
         session_window: RefCell::new(None)
     });
@@ -128,8 +130,8 @@ fn activate(application: &Application) {
     APP_LOCAL.with(|app| {
         app.borrow().overview_window.replace(Some(widgets::overview::new(application)));
         app.borrow().session_window.replace(Some(widgets::session::new(application)));
-        app.borrow().sidebar_left_window.replace(Some(widgets::sidebar_left::new(application)));
-        app.borrow().sidebar_right_window.replace(Some(widgets::sidebar_right::new(application)));
+        app.borrow().sidebar_left_popup.replace(Some(widgets::sidebar_left::new(application)));
+        app.borrow().sidebar_right_popup.replace(Some(widgets::sidebar_right::new(application)));
     });
 }
 
