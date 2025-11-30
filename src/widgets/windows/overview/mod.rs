@@ -18,7 +18,7 @@ use crate::{
         list::{OverviewSearchList, get_button_from_row},
         modules::{OverviewSearchModule, input_without_extensions, validate_input},
         windows::{frequent::OverviewFrequentWindow, recent::OverviewRecentWindow}
-    }, types::fullscreen::FullscreenWindow}
+    }, fullscreen::FullscreenWindow}
 };
 
 static MODULES: LazyLock<Vec<&(dyn OverviewSearchModule + Send + Sync)>> = LazyLock::new(|| vec![

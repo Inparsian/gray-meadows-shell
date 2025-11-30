@@ -1,4 +1,5 @@
-pub mod types;
+pub mod popup;
+pub mod fullscreen;
 pub mod overview;
 pub mod session;
 pub mod sidebar_left;
@@ -59,7 +60,7 @@ pub fn toggle(window: &str) -> bool {
 pub fn hide_all_popups() {
     APP_LOCAL.with(|app| {
         for window in app.borrow().windows.borrow().values() {
-            if window.downcast_ref::<types::popup::PopupWindow>().is_some() {
+            if window.downcast_ref::<popup::PopupWindow>().is_some() {
                 window.hide();
             }
         }

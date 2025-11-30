@@ -1,6 +1,6 @@
 use gtk4::prelude::*;
 
-use crate::{widgets::windows::{self, types::fullscreen::FullscreenWindow}};
+use crate::{widgets::windows::{self, fullscreen::FullscreenWindow}};
 
 pub fn session_button(icon: &str, command: &str) -> gtk4::Button {
     let icon = icon.to_owned();
