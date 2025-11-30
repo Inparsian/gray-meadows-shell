@@ -33,7 +33,7 @@ pub fn new() -> gtk4::Box {
         }),
 
         volume_click_gesture = gesture::on_primary_down(|_, _, _| {
-            windows::toggle("sidebar_right");
+            windows::toggle("right_sidebar");
         }),
 
         volume_char_label = gtk4::Label {

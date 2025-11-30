@@ -79,7 +79,7 @@ pub fn new() -> gtk4::Box {
                 set_halign: gtk4::Align::End,
                 set_valign: gtk4::Align::Center,
                 connect_clicked: move |_| {
-                    windows::hide("sidebar_right");
+                    windows::hide("right_sidebar");
                     windows::toggle("session");
                 },
 
