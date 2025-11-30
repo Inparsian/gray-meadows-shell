@@ -29,16 +29,17 @@ impl dyn GmsWindow {
     }
 }
 
-fn with(window: &str, callback: impl FnOnce(&Box<dyn GmsWindow>)) {
+fn with<F, R>(window: &str, callback: F) -> Option<R>
+where
+    F: FnOnce(&dyn GmsWindow) -> R,
+{
     APP_LOCAL.with(|app| {
         let app = app.borrow();
         let windows = app.windows.borrow();
         let borrow_attempt = windows.get(window);
 
-        if let Some(win) = borrow_attempt {
-            callback(win);
-        }
-    });
+        borrow_attempt.map(|win| callback(win.as_ref()))
+    })
 }
 
 pub fn show(window: &str) {
@@ -50,11 +51,7 @@ pub fn hide(window: &str) {
 }
 
 pub fn toggle(window: &str) -> bool {
-    let mut was_visible = false;
-    with(window, |win| {
-        was_visible = win.toggle();
-    });
-    was_visible
+    with(window, |win| win.toggle()).unwrap_or(false)
 }
 
 pub fn hide_all_popups() {
@@ -74,9 +71,7 @@ pub fn listen_for_ipc_messages() {
         } else if let Some(window_name) = message.strip_prefix("hide_") {
             hide(window_name);
         } else if let Some(window_name) = message.strip_prefix("toggle_") {
-            let toggled = toggle(window_name);
-
-            if window_name == "overview" && toggled {
+            if toggle(window_name) && window_name == "overview" {
                 let _ = ipc::client::send_message("update_overview_windows");
             }
         }
