@@ -9,126 +9,89 @@ use gtk4_layer_shell::LayerShell;
 
 use crate::{APP_LOCAL, ipc, singletons::hyprland, widgets::windows::popup::Popup};
 
-#[derive(Clone, Eq, PartialEq)]
-pub enum Window {
-    Overview,
-    Session
+fn with(window: &str, callback: impl FnOnce(&gtk4::ApplicationWindow)) {
+    APP_LOCAL.with(|app| {
+        let borrow_attempt = match window {
+            "overview" => app.borrow().overview_window.borrow().as_ref().cloned(),
+            "session" => app.borrow().session_window.borrow().as_ref().cloned(),
+            _ => None,
+        };
+
+        if let Some(win) = borrow_attempt {
+            callback(&win);
+        }
+    });
 }
 
-impl Window {
-    fn with(&self, callback: impl FnOnce(&gtk4::ApplicationWindow)) {
-        APP_LOCAL.with(|app| {
-            let borrow_attempt = match self {
-                Window::Overview => app.borrow().overview_window.borrow().as_ref().cloned(),
-                Window::Session => app.borrow().session_window.borrow().as_ref().cloned()
-            };
+fn with_popup(window: &str, callback: impl FnOnce(&Popup)) {
+    APP_LOCAL.with(|app| {
+        let borrow_attempt = app.borrow().popup_windows.borrow().get(window).cloned();
 
-            if let Some(win) = borrow_attempt {
-                callback(&win);
-            }
-        });
+        if let Some(popup) = borrow_attempt {
+            callback(&popup);
+        }
+    });
+}
+
+fn popup_exists(window: &str) -> bool {
+    let mut exists = false;
+    APP_LOCAL.with(|app| {
+        exists = app.borrow().popup_windows.borrow().contains_key(window);
+    });
+    exists
+}
+
+pub fn show(window: &str) -> bool {
+    if popup_exists(window) {
+        with_popup(window, |popup| popup.show());
+        return true;
+    }
+    
+    with(window, |win| {
+        let monitor = hyprland::get_active_monitor();
+        win.set_monitor(monitor.as_ref());
+        win.show();
+    });
+    true
+}
+
+pub fn hide(window: &str) -> bool {
+    if popup_exists(window) {
+        with_popup(window, |popup| popup.hide_without_checking_options());
+        return false;
     }
 
-    pub fn show(&self) -> bool {
-        self.with(|win| {
+    with(window, |win| win.hide());
+    false
+}
+
+pub fn toggle(window: &str) -> bool {
+    let mut was_visible = false;
+    if popup_exists(window) {
+        with_popup(window, |popup| {
+            was_visible = if popup.is_visible() {
+                popup.hide_without_checking_options();
+                true
+            } else {
+                popup.show();
+                false
+            }
+        });
+        return !was_visible;
+    }
+
+    with(window, |win| {
+        was_visible = if win.is_visible() {
+            win.hide();
+            true
+        } else {
             let monitor = hyprland::get_active_monitor();
             win.set_monitor(monitor.as_ref());
             win.show();
-        });
-        true
-    }
-
-    pub fn hide(&self) -> bool {
-        self.with(|win| win.hide());
-        false
-    }
-
-    pub fn toggle(&self) -> bool {
-        let mut was_visible = false;
-        self.with(|win| {
-            if win.is_visible() {
-                win.hide();
-                was_visible = true;
-            } else {
-                let monitor = hyprland::get_active_monitor();
-                win.set_monitor(monitor.as_ref());
-                win.show();
-                was_visible = false;
-            }
-        });
-        !was_visible
-    }
-}
-
-#[derive(Clone, Eq, PartialEq)]
-pub enum PopupWindow {
-    SidebarRight,
-    SidebarLeft
-}
-
-impl PopupWindow {
-    fn with(&self, callback: impl FnOnce(&Popup)) {
-        APP_LOCAL.with(|app| {
-            let borrow_attempt = match self {
-                PopupWindow::SidebarRight => app.borrow().popup_windows.borrow().get("sidebar_right").cloned(),
-                PopupWindow::SidebarLeft => app.borrow().popup_windows.borrow().get("sidebar_left").cloned()
-            };
-
-            if let Some(win) = borrow_attempt {
-                callback(&win);
-            }
-        });
-    }
-
-    pub fn show(&self) -> bool {
-        self.with(|popup| popup.show());
-        true
-    }
-
-    pub fn hide(&self) -> bool {
-        self.with(|popup| popup.hide());
-        false
-    }
-
-    pub fn toggle(&self) -> bool {
-        let mut was_visible = false;
-        self.with(|popup| {
-            if popup.is_visible() {
-                popup.hide();
-                was_visible = true;
-            } else {
-                popup.show();
-                was_visible = false;
-            }
-        });
-        !was_visible
-    }
-}
-
-pub fn listen_for_ipc_messages() {
-    ipc::listen_for_messages_local(|message| {
-        match message.as_str() {
-            "show_overview" => Window::Overview.show(),
-            "hide_overview" => Window::Overview.hide(),
-            "toggle_overview" => {
-                let toggled = Window::Overview.toggle();
-                if toggled {
-                    let _ = ipc::client::send_message("update_overview_windows");
-                }
-                false
-            },
-            "show_session" => Window::Session.show(),
-            "hide_session" => Window::Session.hide(),
-            "toggle_session" => Window::Session.toggle(),
-            "show_right_sidebar" => PopupWindow::SidebarRight.show(),
-            "hide_right_sidebar" => PopupWindow::SidebarRight.hide(),
-            "toggle_right_sidebar" => PopupWindow::SidebarRight.toggle(),
-            "show_left_sidebar" => PopupWindow::SidebarLeft.show(),
-            "hide_left_sidebar" => PopupWindow::SidebarLeft.hide(),
-            "toggle_left_sidebar" => PopupWindow::SidebarLeft.toggle(),
-            _ => false
-        };
+            false
+        }
     });
+    !was_visible
 }
 
 pub fn hide_all_popups() {
@@ -136,6 +99,22 @@ pub fn hide_all_popups() {
         for popup in app.borrow().popup_windows.borrow().values() {
             if popup.is_visible() {
                 popup.hide_without_checking_options();
+            }
+        }
+    });
+}
+
+pub fn listen_for_ipc_messages() {
+    ipc::listen_for_messages_local(|message| {
+        if let Some(window_name) = message.strip_prefix("show_") {
+            show(window_name);
+        } else if let Some(window_name) = message.strip_prefix("hide_") {
+            hide(window_name);
+        } else if let Some(window_name) = message.strip_prefix("toggle_") {
+            let toggled = toggle(window_name);
+
+            if window_name == "overview" && toggled {
+                let _ = ipc::client::send_message("update_overview_windows");
             }
         }
     });

@@ -127,8 +127,8 @@ fn activate(application: &Application) {
     APP_LOCAL.with(|app| {
         app.borrow().overview_window.replace(Some(widgets::windows::overview::new(application)));
         app.borrow().session_window.replace(Some(widgets::windows::session::new(application)));
-        app.borrow().popup_windows.borrow_mut().insert("sidebar_left".into(), widgets::windows::sidebar_left::new(application));
-        app.borrow().popup_windows.borrow_mut().insert("sidebar_right".into(), widgets::windows::sidebar_right::new(application));
+        app.borrow().popup_windows.borrow_mut().insert("left_sidebar".into(), widgets::windows::sidebar_left::new(application));
+        app.borrow().popup_windows.borrow_mut().insert("right_sidebar".into(), widgets::windows::sidebar_right::new(application));
     });
 }
 

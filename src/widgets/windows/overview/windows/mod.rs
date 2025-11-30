@@ -1,7 +1,7 @@
 use freedesktop_desktop_entry::get_languages_from_env;
 use gtk4::prelude::*;
 
-use crate::{widgets::windows::Window, singletons::apps::{self, pixbuf::get_pixbuf_or_fallback}};
+use crate::{widgets::windows, singletons::apps::{self, pixbuf::get_pixbuf_or_fallback}};
 
 pub mod frequent;
 pub mod recent;
@@ -41,7 +41,7 @@ pub fn make_item_from_command(command: &str) -> Option<gtk4::Button> {
                     apps::launch_and_track(&command);
 
                     // Hide the overview after clicking an item
-                    Window::Overview.hide();
+                    windows::hide("overview");
                 }
             },
 

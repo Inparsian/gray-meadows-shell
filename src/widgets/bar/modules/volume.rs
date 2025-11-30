@@ -4,7 +4,7 @@ use crate::{
     ffi::astalwp::{WpEvent, ffi},
     helpers::gesture,
     singletons::wireplumber,
-    widgets::{windows::PopupWindow, bar::wrapper::BarModuleWrapper}
+    widgets::{windows, bar::wrapper::BarModuleWrapper}
 };
 
 const VOLUME_STEP: f32 = 0.05;
@@ -33,7 +33,7 @@ pub fn new() -> gtk4::Box {
         }),
 
         volume_click_gesture = gesture::on_primary_down(|_, _, _| {
-            PopupWindow::SidebarRight.toggle();
+            windows::toggle("sidebar_right");
         }),
 
         volume_char_label = gtk4::Label {

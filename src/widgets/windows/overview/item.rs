@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 use gtk4::prelude::*;
 
-use crate::{widgets::windows::Window, helpers::{matching, scss}, singletons::apps::{self, pixbuf::get_pixbuf_or_fallback}};
+use crate::{widgets::windows, helpers::{matching, scss}, singletons::apps::{self, pixbuf::get_pixbuf_or_fallback}};
 
 pub static ITEM_ANIMATION_DURATION: u32 = 175;
 
@@ -265,5 +265,5 @@ pub fn run_action(action: &OverviewSearchItemAction) {
     }
 
     // Hide the overview after clicking an item
-    Window::Overview.hide();
+    windows::hide("overview");
 }
