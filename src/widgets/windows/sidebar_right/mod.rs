@@ -3,9 +3,9 @@ mod quicktoggle;
 
 use gtk4::prelude::*;
 
-use crate::widgets::windows::popup::{Popup, PopupMargin, PopupOptions};
+use crate::widgets::windows::types::popup::{PopupWindow, PopupMargin, PopupOptions};
 
-pub fn new(application: &libadwaita::Application) -> Popup {
+pub fn new(application: &libadwaita::Application) -> PopupWindow {
     let header = header::new();
 
     view! {
@@ -32,7 +32,7 @@ pub fn new(application: &libadwaita::Application) -> Popup {
         },
     };
 
-    Popup::new(
+    PopupWindow::new(
         application,
         &["right-sidebar-window"],
         &right_sidebar_box,

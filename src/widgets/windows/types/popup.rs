@@ -2,11 +2,11 @@ use gtk4::{prelude::*, RevealerTransitionType};
 use gtk4_layer_shell::LayerShell;
 use libadwaita::Clamp;
 
-use crate::{helpers::gesture, singletons::hyprland, widgets::windows};
+use crate::{helpers::gesture, singletons::hyprland, widgets::windows::{self, GmsWindow}};
 
-/// A window that takes up the entire screen and displays content on top of other windows. It closes itself when it loses focus.
+/// A popup window that displays content on top of other windows. It closes itself when it loses focus.
 #[derive(Clone)]
-pub struct Popup {
+pub struct PopupWindow {
     pub window: gtk4::ApplicationWindow,
     pub revealer: gtk4::Revealer,
     pub options: PopupOptions,
@@ -32,7 +32,56 @@ pub struct PopupOptions {
     pub unfocus_hides_all_popups: bool,
 }
 
-impl Popup {
+impl GmsWindow for PopupWindow {
+    fn show(&self) {
+        let monitor = hyprland::get_active_monitor();
+        self.window.set_monitor(monitor.as_ref());
+        self.window.show();
+        self.steal_screen();
+
+        gtk4::glib::timeout_add_local_once(std::time::Duration::from_millis(10), {
+            let revealer = self.revealer.clone();
+            move || revealer.set_reveal_child(true)
+        });
+    }
+
+    fn hide(&self) {
+        self.revealer.set_reveal_child(false);
+        self.release_screen();
+
+        gtk4::glib::timeout_add_local_once(std::time::Duration::from_millis(self.transition_duration as u64), {
+            let window = self.window.clone();
+            let revealer = self.revealer.clone();
+            move || if !revealer.reveals_child() {
+                window.hide();
+            }
+        });
+    }
+
+    fn toggle(&self) -> bool {
+        let was_visible = self.is_visible();
+        if was_visible {
+            self.hide();
+        } else {
+            self.show();
+        }
+        !was_visible
+    }
+
+    fn is_visible(&self) -> bool {
+        self.revealer.reveals_child()
+    }
+
+    fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
+}
+
+impl PopupWindow {
     /// Creates a new popup window.
     #[allow(clippy::too_many_arguments)] // bruh
     pub fn new(
@@ -111,7 +160,7 @@ impl Popup {
             let popup = popup.clone();
 
             move |val, _| if val.name() == Some("Escape".into()) {
-                popup.hide();
+                popup.hide_and_check_options();
             }
         }));
 
@@ -124,7 +173,7 @@ impl Popup {
                 let (rx, ry) = (r_xy.0 as i32, r_xy.1 as i32);
 
                 if popup.window.is_visible() && !allocation.contains_point(px, py) && !allocation.contains_point(rx, ry) {
-                    popup.hide();
+                    popup.hide_and_check_options();
                 }
             }
         }));
@@ -146,41 +195,12 @@ impl Popup {
         self.window.set_anchor(gtk4_layer_shell::Edge::Bottom, self.options.anchor_bottom);
     }
 
-    pub fn show(&self) {
-        let monitor = hyprland::get_active_monitor();
-        self.window.set_monitor(monitor.as_ref());
-        self.window.show();
-        self.steal_screen();
-
-        gtk4::glib::timeout_add_local_once(std::time::Duration::from_millis(10), {
-            let revealer = self.revealer.clone();
-            move || revealer.set_reveal_child(true)
-        });
-    }
-
-    pub fn hide(&self) {
+    pub fn hide_and_check_options(&self) {
         if self.options.unfocus_hides_all_popups {
             windows::hide_all_popups();
             return;
         }
 
-        self.hide_without_checking_options();
-    }
-
-    pub fn hide_without_checking_options(&self) {
-        self.revealer.set_reveal_child(false);
-        self.release_screen();
-
-        gtk4::glib::timeout_add_local_once(std::time::Duration::from_millis(self.transition_duration as u64), {
-            let window = self.window.clone();
-            let revealer = self.revealer.clone();
-            move || if !revealer.reveals_child() {
-                window.hide();
-            }
-        });
-    }
-
-    pub fn is_visible(&self) -> bool {
-        self.revealer.reveals_child()
+        self.hide();
     }
 }

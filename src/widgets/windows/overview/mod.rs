@@ -6,20 +6,19 @@ mod windows;
 use std::{cell::RefCell, rc::Rc, sync::LazyLock};
 use freedesktop_desktop_entry::get_languages_from_env;
 use gtk4::prelude::*;
-use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 use regex::Regex;
 use urlencoding::encode;
 
 use crate::{
     helpers::gesture,
     ipc,
-    singletons::{apps, hyprland},
-    widgets::windows::overview::{
+    singletons::apps,
+    widgets::windows::{overview::{
         item::{OverviewSearchItem, OverviewSearchItemAction},
-        list::{get_button_from_row, OverviewSearchList},
-        modules::{input_without_extensions, validate_input, OverviewSearchModule},
+        list::{OverviewSearchList, get_button_from_row},
+        modules::{OverviewSearchModule, input_without_extensions, validate_input},
         windows::{frequent::OverviewFrequentWindow, recent::OverviewRecentWindow}
-    }
+    }, types::fullscreen::FullscreenWindow}
 };
 
 static MODULES: LazyLock<Vec<&(dyn OverviewSearchModule + Send + Sync)>> = LazyLock::new(|| vec![
@@ -99,7 +98,7 @@ fn generate_search_results(query: &str) -> Vec<OverviewSearchItem> {
     results
 }
 
-pub fn new(application: &libadwaita::Application) -> gtk4::ApplicationWindow {
+pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
     let search_results = Rc::new(RefCell::new(OverviewSearchList::new()));
     let frequent_window = OverviewFrequentWindow::new();
     let recent_window = OverviewRecentWindow::new();
@@ -255,58 +254,35 @@ pub fn new(application: &libadwaita::Application) -> gtk4::ApplicationWindow {
             append: &entry_box,
             append: &search_results_revealer,
             append: &windows_revealer
-        },
-
-        window = gtk4::ApplicationWindow {
-            set_css_classes: &["overview-window"],
-            set_application: Some(application),
-            init_layer_shell: (),
-            set_monitor: hyprland::get_active_monitor().as_ref(),
-            set_keyboard_mode: KeyboardMode::OnDemand,
-            set_layer: Layer::Top,
-            set_anchor: (Edge::Left, true),
-            set_anchor: (Edge::Right, true),
-            set_anchor: (Edge::Top, true),
-            set_anchor: (Edge::Bottom, true),
-
-            set_child: Some(&overview_box),
         }
     };
 
     entry_box.append(&entry_overlay);
 
-    window.connect_unmap({
+    let fullscreen = FullscreenWindow::new(
+        application,
+        &["overview-window"],
+        &overview_box,
+    );
+
+    fullscreen.window.connect_unmap({
         let entry = entry.clone();
         move |_| { entry.set_text(""); }
     });
 
-    window.connect_map({
+    fullscreen.window.connect_map({
         let entry = entry.clone();
         move |_| { entry.grab_focus(); }
     });
 
-    window.add_controller(gesture::on_primary_up({
-        let window = window.clone();
-        move |_, x, y| {
-            if window.is_visible() && !overview_box.allocation().contains_point(x as i32, y as i32) {
-                window.hide();
-            }
-        }
-    }));
-
-    window.add_controller(gesture::on_key_press({
-        let window = window.clone();
+    fullscreen.window.add_controller(gesture::on_key_press({
         let search_results = search_results.clone();
 
         move |val, _| {
-            if val.name() == Some("Escape".into()) {
-                window.hide();
-            }
-
             // ListBoxRow steals the events for the Arrow Keys if it's focused, so
             // we can assume that it isn't focused if an event for Down is triggered
             // on the window
-            else if val.name() == Some("Down".into()) {
+            if val.name() == Some("Down".into()) {
                 let first_child = search_results.borrow().get_widget().first_child();
 
                 first_child.map(|child| child.downcast_ref::<gtk4::ListBoxRow>().map(|row| {
@@ -386,5 +362,5 @@ pub fn new(application: &libadwaita::Application) -> gtk4::ApplicationWindow {
         }
     });
 
-    window
+    fullscreen
 }

@@ -1,7 +1,6 @@
 use gtk4::prelude::*;
-use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
-use crate::{widgets::windows, helpers::gesture, singletons::hyprland};
+use crate::{widgets::windows::{self, types::fullscreen::FullscreenWindow}};
 
 pub fn session_button(icon: &str, command: &str) -> gtk4::Button {
     let icon = icon.to_owned();
@@ -27,7 +26,7 @@ pub fn session_button(icon: &str, command: &str) -> gtk4::Button {
     button
 }
 
-pub fn new(application: &libadwaita::Application) -> gtk4::ApplicationWindow {
+pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
     let lock_button = session_button("lock", "loginctl lock-session");
     let logout_button = session_button("logout", "pkill Hyprland || loginctl terminate-user $USER");
     let suspend_button = session_button("remove_circle_outline", "systemctl suspend || loginctl suspend");
@@ -64,43 +63,12 @@ pub fn new(application: &libadwaita::Application) -> gtk4::ApplicationWindow {
                 append: &reboot_button,
                 append: &shutdown_button
             }
-        },
-
-        window = gtk4::ApplicationWindow {
-            set_css_classes: &["session-window"],
-            set_application: Some(application),
-            init_layer_shell: (),
-            set_monitor: hyprland::get_active_monitor().as_ref(),
-            set_keyboard_mode: KeyboardMode::OnDemand,
-            set_layer: Layer::Top,
-            set_anchor: (Edge::Left, true),
-            set_anchor: (Edge::Right, true),
-            set_anchor: (Edge::Top, true),
-            set_anchor: (Edge::Bottom, true),
-
-            set_child: Some(&session_box)
         }
     };
 
-    window.add_controller(gesture::on_primary_up({
-        let window = window.clone();
-
-        move |_, x, y| {
-            if window.is_visible() && !session_box.allocation().contains_point(x as i32, y as i32) {
-                window.hide();
-            }
-        }
-    }));
-
-    window.add_controller(gesture::on_key_press({
-        let window = window.clone();
-
-        move |val, _| {
-            if val.name() == Some("Escape".into()) {
-                window.hide();
-            }
-        }
-    }));
-
-    window
+    FullscreenWindow::new(
+        application,
+        &["session-window"],
+        &session_box,
+    )
 }

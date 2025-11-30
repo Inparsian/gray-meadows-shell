@@ -2,9 +2,9 @@ pub mod modules;
 
 use gtk4::prelude::*;
 
-use crate::{ipc, widgets::{common::tabs::{TabSize, Tabs, TabsStack}, windows::popup::{Popup, PopupMargin, PopupOptions}}};
+use crate::{ipc, widgets::{common::tabs::{TabSize, Tabs, TabsStack}, windows::types::popup::{PopupWindow, PopupMargin, PopupOptions}}};
 
-pub fn new(application: &libadwaita::Application) -> Popup {
+pub fn new(application: &libadwaita::Application) -> PopupWindow {
     let tabs = Tabs::new(TabSize::Large, true);
     tabs.current_tab.set(Some("color_picker".to_owned()));
     tabs.add_tab("translate", "translate".to_owned(), Some("g_translate"));
@@ -40,7 +40,7 @@ pub fn new(application: &libadwaita::Application) -> Popup {
         }
     });
 
-    Popup::new(
+    PopupWindow::new(
         application,
         &["left-sidebar-window"],
         &left_sidebar_box,

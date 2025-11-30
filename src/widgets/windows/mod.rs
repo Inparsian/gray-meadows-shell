@@ -1,104 +1,66 @@
-pub mod popup;
+pub mod types;
 pub mod overview;
 pub mod session;
 pub mod sidebar_left;
 pub mod sidebar_right;
 
-use gtk4::prelude::*;
-use gtk4_layer_shell::LayerShell;
+use std::any::Any;
 
-use crate::{APP_LOCAL, ipc, singletons::hyprland, widgets::windows::popup::Popup};
+use crate::{APP_LOCAL, ipc};
 
-fn with(window: &str, callback: impl FnOnce(&gtk4::ApplicationWindow)) {
+pub trait GmsWindow: Any {
+    fn show(&self);
+    fn hide(&self);
+    fn toggle(&self) -> bool;
+    fn is_visible(&self) -> bool;
+
+    fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
+}
+
+impl dyn GmsWindow {
+    pub fn downcast_ref<T: GmsWindow>(&self) -> Option<&T> {
+        self.as_any().downcast_ref::<T>()
+    }
+
+    pub fn downcast_mut<T: GmsWindow>(&mut self) -> Option<&mut T> {
+        self.as_any_mut().downcast_mut::<T>()
+    }
+}
+
+fn with(window: &str, callback: impl FnOnce(&Box<dyn GmsWindow>)) {
     APP_LOCAL.with(|app| {
-        let borrow_attempt = match window {
-            "overview" => app.borrow().overview_window.borrow().as_ref().cloned(),
-            "session" => app.borrow().session_window.borrow().as_ref().cloned(),
-            _ => None,
-        };
+        let app = app.borrow();
+        let windows = app.windows.borrow();
+        let borrow_attempt = windows.get(window);
 
         if let Some(win) = borrow_attempt {
-            callback(&win);
+            callback(win);
         }
     });
 }
 
-fn with_popup(window: &str, callback: impl FnOnce(&Popup)) {
-    APP_LOCAL.with(|app| {
-        let borrow_attempt = app.borrow().popup_windows.borrow().get(window).cloned();
-
-        if let Some(popup) = borrow_attempt {
-            callback(&popup);
-        }
-    });
+pub fn show(window: &str) {
+    with(window, |win| win.show());
 }
 
-fn popup_exists(window: &str) -> bool {
-    let mut exists = false;
-    APP_LOCAL.with(|app| {
-        exists = app.borrow().popup_windows.borrow().contains_key(window);
-    });
-    exists
-}
-
-pub fn show(window: &str) -> bool {
-    if popup_exists(window) {
-        with_popup(window, |popup| popup.show());
-        return true;
-    }
-    
-    with(window, |win| {
-        let monitor = hyprland::get_active_monitor();
-        win.set_monitor(monitor.as_ref());
-        win.show();
-    });
-    true
-}
-
-pub fn hide(window: &str) -> bool {
-    if popup_exists(window) {
-        with_popup(window, |popup| popup.hide_without_checking_options());
-        return false;
-    }
-
+pub fn hide(window: &str) {
     with(window, |win| win.hide());
-    false
 }
 
 pub fn toggle(window: &str) -> bool {
     let mut was_visible = false;
-    if popup_exists(window) {
-        with_popup(window, |popup| {
-            was_visible = if popup.is_visible() {
-                popup.hide_without_checking_options();
-                true
-            } else {
-                popup.show();
-                false
-            }
-        });
-        return !was_visible;
-    }
-
     with(window, |win| {
-        was_visible = if win.is_visible() {
-            win.hide();
-            true
-        } else {
-            let monitor = hyprland::get_active_monitor();
-            win.set_monitor(monitor.as_ref());
-            win.show();
-            false
-        }
+        was_visible = win.toggle();
     });
-    !was_visible
+    was_visible
 }
 
 pub fn hide_all_popups() {
     APP_LOCAL.with(|app| {
-        for popup in app.borrow().popup_windows.borrow().values() {
-            if popup.is_visible() {
-                popup.hide_without_checking_options();
+        for window in app.borrow().windows.borrow().values() {
+            if window.downcast_ref::<types::popup::PopupWindow>().is_some() {
+                window.hide();
             }
         }
     });

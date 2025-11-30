@@ -19,15 +19,13 @@ use libadwaita::Application;
 use notify::{EventKind, event::{AccessKind, AccessMode}, Watcher};
 use sqlite::Connection;
 
-use crate::widgets::windows::{self, popup::Popup};
+use crate::widgets::windows::{self, GmsWindow};
 
 pub struct GrayMeadowsLocal {
     provider: gtk4::CssProvider,
     icon_theme: gtk4::IconTheme,
     pub bar_windows: RefCell<Vec<gtk4::ApplicationWindow>>,
-    pub overview_window: RefCell<Option<gtk4::ApplicationWindow>>,
-    pub session_window: RefCell<Option<gtk4::ApplicationWindow>>,
-    pub popup_windows: RefCell<HashMap<String, Popup>>,
+    pub windows: RefCell<HashMap<String, Box<dyn GmsWindow>>>,
 }
 
 thread_local! {
@@ -35,9 +33,7 @@ thread_local! {
         provider: gtk4::CssProvider::new(),
         icon_theme: gtk4::IconTheme::default(),
         bar_windows: RefCell::new(Vec::new()),
-        popup_windows: RefCell::new(HashMap::new()),
-        overview_window: RefCell::new(None),
-        session_window: RefCell::new(None)
+        windows: RefCell::new(HashMap::new()),
     });
 }
 
@@ -125,10 +121,10 @@ fn activate(application: &Application) {
     }
 
     APP_LOCAL.with(|app| {
-        app.borrow().overview_window.replace(Some(widgets::windows::overview::new(application)));
-        app.borrow().session_window.replace(Some(widgets::windows::session::new(application)));
-        app.borrow().popup_windows.borrow_mut().insert("left_sidebar".into(), widgets::windows::sidebar_left::new(application));
-        app.borrow().popup_windows.borrow_mut().insert("right_sidebar".into(), widgets::windows::sidebar_right::new(application));
+        app.borrow().windows.borrow_mut().insert("overview".into(), Box::new(widgets::windows::overview::new(application)));
+        app.borrow().windows.borrow_mut().insert("session".into(), Box::new(widgets::windows::session::new(application)));
+        app.borrow().windows.borrow_mut().insert("left_sidebar".into(), Box::new(widgets::windows::sidebar_left::new(application)));
+        app.borrow().windows.borrow_mut().insert("right_sidebar".into(), Box::new(widgets::windows::sidebar_right::new(application)));
     });
 }
 
