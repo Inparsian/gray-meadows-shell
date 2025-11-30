@@ -56,7 +56,7 @@ impl FullscreenWindow {
         window.init_layer_shell();
         window.set_monitor(monitor.as_ref());
         window.set_keyboard_mode(gtk4_layer_shell::KeyboardMode::OnDemand);
-        window.set_layer(gtk4_layer_shell::Layer::Overlay);
+        window.set_layer(gtk4_layer_shell::Layer::Top);
         window.set_anchor(gtk4_layer_shell::Edge::Left, true);
         window.set_anchor(gtk4_layer_shell::Edge::Right, true);
         window.set_anchor(gtk4_layer_shell::Edge::Top, true);
