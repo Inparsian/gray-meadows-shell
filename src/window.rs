@@ -64,8 +64,8 @@ impl PopupWindow {
     fn with(&self, callback: impl FnOnce(&Popup)) {
         APP_LOCAL.with(|app| {
             let borrow_attempt = match self {
-                PopupWindow::SidebarRight => app.borrow().sidebar_right_popup.borrow().as_ref().cloned(),
-                PopupWindow::SidebarLeft => app.borrow().sidebar_left_popup.borrow().as_ref().cloned()
+                PopupWindow::SidebarRight => app.borrow().popup_windows.borrow().get("sidebar_right").cloned(),
+                PopupWindow::SidebarLeft => app.borrow().popup_windows.borrow().get("sidebar_left").cloned()
             };
 
             if let Some(win) = borrow_attempt {
@@ -122,5 +122,15 @@ pub fn listen_for_ipc_messages() {
             "toggle_left_sidebar" => PopupWindow::SidebarLeft.toggle(),
             _ => false
         };
+    });
+}
+
+pub fn hide_all_popups() {
+    APP_LOCAL.with(|app| {
+        for popup in app.borrow().popup_windows.borrow().values() {
+            if popup.is_visible() {
+                popup.hide_without_checking_options();
+            }
+        }
     });
 }

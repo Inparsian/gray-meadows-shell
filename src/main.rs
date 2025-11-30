@@ -13,7 +13,7 @@ mod sql;
 mod dbus;
 mod window;
 
-use std::{cell::RefCell, path::Path, sync::{LazyLock, Mutex, OnceLock}};
+use std::{cell::RefCell, collections::HashMap, path::Path, sync::{LazyLock, Mutex, OnceLock}};
 use futures_signals::signal::Mutable;
 use gtk4::prelude::*;
 use libadwaita::Application;
@@ -28,8 +28,7 @@ pub struct GrayMeadowsLocal {
     pub bar_windows: RefCell<Vec<gtk4::ApplicationWindow>>,
     pub overview_window: RefCell<Option<gtk4::ApplicationWindow>>,
     pub session_window: RefCell<Option<gtk4::ApplicationWindow>>,
-    pub sidebar_left_popup: RefCell<Option<Popup>>,
-    pub sidebar_right_popup: RefCell<Option<Popup>>
+    pub popup_windows: RefCell<HashMap<String, Popup>>,
 }
 
 thread_local! {
@@ -37,8 +36,7 @@ thread_local! {
         provider: gtk4::CssProvider::new(),
         icon_theme: gtk4::IconTheme::default(),
         bar_windows: RefCell::new(Vec::new()),
-        sidebar_left_popup: RefCell::new(None),
-        sidebar_right_popup: RefCell::new(None),
+        popup_windows: RefCell::new(HashMap::new()),
         overview_window: RefCell::new(None),
         session_window: RefCell::new(None)
     });
@@ -130,8 +128,8 @@ fn activate(application: &Application) {
     APP_LOCAL.with(|app| {
         app.borrow().overview_window.replace(Some(widgets::overview::new(application)));
         app.borrow().session_window.replace(Some(widgets::session::new(application)));
-        app.borrow().sidebar_left_popup.replace(Some(widgets::sidebar_left::new(application)));
-        app.borrow().sidebar_right_popup.replace(Some(widgets::sidebar_right::new(application)));
+        app.borrow().popup_windows.borrow_mut().insert("sidebar_left".into(), widgets::sidebar_left::new(application));
+        app.borrow().popup_windows.borrow_mut().insert("sidebar_right".into(), widgets::sidebar_right::new(application));
     });
 }
 

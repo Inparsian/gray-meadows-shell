@@ -29,6 +29,7 @@ pub struct PopupOptions {
     pub anchor_right: bool,
     pub anchor_top: bool,
     pub anchor_bottom: bool,
+    pub unfocus_hides_all_popups: bool,
 }
 
 impl Popup {
@@ -158,6 +159,15 @@ impl Popup {
     }
 
     pub fn hide(&self) {
+        if self.options.unfocus_hides_all_popups {
+            crate::window::hide_all_popups();
+            return;
+        }
+
+        self.hide_without_checking_options();
+    }
+
+    pub fn hide_without_checking_options(&self) {
         self.revealer.set_reveal_child(false);
         self.release_screen();
 
