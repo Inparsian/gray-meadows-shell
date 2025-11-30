@@ -2,7 +2,7 @@ use gtk4::{prelude::*, RevealerTransitionType};
 use gtk4_layer_shell::LayerShell;
 use libadwaita::Clamp;
 
-use crate::{helpers::gesture, singletons::hyprland};
+use crate::{helpers::gesture, singletons::hyprland, widgets::windows};
 
 /// A window that takes up the entire screen and displays content on top of other windows. It closes itself when it loses focus.
 #[derive(Clone)]
@@ -160,7 +160,7 @@ impl Popup {
 
     pub fn hide(&self) {
         if self.options.unfocus_hides_all_popups {
-            crate::window::hide_all_popups();
+            windows::hide_all_popups();
             return;
         }
 

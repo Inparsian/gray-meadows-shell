@@ -1,7 +1,7 @@
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
-use crate::{window::Window, helpers::gesture, singletons::hyprland};
+use crate::{widgets::windows::Window, helpers::gesture, singletons::hyprland};
 
 pub fn session_button(icon: &str, command: &str) -> gtk4::Button {
     let icon = icon.to_owned();

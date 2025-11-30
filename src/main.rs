@@ -11,7 +11,6 @@ mod singletons;
 mod widgets;
 mod sql;
 mod dbus;
-mod window;
 
 use std::{cell::RefCell, collections::HashMap, path::Path, sync::{LazyLock, Mutex, OnceLock}};
 use futures_signals::signal::Mutable;
@@ -20,7 +19,7 @@ use libadwaita::Application;
 use notify::{EventKind, event::{AccessKind, AccessMode}, Watcher};
 use sqlite::Connection;
 
-use crate::widgets::windows::popup::Popup;
+use crate::widgets::windows::{self, popup::Popup};
 
 pub struct GrayMeadowsLocal {
     provider: gtk4::CssProvider,
@@ -183,7 +182,7 @@ async fn main() {
             watch_scss();
 
             singletons::activate_all();
-            window::listen_for_ipc_messages();
+            windows::listen_for_ipc_messages();
 
             let application = Application::new(
                 Some("sn.inpr.gray_meadows_shell"),

@@ -2,7 +2,7 @@ use std::{path::Path, process::Command};
 use futures_signals::signal::SignalExt;
 use gtk4::prelude::*;
 
-use crate::{window::{Window, PopupWindow}, helpers::filesystem, singletons};
+use crate::{widgets::windows::{Window, PopupWindow}, helpers::filesystem, singletons};
 
 fn parse_uptime_seconds(seconds: u64) -> String {
     let days = seconds / 86400;

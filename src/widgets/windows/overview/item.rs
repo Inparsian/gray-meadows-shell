@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 use gtk4::prelude::*;
 
-use crate::{window::Window, helpers::{matching, scss}, singletons::apps::{self, pixbuf::get_pixbuf_or_fallback}};
+use crate::{widgets::windows::Window, helpers::{matching, scss}, singletons::apps::{self, pixbuf::get_pixbuf_or_fallback}};
 
 pub static ITEM_ANIMATION_DURATION: u32 = 175;
 

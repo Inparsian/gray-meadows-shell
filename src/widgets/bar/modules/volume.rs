@@ -3,9 +3,8 @@ use gtk4::prelude::*;
 use crate::{
     ffi::astalwp::{WpEvent, ffi},
     helpers::gesture,
-    window::PopupWindow,
     singletons::wireplumber,
-    widgets::bar::wrapper::BarModuleWrapper
+    widgets::{windows::PopupWindow, bar::wrapper::BarModuleWrapper}
 };
 
 const VOLUME_STEP: f32 = 0.05;
