@@ -20,7 +20,7 @@ use libadwaita::Application;
 use notify::{EventKind, event::{AccessKind, AccessMode}, Watcher};
 use sqlite::Connection;
 
-use crate::widgets::popup::Popup;
+use crate::widgets::windows::popup::Popup;
 
 pub struct GrayMeadowsLocal {
     provider: gtk4::CssProvider,
@@ -126,10 +126,10 @@ fn activate(application: &Application) {
     }
 
     APP_LOCAL.with(|app| {
-        app.borrow().overview_window.replace(Some(widgets::overview::new(application)));
-        app.borrow().session_window.replace(Some(widgets::session::new(application)));
-        app.borrow().popup_windows.borrow_mut().insert("sidebar_left".into(), widgets::sidebar_left::new(application));
-        app.borrow().popup_windows.borrow_mut().insert("sidebar_right".into(), widgets::sidebar_right::new(application));
+        app.borrow().overview_window.replace(Some(widgets::windows::overview::new(application)));
+        app.borrow().session_window.replace(Some(widgets::windows::session::new(application)));
+        app.borrow().popup_windows.borrow_mut().insert("sidebar_left".into(), widgets::windows::sidebar_left::new(application));
+        app.borrow().popup_windows.borrow_mut().insert("sidebar_right".into(), widgets::windows::sidebar_right::new(application));
     });
 }
 

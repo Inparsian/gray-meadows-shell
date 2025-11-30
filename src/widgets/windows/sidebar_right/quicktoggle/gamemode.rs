@@ -2,7 +2,7 @@ use futures_signals::signal::SignalExt;
 use ::hyprland::ctl::reload;
 
 use crate::{
-    APP, singletons::hyprland::{call_hyprctl, call_hyprctl_batch}, widgets::sidebar_right::quicktoggle::{QuickToggle, QuickToggleMuiIcon}
+    APP, singletons::hyprland::{call_hyprctl, call_hyprctl_batch}, widgets::windows::sidebar_right::quicktoggle::{QuickToggle, QuickToggleMuiIcon}
 };
 
 pub fn new() -> gtk4::Button {

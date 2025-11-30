@@ -9,7 +9,7 @@ use gtk4::{Adjustment, prelude::*};
 use crate::{
     color::model::{int_to_hex, Hsv},
     ipc,
-    widgets::{common::{tabs::{TabSize, Tabs, TabsStack}}, sidebar_left::modules::color_picker::fields::Fields}
+    widgets::{common::{tabs::{TabSize, Tabs, TabsStack}}, windows::sidebar_left::modules::color_picker::fields::Fields}
 };
 
 pub fn new() -> gtk4::Box {

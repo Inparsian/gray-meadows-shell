@@ -1,7 +1,7 @@
 use gtk4::prelude::*;
 use gtk4_layer_shell::LayerShell;
 
-use crate::{APP_LOCAL, ipc, singletons::hyprland, widgets::popup::Popup};
+use crate::{APP_LOCAL, ipc, singletons::hyprland, widgets::windows::popup::Popup};
 
 #[derive(Clone, Eq, PartialEq)]
 pub enum Window {

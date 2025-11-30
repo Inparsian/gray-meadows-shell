@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc, time::Duration};
 use gtk4::prelude::*;
 
-use crate::widgets::overview::item::{OverviewSearchItem, ITEM_ANIMATION_DURATION};
+use crate::widgets::windows::overview::item::{OverviewSearchItem, ITEM_ANIMATION_DURATION};
 
 static LOCK_HOLD_DURATION: Duration = Duration::from_millis(1);
 

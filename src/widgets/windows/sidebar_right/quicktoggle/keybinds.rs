@@ -3,7 +3,7 @@ use ::hyprland::dispatch;
 use ::hyprland::instance::Instance;
 
 use crate::{
-    widgets::sidebar_right::quicktoggle::{QuickToggle, QuickToggleMuiIcon},
+    widgets::windows::sidebar_right::quicktoggle::{QuickToggle, QuickToggleMuiIcon},
     singletons::hyprland,
 };
 

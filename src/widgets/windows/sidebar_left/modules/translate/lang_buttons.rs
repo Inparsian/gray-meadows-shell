@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use gtk4::prelude::*;
 
-use crate::widgets::sidebar_left::modules::translate::{send_ui_event, LanguageSelectReveal, UiEvent, SOURCE_LANG, TARGET_LANG};
+use crate::widgets::windows::sidebar_left::modules::translate::{send_ui_event, LanguageSelectReveal, UiEvent, SOURCE_LANG, TARGET_LANG};
 
 #[derive(Debug, Clone)]
 pub struct LanguageButtons {

@@ -4,7 +4,7 @@ use relm4::RelmRemoveAllExt;
 
 use crate::{
     singletons::g_translate::language::{self, Language, AUTO_LANG, LANGUAGES},
-    widgets::sidebar_left::modules::translate::{send_ui_event, set_source_language, set_target_language, subscribe_to_ui_events, LanguageSelectReveal, UiEvent}
+    widgets::windows::sidebar_left::modules::translate::{send_ui_event, set_source_language, set_target_language, subscribe_to_ui_events, LanguageSelectReveal, UiEvent}
 };
 
 const BUTTONS_PER_ROW: usize = 3;

@@ -14,7 +14,7 @@ use crate::{
     helpers::gesture,
     ipc,
     singletons::{apps, hyprland},
-    widgets::overview::{
+    widgets::windows::overview::{
         item::{OverviewSearchItem, OverviewSearchItemAction},
         list::{get_button_from_row, OverviewSearchList},
         modules::{input_without_extensions, validate_input, OverviewSearchModule},
