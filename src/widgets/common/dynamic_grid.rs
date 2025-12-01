@@ -24,7 +24,7 @@ impl DynamicGrid {
         }
     }
 
-    pub fn append(&mut self, item: &impl gtk4::prelude::IsA<gtk4::Widget>) {
+    pub fn append(&mut self, item: &impl IsA<gtk4::Widget>) {
         self.items.push(item.as_ref().clone());
         self.update_grid();
     }

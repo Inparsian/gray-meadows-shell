@@ -47,7 +47,7 @@ impl FullscreenWindow {
     pub fn new(
         application: &libadwaita::Application,
         classes: &[&str],
-        child: &impl gtk4::prelude::IsA<gtk4::Widget>
+        child: &impl IsA<gtk4::Widget>
     ) -> Self {
         let monitor = hyprland::get_active_monitor();
         let window = gtk4::ApplicationWindow::new(application);

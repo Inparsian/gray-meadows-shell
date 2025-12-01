@@ -9,6 +9,7 @@ use crate::{helpers::gesture, singletons::hyprland, widgets::windows::{self, Gms
 pub struct PopupWindow {
     pub window: gtk4::ApplicationWindow,
     pub revealer: gtk4::Revealer,
+    pub clamp: Clamp,
     pub options: PopupOptions,
     pub transition_duration: u32,
 }
@@ -87,7 +88,7 @@ impl PopupWindow {
     pub fn new(
         application: &libadwaita::Application,
         classes: &[&str],
-        child: &impl gtk4::prelude::IsA<gtk4::Widget>,
+        child: &impl IsA<gtk4::Widget>,
         options: PopupOptions,
         width: i32,
         height: i32,
@@ -152,6 +153,7 @@ impl PopupWindow {
         let popup = Self {
             window: window.clone(),
             revealer,
+            clamp: clamp.clone(),
             options,
             transition_duration,
         };
@@ -181,6 +183,15 @@ impl PopupWindow {
         popup
     }
 
+    pub fn hide_and_check_options(&self) {
+        if self.options.unfocus_hides_all_popups {
+            windows::hide_all_popups();
+            return;
+        }
+
+        self.hide();
+    }
+
     pub fn steal_screen(&self) {
         self.window.set_anchor(gtk4_layer_shell::Edge::Left, true);
         self.window.set_anchor(gtk4_layer_shell::Edge::Right, true);
@@ -195,12 +206,11 @@ impl PopupWindow {
         self.window.set_anchor(gtk4_layer_shell::Edge::Bottom, self.options.anchor_bottom);
     }
 
-    pub fn hide_and_check_options(&self) {
-        if self.options.unfocus_hides_all_popups {
-            windows::hide_all_popups();
-            return;
-        }
-
-        self.hide();
+    #[allow(dead_code)]
+    pub fn set_margin(&self, margin: PopupMargin) {
+        self.clamp.set_margin_top(margin.top);
+        self.clamp.set_margin_end(margin.right);
+        self.clamp.set_margin_bottom(margin.bottom);
+        self.clamp.set_margin_start(margin.left);
     }
 }

@@ -29,7 +29,7 @@ impl dyn GmsWindow {
     }
 }
 
-fn with<F, R>(window: &str, callback: F) -> Option<R>
+pub fn with<F, R>(window: &str, callback: F) -> Option<R>
 where
     F: FnOnce(&dyn GmsWindow) -> R,
 {
