@@ -2,6 +2,8 @@
 
 My personal Hyprland desktop shell using gtk4 and gtk4-layer-shell, re-written from scratch in Rust and C++ (originally in TypeScript + JSX using AGSv2).
 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/f78bd628-920b-4075-b738-e956052becdf" />
+
 ## Current status
 
 Currently not ready for daily use yet, but it is getting closer. Technically you could use it right now if you wanted to, but it is not fully feature-complete and there may be bugs.
