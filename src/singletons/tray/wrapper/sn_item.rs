@@ -181,8 +181,12 @@ impl StatusNotifierItem {
     pub fn try_get_pixmap(&self, prop: &str) -> Result<Vec<RawPixmap>, dbus::MethodErr> {
         let icon = self.try_get_prop::<Vec<RawPixmap>>(prop)?;
         
-        compress_icon_pixmap(Some(&icon))
-            .ok_or_else(|| dbus::MethodErr::failed("Failed to compress icon pixmap"))
+        if icon.is_empty() {
+            Ok(Vec::new())
+        } else {
+            compress_icon_pixmap(Some(&icon))
+                .ok_or_else(|| dbus::MethodErr::failed("Failed to compress icon pixmap"))
+        }
     }
 
     /// Attempts to get a property from the StatusNotifierItem D-Bus object with
