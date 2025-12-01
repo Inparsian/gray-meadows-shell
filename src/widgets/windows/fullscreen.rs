@@ -11,7 +11,7 @@ pub struct FullscreenWindow {
 
 impl GmsWindow for FullscreenWindow {
     fn show(&self) {
-        let monitor = crate::singletons::hyprland::get_active_monitor();
+        let monitor = hyprland::get_active_monitor();
         self.window.set_monitor(monitor.as_ref());
         self.window.show();
     }
