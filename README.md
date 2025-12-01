@@ -1,4 +1,13 @@
-![image](https://github.com/user-attachments/assets/8a0d11cd-6fac-4d7c-832c-12d9f463d28e)
+<div align="center">
+  <h1><img width="700" alt="image" src="https://github.com/user-attachments/assets/16859424-f9f0-4b0d-8c8a-0f77c98331ec" /></h1>
+  <img alt="GitHub contributors" src="https://img.shields.io/github/contributors/Inparsian/gray-meadows-shell"/>
+  <img alt="GitHub commit activity" src="https://img.shields.io/github/commit-activity/w/Inparsian/gray-meadows-shell"/>
+  <img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/Inparsian/gray-meadows-shell?style=flat"/>
+  <img alt="GitHub forks" src="https://img.shields.io/github/forks/Inparsian/gray-meadows-shell?style=flat"/>
+  <img alt="GitHub issues" src="https://img.shields.io/github/issues/Inparsian/gray-meadows-shell"/>
+  <img alt="GitHub pull requests" src="https://img.shields.io/github/issues-pr/Inparsian/gray-meadows-shell"/>
+</div>
+<br>
 
 My personal Hyprland desktop shell using gtk4 and gtk4-layer-shell, re-written from scratch in Rust and C++ (originally in TypeScript + JSX using AGSv2).
 
