@@ -148,7 +148,7 @@ pub async fn translate(
                 .as_array()
                 .unwrap()
                 .iter()
-                .filter_map(|v| v.get(0).and_then(|s| s.as_str()))
+                .filter_map(|v| v.get(0)?.as_str())
                 .collect::<Vec<&str>>()
                 .join(" ");
         } else {

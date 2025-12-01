@@ -49,7 +49,7 @@ pub fn new(application: &libadwaita::Application, monitor: &gdk4::Monitor) -> gt
             set_anchor: (Edge::Left, true),
             set_anchor: (Edge::Right, true),
             set_anchor: (Edge::Top, true),
-            auto_exclusive_zone_enable: (),
+            set_exclusive_zone: 33,
 
             gtk4::CenterBox {
                 set_css_classes: &["bar"],

@@ -40,7 +40,7 @@ impl Menu {
                     "type" => item.type_ = value.as_str().unwrap_or_default().to_owned(),
                     "visible" => item.visible = value.as_i64().unwrap_or(0) != 0,
                     "children-display" => item.children_display = value.as_str().unwrap_or_default().to_owned(),
-                    "icon-data" => if let Some(icon_data) = value.as_iter().and_then(|mut v| v.next().and_then(|v| v.as_iter())) {
+                    "icon-data" => if let Some(icon_data) = value.as_iter().and_then(|mut v| v.next()?.as_iter()) {
                         item.icon_data = icon_data.map(|v| v.as_i64().unwrap_or_default() as u8)
                             .collect::<Vec<u8>>()
                             .into();
