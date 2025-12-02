@@ -14,13 +14,31 @@ static EXACT_ID_COMP: [&str; 1] = [
 ];
 
 #[allow(dead_code)]
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub enum OverviewSearchItemAction {
     Launch(String),
     RunCommand(String),
     Copy(String),
-    Custom(fn())
+    Custom {
+        id: &'static str,
+        func: fn()
+    }
 }
+
+impl PartialEq for OverviewSearchItemAction {
+    fn eq(&self, other: &Self) -> bool {
+        use OverviewSearchItemAction::*;
+        match (self, other) {
+            (Launch(a), Launch(b))
+            | (RunCommand(a), RunCommand(b))
+            | (Copy(a), Copy(b)) => a == b,
+            (Custom { id: a, .. }, Custom { id: b, .. }) => a == b,
+            _ => false,
+        }
+    }
+}
+
+impl Eq for OverviewSearchItemAction {}
 
 #[derive(Clone, Debug)]
 pub struct OverviewSearchItem {
@@ -261,7 +279,7 @@ pub fn run_action(action: &OverviewSearchItemAction) {
             });
         }
     
-        OverviewSearchItemAction::Custom(func) => func()
+        OverviewSearchItemAction::Custom { func, .. } => func()
     }
 
     // Hide the overview after clicking an item
