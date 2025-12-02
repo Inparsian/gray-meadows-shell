@@ -28,13 +28,15 @@ impl OrgKdeStatusNotifierWatcher for StatusNotifierWatcher {
             return Err(dbus::MethodErr::failed(&"Invalid service name or sender"));
         };
 
-        self.sender.send(BusEvent::ItemRegistered(item.clone())).unwrap();
-        
-        self.items.try_write()
-            .map(|mut items| items.push(item))
-            .map_err(|_| dbus::MethodErr::failed(&"Failed to acquire write lock on items list"))?;
-
-        Ok(())
+        if self.items.read().is_ok_and(|items| items.iter().any(|existing_item| existing_item.service == item.service)) {
+            Err(dbus::MethodErr::failed(&"Item already registered"))
+        } else if let Ok(mut items) = self.items.write() {
+            items.push(item.clone());
+            self.sender.send(BusEvent::ItemRegistered(item)).unwrap();
+            Ok(())
+        } else {
+            Err(dbus::MethodErr::failed(&"Failed to acquire write lock on items"))
+        }
     }
     
     fn register_status_notifier_host(&mut self, _service: String) -> Result<(), dbus::MethodErr> {
