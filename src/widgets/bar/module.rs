@@ -1,17 +1,13 @@
-use std::{cell::RefCell, rc::Rc, sync::LazyLock};
+use std::{cell::RefCell, rc::Rc};
 use gtk4::prelude::*;
-use tokio::sync::broadcast;
 
 static TRANSITION_DURATION: f64 = 0.4;
 static DOWNSCALE_FACTOR: f64 = 0.000_000_001;
 static BLUR_FACTOR_PX: i32 = 8;
-static EXPANDED_ALLOCATION_EVENT_CHANNEL: LazyLock<broadcast::Sender<(i32, i32)>> = LazyLock::new(|| {
-    let (tx, _rx) = broadcast::channel(16);
-    tx
-});
 
 #[derive(Clone)]
 pub struct BarModule {
+    tx: tokio::sync::broadcast::Sender<(i32, i32)>,
     pub minimal: gtk4::Widget,
     pub expanded: gtk4::Widget,
     pub minimal_provider: gtk4::CssProvider,
@@ -29,7 +25,9 @@ impl BarModule {
         minimal.style_context().add_class("bar-minimal-wrapper");
         expanded.style_context().add_class("bar-expanded-wrapper");
 
+        let (tx, _) = tokio::sync::broadcast::channel::<(i32, i32)>(16);
         let module = BarModule {
+            tx,
             minimal,
             expanded,
             minimal_provider,
@@ -41,8 +39,8 @@ impl BarModule {
         gtk4::glib::spawn_future_local({
             let expanded = module.expanded.clone();
             let expanded_provider = module.expanded_provider.clone();
+            let mut rx = module.tx.subscribe();
             async move {
-                let mut rx = EXPANDED_ALLOCATION_EVENT_CHANNEL.subscribe();
                 if let Ok((width, height)) = rx.recv().await {
                     expanded_provider.load_from_data(&format!(
                         ".bar-expanded-wrapper {{
@@ -79,15 +77,17 @@ impl BarModule {
     fn connect_expanded_map(&self) {
         self.expanded.connect_map({
             let expanded = self.expanded.clone();
+            let tx = self.tx.clone();
             move |_| {
                 gtk4::glib::spawn_future_local({
                     let expanded = expanded.clone();
+                    let tx = tx.clone();
                     async move {
                         while expanded.allocated_width() == 0 || expanded.allocated_height() == 0 {
                             gtk4::glib::timeout_future(std::time::Duration::from_millis(1)).await;
                         }
 
-                        let _ = EXPANDED_ALLOCATION_EVENT_CHANNEL.send((expanded.allocated_width(), expanded.allocated_height()));
+                        let _ = tx.send((expanded.allocated_width(), expanded.allocated_height()));
                     }
                 });
             }
