@@ -558,6 +558,12 @@
 .bar-window {
     background: transparent;
 
+    .bar-expanded-wrapper, .bar-minimal-wrapper {
+        transition-property: transform, opacity, margin, filter;
+        transition-timing-function: cubic-bezier(0.0, 0.5, 0.0, 1);
+        transition-delay: 0s;
+    }
+
     .bar {
         @include normal-text;
 
@@ -566,6 +572,7 @@
             padding-bottom: 5px;
             padding-left: 2px;
             padding-right: 2px;
+            min-height: 24px;
 
             &:first-child {
                 padding-left: 5px;

@@ -9,6 +9,7 @@ impl BarModuleWrapper {
         let bx = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
         bx.set_css_classes(&["bar-widget-wrapper"]);
         bx.set_hexpand(false);
+        bx.set_valign(gtk4::Align::Start);
         bx.append(inner_bx);
 
         Self {
