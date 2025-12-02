@@ -83,6 +83,7 @@ fn get_page_boxes(reveal_type: &LanguageSelectReveal, filter: Option<&str>) -> V
         }
     }
 
+    #[allow(clippy::needless_for_each)] // false positive
     if !boxes.is_empty() {
         let page_box = gtk4::Box::new(gtk4::Orientation::Vertical, 6);
         page_box.set_css_classes(&["google-translate-language-select-page"]);
