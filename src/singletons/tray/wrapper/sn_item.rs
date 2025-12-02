@@ -3,7 +3,7 @@ use dbus::{arg, blocking, Path};
 use crate::singletons::tray::{icon::compress_icon_pixmap, bus, proxy::item::{RawPixmap, RawToolTip}};
 
 #[allow(dead_code)]
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, PartialEq, Eq)]
 pub struct ToolTip {
     pub icon_name: String,
     pub icon_pixmap: Vec<RawPixmap>,
@@ -117,6 +117,27 @@ impl StatusNotifierItem {
         }
 
         Ok(())
+    }
+
+    /// Updates this StatusNotifierItem from another StatusNotifierItem based on property differences.
+    pub fn update_from(&mut self, other: &StatusNotifierItem) {
+        macro_rules! update_field {
+            ($field:ident) => {
+                if self.$field != other.$field {
+                    self.$field = other.$field.clone();
+                }
+            };
+        }
+
+        update_field!(title);
+        update_field!(icon_name);
+        update_field!(icon_pixmap);
+        update_field!(attention_icon_name);
+        update_field!(attention_icon_pixmap);
+        update_field!(overlay_icon_name);
+        update_field!(overlay_icon_pixmap);
+        update_field!(tool_tip);
+        update_field!(status);
     }
 
     /// Passes an update to the StatusNotifierItem, updating its properties.

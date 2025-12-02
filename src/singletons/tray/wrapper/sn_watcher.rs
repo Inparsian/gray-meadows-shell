@@ -168,7 +168,7 @@ impl StatusNotifierWatcher {
                                 if let Some(original_item) = writer.iter_mut()
                                     .find(|item| item.service == service)
                                 {
-                                    *original_item = updated_item.clone();
+                                    original_item.update_from(&updated_item);
                                 }
                             }
 
