@@ -1,4 +1,4 @@
-use std::{sync::{Arc, RwLock}, time::Duration};
+use std::sync::{Arc, RwLock};
 use dbus::{blocking, message::MatchRule, MessageType};
 use dbus_crossroads::{Crossroads, IfaceToken};
 
@@ -155,17 +155,24 @@ impl StatusNotifierWatcher {
                     else {
                         let service = msg.sender().unwrap().to_string();
 
-                        // Handle update signals from items, split long line for readability
-                        if let Some((member_name, updated_item)) = items.write()
-                            .map_or(None, |mut writer| {
-                                writer.iter_mut()
-                                    .find(|item| item.service == service)
-                                    .and_then(|item| {
-                                        (msg.path()? == *bus::ITEM_DBUS_OBJECT).then(||  { item.pass_update(&member); (member.clone(), item.clone()) })
-                                    })
+                        // Clone the item and update that first, then write to the item. This prevents DoS by dbus abuse
+                        if let Some(updated_item) = items.read().map_or(
+                            None, 
+                            |reader| reader.iter().find(|item| item.service == service).map(|item| {
+                                let mut updated_item = item.clone();
+                                updated_item.pass_update(&member);
+                                updated_item
                             })
-                        {
-                            sender.send(BusEvent::ItemUpdated(member_name, updated_item)).unwrap();
+                        ) {
+                            if let Ok(mut writer) = items.write() {
+                                if let Some(original_item) = writer.iter_mut()
+                                    .find(|item| item.service == service)
+                                {
+                                    *original_item = updated_item.clone();
+                                }
+                            }
+
+                            sender.send(BusEvent::ItemUpdated(member, updated_item)).unwrap();
                         }
                     }
                 }
