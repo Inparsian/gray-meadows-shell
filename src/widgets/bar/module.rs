@@ -1,6 +1,8 @@
 use std::{cell::RefCell, rc::Rc};
 use gtk4::prelude::*;
 
+use crate::APP_LOCAL;
+
 static TRANSITION_DURATION: f64 = 0.4;
 static DOWNSCALE_FACTOR: f64 = 0.000_000_001;
 static BLUR_FACTOR_PX: i32 = 8;
@@ -68,8 +70,33 @@ impl BarModule {
         *self.is_expanded.borrow()
     }
 
+    pub fn set_expanded(&self, expanded: bool) {
+        *self.is_expanded.borrow_mut() = expanded;
+
+        // collapse all other modules if this one is expanding
+        if expanded {
+            APP_LOCAL.with(|app| {
+                for bar in app.borrow().bars.borrow().iter() {
+                    bar.hide_all_expanded_modules();
+                }
+            });
+        }
+
+        self.animate_fade_slide_down(expanded);
+    }
+
     pub fn toggle_expanded(&self) {
         let expanding = !self.is_expanded();
+
+        // collapse all other modules if this one is expanding
+        if expanding {
+            APP_LOCAL.with(|app| {
+                for bar in app.borrow().bars.borrow().iter() {
+                    bar.hide_all_expanded_modules();
+                }
+            });
+        }
+
         *self.is_expanded.borrow_mut() = expanding;
         self.animate_fade_slide_down(expanding);
     }

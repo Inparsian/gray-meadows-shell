@@ -24,7 +24,7 @@ use crate::widgets::windows::{self, GmsWindow};
 pub struct GrayMeadowsLocal {
     provider: gtk4::CssProvider,
     icon_theme: gtk4::IconTheme,
-    pub bar_windows: RefCell<Vec<gtk4::ApplicationWindow>>,
+    pub bars: RefCell<Vec<widgets::bar::BarWindow>>,
     pub windows: RefCell<HashMap<String, Box<dyn GmsWindow>>>,
 }
 
@@ -32,7 +32,7 @@ thread_local! {
     pub static APP_LOCAL: RefCell<GrayMeadowsLocal> = RefCell::new(GrayMeadowsLocal {
         provider: gtk4::CssProvider::new(),
         icon_theme: gtk4::IconTheme::default(),
-        bar_windows: RefCell::new(Vec::new()),
+        bars: RefCell::new(Vec::new()),
         windows: RefCell::new(HashMap::new()),
     });
 }
@@ -113,10 +113,10 @@ fn watch_scss() {
 
 fn activate(application: &Application) {
     for monitor in helpers::display::get_all_monitors(&gdk4::Display::default().expect("Failed to get default display")) {
-        let bar = widgets::bar::new(application, &monitor);
-        bar.show();
+        let bar = widgets::bar::BarWindow::new(application, &monitor);
+        bar.window.show();
         APP_LOCAL.with(|app| {
-            app.borrow().bar_windows.borrow_mut().push(bar);
+            app.borrow().bars.borrow_mut().push(bar);
         });
     }
 
