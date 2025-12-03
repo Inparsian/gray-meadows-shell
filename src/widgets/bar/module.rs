@@ -140,7 +140,7 @@ impl BarModule {
         if expanding {
             self.minimal.set_sensitive(false);
             self.expanded.set_sensitive(true);
-            self.minimal.add_css_class("collapsing");
+            self.minimal.add_css_class("expanding");
             self.expanded.add_css_class("expanding");
             self.minimal_provider.load_from_data(&format!(
                 ".bar-minimal-wrapper {{
@@ -164,7 +164,7 @@ impl BarModule {
         } else {
             self.minimal.set_sensitive(true);
             self.expanded.set_sensitive(false);
-            self.minimal.add_css_class("expanding");
+            self.minimal.add_css_class("collapsing");
             self.expanded.add_css_class("collapsing");
             self.expanded_provider.load_from_data(&format!(
                 ".bar-expanded-wrapper {{

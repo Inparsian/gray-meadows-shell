@@ -567,11 +567,11 @@
         transition-delay: 0s;
 
         &.expanding {
-            transition-timing-function: cubic-bezier(0.2, 0.2, 0, 1);
+            transition-timing-function: cubic-bezier(0.33, 0.66, 0.1, 1);
         }
 
         &.collapsing {
-            transition-timing-function: cubic-bezier(0.5, 0, 0.5, 1);
+            transition-timing-function: cubic-bezier(0, 0.33, 0, 1);
         }
     }
 
