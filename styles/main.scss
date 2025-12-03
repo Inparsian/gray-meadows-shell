@@ -546,12 +546,12 @@
         &:hover, &:focus {
             background: $background-color-tertiary;
             outline: none;
-            transform: scale(1.1);
+            transform: scale(1.05);
         }
 
         &:active {
             background: $background-color-quaternary;
-            transform: scale(1.1);
+            transform: scale(1.05);
         }
 
         .session-button-icon {
@@ -632,6 +632,7 @@
                         background-size: cover;
                         background-position: center;
                         filter: blur(4px);
+                        transform: scale(1.075);
                     }
 
                     .bar-mpris-extended-no-players {
