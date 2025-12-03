@@ -71,6 +71,44 @@ fn default_mpris_player() -> gtk4::Overlay {
             }
         },
 
+        loop_button = gtk4::Button {
+            set_css_classes: &["bar-mpris-button"],
+            set_label: "repeat",
+            set_hexpand: false,
+            connect_clicked => |_| {
+                let Some(player) = mpris::get_default_player() else {
+                    return eprintln!("No MPRIS player available to change loop status.");
+                };
+
+                let new_status = match player.loop_status {
+                    mpris::mpris_player::LoopStatus::None => mpris::mpris_player::LoopStatus::Playlist,
+                    mpris::mpris_player::LoopStatus::Playlist => mpris::mpris_player::LoopStatus::Track,
+                    mpris::mpris_player::LoopStatus::Track => mpris::mpris_player::LoopStatus::None,
+                };
+                
+                if let Err(e) = player.set_loop_status(new_status) {
+                    eprintln!("Failed to set loop status: {}", e);
+                }
+            }
+        },
+
+        shuffle_button = gtk4::Button {
+            set_css_classes: &["bar-mpris-button"],
+            set_label: "shuffle",
+            set_hexpand: false,
+            connect_clicked => |_| {
+                let Some(player) = mpris::get_default_player() else {
+                    return eprintln!("No MPRIS player available to toggle shuffle.");
+                };
+
+                let new_shuffle = !player.shuffle;
+                
+                if let Err(e) = player.set_shuffle(new_shuffle) {
+                    eprintln!("Failed to set shuffle: {}", e);
+                }
+            }
+        },
+
         background = gtk4::Box {
             set_css_classes: &["bar-mpris-extended-background"],
             set_hexpand: true,
@@ -86,6 +124,8 @@ fn default_mpris_player() -> gtk4::Overlay {
             append: &previous_button,
             append: &play_pause_button,
             append: &next_button,
+            append: &loop_button,
+            append: &shuffle_button,
         },
 
         progress = gtk4::Label {
@@ -178,7 +218,19 @@ fn default_mpris_player() -> gtk4::Overlay {
                 let is_playing = default_player.playback_status == PlaybackStatus::Playing;
                 play_pause_button.set_label(if is_playing { "pause" } else { "play_arrow" });
 
-                // change the progress bar maximum and current value
+                if default_player.shuffle {
+                    shuffle_button.set_css_classes(&["bar-mpris-button", "toggled"]);
+                } else {
+                    shuffle_button.set_css_classes(&["bar-mpris-button"]);
+                }
+
+                loop_button.set_label(if default_player.loop_status == mpris::mpris_player::LoopStatus::Track {"repeat_one"} else {"repeat"});
+                if default_player.loop_status != mpris::mpris_player::LoopStatus::None {
+                    loop_button.set_css_classes(&["bar-mpris-button", "toggled"]);
+                } else {
+                    loop_button.set_css_classes(&["bar-mpris-button"]);
+                }
+
                 if let (position, Some(duration)) = (default_player.position, default_player.metadata.length) {
                     progress.set_label(&format!("{} / {}", format_duration(position), format_duration(duration)));
                 }

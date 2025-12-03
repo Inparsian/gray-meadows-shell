@@ -34,6 +34,14 @@ impl LoopStatus {
             _ => LoopStatus::None
         }
     }
+
+    pub fn as_string(self) -> String {
+        match self {
+            LoopStatus::None => "None".to_owned(),
+            LoopStatus::Track => "Track".to_owned(),
+            LoopStatus::Playlist => "Playlist".to_owned()
+        }
+    }
 }
 
 // The common xesam and mpris metadata properties should be enough for most use cases,
@@ -355,7 +363,6 @@ impl MprisPlayer {
         mpris_dbus::run_dbus_method(self, "Stop")
     }
 
-    #[allow(dead_code)]
     pub fn seek(&self, position: i64) -> Result<Message, Error> {
         if !self.can_seek {
             return Err(Error::new_failed("Cannot seek, player does not support it"));
@@ -364,10 +371,20 @@ impl MprisPlayer {
         mpris_dbus::run_dbus_method_w_args::<i64>(self, "Seek", &[position])
     }
 
-    pub fn get_and_update_position(&mut self) -> Result<i64, Error> {
-        let position: i64 = mpris_dbus::get_dbus_property::<i64>(self, "Position")?;
-        self.position = position;
-        Ok(position)
+    pub fn set_loop_status(&self, status: LoopStatus) -> Result<(), Error> {
+        if !self.can_control {
+            return Err(Error::new_failed("Cannot set loop status, player does not support it"));
+        }
+
+        mpris_dbus::set_dbus_property(self, "LoopStatus", status.as_string())
+    }
+
+    pub fn set_shuffle(&self, shuffle: bool) -> Result<(), Error> {
+        if !self.can_control {
+            return Err(Error::new_failed("Cannot set shuffle, player does not support it"));
+        }
+
+        mpris_dbus::set_dbus_property(self, "Shuffle", shuffle)
     }
 
     pub fn adjust_volume(&self, delta: f64) -> Result<(), Error> {
@@ -380,5 +397,11 @@ impl MprisPlayer {
         let new_volume = (self.volume + delta).clamp(0.0, 1.5);
 
         mpris_dbus::set_dbus_property(self, "Volume", new_volume)
+    }
+
+    pub fn get_and_update_position(&mut self) -> Result<i64, Error> {
+        let position: i64 = mpris_dbus::get_dbus_property::<i64>(self, "Position")?;
+        self.position = position;
+        Ok(position)
     }
 }

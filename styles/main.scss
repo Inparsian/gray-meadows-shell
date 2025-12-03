@@ -614,7 +614,7 @@
                     padding: 0px;
 
                     .bar-mpris-extended-background {
-                        min-width: 300px;
+                        min-width: 350px;
                         min-height: 150px;
                         background-size: cover;
                         background-position: center;
@@ -640,28 +640,45 @@
 
                     .bar-mpris-extended-box {
                         background: #00000088;
-                        padding: 16px;
+                        padding: 20px;
                     }
 
                     .bar-mpris-button {
                         @include material-icons;
                         font-size: 18px;
                         color: $foreground-color-primary;
-                        background: transparent;
                         border: 0px;
-                        padding-top: 4px;
-                        padding-bottom: 4px;
+                        padding-top: 3px;
+                        padding-bottom: 3px;
                         padding-left: 6px;
                         padding-right: 6px;
                         border-radius: 0px;
 
-                        &:hover, &:focus {
-                            background: #ffffff44;
-                            outline: none;
+                        &:not(.toggled) {
+                            background: transparent;
+
+                            &:hover, &:focus {
+                                background: #ffffff44;
+                                outline: none;
+                            }
+
+                            &:active {
+                                background: #ffffff66;
+                            }
                         }
 
-                        &:active {
-                            background: #ffffff66;
+                        &.toggled {
+                            background: $foreground-color-primary;
+                            color: $background-color-primary;
+
+                            &:hover, &:focus {
+                                background: #ffffffaa;
+                                outline: none;
+                            }
+
+                            &:active {
+                                background: #ffffff88;
+                            }
                         }
                     }
                 }
