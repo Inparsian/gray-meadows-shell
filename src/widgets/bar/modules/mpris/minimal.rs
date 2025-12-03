@@ -29,13 +29,9 @@ pub fn minimal() -> gtk4::Box {
         }),
 
         widget_right_click_gesture = gesture::on_secondary_up(|_, _, _| {
-            let Some(player) = mpris::get_default_player() else {
-                return eprintln!("No MPRIS player available to skip to next track.");
-            };
-
-            if let Err(e) = player.next() {
+            mpris::with_default_player_mut(|player| if let Err(e) = player.next() {
                 eprintln!("Failed to skip to next track: {}", e);
-            }
+            });
         }),
 
         widget_scroll_controller = gesture::on_vertical_scroll(|delta_y| {

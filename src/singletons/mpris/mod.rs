@@ -86,6 +86,24 @@ where
     }));
 }
 
+#[allow(clippy::option_if_let_else)]
+pub fn with_default_player_mut<F, R>(func: F) -> Option<R>
+where
+    F: FnOnce(&mut mpris_player::MprisPlayer) -> R,
+{
+    assert_default_player();
+    let mut players = MPRIS.players.lock_mut();
+    let index = MPRIS.default_player.get();
+    if let Some(player) = players.get(index) {
+        let mut player = player.clone();
+        let result = func(&mut player);
+        players.set_cloned(index, player);
+        Some(result)
+    } else {
+        None
+    }
+}
+
 pub fn activate() {
     // Get our initial list of MPRIS players
     let connection = dbus::blocking::SyncConnection::new_session().expect("Failed to connect to D-Bus");
@@ -129,8 +147,8 @@ pub fn activate() {
     // Monitor IPC commands for controlling MPRIS players
     ipc::listen_for_messages(move |message| {
         match message.as_str() {
-            "mpris_next" => { let _ = crate::singletons::mpris::get_default_player().map(|p| p.next()); },
-            "mpris_previous" => { let _ = crate::singletons::mpris::get_default_player().map(|p| p.previous()); },
+            "mpris_next" => { let _ = crate::singletons::mpris::with_default_player_mut(|p| p.next()); },
+            "mpris_previous" => { let _ = crate::singletons::mpris::with_default_player_mut(|p| p.previous()); },
             "mpris_play_pause" => { let _ = crate::singletons::mpris::get_default_player().map(|p| p.play_pause()); },
             "mpris_play" => { let _ = crate::singletons::mpris::get_default_player().map(|p| p.play()); },
             "mpris_pause" => { let _ = crate::singletons::mpris::get_default_player().map(|p| p.pause()); },

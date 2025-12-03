@@ -609,6 +609,62 @@
                 .bar-mpris-paused-overlay {
                     background: $background-black-semi-trans;
                 }
+
+                .bar-mpris-extended {
+                    padding: 0px;
+
+                    .bar-mpris-extended-background {
+                        min-width: 300px;
+                        min-height: 150px;
+                        background-size: cover;
+                        background-position: center;
+                        filter: blur(16px);
+                    }
+
+                    .bar-mpris-extended-metadata {
+                        .bar-mpris-extended-artist {
+                            @include large-text;
+                            font-weight: 900;
+                            color: $foreground-color-primary;
+                            margin-top: 4px;
+                            margin-bottom: 2px;
+                        }
+                    
+                        .bar-mpris-extended-album {
+                            @include normal-text;
+                            color: $foreground-color-secondary;
+                            margin-top: 2px;
+                            margin-bottom: 8px;
+                        }
+                    }
+
+                    .bar-mpris-extended-box {
+                        background: #00000088;
+                        padding: 16px;
+                    }
+
+                    .bar-mpris-button {
+                        @include material-icons;
+                        font-size: 18px;
+                        color: $foreground-color-primary;
+                        background: transparent;
+                        border: 0px;
+                        padding-top: 4px;
+                        padding-bottom: 4px;
+                        padding-left: 6px;
+                        padding-right: 6px;
+                        border-radius: 0px;
+
+                        &:hover, &:focus {
+                            background: #ffffff44;
+                            outline: none;
+                        }
+
+                        &:active {
+                            background: #ffffff66;
+                        }
+                    }
+                }
             }
 
             &.bar-sysstats {

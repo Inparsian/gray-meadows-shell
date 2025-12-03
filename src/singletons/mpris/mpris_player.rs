@@ -289,21 +289,35 @@ impl MprisPlayer {
         self.position = nanos;
     }
 
-    pub fn next(&self) -> Result<Message, Error> {
+    pub fn next(&mut self) -> Result<Message, Error> {
         if !self.can_go_next {
             return Err(Error::new_failed("Cannot go to next track, player does not support it"));
         }
 
-        mpris_dbus::run_dbus_method(self, "Next")
+        let result = mpris_dbus::run_dbus_method(self, "Next");
+
+        // reset position if successful
+        if result.is_ok() {
+            self.position = 0;
+        }
+
+        result
     }
 
     #[allow(dead_code)]
-    pub fn previous(&self) -> Result<Message, Error> {
+    pub fn previous(&mut self) -> Result<Message, Error> {
         if !self.can_go_previous {
             return Err(Error::new_failed("Cannot go to previous track, player does not support it"));
         }
 
-        mpris_dbus::run_dbus_method(self, "Previous")
+        let result = mpris_dbus::run_dbus_method(self, "Previous");
+
+        // reset position if successful
+        if result.is_ok() {
+            self.position = 0;
+        }
+
+        result
     }
 
     #[allow(dead_code)]
@@ -348,6 +362,12 @@ impl MprisPlayer {
         }
 
         mpris_dbus::run_dbus_method_w_args::<i64>(self, "Seek", &[position])
+    }
+
+    pub fn get_and_update_position(&mut self) -> Result<i64, Error> {
+        let position: i64 = mpris_dbus::get_dbus_property::<i64>(self, "Position")?;
+        self.position = position;
+        Ok(position)
     }
 
     pub fn adjust_volume(&self, delta: f64) -> Result<(), Error> {
