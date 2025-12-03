@@ -13,7 +13,7 @@ mod modules {
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, Layer, LayerShell};
 
-use crate::{APP_LOCAL, helpers::gesture, widgets::bar::module::BarModuleWrapper};
+use crate::{helpers::gesture, widgets::bar::module::{BarModuleWrapper, hide_all_expanded_modules}};
 
 static BAR_HEIGHT: i32 = 33;
 
@@ -130,11 +130,7 @@ impl BarWindow {
                     }
 
                     if !inside_any {
-                        APP_LOCAL.with(|app| {
-                            for bar in app.borrow().bars.borrow().iter() {
-                                bar.hide_all_expanded_modules();
-                            }
-                        });
+                        hide_all_expanded_modules();
                     }
                 }
 
@@ -163,11 +159,7 @@ impl BarWindow {
 
         // the bar window should be above the steal window, we can assume any click here is outside the bar
         steal_window.add_controller(gesture::on_primary_up(move |_, _, _| {
-            APP_LOCAL.with(|app| {
-                for bar in app.borrow().bars.borrow().iter() {
-                    bar.hide_all_expanded_modules();
-                }
-            });
+            hide_all_expanded_modules();
         }));
 
         BarWindow {

@@ -82,11 +82,7 @@ impl BarModule {
 
         // collapse all other modules if this one is expanding
         if expanded {
-            APP_LOCAL.with(|app| {
-                for bar in app.borrow().bars.borrow().iter() {
-                    bar.hide_all_expanded_modules();
-                }
-            });
+            hide_all_expanded_modules();
         }
 
         *self.is_expanded.borrow_mut() = expanded;
@@ -98,11 +94,7 @@ impl BarModule {
 
         // collapse all other modules if this one is expanding
         if expanding {
-            APP_LOCAL.with(|app| {
-                for bar in app.borrow().bars.borrow().iter() {
-                    bar.hide_all_expanded_modules();
-                }
-            });
+            hide_all_expanded_modules();
         }
 
         *self.is_expanded.borrow_mut() = expanding;
@@ -254,4 +246,12 @@ impl BarModuleWrapper {
             module
         }
     }
+}
+
+pub fn hide_all_expanded_modules() {
+    APP_LOCAL.with(|app| {
+        for bar in app.borrow().bars.borrow().iter() {
+            bar.hide_all_expanded_modules();
+        }
+    });
 }
