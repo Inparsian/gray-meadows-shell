@@ -347,7 +347,7 @@
 
 .overview-window {
     @include normal-text;
-    background-color: $background-color-primary-semitrans;
+    background-color: transparent;
     color: $foreground-color-primary;
 
     .entry-prompt-label {
@@ -510,7 +510,7 @@
 
 .session-window {
     @include normal-text;
-    background-color: $background-color-primary-semitrans;
+    background-color: transparent;
     color: $foreground-color-primary;
 
     .session-box-row1 .session-button:nth-child(2) {
