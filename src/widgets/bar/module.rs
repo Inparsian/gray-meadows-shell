@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, time::Duration};
 use gtk4::prelude::*;
 
 use crate::{APP_LOCAL, helpers::gesture};
@@ -10,6 +10,7 @@ static BLUR_FACTOR_PX: i32 = 8;
 #[derive(Clone)]
 pub struct BarModule {
     tx: tokio::sync::broadcast::Sender<(i32, i32)>,
+    timeout: Rc<RefCell<Option<gtk4::glib::SourceId>>>,
     pub minimal: gtk4::Widget,
     pub expanded: gtk4::Widget,
     pub minimal_provider: gtk4::CssProvider,
@@ -35,6 +36,7 @@ impl BarModule {
         let (tx, _) = tokio::sync::broadcast::channel::<(i32, i32)>(16);
         let module = BarModule {
             tx,
+            timeout: Rc::new(RefCell::new(None)),
             minimal: minimal.upcast(),
             expanded: expanded.upcast(),
             minimal_provider,
@@ -184,24 +186,33 @@ impl BarModule {
                 }}"
             ));
         }
-    
-        gtk4::glib::timeout_add_local_once(std::time::Duration::from_secs_f64(TRANSITION_DURATION), {
-            let minimal = self.minimal.clone();
-            let expanded = self.expanded.clone();
-            let is_expanded = self.is_expanded.clone();
-            move || {
-                if expanding && is_expanded.borrow().to_owned() {
-                    minimal.set_visible(false);
-                } else if !is_expanded.borrow().to_owned() {
-                    expanded.set_visible(false);
-                }
 
-                minimal.remove_css_class("collapsing");
-                minimal.remove_css_class("expanding");
-                expanded.remove_css_class("collapsing");
-                expanded.remove_css_class("expanding");
+        if let Ok(mut timeout) = self.timeout.try_borrow_mut() {
+            if let Some(source) = (*timeout).take() {
+                source.remove();
             }
-        });
+
+            *timeout = Some(gtk4::glib::timeout_add_local_once(Duration::from_secs_f64(TRANSITION_DURATION), {
+                let minimal = self.minimal.clone();
+                let expanded = self.expanded.clone();
+                let is_expanded = self.is_expanded.clone();
+                let timeout = self.timeout.clone();
+                move || {
+                    if expanding && is_expanded.borrow().to_owned() {
+                        minimal.set_visible(false);
+                    } else if !is_expanded.borrow().to_owned() {
+                        expanded.set_visible(false);
+                    }
+
+                    minimal.remove_css_class("collapsing");
+                    minimal.remove_css_class("expanding");
+                    expanded.remove_css_class("collapsing");
+                    expanded.remove_css_class("expanding");
+
+                    *timeout.borrow_mut() = None;
+                }
+            }));
+        }
     }
 }
 
