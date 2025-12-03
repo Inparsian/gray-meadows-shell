@@ -29,6 +29,8 @@ impl BarModule {
         expanded.style_context().add_provider(&expanded_provider, gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION);
         minimal.style_context().add_class("bar-minimal-wrapper");
         expanded.style_context().add_class("bar-expanded-wrapper");
+        minimal.set_halign(gtk4::Align::Center);
+        expanded.set_halign(gtk4::Align::Center);
 
         let (tx, _) = tokio::sync::broadcast::channel::<(i32, i32)>(16);
         let module = BarModule {
