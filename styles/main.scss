@@ -567,11 +567,11 @@
         transition-delay: 0s;
 
         &.expanding {
-            transition-timing-function: cubic-bezier(0.0, 0.5, 0.0, 1);
+            transition-timing-function: cubic-bezier(0.2, 0.2, 0, 1);
         }
 
         &.collapsing {
-            transition-timing-function: cubic-bezier(0.5, 0, 0.25, 1);
+            transition-timing-function: cubic-bezier(0.5, 0, 0.5, 1);
         }
     }
 
@@ -625,7 +625,7 @@
                         min-height: 150px;
                         background-size: cover;
                         background-position: center;
-                        filter: blur(16px);
+                        filter: blur(4px);
                     }
 
                     .bar-mpris-extended-metadata {
@@ -646,7 +646,7 @@
                     }
 
                     .bar-mpris-extended-box {
-                        background: #00000088;
+                        background: #131313bb;
                         padding: 20px;
                     }
 
