@@ -1,9 +1,8 @@
 use std::cell::RefCell;
 use gtk4::prelude::*;
 
-use crate::{helpers::gesture, singletons::mpris};
+use crate::singletons::mpris;
 
-const VOLUME_STEP: f64 = 0.05;
 const ALBUM_ART_WIDTH: i32 = 24; // Expected width of the album art image
 const ALBUM_ART_HEIGHT: i32 = 24; // Expected height of the album art image
 const WIDGET_WIDTH: i32 = 175;
@@ -18,37 +17,6 @@ pub fn minimal() -> gtk4::Box {
     let current_art_url = RefCell::new(" ".to_owned());
 
     view! {
-        widget_middle_click_gesture = gesture::on_middle_down(|_, _, _| {
-            let Some(player) = mpris::get_default_player() else {
-                return eprintln!("No MPRIS player available to toggle play/pause.");
-            };
-
-            if let Err(e) = player.play_pause() {
-                eprintln!("Failed to toggle play/pause: {}", e);
-            }
-        }),
-
-        widget_right_click_gesture = gesture::on_secondary_up(|_, _, _| {
-            mpris::with_default_player_mut(|player| if let Err(e) = player.next() {
-                eprintln!("Failed to skip to next track: {}", e);
-            });
-        }),
-
-        widget_scroll_controller = gesture::on_vertical_scroll(|delta_y| {
-            let Some(player) = mpris::get_default_player() else {
-                return eprintln!("No MPRIS player available to adjust volume.");
-            };
-
-            let step = if delta_y < 0.0 {
-                VOLUME_STEP
-            } else {
-                -VOLUME_STEP
-            };
-
-            player.adjust_volume(step)
-                .unwrap_or_else(|e| eprintln!("Failed to adjust volume: {}", e));
-        }),
-
         no_players_widget = gtk4::Label {
             set_css_classes: &["bar-mpris-track"],
             set_label: "No players",
@@ -174,10 +142,6 @@ pub fn minimal() -> gtk4::Box {
             no_players_widget.show();
         }
     });
-
-    widget.add_controller(widget_middle_click_gesture);
-    widget.add_controller(widget_right_click_gesture);
-    widget.add_controller(widget_scroll_controller);
 
     widget
 }
