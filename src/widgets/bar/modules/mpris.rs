@@ -4,7 +4,7 @@ use gtk4::prelude::*;
 use crate::{
     helpers::gesture,
     singletons::mpris,
-    widgets::bar::wrapper::BarModuleWrapper
+    widgets::bar::module::{BarModule, BarModuleWrapper}
 };
 
 const VOLUME_STEP: f64 = 0.05;
@@ -18,7 +18,7 @@ fn get_mpris_player_label_text() -> String {
         .map_or_else(|| "No players".to_owned(), |player| player.metadata.title.unwrap_or("No title".to_owned()))
 }
 
-pub fn new() -> gtk4::Box {
+pub fn minimal() -> gtk4::Box {
     let current_art_url = RefCell::new(" ".to_owned());
 
     view! {
@@ -103,7 +103,6 @@ pub fn new() -> gtk4::Box {
         },
 
         widget = gtk4::Box {
-            set_css_classes: &["bar-widget", "bar-mpris"],
             set_hexpand: false,
             set_width_request: WIDGET_WIDTH,
 
@@ -184,9 +183,46 @@ pub fn new() -> gtk4::Box {
         }
     });
 
-    BarModuleWrapper::new(&widget)
-        .add_controller(widget_middle_click_gesture)
-        .add_controller(widget_right_click_gesture)
-        .add_controller(widget_scroll_controller)
-        .get_widget()
+    widget.add_controller(widget_middle_click_gesture);
+    widget.add_controller(widget_right_click_gesture);
+    widget.add_controller(widget_scroll_controller);
+
+    widget
+}
+
+pub fn extended() -> gtk4::Box {
+    view! {
+        widget = gtk4::Box {
+            set_css_classes: &["bar-mpris-extended"],
+            set_orientation: gtk4::Orientation::Vertical,
+            set_spacing: 4,
+
+            gtk4::Label {
+                set_label: "Extended MPRIS Module!!!!!!!!!!",
+                set_hexpand: true,
+                set_xalign: 0.5
+            },
+
+            gtk4::Label {
+                set_label: "More features coming soon...",
+                set_hexpand: true,
+                set_xalign: 0.5
+            },
+
+            gtk4::Button {
+                set_label: "Test Button",
+                set_hexpand: true,
+                connect_clicked => |_| {
+                    println!("Test Button Clicked!");
+                }
+            }
+        },
+    }
+
+    widget
+}
+
+pub fn new() -> BarModuleWrapper {
+    let module = BarModule::new(minimal(), extended());
+    BarModuleWrapper::new(module, &["bar-mpris"])
 }

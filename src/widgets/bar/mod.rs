@@ -13,7 +13,7 @@ mod modules {
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, Layer, LayerShell};
 
-use crate::{APP_LOCAL, helpers::gesture, widgets::bar::module::{BarModule, BarModuleWrapper}};
+use crate::{APP_LOCAL, helpers::gesture, widgets::bar::module::BarModuleWrapper};
 
 static BAR_HEIGHT: i32 = 33;
 
@@ -25,39 +25,10 @@ pub struct BarWindow {
 
 impl BarWindow {
     pub fn new(application: &libadwaita::Application, monitor: &gdk4::Monitor) -> Self {
-        view! {
-            test_minimal = gtk4::Box {
-                set_orientation: gtk4::Orientation::Horizontal,
-                set_spacing: 0,
-                set_halign: gtk4::Align::Center,
-                set_valign: gtk4::Align::Center,
-
-                gtk4::Label {
-                    set_label: "Minimal"
-                }
-            },
-
-            test_expanded = gtk4::Box {
-                set_orientation: gtk4::Orientation::Vertical,
-                set_spacing: 16,
-                set_halign: gtk4::Align::Center,
-                set_valign: gtk4::Align::Center,
-
-                gtk4::Label {
-                    set_label: "This is the expanded module content."
-                },
-
-                gtk4::Button {
-                    set_label: "This is a button.",
-                    connect_clicked => |_| {
-                        println!("Button in expanded module clicked!");
-                    }
-                }
-            },
-        }
-
-        let test_module = BarModule::new(test_minimal.upcast(), test_expanded.upcast());
-        let test_module_wrapper = BarModuleWrapper::new(test_module);
+        let mpris_module = modules::mpris::new();
+        let modules = vec![
+            mpris_module.clone()
+        ];
 
         view! {
             left_box = gtk4::Box {
@@ -75,8 +46,7 @@ impl BarWindow {
                 set_valign: gtk4::Align::Start,
 
                 append: &modules::sysstats::new(),
-                append: &test_module_wrapper.bx,
-                append: &modules::mpris::new(),
+                append: &mpris_module.bx,
                 append: &modules::clock::new()
             },
 
@@ -130,10 +100,6 @@ impl BarWindow {
                 set_namespace: Some("gms-bar-steal")
             }
         }
-
-        let modules = vec![
-            test_module_wrapper,
-        ];
 
         // collapse expanded modules when clicking outside of them
         window.add_controller(gesture::on_primary_up({

@@ -18,7 +18,10 @@ pub struct BarModule {
 }
 
 impl BarModule {
-    pub fn new(minimal: gtk4::Widget, expanded: gtk4::Widget) -> Self {
+    pub fn new(
+        minimal: impl IsA<gtk4::Widget>,
+        expanded: impl IsA<gtk4::Widget>
+    ) -> Self {
         let minimal_provider = gtk4::CssProvider::new();
         let expanded_provider = gtk4::CssProvider::new();
 
@@ -30,8 +33,8 @@ impl BarModule {
         let (tx, _) = tokio::sync::broadcast::channel::<(i32, i32)>(16);
         let module = BarModule {
             tx,
-            minimal,
-            expanded,
+            minimal: minimal.upcast(),
+            expanded: expanded.upcast(),
             minimal_provider,
             expanded_provider,
             is_expanded: Rc::new(RefCell::new(false))
@@ -202,9 +205,12 @@ pub struct BarModuleWrapper {
 }
 
 impl BarModuleWrapper {
-    pub fn new(module: BarModule) -> Self {
+    pub fn new(module: BarModule, classes: &[&str]) -> Self {
+        let mut css_classes = vec!["bar-widget"];
+        css_classes.extend_from_slice(classes);
+        
         let widget_box = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
-        widget_box.set_css_classes(&["bar-widget"]);
+        widget_box.set_css_classes(&css_classes);
         widget_box.append(&module.minimal);
         widget_box.append(&module.expanded);
 
