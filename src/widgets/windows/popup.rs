@@ -2,7 +2,7 @@ use gtk4::{prelude::*, RevealerTransitionType};
 use gtk4_layer_shell::LayerShell;
 use libadwaita::Clamp;
 
-use crate::{helpers::gesture, singletons::hyprland, widgets::windows::{self, GmsWindow}};
+use crate::{helpers::gesture, singletons::hyprland, widgets::windows::{GmsWindow, hide_all_popups}};
 
 /// A popup window that displays content on top of other windows. It closes itself when it loses focus.
 #[derive(Clone)]
@@ -29,12 +29,12 @@ pub struct PopupOptions {
     pub anchor_left: bool,
     pub anchor_right: bool,
     pub anchor_top: bool,
-    pub anchor_bottom: bool,
-    pub unfocus_hides_all_popups: bool,
+    pub anchor_bottom: bool
 }
 
 impl GmsWindow for PopupWindow {
     fn show(&self) {
+        hide_all_popups();
         let monitor = hyprland::get_active_monitor();
         self.window.set_monitor(monitor.as_ref());
         self.window.show();
@@ -162,7 +162,7 @@ impl PopupWindow {
             let popup = popup.clone();
 
             move |val, _| if val.name() == Some("Escape".into()) {
-                popup.hide_and_check_options();
+                popup.hide();
             }
         }));
 
@@ -175,21 +175,12 @@ impl PopupWindow {
                 let (rx, ry) = (r_xy.0 as i32, r_xy.1 as i32);
 
                 if popup.window.is_visible() && !allocation.contains_point(px, py) && !allocation.contains_point(rx, ry) {
-                    popup.hide_and_check_options();
+                    popup.hide();
                 }
             }
         }));
 
         popup
-    }
-
-    pub fn hide_and_check_options(&self) {
-        if self.options.unfocus_hides_all_popups {
-            windows::hide_all_popups();
-            return;
-        }
-
-        self.hide();
     }
 
     pub fn steal_screen(&self) {

@@ -41,7 +41,6 @@ pub fn new(application: &libadwaita::Application) -> PopupWindow {
             anchor_right: true,
             anchor_top: true,
             anchor_bottom: true,
-            unfocus_hides_all_popups: true,
         },
         400,
         100,
