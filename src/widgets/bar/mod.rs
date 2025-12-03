@@ -13,13 +13,13 @@ mod modules {
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, Layer, LayerShell};
 
-use crate::{APP_LOCAL, helpers::gesture, widgets::bar::module::BarModule};
+use crate::{APP_LOCAL, helpers::gesture, widgets::bar::module::{BarModule, BarModuleWrapper}};
 
 static BAR_HEIGHT: i32 = 33;
 
 pub struct BarWindow {
     pub window: gtk4::ApplicationWindow,
-    pub modules: Vec<BarModule>,
+    pub modules: Vec<BarModuleWrapper>,
 }
 
 impl BarWindow {
@@ -65,25 +65,12 @@ impl BarWindow {
                 gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
                 gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
             },
+        }
 
-            test_bar_module = gtk4::Box {
-                set_css_classes: &["bar-widget"],
-                set_orientation: gtk4::Orientation::Vertical,
-                set_spacing: 1,
+        let test_module = BarModule::new(test_minimal.upcast(), test_expanded.upcast());
+        let test_module_wrapper = BarModuleWrapper::new(test_module);
 
-                append: &test_minimal,
-                append: &test_expanded
-            },
-
-            test_bar_module_wrapper = gtk4::Box {
-                set_css_classes: &["bar-widget-wrapper"],
-                set_orientation: gtk4::Orientation::Horizontal,
-                set_hexpand: false,
-                set_valign: gtk4::Align::Start,
-
-                append: &test_bar_module
-            },
-
+        view! {
             left_box = gtk4::Box {
                 set_orientation: gtk4::Orientation::Horizontal,
                 set_spacing: 1,
@@ -99,7 +86,7 @@ impl BarWindow {
                 set_valign: gtk4::Align::Start,
 
                 append: &modules::sysstats::new(),
-                append: &test_bar_module_wrapper,
+                append: &test_module_wrapper.bx,
                 append: &modules::mpris::new(),
                 append: &modules::clock::new()
             },
@@ -141,16 +128,8 @@ impl BarWindow {
             }
         }
 
-        let test_module = BarModule::new(test_minimal.upcast(), test_expanded.upcast());
-        test_bar_module_wrapper.add_controller(gesture::on_primary_full_press({
-            let module = test_module.clone();
-            move |_, _, _| {
-                module.toggle_expanded();
-            }
-        }));
-
         let modules = vec![
-            test_module,
+            test_module_wrapper,
         ];
 
         // collapse expanded modules when clicking outside of them
@@ -162,9 +141,17 @@ impl BarWindow {
                 }
 
                 let mut inside_any = false;
-                for module in &modules {
-                    if module.is_expanded() {
-                        let allocation = module.expanded.allocation();
+                for wrapper in &modules {
+                    if wrapper.module.is_expanded() {
+                        let mod_allocation = wrapper.bx.allocation();
+                        let parent_allocation = wrapper.bx.parent().unwrap().allocation();
+                        let allocation = gdk4::Rectangle::new(
+                            mod_allocation.x() + parent_allocation.x(),
+                            mod_allocation.y() + parent_allocation.y(),
+                            mod_allocation.width(),
+                            mod_allocation.height(),
+                        );
+
                         let x_in = x >= allocation.x() as f64 && x <= (allocation.x() + allocation.width()) as f64;
                         let y_in = y >= allocation.y() as f64 && y <= (allocation.y() + allocation.height()) as f64;
                         if x_in && y_in {
@@ -191,8 +178,8 @@ impl BarWindow {
     }
 
     pub fn hide_all_expanded_modules(&self) {
-        for module in &self.modules {
-            module.set_expanded(false);
+        for wrapper in &self.modules {
+            wrapper.module.set_expanded(false);
         }
     }
 }

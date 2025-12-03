@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 use gtk4::prelude::*;
 
-use crate::APP_LOCAL;
+use crate::{APP_LOCAL, helpers::gesture};
 
 static TRANSITION_DURATION: f64 = 0.4;
 static DOWNSCALE_FACTOR: f64 = 0.000_000_001;
@@ -71,8 +71,6 @@ impl BarModule {
     }
 
     pub fn set_expanded(&self, expanded: bool) {
-        *self.is_expanded.borrow_mut() = expanded;
-
         // collapse all other modules if this one is expanding
         if expanded {
             APP_LOCAL.with(|app| {
@@ -82,6 +80,7 @@ impl BarModule {
             });
         }
 
+        *self.is_expanded.borrow_mut() = expanded;
         self.animate_fade_slide_down(expanded);
     }
 
@@ -187,5 +186,45 @@ impl BarModule {
                 }
             }
         });
+    }
+}
+
+#[derive(Clone)]
+pub struct BarModuleWrapper {
+    pub bx: gtk4::Box,
+    pub module: BarModule,
+}
+
+impl BarModuleWrapper {
+    pub fn new(module: BarModule) -> Self {
+        let widget_box = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        widget_box.set_css_classes(&["bar-widget"]);
+        widget_box.append(&module.minimal);
+        widget_box.append(&module.expanded);
+
+        let wrapper_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        wrapper_box.set_css_classes(&["bar-widget-wrapper"]);
+        wrapper_box.set_hexpand(false);
+        wrapper_box.set_valign(gtk4::Align::Start);
+        wrapper_box.append(&widget_box);
+
+        wrapper_box.add_controller(gesture::on_primary_down({
+            let module = module.clone();
+            move |_, _, _| if !module.is_expanded() {
+                module.set_expanded(true);
+            }
+        }));
+
+        wrapper_box.add_controller(gesture::on_secondary_down({
+            let module = module.clone();
+            move |_, _, _| if module.is_expanded() {
+                module.set_expanded(false);
+            }
+        }));
+
+        Self {
+            bx: wrapper_box,
+            module
+        }
     }
 }
