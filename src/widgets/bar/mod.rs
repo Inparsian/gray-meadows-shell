@@ -11,7 +11,7 @@ mod modules {
 }
 
 use gtk4::prelude::*;
-use gtk4_layer_shell::{Edge, Layer, LayerShell};
+use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
 use crate::{helpers::gesture, widgets::bar::module::{BarModuleWrapper, hide_all_expanded_modules}};
 
@@ -139,6 +139,7 @@ impl BarWindow {
                 if any_expanded {
                     steal_window.set_visible(true);
                     window.set_layer(Layer::Overlay);
+                    window.set_keyboard_mode(KeyboardMode::OnDemand);
                 }
             }
         }));
@@ -153,6 +154,7 @@ impl BarWindow {
                 if !any_expanded {
                     steal_window.set_visible(false);
                     window.set_layer(Layer::Top);
+                    window.set_keyboard_mode(KeyboardMode::None);
                 }
             }
         }));
@@ -176,5 +178,6 @@ impl BarWindow {
 
         self.steal_window.set_visible(false);
         self.window.set_layer(Layer::Top);
+        self.window.set_keyboard_mode(KeyboardMode::None);
     }
 }
