@@ -71,6 +71,10 @@ impl BarModule {
     }
 
     pub fn set_expanded(&self, expanded: bool) {
+        if expanded == self.is_expanded() {
+            return;
+        }
+
         // collapse all other modules if this one is expanding
         if expanded {
             APP_LOCAL.with(|app| {
@@ -127,10 +131,12 @@ impl BarModule {
             self.minimal.set_visible(true);
         }
 
-        let minimal_width = self.minimal.allocated_width() as f64;
-        let expanded_width = self.expanded.allocated_width() as f64;
-        let minimal_height = self.minimal.allocated_height() as f64;
-        let expanded_height = self.expanded.allocated_height() as f64;
+        let minimal_bounds = self.minimal.compute_bounds(&self.minimal).unwrap();
+        let expanded_bounds = self.expanded.compute_bounds(&self.expanded).unwrap();
+        let minimal_width = minimal_bounds.width() as f64;
+        let expanded_width = expanded_bounds.width() as f64;
+        let minimal_height = minimal_bounds.height() as f64;
+        let expanded_height = expanded_bounds.height() as f64;
         
         if expanding {
             self.minimal_provider.load_from_data(&format!(
