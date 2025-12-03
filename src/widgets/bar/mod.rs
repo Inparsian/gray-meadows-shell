@@ -19,6 +19,7 @@ static BAR_HEIGHT: i32 = 33;
 
 pub struct BarWindow {
     pub window: gtk4::ApplicationWindow,
+    pub steal_window: gtk4::ApplicationWindow,
     pub modules: Vec<BarModuleWrapper>,
 }
 
@@ -176,9 +177,6 @@ impl BarWindow {
                 if any_expanded {
                     steal_window.set_visible(true);
                     window.set_layer(Layer::Overlay);
-                } else {
-                    steal_window.set_visible(false);
-                    window.set_layer(Layer::Top);
                 }
             }
         }));
@@ -207,14 +205,12 @@ impl BarWindow {
                         bar.hide_all_expanded_modules();
                     }
                 });
-
-                steal_window.set_visible(false);
-                window.set_layer(Layer::Top);
             }
         }));
 
         BarWindow {
             window,
+            steal_window,
             modules,
         }
     }
@@ -223,5 +219,8 @@ impl BarWindow {
         for wrapper in &self.modules {
             wrapper.module.set_expanded(false);
         }
+
+        self.steal_window.set_visible(false);
+        self.window.set_layer(Layer::Top);
     }
 }
