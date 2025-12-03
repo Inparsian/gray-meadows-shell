@@ -3,7 +3,7 @@ use gtk4::prelude::*;
 
 use crate::{
     singletons::hyprland,
-    widgets::bar::wrapper::BarModuleWrapper,
+    widgets::bar::wrapper::SimpleBarModuleWrapper,
     APP_LOCAL
 };
 
@@ -144,7 +144,7 @@ pub fn new() -> gtk4::Box {
         class_revealer.set_reveal_child(!reveal);
     }));
 
-    BarModuleWrapper::new(&widget)
+    SimpleBarModuleWrapper::new(&widget)
         .add_controller(reveal_title_gesture)
         .get_widget()
 }

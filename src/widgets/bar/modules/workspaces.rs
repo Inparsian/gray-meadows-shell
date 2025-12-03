@@ -7,7 +7,7 @@ use ::hyprland::dispatch::WorkspaceIdentifierWithSpecial;
 use crate::{
     singletons::hyprland,
     helpers::{scss, gesture},
-    widgets::bar::wrapper::BarModuleWrapper
+    widgets::bar::wrapper::SimpleBarModuleWrapper
 };
 
 const SHOWN_WORKSPACES: usize = 10;
@@ -159,7 +159,7 @@ pub fn new() -> gtk4::Box {
         workspaces_drawing_area.queue_draw();
     }));
 
-    BarModuleWrapper::new(&workspaces_box)
+    SimpleBarModuleWrapper::new(&workspaces_box)
         .add_controller(workspaces_click_gesture)
         .add_controller(workspaces_scroll_gesture)
         .get_widget()

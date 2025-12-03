@@ -1,10 +1,10 @@
 use gtk4::prelude::*;
 
-pub struct BarModuleWrapper {
+pub struct SimpleBarModuleWrapper {
     bx: gtk4::Box,
 }
 
-impl BarModuleWrapper {
+impl SimpleBarModuleWrapper {
     pub fn new(inner_bx: &gtk4::Box) -> Self {
         let bx = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
         bx.set_css_classes(&["bar-widget-wrapper"]);

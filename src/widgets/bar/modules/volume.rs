@@ -4,7 +4,7 @@ use crate::{
     ffi::astalwp::{WpEvent, ffi},
     helpers::gesture,
     singletons::wireplumber,
-    widgets::{windows, bar::wrapper::BarModuleWrapper}
+    widgets::{windows, bar::wrapper::SimpleBarModuleWrapper}
 };
 
 const VOLUME_STEP: f32 = 0.05;
@@ -100,7 +100,7 @@ pub fn new() -> gtk4::Box {
         }
     });
 
-    BarModuleWrapper::new(&widget)
+    SimpleBarModuleWrapper::new(&widget)
         .add_controller(volume_scroll_gesture)
         .add_controller(volume_click_gesture)
         .get_widget()

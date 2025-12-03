@@ -5,7 +5,7 @@ use gtk4::prelude::*;
 use crate::{
     helpers::{gesture, unit},
     singletons,
-    widgets::bar::wrapper::BarModuleWrapper
+    widgets::bar::wrapper::SimpleBarModuleWrapper
 };
 
 const SWAP_SHOW_THRESHOLD: f64 = 5.0; // Show swap usage only if it's above this threshold, 
@@ -184,7 +184,7 @@ pub fn new() -> gtk4::Box {
         gpu_temperature_label.set_label(&get_gpu_temperature_label_text());
     }));
 
-    BarModuleWrapper::new(&widget)
+    SimpleBarModuleWrapper::new(&widget)
         .add_controller(detailed_toggle_gesture)
         .get_widget()
 }

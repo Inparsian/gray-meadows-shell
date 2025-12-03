@@ -3,7 +3,7 @@ use gtk4::prelude::*;
 
 use crate::{
     singletons::date_time::DATE_TIME,
-    widgets::{self, bar::wrapper::BarModuleWrapper}
+    widgets::{self, bar::wrapper::SimpleBarModuleWrapper}
 };
 
 pub fn new() -> gtk4::Box {
@@ -25,5 +25,5 @@ pub fn new() -> gtk4::Box {
         date_label.set_label(&date_time.date);
     }));
 
-    BarModuleWrapper::new(&widget).get_widget()
+    SimpleBarModuleWrapper::new(&widget).get_widget()
 }

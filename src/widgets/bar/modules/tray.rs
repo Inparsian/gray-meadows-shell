@@ -4,7 +4,7 @@ use gtk4::prelude::*;
 use crate::{
     helpers::gesture,
     singletons::{apps::pixbuf::get_pixbuf_or_fallback, tray::{self, bus::BusEvent, icon::make_icon_pixbuf, subscribe, tray_menu, wrapper::{dbus_menu::Menu, sn_item::StatusNotifierItem}}},
-    widgets::bar::wrapper::BarModuleWrapper
+    widgets::bar::wrapper::SimpleBarModuleWrapper
 };
 
 #[derive(Default, Clone)]
@@ -247,5 +247,5 @@ pub fn new() -> gtk4::Box {
         }
     });
 
-    BarModuleWrapper::new(&widget).get_widget()
+    SimpleBarModuleWrapper::new(&widget).get_widget()
 }
