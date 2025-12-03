@@ -64,6 +64,16 @@ pub fn hide_all_popups() {
     });
 }
 
+pub fn hide_all_fullscreen_windows() {
+    APP_LOCAL.with(|app| {
+        for window in app.borrow().windows.borrow().values() {
+            if window.downcast_ref::<fullscreen::FullscreenWindow>().is_some() {
+                window.hide();
+            }
+        }
+    });
+}
+
 pub fn listen_for_ipc_messages() {
     ipc::listen_for_messages_local(|message| {
         if let Some(window_name) = message.strip_prefix("show_") {

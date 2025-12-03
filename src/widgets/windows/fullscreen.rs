@@ -1,7 +1,7 @@
 use gtk4::prelude::*;
 use gtk4_layer_shell::LayerShell;
 
-use crate::{helpers::gesture, singletons::hyprland, widgets::windows::GmsWindow};
+use crate::{helpers::gesture, singletons::hyprland, widgets::windows::{GmsWindow, hide_all_fullscreen_windows}};
 
 /// A window that takes up the whole screen. It closes itself when it loses focus.
 #[derive(Clone)]
@@ -11,6 +11,7 @@ pub struct FullscreenWindow {
 
 impl GmsWindow for FullscreenWindow {
     fn show(&self) {
+        hide_all_fullscreen_windows();
         let monitor = hyprland::get_active_monitor();
         self.window.set_monitor(monitor.as_ref());
         self.window.show();
