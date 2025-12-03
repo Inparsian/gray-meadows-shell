@@ -628,6 +628,12 @@
                         filter: blur(4px);
                     }
 
+                    .bar-mpris-extended-no-players {
+                        @include large-text;
+                        min-width: 350px;
+                        min-height: 150px;
+                    }
+
                     .bar-mpris-extended-metadata {
                         .bar-mpris-extended-artist {
                             @include large-text;

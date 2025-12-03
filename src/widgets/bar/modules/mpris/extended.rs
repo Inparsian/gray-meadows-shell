@@ -26,7 +26,7 @@ fn get_background_css() -> Option<String> {
     None
 }
 
-fn default_mpris_player() -> gtk4::Overlay {
+fn default_mpris_player() -> gtk4::Box {
     let background_style_provider = gtk4::CssProvider::new();
 
     view! {
@@ -185,11 +185,26 @@ fn default_mpris_player() -> gtk4::Overlay {
             append: &controls,
         },
 
-        widget = gtk4::Overlay {
+        player_overlay = gtk4::Overlay {
             set_child: Some(&background),
             set_overflow: gtk4::Overflow::Hidden,
             add_overlay: &over,
-        }
+        },
+
+        no_players_widget = gtk4::Label {
+            set_css_classes: &["bar-mpris-extended-no-players"],
+            set_label: "No players",
+            set_hexpand: true,
+            set_xalign: 0.5
+        },
+
+        widget = gtk4::Box {
+            set_css_classes: &["bar-mpris-extended-container"],
+            set_hexpand: true,
+
+            append: &no_players_widget,
+            append: &player_overlay,
+        },
     }
 
     background.style_context().add_provider(&background_style_provider, gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION);
@@ -215,6 +230,9 @@ fn default_mpris_player() -> gtk4::Overlay {
         let progress = progress.clone();
         move |_| {
             if let Some(default_player) = mpris::get_default_player() {
+                no_players_widget.hide();
+                player_overlay.show();
+
                 let is_playing = default_player.playback_status == PlaybackStatus::Playing;
                 play_pause_button.set_label(if is_playing { "pause" } else { "play_arrow" });
 
@@ -239,11 +257,17 @@ fn default_mpris_player() -> gtk4::Overlay {
                 metadata_title.set_label(default_player.metadata.title.as_deref().unwrap_or("Unknown Title"));
                 metadata_artist.set_label(&format_artist_list(&default_player.metadata.artist.unwrap_or_default()));
                 metadata_album.set_label(default_player.metadata.album.as_deref().unwrap_or("Unknown Album"));
-            }
 
-            // set the background of background box to the album art if any
-            if let Some(css) = get_background_css() {
-                background_style_provider.load_from_data(&css);
+                // set the background of background box to the album art if any
+                if let Some(css) = get_background_css() {
+                    background_style_provider.load_from_data(&css);
+                } else {
+                    background_style_provider.load_from_data("");
+                }
+            } else {
+                no_players_widget.show();
+                player_overlay.hide();
+                background_style_provider.load_from_data("");
             }
         }
     });
