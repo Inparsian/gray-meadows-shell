@@ -38,32 +38,20 @@ impl BarWindow {
 
             test_expanded = gtk4::Box {
                 set_orientation: gtk4::Orientation::Vertical,
-                set_spacing: 0,
+                set_spacing: 16,
                 set_halign: gtk4::Align::Center,
                 set_valign: gtk4::Align::Center,
 
-                gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
-                gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
-                gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
-                gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
-                gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
-                gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
-                gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
-                gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
-                gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
-                gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
-                gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
-                gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
-                gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
-                gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
-                gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
-                gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
-                gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
-                gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
-                gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
-                gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
-                gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
-                gtk4::Label { set_label: "Expanded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" },
+                gtk4::Label {
+                    set_label: "This is the expanded module content."
+                },
+
+                gtk4::Button {
+                    set_label: "This is a button.",
+                    connect_clicked => |_| {
+                        println!("Button in expanded module clicked!");
+                    }
+                }
             },
         }
 
