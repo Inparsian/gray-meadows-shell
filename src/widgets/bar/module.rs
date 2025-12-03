@@ -142,6 +142,10 @@ impl BarModule {
         let expanded_height = expanded_bounds.height() as f64;
         
         if expanding {
+            self.minimal.set_sensitive(false);
+            self.expanded.set_sensitive(true);
+            self.minimal.add_css_class("collapsing");
+            self.expanded.add_css_class("expanding");
             self.minimal_provider.load_from_data(&format!(
                 ".bar-minimal-wrapper {{
                     opacity: 0;
@@ -162,6 +166,10 @@ impl BarModule {
                 }}"
             ));
         } else {
+            self.minimal.set_sensitive(true);
+            self.expanded.set_sensitive(false);
+            self.minimal.add_css_class("expanding");
+            self.expanded.add_css_class("collapsing");
             self.expanded_provider.load_from_data(&format!(
                 ".bar-expanded-wrapper {{
                     opacity: 0;
@@ -193,6 +201,11 @@ impl BarModule {
                 } else if !is_expanded.borrow().to_owned() {
                     expanded.set_visible(false);
                 }
+
+                minimal.remove_css_class("collapsing");
+                minimal.remove_css_class("expanding");
+                expanded.remove_css_class("collapsing");
+                expanded.remove_css_class("expanding");
             }
         });
     }
