@@ -9,9 +9,26 @@
 </div>
 <br>
 
-My personal Hyprland desktop shell using gtk4 and gtk4-layer-shell, re-written from scratch in Rust and C++ (originally in TypeScript + JSX using AGSv2).
+My personal stand-alone Hyprland desktop shell using gtk4 and gtk4-layer-shell, re-written from scratch in Rust and C++ (originally in TypeScript + JSX using AGSv2).
 
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/f78bd628-920b-4075-b738-e956052becdf" />
+## Show me the screenshots
+ok
+
+<table align="center">
+  <tr>
+    <td colspan="2">
+      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/77459e91-98fc-4080-ac3f-304816f52d64" />
+    </td>
+  </tr>
+  <tr>
+    <td colspan="1">
+      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/d6bd4dc4-6f7e-45c4-aadb-c61d61622aa5" />
+    </td>
+    <td colspan="1">
+      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/87d6df6e-7bb2-41d8-a8c1-e5001a69d261" />
+    </td>
+  </tr>
+</table>
 
 ## Current status
 
