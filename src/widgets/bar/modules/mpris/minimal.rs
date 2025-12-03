@@ -1,11 +1,7 @@
 use std::cell::RefCell;
 use gtk4::prelude::*;
 
-use crate::{
-    helpers::gesture,
-    singletons::mpris,
-    widgets::bar::module::{BarModule, BarModuleWrapper}
-};
+use crate::{helpers::gesture, singletons::mpris};
 
 const VOLUME_STEP: f64 = 0.05;
 const ALBUM_ART_WIDTH: i32 = 24; // Expected width of the album art image
@@ -188,41 +184,4 @@ pub fn minimal() -> gtk4::Box {
     widget.add_controller(widget_scroll_controller);
 
     widget
-}
-
-pub fn extended() -> gtk4::Box {
-    view! {
-        widget = gtk4::Box {
-            set_css_classes: &["bar-mpris-extended"],
-            set_orientation: gtk4::Orientation::Vertical,
-            set_spacing: 4,
-
-            gtk4::Label {
-                set_label: "Extended MPRIS Module!!!!!!!!!!",
-                set_hexpand: true,
-                set_xalign: 0.5
-            },
-
-            gtk4::Label {
-                set_label: "More features coming soon...",
-                set_hexpand: true,
-                set_xalign: 0.5
-            },
-
-            gtk4::Button {
-                set_label: "Test Button",
-                set_hexpand: true,
-                connect_clicked => |_| {
-                    println!("Test Button Clicked!");
-                }
-            }
-        },
-    }
-
-    widget
-}
-
-pub fn new() -> BarModuleWrapper {
-    let module = BarModule::new(minimal(), extended());
-    BarModuleWrapper::new(module, &["bar-mpris"])
 }
