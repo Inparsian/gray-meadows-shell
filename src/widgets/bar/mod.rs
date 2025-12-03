@@ -195,17 +195,13 @@ impl BarWindow {
             }
         }));
 
-        steal_window.add_controller(gesture::on_primary_up({
-            let window = window.clone();
-            let steal_window = steal_window.clone();
-            move |_, _, _| {
-                // the bar window should be above the steal window, we can assume any click here is outside the bar
-                APP_LOCAL.with(|app| {
-                    for bar in app.borrow().bars.borrow().iter() {
-                        bar.hide_all_expanded_modules();
-                    }
-                });
-            }
+        // the bar window should be above the steal window, we can assume any click here is outside the bar
+        steal_window.add_controller(gesture::on_primary_up(move |_, _, _| {
+            APP_LOCAL.with(|app| {
+                for bar in app.borrow().bars.borrow().iter() {
+                    bar.hide_all_expanded_modules();
+                }
+            });
         }));
 
         BarWindow {
