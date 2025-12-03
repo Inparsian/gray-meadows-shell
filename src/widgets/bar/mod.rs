@@ -113,6 +113,20 @@ impl BarWindow {
                     // Right side widgets
                     set_end_widget: Some(&right_box),
                 }
+            },
+
+            steal_window = gtk4::ApplicationWindow {
+                set_visible: false,
+                set_css_classes: &["bar-steal-window"],
+                set_application: Some(application),
+                init_layer_shell: (),
+                set_monitor: Some(monitor),
+                set_layer: Layer::Overlay,
+                set_anchor: (Edge::Left, true),
+                set_anchor: (Edge::Right, true),
+                set_anchor: (Edge::Top, true),
+                set_anchor: (Edge::Bottom, true),
+                set_namespace: Some("gms-bar-steal")
             }
         }
 
@@ -122,40 +136,80 @@ impl BarWindow {
 
         // collapse expanded modules when clicking outside of them
         window.add_controller(gesture::on_primary_up({
+            let window = window.clone();
+            let steal_window = steal_window.clone();
             let modules = modules.clone();
             move |_, x, y| {
-                if y <= BAR_HEIGHT as f64 {
-                    return;
-                }
+                if y > BAR_HEIGHT as f64 {
+                    let mut inside_any = false;
+                    for wrapper in &modules {
+                        if wrapper.module.is_expanded() {
+                            let mod_allocation = wrapper.bx.allocation();
+                            let parent_allocation = wrapper.bx.parent().unwrap().allocation();
+                            let allocation = gdk4::Rectangle::new(
+                                mod_allocation.x() + parent_allocation.x(),
+                                mod_allocation.y() + parent_allocation.y(),
+                                mod_allocation.width(),
+                                mod_allocation.height(),
+                            );
 
-                let mut inside_any = false;
-                for wrapper in &modules {
-                    if wrapper.module.is_expanded() {
-                        let mod_allocation = wrapper.bx.allocation();
-                        let parent_allocation = wrapper.bx.parent().unwrap().allocation();
-                        let allocation = gdk4::Rectangle::new(
-                            mod_allocation.x() + parent_allocation.x(),
-                            mod_allocation.y() + parent_allocation.y(),
-                            mod_allocation.width(),
-                            mod_allocation.height(),
-                        );
-
-                        let x_in = x >= allocation.x() as f64 && x <= (allocation.x() + allocation.width()) as f64;
-                        let y_in = y >= allocation.y() as f64 && y <= (allocation.y() + allocation.height()) as f64;
-                        if x_in && y_in {
-                            inside_any = true;
-                            break;
+                            let x_in = x >= allocation.x() as f64 && x <= (allocation.x() + allocation.width()) as f64;
+                            let y_in = y >= allocation.y() as f64 && y <= (allocation.y() + allocation.height()) as f64;
+                            if x_in && y_in {
+                                inside_any = true;
+                                break;
+                            }
                         }
+                    }
+
+                    if !inside_any {
+                        APP_LOCAL.with(|app| {
+                            for bar in app.borrow().bars.borrow().iter() {
+                                bar.hide_all_expanded_modules();
+                            }
+                        });
                     }
                 }
 
-                if !inside_any {
-                    APP_LOCAL.with(|app| {
-                        for bar in app.borrow().bars.borrow().iter() {
-                            bar.hide_all_expanded_modules();
-                        }
-                    });
+                // if any are expanded at this point, activate the steal window
+                let any_expanded = modules.iter().any(|wrapper| wrapper.module.is_expanded());
+                if any_expanded {
+                    steal_window.set_visible(true);
+                    window.set_layer(Layer::Overlay);
+                } else {
+                    steal_window.set_visible(false);
+                    window.set_layer(Layer::Top);
                 }
+            }
+        }));
+
+        window.add_controller(gesture::on_secondary_up({
+            let window = window.clone();
+            let steal_window = steal_window.clone();
+            let modules = modules.clone();
+            move |_, _, _| {
+                // usually signifies that a module is being collapsed, but we should make sure that all are collapsed
+                let any_expanded = modules.iter().any(|wrapper| wrapper.module.is_expanded());
+                if !any_expanded {
+                    steal_window.set_visible(false);
+                    window.set_layer(Layer::Top);
+                }
+            }
+        }));
+
+        steal_window.add_controller(gesture::on_primary_up({
+            let window = window.clone();
+            let steal_window = steal_window.clone();
+            move |_, _, _| {
+                // the bar window should be above the steal window, we can assume any click here is outside the bar
+                APP_LOCAL.with(|app| {
+                    for bar in app.borrow().bars.borrow().iter() {
+                        bar.hide_all_expanded_modules();
+                    }
+                });
+
+                steal_window.set_visible(false);
+                window.set_layer(Layer::Top);
             }
         }));
 
