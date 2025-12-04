@@ -20,7 +20,7 @@ pub struct Mpris {
 pub static MPRIS: LazyLock<Mpris> = LazyLock::new(Mpris::default);
 
 fn assert_default_player() {
-    if MPRIS.default_player.get() > MPRIS.players.lock_ref().len() {
+    if MPRIS.default_player.get() > MPRIS.players.lock_ref().len() - 1 {
         set_default_player(0);
     }
 }
@@ -84,6 +84,45 @@ where
         
         gtk4::glib::source::idle_add_local_once(move || callback(index));
     }));
+}
+
+pub fn subscribe_to_player_list_changes<F>(callback: F)
+where
+    // vec diff and new list length
+    F: Fn(VecDiff<mpris_player::MprisPlayer>, usize) + 'static,
+{
+    let callback = Rc::new(callback);
+
+    gtk4::glib::spawn_future_local({
+        let callback = callback.clone();
+
+        signal_vec_cloned!(MPRIS.players, (change) {
+            let run_callback = |difference| {
+                let callback = callback.clone();
+
+                gtk4::glib::source::idle_add_local_once(move || {
+                    assert_default_player();
+                    callback(difference, MPRIS.players.lock_ref().len() - 1);
+                });
+            };
+
+            match change {
+                VecDiff::Push {..} |
+                VecDiff::RemoveAt {..} |
+                VecDiff::Pop {} |
+                VecDiff::Clear {} => run_callback(change),
+                _ => {}
+            }
+        })
+    });
+
+    // add all current players
+    let value = MPRIS.players.lock_ref().len();
+    for index in 0..value {
+        let callback = callback.clone();
+        let player = MPRIS.players.lock_ref().get(index).cloned().unwrap();
+        gtk4::glib::source::idle_add_local_once(move || callback(VecDiff::Push { value: player }, index));
+    }
 }
 
 #[allow(clippy::option_if_let_else)]

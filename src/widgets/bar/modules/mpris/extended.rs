@@ -1,6 +1,8 @@
+use futures_signals::signal_vec::VecDiff;
 use gtk4::prelude::*;
+use relm4::RelmIterChildrenExt;
 
-use crate::{helpers::gesture, singletons::mpris::{self, mpris_player::PlaybackStatus}};
+use crate::{helpers::gesture, singletons::mpris::{self, MPRIS, mpris_player::PlaybackStatus, set_default_player}};
 
 fn format_artist_list(artists: &[String]) -> String {
     artists.join(", ")
@@ -297,14 +299,101 @@ fn default_mpris_player() -> gtk4::Box {
     widget
 }
 
+fn players_list_item(player: &mpris::mpris_player::MprisPlayer, index: usize) -> gtk4::Button {
+    // <icon icon={player.get_bus_name().split(".")[player.get_bus_name().split(".").length - 1]}/>
+    let identifier = player.bus.split('.').next_back().unwrap_or("emote-love");
+
+    view! {
+        child = gtk4::Button {
+            set_css_classes: &["bar-mpris-players-list-item"],
+            set_hexpand: false,
+            connect_clicked => move |_| set_default_player(index),
+
+            gtk4::Image {
+                set_css_classes: &["bar-mpris-players-list-item-icon"],
+                set_icon_name: Some(identifier),
+                set_pixel_size: 16,
+                set_halign: gtk4::Align::Center,
+            },
+        }
+    }
+
+    child
+}
+
+fn players_list() -> gtk4::Box {
+    let bx = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+    bx.set_css_classes(&["bar-mpris-players-list"]);
+    bx.set_hexpand(true);
+
+    mpris::subscribe_to_player_list_changes({
+        let bx = bx.clone();
+        move |difference, size| {
+            match difference {
+                VecDiff::Push { value } => {
+                    let row = players_list_item(&value, size);
+                    bx.append(&row);
+                }
+                
+                VecDiff::RemoveAt { index, .. } => {
+                    if let Some(child) = bx.iter_children().nth(index) {
+                        bx.remove(&child);
+                    }
+                }
+
+                VecDiff::Pop {} => {
+                    if let Some(child) = bx.iter_children().last() {
+                        bx.remove(&child);
+                    }
+                }
+
+                VecDiff::Clear {} => {
+                    bx.iter_children().for_each(|child| {
+                        bx.remove(&child);
+                    });
+                }
+
+                _ => {}
+            }
+        }
+    });
+
+    mpris::subscribe_to_default_player_changes({
+        let bx = bx.clone();
+        move |index| {
+            bx.iter_children().for_each(|child| {
+                child.set_css_classes(&["bar-mpris-players-list-item"]);
+            });
+
+            if let Some(selected_child) = bx.iter_children().nth(index) {
+                selected_child.set_css_classes(&["bar-mpris-players-list-item", "is-default"]);
+            }
+        }
+    });
+
+    bx.add_controller(gesture::on_vertical_scroll(|delta_y| {
+        let delta_index = if delta_y < 0.0 { 1 } else { -1 };
+        let current_index = MPRIS.default_player.get() as isize;
+        let players_count = MPRIS.players.lock_ref().len() as isize;
+
+        if players_count > 0 {
+            let new_index = (current_index + delta_index + players_count) % players_count;
+            set_default_player(new_index as usize);
+        }
+    }));
+
+    bx
+}
+
 pub fn extended() -> gtk4::Box {
     view! {
         widget = gtk4::Box {
             set_css_classes: &["bar-mpris-extended"],
             set_orientation: gtk4::Orientation::Vertical,
-            set_spacing: 4,
+            set_spacing: 0,
 
             append: &default_mpris_player(),
+            append: &players_list(),
         },
     }
 

@@ -701,6 +701,44 @@
                             }
                         }
                     }
+
+                    .bar-mpris-players-list {
+                        .bar-mpris-players-list-item {
+                            border: 0px;
+                            padding-top: 4px;
+                            padding-bottom: 4px;
+                            padding-left: 8px;
+                            padding-right: 8px;
+                            border-radius: 0px;
+                            min-width: 0px;
+
+                            &:not(.is-default) {
+                                background: transparent;
+
+                                &:hover, &:focus {
+                                    background: $background-color-secondary;
+                                    outline: none;
+                                }
+
+                                &:active {
+                                    background: $background-color-tertiary;
+                                }
+                            }
+
+                            &.is-default {
+                                background: $foreground-color-primary;
+
+                                &:hover, &:focus {
+                                    background: $foreground-color-select;
+                                    outline: none;
+                                }
+
+                                &:active {
+                                    background: $foreground-color-active;
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
