@@ -1,5 +1,5 @@
 use gtk4::prelude::*;
-use gtk4_layer_shell::LayerShell;
+use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
 use crate::{helpers::gesture, singletons::hyprland, widgets::windows::{GmsWindow, hide_all_fullscreen_windows}};
 
@@ -56,12 +56,12 @@ impl FullscreenWindow {
         window.set_css_classes(classes);
         window.init_layer_shell();
         window.set_monitor(monitor.as_ref());
-        window.set_keyboard_mode(gtk4_layer_shell::KeyboardMode::OnDemand);
-        window.set_layer(gtk4_layer_shell::Layer::Top);
-        window.set_anchor(gtk4_layer_shell::Edge::Left, true);
-        window.set_anchor(gtk4_layer_shell::Edge::Right, true);
-        window.set_anchor(gtk4_layer_shell::Edge::Top, true);
-        window.set_anchor(gtk4_layer_shell::Edge::Bottom, true);
+        window.set_keyboard_mode(KeyboardMode::OnDemand);
+        window.set_layer(Layer::Top);
+        window.set_anchor(Edge::Left, true);
+        window.set_anchor(Edge::Right, true);
+        window.set_anchor(Edge::Top, true);
+        window.set_anchor(Edge::Bottom, true);
         window.set_namespace(Some("gms-fullscreen"));
         window.set_child(Some(child));
 
