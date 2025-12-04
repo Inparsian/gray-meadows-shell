@@ -561,6 +561,36 @@
     }
 }
 
+.clipboard-window {
+    background: transparent;
+
+    .clipboard-listbox {
+        max-height: 400px;
+        min-width: 300px;
+        background: $background-color-primary;
+        border: 1px solid $border-color-primary;
+        padding: 0px;
+
+        .clipboard-entry {
+            @include normal-text;
+            background: transparent;
+            color: $foreground-color-primary;
+            border: 0px;
+            border-radius: 0px;
+            font-weight: normal;
+
+            &:hover, &:focus {
+                background: $background-color-tertiary;
+                outline: none;
+            }
+
+            &:active {
+                background: $background-color-quaternary;
+            }
+        }
+    }
+}
+
 .bar-steal-window {
     background: #88888801;
 }

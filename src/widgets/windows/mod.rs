@@ -4,6 +4,7 @@ pub mod overview;
 pub mod session;
 pub mod sidebar_left;
 pub mod sidebar_right;
+pub mod clipboard;
 
 use std::any::Any;
 
@@ -81,8 +82,18 @@ pub fn listen_for_ipc_messages() {
         } else if let Some(window_name) = message.strip_prefix("hide_") {
             hide(window_name);
         } else if let Some(window_name) = message.strip_prefix("toggle_") {
-            if toggle(window_name) && window_name == "overview" {
-                let _ = ipc::client::send_message("update_overview_windows");
+            if toggle(window_name) {
+                match window_name {
+                    "overview" => {
+                        let _ = ipc::client::send_message("update_overview_windows");
+                    },
+
+                    "clipboard" => {
+                        let _ = ipc::client::send_message("update_clipboard_window_entries");
+                    },
+
+                    _ => {}
+                }
             }
         }
     });
