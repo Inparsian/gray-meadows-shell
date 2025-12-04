@@ -9,7 +9,7 @@ use crate::{color, ipc, widgets::windows::{self, fullscreen::FullscreenWindow}};
 
 static IMAGE_WIDTH: u32 = 192;
 static IMAGE_BINARY_DATA_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\[\[ binary data (\d+) (KiB|MiB) (\w+) (\d+)x(\d+) \]\]").expect("Failed to compile image binary data regex")
+    Regex::new(r"\[\[ binary data (\d+) ([KMGT]i)?B (\w+) (\d+)x(\d+) \]\]").expect("Failed to compile image binary data regex")
 });
 
 pub fn decode_clipboard_entry(id: &str) -> Option<Vec<u8>> {
