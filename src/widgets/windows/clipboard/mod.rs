@@ -2,9 +2,12 @@ use std::{cell::RefCell, process::Stdio, rc::Rc, sync::LazyLock};
 use gtk4::prelude::*;
 use regex::Regex;
 use relm4::RelmRemoveAllExt;
+use image::codecs::png::PngEncoder;
+use image::ImageEncoder;
 
 use crate::{color, ipc, widgets::windows::{self, fullscreen::FullscreenWindow}};
 
+static IMAGE_WIDTH: u32 = 192;
 static IMAGE_BINARY_DATA_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"\[\[ binary data (\d+) (KiB|MiB) (\w+) (\d+)x(\d+) \]\]").expect("Failed to compile image binary data regex")
 });
@@ -76,13 +79,37 @@ fn clipboard_entry(id: usize, preview: &str) -> gtk4::Button {
         let image = gtk4::Image::new();
         image.set_halign(gtk4::Align::Start);
         image.set_valign(gtk4::Align::Center);
-        image.set_pixel_size(256);
+        image.set_pixel_size(IMAGE_WIDTH as i32);
         button.set_child(Some(&image));
 
         let (tx, rx) = async_channel::unbounded::<Vec<u8>>();
         tokio::spawn(async move {
             if let Some(decoded) = decode_clipboard_entry(&id.to_string()) {
-                let _ = tx.send(decoded).await;
+                // downscale the image data to 256px width if larger
+                println!("Decoded image data for clipboard entry {} ({} bytes)", id, decoded.len());
+                let image = image::load_from_memory(&decoded).ok();
+                if let Some(img) = image {
+                    let scaled_img = if img.width() > IMAGE_WIDTH {
+                        img.resize(
+                            IMAGE_WIDTH, 
+                            (img.height() as f32 * (IMAGE_WIDTH as f32 / img.width() as f32)) as u32, 
+                            image::imageops::FilterType::Lanczos3
+                        )
+                    } else {
+                        img
+                    };
+
+                    let mut buf = Vec::new();
+                    if PngEncoder::new(&mut buf).write_image(
+                        scaled_img.as_bytes(),
+                        scaled_img.width(),
+                        scaled_img.height(),
+                        scaled_img.color().into()
+                    ).is_ok() {
+                        println!("Encoded scaled image to PNG ({} bytes)", buf.len());
+                        let _ = tx.send(buf).await;
+                    }
+                }
             }
         });
 
