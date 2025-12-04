@@ -1,5 +1,5 @@
 use gtk4::{prelude::*, RevealerTransitionType};
-use gtk4_layer_shell::LayerShell;
+use gtk4_layer_shell::{Edge, Layer, KeyboardMode, LayerShell};
 use libadwaita::Clamp;
 
 use crate::{helpers::gesture, singletons::hyprland, widgets::windows::{GmsWindow, hide_all_popups}};
@@ -9,7 +9,6 @@ use crate::{helpers::gesture, singletons::hyprland, widgets::windows::{GmsWindow
 pub struct PopupWindow {
     pub window: gtk4::ApplicationWindow,
     pub revealer: gtk4::Revealer,
-    pub clamp: Clamp,
     pub options: PopupOptions,
     pub transition_duration: u32,
 }
@@ -101,12 +100,12 @@ impl PopupWindow {
         window.set_css_classes(classes);
         window.init_layer_shell();
         window.set_monitor(monitor.as_ref());
-        window.set_keyboard_mode(gtk4_layer_shell::KeyboardMode::OnDemand);
-        window.set_layer(gtk4_layer_shell::Layer::Overlay);
-        window.set_anchor(gtk4_layer_shell::Edge::Left, true);
-        window.set_anchor(gtk4_layer_shell::Edge::Right, true);
-        window.set_anchor(gtk4_layer_shell::Edge::Top, true);
-        window.set_anchor(gtk4_layer_shell::Edge::Bottom, true);
+        window.set_keyboard_mode(KeyboardMode::OnDemand);
+        window.set_layer(Layer::Overlay);
+        window.set_anchor(Edge::Left, true);
+        window.set_anchor(Edge::Right, true);
+        window.set_anchor(Edge::Top, true);
+        window.set_anchor(Edge::Bottom, true);
         window.set_namespace(Some("gms-popup"));
 
         let revealer = gtk4::Revealer::new();
@@ -153,7 +152,6 @@ impl PopupWindow {
         let popup = Self {
             window: window.clone(),
             revealer,
-            clamp: clamp.clone(),
             options,
             transition_duration,
         };
@@ -184,24 +182,16 @@ impl PopupWindow {
     }
 
     pub fn steal_screen(&self) {
-        self.window.set_anchor(gtk4_layer_shell::Edge::Left, true);
-        self.window.set_anchor(gtk4_layer_shell::Edge::Right, true);
-        self.window.set_anchor(gtk4_layer_shell::Edge::Top, true);
-        self.window.set_anchor(gtk4_layer_shell::Edge::Bottom, true);
+        self.window.set_anchor(Edge::Left, true);
+        self.window.set_anchor(Edge::Right, true);
+        self.window.set_anchor(Edge::Top, true);
+        self.window.set_anchor(Edge::Bottom, true);
     }
 
     pub fn release_screen(&self) {
-        self.window.set_anchor(gtk4_layer_shell::Edge::Left, self.options.anchor_left);
-        self.window.set_anchor(gtk4_layer_shell::Edge::Right, self.options.anchor_right);
-        self.window.set_anchor(gtk4_layer_shell::Edge::Top, self.options.anchor_top);
-        self.window.set_anchor(gtk4_layer_shell::Edge::Bottom, self.options.anchor_bottom);
-    }
-
-    #[allow(dead_code)]
-    pub fn set_margin(&self, margin: PopupMargin) {
-        self.clamp.set_margin_top(margin.top);
-        self.clamp.set_margin_end(margin.right);
-        self.clamp.set_margin_bottom(margin.bottom);
-        self.clamp.set_margin_start(margin.left);
+        self.window.set_anchor(Edge::Left, self.options.anchor_left);
+        self.window.set_anchor(Edge::Right, self.options.anchor_right);
+        self.window.set_anchor(Edge::Top, self.options.anchor_top);
+        self.window.set_anchor(Edge::Bottom, self.options.anchor_bottom);
     }
 }
