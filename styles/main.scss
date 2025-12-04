@@ -577,6 +577,10 @@
             color: $foreground-color-primary;
             border: 0px;
             border-radius: 0px;
+            padding-top: 4px;
+            padding-bottom: 4px;
+            padding-left: 8px;
+            padding-right: 8px;
             font-weight: normal;
 
             &:hover, &:focus {
@@ -586,6 +590,11 @@
 
             &:active {
                 background: $background-color-quaternary;
+            }
+
+            image {
+                margin-top: -56px;
+                margin-bottom: -56px;
             }
         }
     }

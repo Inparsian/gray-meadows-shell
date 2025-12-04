@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc, sync::LazyLock};
+use std::{cell::RefCell, process::Stdio, rc::Rc, sync::LazyLock};
 use gtk4::prelude::*;
 use regex::Regex;
 use relm4::RelmRemoveAllExt;
@@ -46,40 +46,52 @@ pub fn fetch_clipboard_entries() -> Vec<(usize, String)> {
 
 pub fn copy_entry(id: usize) {
     // pipe cliphist decode <id> to wl-copy
-    let decode_process = std::process::Command::new("cliphist")
-        .arg("decode")
-        .arg(id.to_string())
-        .stdout(std::process::Stdio::piped())
-        .spawn();
+    std::thread::spawn(move || {
+        let decode_process = std::process::Command::new("cliphist")
+            .arg("decode")
+            .arg(id.to_string())
+            .stdout(Stdio::piped())
+            .spawn();
 
-    if let Ok(mut decode_process) = decode_process {
-        let _ = decode_process.wait();
+        if let Ok(mut decode_child) = decode_process {
+            if let Some(decode_stdout) = decode_child.stdout.take() {
+                let wl_copy_process = std::process::Command::new("wl-copy")
+                    .stdin(Stdio::from(decode_stdout))
+                    .spawn();
 
-        if let Some(decode_stdout) = decode_process.stdout.take() {
-            let mut wl_copy_process = std::process::Command::new("wl-copy")
-                .stdin(std::process::Stdio::piped())
-                .spawn();
-
-            if let Ok(ref mut wl_copy_process) = wl_copy_process {
-                if let Some(ref mut wl_copy_stdin) = wl_copy_process.stdin {
-                    let _ = std::io::copy(&mut std::io::BufReader::new(decode_stdout), wl_copy_stdin);
+                if let Ok(mut wl_copy_child) = wl_copy_process {
+                    let _ = wl_copy_child.wait();
                 }
-
-                let _ = wl_copy_process.wait();
-                let _ = wl_copy_process.kill();
             }
+            let _ = decode_child.wait();
         }
-    }
+    });
 }
 
 fn clipboard_entry(id: usize, preview: &str) -> gtk4::Button {
     let button = gtk4::Button::new();
     button.set_css_classes(&["clipboard-entry"]);
 
-    let label = gtk4::Label::new(Some(preview));
-    label.set_halign(gtk4::Align::Start);
-    label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
-    button.set_child(Some(&label));
+    if is_an_image_clipboard_entry(preview) {
+        let decoded = decode_clipboard_entry(&id.to_string());
+        if let Some(image_data) = decoded {
+            let loader = gtk4::gdk_pixbuf::PixbufLoader::new();
+            if loader.write(&image_data).is_ok() {
+                let _ = loader.close();
+                if let Some(pixbuf) = loader.pixbuf() {
+                    let image = gtk4::Image::from_pixbuf(Some(&pixbuf));
+                    image.set_halign(gtk4::Align::Start);
+                    image.set_pixel_size(256);
+                    button.set_child(Some(&image));
+                }
+            }
+        }
+    } else {
+        let label = gtk4::Label::new(Some(preview));
+        label.set_halign(gtk4::Align::Start);
+        label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
+        button.set_child(Some(&label));
+    }
 
     button.connect_clicked(move |_| {
         copy_entry(id);
