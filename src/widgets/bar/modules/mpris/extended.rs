@@ -355,6 +355,12 @@ fn players_list() -> gtk4::Box {
 
                 _ => {}
             }
+
+            if size < 1 {
+                bx.hide();
+            } else {
+                bx.show();
+            }
         }
     });
 
