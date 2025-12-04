@@ -73,19 +73,30 @@ fn clipboard_entry(id: usize, preview: &str) -> gtk4::Button {
     button.set_css_classes(&["clipboard-entry"]);
 
     if is_an_image_clipboard_entry(preview) {
-        let decoded = decode_clipboard_entry(&id.to_string());
-        if let Some(image_data) = decoded {
-            let loader = gtk4::gdk_pixbuf::PixbufLoader::new();
-            if loader.write(&image_data).is_ok() {
-                let _ = loader.close();
-                if let Some(pixbuf) = loader.pixbuf() {
-                    let image = gtk4::Image::from_pixbuf(Some(&pixbuf));
-                    image.set_halign(gtk4::Align::Start);
-                    image.set_pixel_size(256);
-                    button.set_child(Some(&image));
+        let image = gtk4::Image::new();
+        image.set_halign(gtk4::Align::Start);
+        image.set_valign(gtk4::Align::Center);
+        image.set_pixel_size(256);
+        button.set_child(Some(&image));
+
+        let (tx, rx) = async_channel::unbounded::<Vec<u8>>();
+        tokio::spawn(async move {
+            if let Some(decoded) = decode_clipboard_entry(&id.to_string()) {
+                let _ = tx.send(decoded).await;
+            }
+        });
+
+        gtk4::glib::spawn_future_local(async move {
+            if let Ok(decoded) = rx.recv().await {
+                let loader = gtk4::gdk_pixbuf::PixbufLoader::new();
+                if loader.write(&decoded).is_ok() {
+                    let _ = loader.close();
+                    if let Some(pixbuf) = loader.pixbuf() {
+                        image.set_from_pixbuf(Some(&pixbuf));
+                    }
                 }
             }
-        }
+        });
     } else if let Some(hex) = color::parse_color_into_hex(preview) {
         let box_ = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
         
@@ -133,8 +144,8 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
         scrollable = gtk4::ScrolledWindow {
             set_vexpand: true,
             set_hexpand: true,
-            set_min_content_width: 400,
-            set_min_content_height: 300,
+            set_min_content_width: 600,
+            set_min_content_height: 450,
             set_child: Some(&listbox),
         },
 
