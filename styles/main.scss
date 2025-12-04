@@ -564,36 +564,69 @@
 .clipboard-window {
     background: transparent;
 
-    .clipboard-listbox {
-        background: $background-color-primary;
-        border: 1px solid $border-color-primary;
-        padding: 0px;
+    .clipboard-window-content {
+        @include normal-text;
 
-        .clipboard-entry {
-            @include normal-text;
-            background: transparent;
-            color: $foreground-color-primary;
-            border: 0px;
-            border-radius: 0px;
-            padding-top: 4px;
-            padding-bottom: 4px;
+        .filter-entry-box {
+            background: $background-color-primary;
+            margin-bottom: 8px;
+            transition: all 0.25s cubic-bezier(0.5, 0, 0, 1);
             padding-left: 8px;
             padding-right: 8px;
-            font-weight: normal;
+            padding-top: 6px;
+            padding-bottom: 6px;
+            border: 1px solid $border-color-primary;
 
-            &:hover, &:focus {
-                background: $background-color-tertiary;
-                outline: none;
-            }
-
-            &:active {
-                background: $background-color-quaternary;
-            }
-
-            .color-preview-box {
-                min-width: 12px;
-                min-height: 12px;
+            .filter-entry-icon {
+                @include material-icons;
+                font-size: 18px;
                 margin-right: 8px;
+                color: $foreground-color-secondary;
+            }
+
+            .filter-entry-prompt {
+                outline: none;
+                padding-top: 4px;
+                background: transparent;
+                color: $foreground-color-primary;
+                caret-color: $foreground-color-select;
+
+                selection {
+                    background-color: $foreground-color-select;
+                    color: $background-color-quaternary;
+                }
+            }
+        }
+
+        .clipboard-listbox {
+            background: $background-color-primary;
+            border: 1px solid $border-color-primary;
+
+            .clipboard-entry {
+                background: transparent;
+                color: $foreground-color-primary;
+                border: 0px;
+                border-radius: 0px;
+                padding-top: 4px;
+                padding-bottom: 4px;
+                padding-left: 8px;
+                padding-right: 8px;
+                font-weight: normal;
+
+                &:hover, &:focus {
+                    background: $background-color-tertiary;
+                    outline: none;
+                }
+
+                &:active {
+                    background: $background-color-quaternary;
+                }
+
+                .color-preview-box {
+                    min-width: 12px;
+                    min-height: 12px;
+                    margin-right: 8px;
+                }
             }
         }
     }

@@ -180,25 +180,61 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
         listbox = gtk4::Box {
             set_orientation: gtk4::Orientation::Vertical,
             set_spacing: 0,
-            set_halign: gtk4::Align::Center,
-            set_valign: gtk4::Align::Center,
+            set_hexpand: true,
+            set_vexpand: true,
             set_css_classes: &["clipboard-listbox"],
         },
 
         scrollable = gtk4::ScrolledWindow {
             set_vexpand: true,
             set_hexpand: true,
-            set_min_content_width: 600,
+            set_min_content_width: 400,
             set_min_content_height: 450,
             set_child: Some(&listbox),
         },
 
+        entry = gtk4::Entry {
+            set_css_classes: &["filter-entry-prompt"],
+            set_placeholder_text: Some("Filter clipboard entries..."),
+            set_hexpand: true,
+            set_has_frame: false,
+            connect_changed: {
+                let listbox_clone = listbox.clone();
+                let entries_clone = entries.clone();
+                move |entry| {
+                    let text = entry.text().to_string();
+                    listbox_clone.remove_all();
+                    for (id, preview) in entries_clone.borrow().iter() {
+                        if preview.to_lowercase().contains(&text.to_lowercase()) {
+                            listbox_clone.append(&clipboard_entry(*id, preview));
+                        }
+                    }
+                }
+            }
+        },
+
+        filter_entry_box = gtk4::Box {
+            set_css_classes: &["filter-entry-box"],
+            set_orientation: gtk4::Orientation::Horizontal,
+            set_hexpand: true,
+
+            gtk4::Label {
+                set_css_classes: &["filter-entry-icon"],
+                set_label: "search",
+                set_halign: gtk4::Align::Start,
+            },
+
+            append: &entry,
+        },
+
         child = gtk4::Box {
+            set_css_classes: &["clipboard-window-content"],
             set_orientation: gtk4::Orientation::Vertical,
             set_spacing: 0,
             set_halign: gtk4::Align::Center,
             set_valign: gtk4::Align::Center,
 
+            append: &filter_entry_box,
             append: &scrollable,
         }
     }
@@ -223,9 +259,25 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
         listbox.append(&clipboard_entry(*id, preview));
     }
 
-    FullscreenWindow::new(
+    let fullscreen = FullscreenWindow::new(
         application,
         &["clipboard-window"],
         &child,
-    )
+    );
+
+    fullscreen.window.connect_unmap({
+        let entry = entry.clone();
+        move |_| {
+            entry.set_text("");
+        }
+    });
+
+    fullscreen.window.connect_map({
+        move |_| {
+            entry.grab_focus();
+            scrollable.vadjustment().set_value(0.0);
+        }
+    });
+
+    fullscreen
 }
