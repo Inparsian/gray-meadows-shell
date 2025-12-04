@@ -2,11 +2,7 @@ use std::sync::LazyLock;
 use futures_signals::signal::{Mutable, SignalExt};
 use gtk4::prelude::*;
 
-use crate::{
-    helpers::{gesture, unit},
-    singletons,
-    widgets::bar::wrapper::SimpleBarModuleWrapper
-};
+use crate::{gesture, unit, singletons, widgets::bar::wrapper::SimpleBarModuleWrapper};
 
 const SWAP_SHOW_THRESHOLD: f64 = 5.0; // Show swap usage only if it's above this threshold, 
                                       // indicating that the system is under memory pressure.

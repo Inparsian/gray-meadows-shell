@@ -4,11 +4,7 @@ use gtk4::prelude::*;
 use ::hyprland::dispatch;
 use ::hyprland::dispatch::WorkspaceIdentifierWithSpecial;
 
-use crate::{
-    singletons::hyprland,
-    helpers::{scss, gesture},
-    widgets::bar::wrapper::SimpleBarModuleWrapper
-};
+use crate::{singletons::hyprland, scss, gesture, widgets::bar::wrapper::SimpleBarModuleWrapper};
 
 const SHOWN_WORKSPACES: usize = 10;
 const WORKSPACE_WIDTH: f64 = 13.0;

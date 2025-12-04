@@ -2,7 +2,7 @@ use futures_signals::signal_vec::VecDiff;
 use gtk4::prelude::*;
 use relm4::RelmIterChildrenExt;
 
-use crate::{helpers::gesture, singletons::mpris::{self, MPRIS, mpris_player::PlaybackStatus, set_default_player}};
+use crate::{gesture, singletons::mpris::{self, MPRIS, mpris_player::PlaybackStatus, set_default_player}};
 
 fn format_artist_list(artists: &[String]) -> String {
     artists.join(", ")

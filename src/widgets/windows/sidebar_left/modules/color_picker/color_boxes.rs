@@ -2,12 +2,7 @@ use std::{rc::Rc, cell::RefCell};
 use futures_signals::signal::{Mutable, SignalExt};
 use gtk4::prelude::*;
 
-use crate::{
-    color::{model::Hsv, LighterDarkerResult},
-    helpers::gesture,
-    ipc,
-    widgets::common::{dynamic_grid::DynamicGrid, tabs::Tabs}
-};
+use crate::{color::{model::Hsv, LighterDarkerResult}, gesture, ipc, widgets::common::{dynamic_grid::DynamicGrid, tabs::Tabs}};
 
 #[derive(Debug, Clone)]
 pub struct ColorBox {

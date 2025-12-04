@@ -3,7 +3,7 @@ mod extended;
 
 use gtk4::prelude::*;
 
-use crate::{helpers::gesture, singletons::mpris, widgets::bar::module::{BarModule, BarModuleWrapper}};
+use crate::{gesture, singletons::mpris, widgets::bar::module::{BarModule, BarModuleWrapper}};
 
 const VOLUME_STEP: f64 = 0.05;
 

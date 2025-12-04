@@ -4,7 +4,7 @@ use std::{path::{Path, PathBuf}, sync::{Mutex, LazyLock}};
 use freedesktop_desktop_entry::{default_paths, get_languages_from_env, Iter, DesktopEntry};
 use notify::{event::{AccessKind, AccessMode}, EventKind, Watcher};
 
-use crate::{helpers::{matching, process}, sql::wrappers::commands};
+use crate::{matching, process, sql::wrappers::commands};
 
 pub struct WeightedDesktopEntry {
     pub entry: DesktopEntry,

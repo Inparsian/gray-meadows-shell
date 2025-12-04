@@ -2,8 +2,11 @@ use gdk4::gio;
 use gtk4::prelude::*;
 
 use crate::{
-    helpers::gesture,
-    singletons::{apps::pixbuf::get_pixbuf_or_fallback, tray::{self, bus::BusEvent, icon::make_icon_pixbuf, subscribe, tray_menu, wrapper::{dbus_menu::Menu, sn_item::StatusNotifierItem}}},
+    gesture,
+    singletons::{
+        apps::pixbuf::get_pixbuf_or_fallback,
+        tray::{self, bus::BusEvent, icon::make_icon_pixbuf, subscribe, tray_menu, wrapper::{dbus_menu::Menu, sn_item::StatusNotifierItem}}
+    },
     widgets::bar::wrapper::SimpleBarModuleWrapper
 };
 

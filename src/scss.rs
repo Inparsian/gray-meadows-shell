@@ -1,7 +1,7 @@
 use std::sync::{Mutex, LazyLock};
 use regex::Regex;
 
-use crate::{color::{is_valid_hex_color, model::Rgba}, helpers::filesystem};
+use crate::{color::{is_valid_hex_color, model::Rgba}, filesystem};
 
 const VAR_REGEX: &str = r"^\$([a-zA-Z0-9_-]+):\s*([a-zA-Z0-9#() ,.-]+);$";
 

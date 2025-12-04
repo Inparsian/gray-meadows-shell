@@ -6,11 +6,17 @@ mod macros;
 mod color;
 mod ipc;
 mod ffi;
-mod helpers;
 mod singletons;
 mod widgets;
 mod sql;
 mod dbus;
+mod display;
+mod filesystem;
+mod gesture;
+mod matching;
+mod process;
+mod scss;
+mod unit;
 
 use std::{cell::RefCell, collections::HashMap, path::Path, sync::{LazyLock, Mutex, OnceLock}};
 use futures_signals::signal::Mutable;
@@ -50,7 +56,7 @@ pub static SQL_CONNECTION: OnceLock<Mutex<Connection>> = OnceLock::new();
 
 pub fn bundle_apply_scss() {
     gtk4::glib::MainContext::default().invoke(|| {
-        let styles_path = helpers::filesystem::get_styles_directory();
+        let styles_path = filesystem::get_styles_directory();
         
         // Run sass
         let output = std::process::Command::new("sass")
@@ -72,14 +78,14 @@ pub fn bundle_apply_scss() {
         APP_LOCAL.with(|app| app.borrow().provider.load_from_data(&css));
         
         // Refresh SCSS variables
-        helpers::scss::refresh_variables();
+        scss::refresh_variables();
     });
 }
 
 fn watch_scss() {
     tokio::spawn(async move {
         let (tx, rx) = std::sync::mpsc::channel();
-        let styles_path = helpers::filesystem::get_styles_directory();
+        let styles_path = filesystem::get_styles_directory();
 
         let mut watcher = notify::recommended_watcher(tx).unwrap();
         let result = watcher.watch(
@@ -112,7 +118,7 @@ fn watch_scss() {
 }
 
 fn activate(application: &Application) {
-    for monitor in helpers::display::get_all_monitors(&gdk4::Display::default().expect("Failed to get default display")) {
+    for monitor in display::get_all_monitors(&gdk4::Display::default().expect("Failed to get default display")) {
         let bar = widgets::bar::BarWindow::new(application, &monitor);
         bar.window.show();
         APP_LOCAL.with(|app| {
@@ -150,7 +156,7 @@ async fn main() {
             match sql::establish_connection() {
                 Ok(connection) => {
                     let _ = SQL_CONNECTION.set(Mutex::new(connection));
-                    println!("SQLite connection established successfully, storing data in {}/sqlite.db", helpers::filesystem::get_config_directory());
+                    println!("SQLite connection established successfully, storing data in {}/sqlite.db", filesystem::get_config_directory());
                 }
                 Err(e) => {
                     eprintln!("Failed to establish SQLite connection: {:?}", e);

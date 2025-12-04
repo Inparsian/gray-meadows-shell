@@ -10,7 +10,7 @@ use regex::Regex;
 use urlencoding::encode;
 
 use crate::{
-    helpers::gesture,
+    gesture,
     ipc,
     singletons::apps,
     widgets::windows::{overview::{

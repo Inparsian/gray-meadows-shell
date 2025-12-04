@@ -13,7 +13,7 @@ mod modules {
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
-use crate::{helpers::gesture, widgets::bar::module::{BarModuleWrapper, hide_all_expanded_modules}};
+use crate::{gesture, widgets::bar::module::{BarModuleWrapper, hide_all_expanded_modules}};
 
 static BAR_HEIGHT: i32 = 33;
 

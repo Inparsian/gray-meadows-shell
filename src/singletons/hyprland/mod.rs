@@ -7,7 +7,7 @@ use hyprland::{
     shared::{HyprData, HyprDataActive, HyprDataActiveOptional}
 };
 
-use crate::helpers::display;
+use crate::display;
 
 // Wrapper structs to work with Hyprland data reactively
 #[derive(Default)]

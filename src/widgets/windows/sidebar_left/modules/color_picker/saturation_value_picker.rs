@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 use futures_signals::signal::{Mutable, SignalExt};
 use gtk4::prelude::*;
 
-use crate::{color::model::Hsv, helpers::gesture};
+use crate::{color::model::Hsv, gesture};
 
 #[derive(Debug, Clone)]
 pub struct SaturationValuePicker {

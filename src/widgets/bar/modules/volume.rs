@@ -2,7 +2,7 @@ use gtk4::prelude::*;
 
 use crate::{
     ffi::astalwp::{WpEvent, ffi},
-    helpers::gesture,
+    gesture,
     singletons::wireplumber,
     widgets::{windows, bar::wrapper::SimpleBarModuleWrapper}
 };
