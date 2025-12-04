@@ -3,7 +3,7 @@ use gtk4::prelude::*;
 use regex::Regex;
 use relm4::RelmRemoveAllExt;
 
-use crate::{ipc, widgets::windows::{self, fullscreen::FullscreenWindow}};
+use crate::{color, ipc, widgets::windows::{self, fullscreen::FullscreenWindow}};
 
 static IMAGE_BINARY_DATA_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"\[\[ binary data (\d+) (KiB|MiB) (\w+) (\d+)x(\d+) \]\]").expect("Failed to compile image binary data regex")
@@ -86,6 +86,23 @@ fn clipboard_entry(id: usize, preview: &str) -> gtk4::Button {
                 }
             }
         }
+    } else if let Some(hex) = color::parse_color_into_hex(preview) {
+        let box_ = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        
+        let color_style_provider = gtk4::CssProvider::new();
+        let color_style = format!(".color-preview-box {{ background-color: {}; }}", hex);
+        let color_box = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        color_box.set_css_classes(&["color-preview-box"]);
+        color_box.set_valign(gtk4::Align::Center);
+        color_box.style_context().add_provider(&color_style_provider, gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION);
+        color_style_provider.load_from_data(&color_style);
+
+        let label = gtk4::Label::new(Some(preview));
+        label.set_halign(gtk4::Align::Start);
+        label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
+        box_.append(&color_box);
+        box_.append(&label);
+        button.set_child(Some(&box_));
     } else {
         let label = gtk4::Label::new(Some(preview));
         label.set_halign(gtk4::Align::Start);

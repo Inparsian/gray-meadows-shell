@@ -1,4 +1,35 @@
+use std::sync::LazyLock;
+use regex::Regex;
+
 const FLOAT_TOLERANCE: f64 = 0.0001;
+
+pub static INT_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^\d{1,8}$").unwrap()
+});
+
+pub static RGB_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$").unwrap()
+});
+
+pub static RGBA_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^rgba\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(0|0?\.\d+|1(\.0)?)\s*\)$").unwrap()
+});
+
+pub static HSV_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^hsv\(\s*(\d{1,3}(?:\.\d+)?)\s*,\s*(\d{1,3}(?:\.\d+)?)%\s*,\s*(\d{1,3}(?:\.\d+)?)%\s*\)$").unwrap()
+});
+
+pub static HSL_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^hsl\(\s*(\d{1,3}(?:\.\d+)?)\s*,\s*(\d{1,3}(?:\.\d+)?)%\s*,\s*(\d{1,3}(?:\.\d+)?)%\s*\)$").unwrap()
+});
+
+pub static CMYK_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^cmyk\(\s*(\d{1,3})%\s*,\s*(\d{1,3})%\s*,\s*(\d{1,3})%\s*,\s*(\d{1,3})%\s*\)$").unwrap()
+});
+
+pub static OKLCH_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"^oklch\(\s*(\d{1,3}(?:\.\d+)?)\s+(\d{1,3}(?:\.\d+)?)\s+(\d{1,3}(?:\.\d+)?)\s*\)$").unwrap()
+});
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Rgba {
@@ -33,6 +64,26 @@ impl Rgba {
             green: components[1],
             blue: components[2],
             alpha: components[3]
+        }
+    }
+
+    pub fn from_string(s: &str) -> Option<Self> {
+        if let Some(captures) = RGB_PATTERN.captures(s.trim()) {
+            let red = captures.get(1)?.as_str().parse::<u8>().ok()?;
+            let green = captures.get(2)?.as_str().parse::<u8>().ok()?;
+            let blue = captures.get(3)?.as_str().parse::<u8>().ok()?;
+
+            Some(Self { red, green, blue, alpha: 255 })
+        } else if let Some(captures) = RGBA_PATTERN.captures(s.trim()) {
+            let red = captures.get(1)?.as_str().parse::<u8>().ok()?;
+            let green = captures.get(2)?.as_str().parse::<u8>().ok()?;
+            let blue = captures.get(3)?.as_str().parse::<u8>().ok()?;
+            let alpha_float = captures.get(4)?.as_str().parse::<f64>().ok()?;
+            let alpha = (alpha_float * 255.0).round() as u8;
+
+            Some(Self { red, green, blue, alpha })
+        } else {
+            None
         }
     }
 
@@ -130,6 +181,15 @@ impl Hsv {
         let value = (max / 255.0) * 100.0;
 
         Self { hue, saturation, value }
+    }
+
+    pub fn from_string(s: &str) -> Option<Self> {
+        let captures = HSV_PATTERN.captures(s.trim())?;
+        let hue = captures.get(1)?.as_str().parse::<f64>().ok()?;
+        let saturation = captures.get(2)?.as_str().parse::<f64>().ok()?;
+        let value = captures.get(3)?.as_str().parse::<f64>().ok()?;
+
+        Some(Self { hue, saturation, value })
     }
 
     pub fn as_string(&self) -> String {
@@ -241,6 +301,15 @@ impl Hsl {
         }
     }
 
+    pub fn from_string(s: &str) -> Option<Self> {
+        let captures = HSL_PATTERN.captures(s.trim())?;
+        let hue = captures.get(1)?.as_str().parse::<f64>().ok()?;
+        let saturation = captures.get(2)?.as_str().parse::<f64>().ok()?;
+        let lightness = captures.get(3)?.as_str().parse::<f64>().ok()?;
+
+        Some(Self { hue, saturation, lightness })
+    }
+
     pub fn as_string(&self) -> String {
         format!("hsl({:.2}, {:.2}%, {:.2}%)", self.hue, self.saturation, self.lightness)
     }
@@ -296,6 +365,16 @@ impl Cmyk {
         }
     }
 
+    pub fn from_string(s: &str) -> Option<Self> {
+        let captures = CMYK_PATTERN.captures(s.trim())?;
+        let cyan = captures.get(1)?.as_str().parse::<u8>().ok()?;
+        let magenta = captures.get(2)?.as_str().parse::<u8>().ok()?;
+        let yellow = captures.get(3)?.as_str().parse::<u8>().ok()?;
+        let black = captures.get(4)?.as_str().parse::<u8>().ok()?;
+
+        Some(Self { cyan, magenta, yellow, black })
+    }
+
     pub fn as_string(&self) -> String {
         format!("cmyk({}%, {}%, {}%, {}%)", self.cyan, self.magenta, self.yellow, self.black)
     }
@@ -344,6 +423,15 @@ impl Oklch {
         };
 
         Self { lightness, chroma, hue }
+    }
+
+    pub fn from_string(s: &str) -> Option<Self> {
+        let captures = OKLCH_PATTERN.captures(s.trim())?;
+        let lightness = captures.get(1)?.as_str().parse::<f64>().ok()?;
+        let chroma = captures.get(2)?.as_str().parse::<f64>().ok()?;
+        let hue = captures.get(3)?.as_str().parse::<f64>().ok()?;
+
+        Some(Self { lightness, chroma, hue })
     }
 
     pub fn as_string(&self) -> String {

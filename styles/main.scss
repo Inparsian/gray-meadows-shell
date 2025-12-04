@@ -565,8 +565,6 @@
     background: transparent;
 
     .clipboard-listbox {
-        max-height: 400px;
-        min-width: 300px;
         background: $background-color-primary;
         border: 1px solid $border-color-primary;
         padding: 0px;
@@ -595,6 +593,12 @@
             image {
                 margin-top: -56px;
                 margin-bottom: -56px;
+            }
+
+            .color-preview-box {
+                min-width: 12px;
+                min-height: 12px;
+                margin-right: 8px;
             }
         }
     }

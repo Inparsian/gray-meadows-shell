@@ -1,4 +1,4 @@
-use crate::color::model::Hsv;
+use crate::color::model::{Hsv, int_to_hex};
 
 const FLOAT_TOLERANCE: f64 = 0.0001;
 
@@ -15,6 +15,44 @@ pub fn is_valid_hex_color(hex: &str) -> bool {
     let len = hex.len();
 
     (len == 6 || len == 8 || len == 3 || len == 4) && hex.chars().all(|c| c.is_ascii_hexdigit())
+}
+
+pub fn is_valid_int_color(int_str: &str) -> bool {
+    model::INT_PATTERN.is_match(int_str.trim())
+}
+
+pub fn parse_color_into_hex(string: &str) -> Option<String> {
+    if string.starts_with('#') && is_valid_hex_color(string) {
+        return Some(string.to_owned());
+    }
+
+    if is_valid_int_color(string) {
+        if let Ok(int_value) = string.trim().parse::<u32>() {
+            return Some(int_to_hex(int_value));
+        }
+    }
+
+    if let Some(rgba) = model::Rgba::from_string(string) {
+        return Some(rgba.as_hex());
+    }
+
+    if let Some(hsv) = model::Hsv::from_string(string) {
+        return Some(hsv.as_hex());
+    }
+
+    if let Some(hsl) = model::Hsl::from_string(string) {
+        return Some(hsl.as_hex());
+    }
+
+    if let Some(cmyk) = model::Cmyk::from_string(string) {
+        return Some(cmyk.as_hex());
+    }
+
+    if let Some(oklch) = model::Oklch::from_string(string) {
+        return Some(oklch.as_hex());
+    }
+
+    None
 }
 
 pub fn get_analogous_colors(hsv: Hsv, count: u32) -> Vec<Hsv> {
