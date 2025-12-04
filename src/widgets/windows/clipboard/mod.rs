@@ -1,4 +1,4 @@
-use std::{cell::RefCell, process::Stdio, rc::Rc, sync::LazyLock};
+use std::{cell::RefCell, process::Stdio, rc::Rc, collections::HashMap, sync::{LazyLock, Mutex}};
 use gtk4::prelude::*;
 use regex::Regex;
 use relm4::RelmRemoveAllExt;
@@ -11,8 +11,15 @@ static IMAGE_WIDTH: u32 = 192;
 static IMAGE_BINARY_DATA_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"\[\[ binary data (\d+) ([KMGT]i)?B (\w+) (\d+)x(\d+) \]\]").expect("Failed to compile image binary data regex")
 });
+static DECODE_CACHE: LazyLock<Mutex<HashMap<usize, Vec<u8>>>> = LazyLock::new(|| {
+    Mutex::new(HashMap::new())
+});
 
 pub fn decode_clipboard_entry(id: &str) -> Option<Vec<u8>> {
+    if DECODE_CACHE.lock().unwrap().contains_key(&id.parse::<usize>().ok()?) {
+        return DECODE_CACHE.lock().unwrap().get(&id.parse::<usize>().ok()?).cloned();
+    }
+
     // fetch the image data from cliphist
     let output = std::process::Command::new("cliphist")
         .arg("decode")
@@ -21,6 +28,9 @@ pub fn decode_clipboard_entry(id: &str) -> Option<Vec<u8>> {
         .ok()?;
 
     output.status.success().then_some(output.stdout)
+        .inspect(|data| if let Ok(parsed_id) = id.parse::<usize>() {
+            DECODE_CACHE.lock().unwrap().insert(parsed_id, data.clone());
+        })
 }
 
 pub fn is_an_image_clipboard_entry(preview: &str) -> bool {
