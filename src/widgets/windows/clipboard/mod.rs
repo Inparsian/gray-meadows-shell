@@ -3,11 +3,12 @@ use gtk4::prelude::*;
 use regex::Regex;
 use relm4::RelmRemoveAllExt;
 use image::codecs::png::PngEncoder;
+use image::imageops::FilterType;
 use image::ImageEncoder;
 
 use crate::{color, ipc, widgets::windows::{self, fullscreen::FullscreenWindow}};
 
-static IMAGE_WIDTH: u32 = 192;
+static IMAGE_SIZE: u32 = 192;
 static IMAGE_BINARY_DATA_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"\[\[ binary data (\d+) ([KMGT]i)?B (\w+) (\d+)x(\d+) \]\]").expect("Failed to compile image binary data regex")
 });
@@ -86,23 +87,30 @@ fn clipboard_entry(id: usize, preview: &str) -> gtk4::Button {
     button.set_css_classes(&["clipboard-entry"]);
 
     if is_an_image_clipboard_entry(preview) {
-        let image = gtk4::Image::new();
-        image.set_halign(gtk4::Align::Start);
-        image.set_valign(gtk4::Align::Center);
-        image.set_pixel_size(IMAGE_WIDTH as i32);
-        button.set_child(Some(&image));
+        let picture = gtk4::Picture::new();
+        picture.set_halign(gtk4::Align::Start);
+        picture.set_valign(gtk4::Align::Center);
+        picture.set_keep_aspect_ratio(true);
+        button.set_child(Some(&picture));
 
-        let (tx, rx) = async_channel::unbounded::<Vec<u8>>();
+        let (tx, rx) = async_channel::unbounded::<(u32, u32, Vec<u8>)>();
         tokio::spawn(async move {
             if let Some(decoded) = decode_clipboard_entry(&id.to_string()) {
                 let image = image::load_from_memory(&decoded).ok();
                 if let Some(img) = image {
-                    let scaled_img = if img.width() > IMAGE_WIDTH {
-                        img.resize(
-                            IMAGE_WIDTH, 
-                            (img.height() as f32 * (IMAGE_WIDTH as f32 / img.width() as f32)) as u32, 
-                            image::imageops::FilterType::Lanczos3
-                        )
+                    let scaled_img = if img.width() > IMAGE_SIZE || img.height() > IMAGE_SIZE {
+                        let aspect = img.width() as f32 / img.height() as f32;
+                        let new_width = if aspect >= 1.0 {
+                            IMAGE_SIZE
+                        } else {
+                            (IMAGE_SIZE as f32 * aspect) as u32
+                        };
+                        let new_height = if aspect >= 1.0 {
+                            (IMAGE_SIZE as f32 / aspect) as u32
+                        } else {
+                            IMAGE_SIZE
+                        };
+                        img.resize(new_width, new_height, FilterType::Lanczos3)
                     } else {
                         img
                     };
@@ -114,19 +122,21 @@ fn clipboard_entry(id: usize, preview: &str) -> gtk4::Button {
                         scaled_img.height(),
                         scaled_img.color().into()
                     ).is_ok() {
-                        let _ = tx.send(buf).await;
+                        let _ = tx.send((scaled_img.width(), scaled_img.height(), buf)).await;
                     }
                 }
             }
         });
 
         gtk4::glib::spawn_future_local(async move {
-            if let Ok(decoded) = rx.recv().await {
+            if let Ok((width, height, decoded)) = rx.recv().await {
                 let loader = gtk4::gdk_pixbuf::PixbufLoader::new();
                 if loader.write(&decoded).is_ok() {
                     let _ = loader.close();
                     if let Some(pixbuf) = loader.pixbuf() {
-                        image.set_from_pixbuf(Some(&pixbuf));
+                        picture.set_pixbuf(Some(&pixbuf));
+                        picture.set_width_request(width as i32);
+                        picture.set_height_request(height as i32);
                     }
                 }
             }
