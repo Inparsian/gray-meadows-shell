@@ -85,8 +85,6 @@ fn clipboard_entry(id: usize, preview: &str) -> gtk4::Button {
         let (tx, rx) = async_channel::unbounded::<Vec<u8>>();
         tokio::spawn(async move {
             if let Some(decoded) = decode_clipboard_entry(&id.to_string()) {
-                // downscale the image data to 256px width if larger
-                println!("Decoded image data for clipboard entry {} ({} bytes)", id, decoded.len());
                 let image = image::load_from_memory(&decoded).ok();
                 if let Some(img) = image {
                     let scaled_img = if img.width() > IMAGE_WIDTH {
@@ -106,7 +104,6 @@ fn clipboard_entry(id: usize, preview: &str) -> gtk4::Button {
                         scaled_img.height(),
                         scaled_img.color().into()
                     ).is_ok() {
-                        println!("Encoded scaled image to PNG ({} bytes)", buf.len());
                         let _ = tx.send(buf).await;
                     }
                 }
