@@ -126,7 +126,7 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
             },
         },
 
-        windows = gtk4::Box {
+        windows_box = gtk4::Box {
             set_css_classes: &["overview-windows-box"],
             set_orientation: gtk4::Orientation::Horizontal,
             set_spacing: 8,
@@ -141,7 +141,7 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
             set_transition_type: gtk4::RevealerTransitionType::SlideDown,
             set_transition_duration: 250,
             set_reveal_child: true,
-            set_child: Some(&windows)
+            set_child: Some(&windows_box)
         },
 
         entry_box_icon = generate_entry_box_icon_stack(),
@@ -276,83 +276,94 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
     });
 
     fullscreen.window.add_controller(gesture::on_key_press({
+        let entry = entry.clone();
         let search_results = search_results.clone();
 
+        // ListBoxRow steals the events for the Arrow Keys if it's focused, so
+        // we can assume that it isn't focused if an event for Down is triggered
+        // on the window
+        move |val, _| if !entry.text().is_empty() && val.name() == Some("Down".into()) {
+            let first_child = search_results.borrow().get_widget().first_child();
+
+            first_child.map(|child| child.downcast_ref::<gtk4::ListBoxRow>().map(|row| {
+                row.grab_focus();
+
+                if let Some(button) = get_button_from_row(row) {
+                    button.grab_focus();
+                }
+            }));
+        }
+    }));
+
+    let search_results_widget = search_results.borrow().get_widget();
+    search_results_widget.add_controller(gesture::on_key_press({
+        let entry = entry.clone();
+        let search_results_widget = search_results_widget.clone();
+
         move |val, _| {
-            // ListBoxRow steals the events for the Arrow Keys if it's focused, so
-            // we can assume that it isn't focused if an event for Down is triggered
-            // on the window
-            if val.name() == Some("Down".into()) {
-                let first_child = search_results.borrow().get_widget().first_child();
+            if val.name() == Some("Up".into()) {
+                let first_child = search_results_widget.first_child();
 
                 first_child.map(|child| child.downcast_ref::<gtk4::ListBoxRow>().map(|row| {
-                    row.grab_focus();
+                    let button = get_button_from_row(row);
 
-                    if let Some(button) = get_button_from_row(row) {
-                        button.grab_focus();
+                    if button.is_some_and(|b| b.has_focus()) {
+                        entry.grab_focus_without_selecting();
                     }
                 }));
+            }
+
+            else if ["Left", "Right", "BackSpace", "Delete"].contains(&val.name().unwrap_or_default().as_str()) {
+                entry.grab_focus_without_selecting();
+
+                let text = entry.text().to_string();
+                match val.name().as_deref() {
+                    Some("Left" | "Right") => {
+                        let pos = match val.name().as_deref() {
+                            Some("Left") => text.len().saturating_sub(1),
+                            Some("Right") => text.len(),
+                            _ => 0
+                        };
+                
+                        entry.select_region(pos as i32, pos as i32);
+                    },
+
+                    Some("BackSpace") => {
+                        if !text.is_empty() {
+                            let new_text = text[..text.len().saturating_sub(1)].to_string();
+                            entry.set_text(&new_text);
+                            entry.select_region(new_text.len() as i32, new_text.len() as i32);
+                        }
+                    },
+
+                    _ => {}
+                }
+            }
+
+            // Assume the user wants to continue typing if the key is... well, on the keyboard
+            else if ALPHANUMERIC_SYMBOLIC_REGEX.is_match(&val.to_unicode().unwrap_or_default().to_string()) {
+                entry.grab_focus_without_selecting();
+
+                let mut text = entry.text().to_string();
+                text.push(val.to_unicode().unwrap_or_default());
+                entry.set_text(&text);
+                entry.select_region(text.len() as i32, text.len() as i32);
             }
         }
     }));
 
-    {
-        let search_results_widget = search_results.borrow().get_widget();
-        search_results_widget.add_controller(gesture::on_key_press({
-            let search_results_widget = search_results_widget.clone();
+    windows_box.add_controller(gesture::on_key_press({
+        move |val, _| {
+            if ALPHANUMERIC_SYMBOLIC_REGEX.is_match(&val.to_unicode().unwrap_or_default().to_string()) {
+                entry.grab_focus_without_selecting();
 
-            move |val, _| {
-                if val.name() == Some("Up".into()) {
-                    let first_child = search_results_widget.first_child();
-
-                    first_child.map(|child| child.downcast_ref::<gtk4::ListBoxRow>().map(|row| {
-                        let button = get_button_from_row(row);
-
-                        if button.is_some_and(|b| b.has_focus()) {
-                            entry.grab_focus_without_selecting();
-                        }
-                    }));
-                }
-
-                else if ["Left", "Right", "BackSpace", "Delete"].contains(&val.name().unwrap_or_default().as_str()) {
-                    entry.grab_focus_without_selecting();
-
-                    let text = entry.text().to_string();
-                    match val.name().as_deref() {
-                        Some("Left" | "Right") => {
-                            let pos = match val.name().as_deref() {
-                                Some("Left") => text.len().saturating_sub(1),
-                                Some("Right") => text.len(),
-                                _ => 0
-                            };
-                    
-                            entry.select_region(pos as i32, pos as i32);
-                        },
-
-                        Some("BackSpace") => {
-                            if !text.is_empty() {
-                                let new_text = text[..text.len().saturating_sub(1)].to_string();
-                                entry.set_text(&new_text);
-                                entry.select_region(new_text.len() as i32, new_text.len() as i32);
-                            }
-                        },
-
-                        _ => {}
-                    }
-                }
-
-                // Assume the user wants to continue typing if the key is... well, on the keyboard
-                else if ALPHANUMERIC_SYMBOLIC_REGEX.is_match(&val.to_unicode().unwrap_or_default().to_string()) {
-                    entry.grab_focus_without_selecting();
-
-                    let mut text = entry.text().to_string();
-                    text.push(val.to_unicode().unwrap_or_default());
-                    entry.set_text(&text);
-                    entry.select_region(text.len() as i32, text.len() as i32);
-                }
+                let mut text = entry.text().to_string();
+                text.push(val.to_unicode().unwrap_or_default());
+                entry.set_text(&text);
+                entry.select_region(text.len() as i32, text.len() as i32);
             }
-        }));
-    }
+        }
+    }));
 
     ipc::listen_for_messages_local(move |message| {
         if message.as_str() == "update_overview_windows" {
