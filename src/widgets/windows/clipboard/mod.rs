@@ -86,12 +86,11 @@ fn clipboard_entry(id: usize, preview: &str) -> gtk4::Button {
     let button = gtk4::Button::new();
     button.set_css_classes(&["clipboard-entry"]);
 
-    if is_an_image_clipboard_entry(preview) {
+    let child: gtk4::Widget = if is_an_image_clipboard_entry(preview) {
         let picture = gtk4::Picture::new();
         picture.set_halign(gtk4::Align::Start);
         picture.set_valign(gtk4::Align::Center);
         picture.set_keep_aspect_ratio(true);
-        button.set_child(Some(&picture));
 
         let (tx, rx) = async_channel::unbounded::<(u32, u32, Vec<u8>)>();
         tokio::spawn(async move {
@@ -128,19 +127,24 @@ fn clipboard_entry(id: usize, preview: &str) -> gtk4::Button {
             }
         });
 
-        gtk4::glib::spawn_future_local(async move {
-            if let Ok((width, height, decoded)) = rx.recv().await {
-                let loader = gtk4::gdk_pixbuf::PixbufLoader::new();
-                if loader.write(&decoded).is_ok() {
-                    let _ = loader.close();
-                    if let Some(pixbuf) = loader.pixbuf() {
-                        picture.set_pixbuf(Some(&pixbuf));
-                        picture.set_width_request(width as i32);
-                        picture.set_height_request(height as i32);
+        gtk4::glib::spawn_future_local({
+            let picture = picture.clone();
+            async move {
+                if let Ok((width, height, decoded)) = rx.recv().await {
+                    let loader = gtk4::gdk_pixbuf::PixbufLoader::new();
+                    if loader.write(&decoded).is_ok() {
+                        let _ = loader.close();
+                        if let Some(pixbuf) = loader.pixbuf() {
+                            picture.set_pixbuf(Some(&pixbuf));
+                            picture.set_width_request(width as i32);
+                            picture.set_height_request(height as i32);
+                        }
                     }
                 }
             }
         });
+
+        picture.upcast()
     } else if let Some(hex) = color::parse_color_into_hex(preview) {
         let box_ = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
         
@@ -157,18 +161,26 @@ fn clipboard_entry(id: usize, preview: &str) -> gtk4::Button {
         label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
         box_.append(&color_box);
         box_.append(&label);
-        button.set_child(Some(&box_));
+        box_.upcast()
     } else {
         let label = gtk4::Label::new(Some(preview));
         label.set_halign(gtk4::Align::Start);
         label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
-        button.set_child(Some(&label));
-    }
+        label.upcast()
+    };
 
     button.connect_clicked(move |_| {
         copy_entry(id);
         windows::hide("clipboard");
     });
+
+    // stupid layout trick that helps the button not vertically stretch more than needed
+    let bx = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+    let bxend = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+    bxend.set_halign(gtk4::Align::End);
+    bx.append(&child);
+    bx.append(&bxend);
+    button.set_child(Some(&bx));
 
     button
 }
