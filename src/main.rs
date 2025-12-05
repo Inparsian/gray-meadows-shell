@@ -131,7 +131,13 @@ fn activate(application: &Application) {
         app.borrow().windows.borrow_mut().insert("session".into(), Box::new(widgets::windows::session::new(application)));
         app.borrow().windows.borrow_mut().insert("left_sidebar".into(), Box::new(widgets::windows::sidebar_left::new(application)));
         app.borrow().windows.borrow_mut().insert("right_sidebar".into(), Box::new(widgets::windows::sidebar_right::new(application)));
-        app.borrow().windows.borrow_mut().insert("clipboard".into(), Box::new(widgets::windows::clipboard::new(application)));
+
+        // optional features
+        if process::is_command_available("cliphist") && process::is_command_available("wl-copy") {
+            app.borrow().windows.borrow_mut().insert("clipboard".into(), Box::new(widgets::windows::clipboard::new(application)));
+        } else {
+            println!("cliphist or wl-copy not found, clipboard window will not be available");
+        }
     });
 }
 

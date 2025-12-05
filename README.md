@@ -62,10 +62,9 @@ There's no exhaustive list of dependencies at the moment, as this project is sti
 - `gtk4-layer-shell`
 - `dart-sass` (for compiling SASS stylesheets)
 - `libastal-wireplumber` (for WirePlumber support)
+- (optional) `cliphist` and `wl-clipboard` (for clipboard history support)
 
 If I've missed any, or any of these are redundant, please open an issue or PR and I'll update this list accordingly.
-
-
 
 ### Building Gray Meadows
 To build Gray Meadows, you will need to have Rust and Cargo installed on your system.

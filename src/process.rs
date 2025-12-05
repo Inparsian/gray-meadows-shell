@@ -33,6 +33,18 @@ fn detach_child() {
     }
 }
 
+pub fn is_command_available(command: &str) -> bool {
+    let paths = ["/bin", "/usr/bin", "/usr/local/bin"];
+    for path in paths {
+        let full_path = Path::new(path).join(command);
+        if full_path.exists() && full_path.is_file() {
+            return true;
+        }
+    }
+
+    false
+}
+
 pub fn launch(input: &str) {
     // Remove field codes from argv (including those that are deprecated), we won't be needing them...
     let argv: Vec<String> = if let Some(args) = shlex::split(input) {
