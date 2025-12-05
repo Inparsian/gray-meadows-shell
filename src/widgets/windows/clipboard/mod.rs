@@ -157,14 +157,16 @@ fn clipboard_entry(id: usize, preview: &str) -> gtk4::Button {
         color_style_provider.load_from_data(&color_style);
 
         let label = gtk4::Label::new(Some(preview));
-        label.set_halign(gtk4::Align::Start);
+        label.set_hexpand(true);
+        label.set_xalign(0.0);
         label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
         box_.append(&color_box);
         box_.append(&label);
         box_.upcast()
     } else {
         let label = gtk4::Label::new(Some(preview));
-        label.set_halign(gtk4::Align::Start);
+        label.set_hexpand(true);
+        label.set_xalign(0.0);
         label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
         label.upcast()
     };
