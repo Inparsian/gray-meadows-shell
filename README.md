@@ -16,16 +16,19 @@ ok
 
 <table align="center">
   <tr>
-    <td colspan="2">
+    <td colspan="1">
       <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/77459e91-98fc-4080-ac3f-304816f52d64" />
+    </td>
+    <td colspan="1">
+      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/d6bd4dc4-6f7e-45c4-aadb-c61d61622aa5" />
     </td>
   </tr>
   <tr>
     <td colspan="1">
-      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/d6bd4dc4-6f7e-45c4-aadb-c61d61622aa5" />
+      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/87d6df6e-7bb2-41d8-a8c1-e5001a69d261" />
     </td>
     <td colspan="1">
-      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/87d6df6e-7bb2-41d8-a8c1-e5001a69d261" />
+      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/fe30025e-d024-4757-ba01-5bf306996672" />
     </td>
   </tr>
 </table>
