@@ -1,4 +1,4 @@
-use std::{cell::RefCell, process::Stdio, rc::Rc, collections::HashMap, sync::{LazyLock, Mutex}};
+use std::{cell::RefCell, collections::HashMap, io::{Read, Write}, process::Stdio, rc::Rc, sync::{LazyLock, Mutex}};
 use gtk4::prelude::*;
 use regex::Regex;
 use relm4::RelmRemoveAllExt;
@@ -68,13 +68,35 @@ pub fn copy_entry(id: usize) {
             .spawn();
 
         if let Ok(mut decode_child) = decode_process {
-            if let Some(decode_stdout) = decode_child.stdout.take() {
-                let wl_copy_process = std::process::Command::new("wl-copy")
-                    .stdin(Stdio::from(decode_stdout))
-                    .spawn();
+            if let Some(mut decode_stdout) = decode_child.stdout.take() {
+                let mut buffer = Vec::new();
 
-                if let Ok(mut wl_copy_child) = wl_copy_process {
-                    let _ = wl_copy_child.wait();
+                if let Ok(bytes_read) = decode_stdout.read_to_end(&mut buffer) {
+                    if bytes_read == 0 {
+                        return;
+                    }
+
+                    // if the buffer converted to lossy utf8 is one character, copy it with a output call,
+                    // wl-copy doesn't like single character inputs to it's stdin for some reason
+                    let lossy_utf8 = String::from_utf8_lossy(&buffer);
+                    if lossy_utf8.chars().count() == 1 {
+                        let _ = std::process::Command::new("wl-copy")
+                            .arg(lossy_utf8.to_string())
+                            .output();
+                        return;
+                    }
+
+                    // otherwise the buffer can be piped as usual
+                    let wl_copy_process = std::process::Command::new("wl-copy")
+                        .stdin(Stdio::piped())
+                        .spawn();
+
+                    if let Ok(mut wl_copy_child) = wl_copy_process {
+                        if let Some(mut wl_copy_stdin) = wl_copy_child.stdin.take() {
+                            let _ = wl_copy_stdin.write_all(&buffer);
+                        }
+                        let _ = wl_copy_child.wait();
+                    }
                 }
             }
             let _ = decode_child.wait();
