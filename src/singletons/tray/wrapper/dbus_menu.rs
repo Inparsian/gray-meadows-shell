@@ -1,7 +1,10 @@
 use std::time::SystemTime;
 use dbus::{arg::{self, RefArg, Variant}, Error, blocking};
 
-use crate::singletons::tray::{bus::{self, make_key_value_pairs}, proxy::menu::RawLayout};
+use crate::singletons::tray::{bus::{self, make_key_value_pairs}};
+
+pub type RawLayout = (u32, RawMenuItem);
+pub type RawMenuItem = (i32, arg::PropMap, Vec<arg::Variant<Box<dyn arg::RefArg + 'static>>>,);
 
 #[derive(Default, Debug, Clone)]
 pub struct Menu {
