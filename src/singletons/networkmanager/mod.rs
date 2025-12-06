@@ -5,18 +5,12 @@ pub mod bus;
 
 use dbus::{message::{MatchRule, MessageType}};
 
-use crate::dbus::start_monitoring;
-
-pub fn handle_nm_signal_message(msg: &dbus::Message) {
-    if let Some(member) = msg.member() {
-        if let Some(path) = msg.path() {
-            if path.starts_with("/org/freedesktop/NetworkManager") {
-                println!("Received NetworkManager signal: {} on path: {}", member, path);
-            }
-        }
-    }
+#[allow(dead_code)]
+pub fn handle_nm_signal_message(_msg: &dbus::Message) {
+    todo!("Handle NetworkManager signal messages here");
 }
 
+#[allow(unused_variables)]
 pub fn activate() {
     // DBus client proxy testing
     let connection = dbus::blocking::Connection::new_system()
@@ -52,5 +46,5 @@ pub fn activate() {
     let rule = MatchRule::new()
         .with_type(MessageType::Signal);
 
-    start_monitoring(rule, true, handle_nm_signal_message);
+    //start_monitoring(rule, true, handle_nm_signal_message);
 }

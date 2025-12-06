@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, time::Duration};
 
 #[derive(Clone, Debug)]
 pub struct Timeout {
@@ -14,7 +14,7 @@ impl Default for Timeout {
 }
 
 impl Timeout {
-    pub fn set<F>(&self, duration: std::time::Duration, callback: F)
+    pub fn set<F>(&self, duration: Duration, callback: F)
     where
         F: FnOnce() + 'static,
     {
