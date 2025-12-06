@@ -1,3 +1,6 @@
+mod client;
+mod crossroads;
+
 use std::time::Duration;
 use dbus::{channel::MatchingReceiver, message::MatchRule};
 
