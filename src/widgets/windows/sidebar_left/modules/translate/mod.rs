@@ -5,12 +5,11 @@ use std::{sync::{Mutex, LazyLock}, time::Duration};
 use gtk4::prelude::*;
 use tokio::sync::broadcast;
 
-use crate::singletons::g_translate::{
-    language::{self, Language, AUTO_LANG},
+use crate::{singletons::g_translate::{
+    language::{self, AUTO_LANG, Language},
     result::GoogleTranslateResult, translate
-};
+}, timeout::Timeout};
 
-static WORKER_TIMEOUT: LazyLock<Mutex<Option<gtk4::glib::SourceId>>> = LazyLock::new(|| Mutex::new(None));
 static WORKING: LazyLock<Mutex<bool>> = LazyLock::new(|| Mutex::new(false));
 static SOURCE_LANG: LazyLock<Mutex<Option<Language>>> = LazyLock::new(|| Mutex::new(language::get_by_name("English")));
 static TARGET_LANG: LazyLock<Mutex<Option<Language>>> = LazyLock::new(|| Mutex::new(language::get_by_name("Spanish")));
@@ -104,6 +103,7 @@ async fn translate_future(text: String, autocorrect: bool) {
 }
 
 pub fn new() -> gtk4::Box {
+    let timeout = Timeout::default();
     let input_buffer = gtk4::TextBuffer::new(None);
     let output_buffer = gtk4::TextBuffer::new(None);
 
@@ -255,22 +255,13 @@ pub fn new() -> gtk4::Box {
             return;
         }
 
-        let timeout = WORKER_TIMEOUT.lock().unwrap().take();
-        if let Some(source_id) = timeout {
-            source_id.remove();
-        }
-
         let text = buffer.text(&buffer.start_iter(), &buffer.end_iter(), false).to_string();
         if !text.is_empty() {
-            let timeout = gtk4::glib::timeout_add_local_once(Duration::from_millis(500), move || {
-                WORKER_TIMEOUT.lock().unwrap().take();
-
-                std::thread::spawn(
-                    move || tokio::runtime::Runtime::new().unwrap().block_on(translate_future(text, false))
-                );
+            timeout.set(Duration::from_millis(500), move || {
+                std::thread::spawn(|| {
+                    tokio::runtime::Runtime::new().unwrap().block_on(translate_future(text, false));
+                });
             });
-
-            *WORKER_TIMEOUT.lock().unwrap() = Some(timeout);
         }
     });
 

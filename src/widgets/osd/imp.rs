@@ -1,12 +1,14 @@
-use std::{time::Duration, rc::Rc, cell::RefCell};
+use std::time::Duration;
 use gtk4::prelude::*;
+
+use crate::timeout::Timeout;
 
 static TRANSITION_DURATION_MS: u32 = 200;
 static DISPLAY_DURATION: f64 = 2.0;
 
 #[derive(Debug, Clone)]
 pub struct Osd {
-    timeout: Rc<RefCell<Option<gtk4::glib::SourceId>>>,
+    timeout: Timeout,
     pub reveal: gtk4::Revealer,
     pub key_label: gtk4::Label,
     pub value_label: gtk4::Label,
@@ -61,7 +63,7 @@ impl Default for Osd {
         }
 
         Osd {
-            timeout: Rc::new(RefCell::new(None)),
+            timeout: Timeout::default(),
             reveal,
             key_label: header_key,
             value_label: header_value,
@@ -96,20 +98,12 @@ impl Osd {
         self.reveal.add_css_class("revealed");
         self.reveal.set_reveal_child(true);
 
-        if let Ok(mut timeout) = self.timeout.try_borrow_mut() {
-            if let Some(source) = (*timeout).take() {
-                source.remove();
+        self.timeout.set(Duration::from_secs_f64(DISPLAY_DURATION), {
+            let reveal = self.reveal.clone();
+            move || {
+                reveal.remove_css_class("revealed");
+                reveal.set_reveal_child(false);
             }
-
-            *timeout = Some(gtk4::glib::timeout_add_local_once(Duration::from_secs_f64(DISPLAY_DURATION), {
-                let reveal = self.reveal.clone();
-                let timeout = self.timeout.clone();
-                move || {
-                    reveal.remove_css_class("revealed");
-                    reveal.set_reveal_child(false);
-                    *timeout.borrow_mut() = None;
-                }
-            }));
-        }
+        });
     }
 }
