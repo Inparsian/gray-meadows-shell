@@ -1,7 +1,7 @@
 use freedesktop_desktop_entry::get_languages_from_env;
 use gtk4::prelude::*;
 
-use crate::{widgets::windows, singletons::apps::{self, pixbuf::get_pixbuf_or_fallback}};
+use crate::{pixbuf, widgets::windows, singletons::apps};
 
 pub mod frequent;
 pub mod recent;
@@ -30,7 +30,7 @@ pub fn build_window(label: &str) -> (gtk4::Box, gtk4::Box) {
 pub fn make_item_from_command(command: &str) -> Option<gtk4::Button> {
     let locales = get_languages_from_env();
     let entry = apps::get_from_command(command)?;
-    let icon_pixbuf = get_pixbuf_or_fallback(entry.icon().unwrap_or_default(), "emote-love");
+    let icon_pixbuf = pixbuf::get_pixbuf_or_fallback(entry.icon().unwrap_or_default(), "emote-love");
 
     view! {
         button = gtk4::Button {

@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 use gtk4::prelude::*;
 
-use crate::{widgets::windows, matching, scss, singletons::apps::{self, pixbuf::get_pixbuf_or_fallback}};
+use crate::{widgets::windows, matching, pixbuf, scss, singletons::apps};
 
 pub static ITEM_ANIMATION_DURATION: u32 = 175;
 
@@ -64,7 +64,7 @@ impl OverviewSearchItem {
         action: OverviewSearchItemAction,
         query: Option<String>
     ) -> Self {
-        let icon_pixbuf = get_pixbuf_or_fallback(&icon, "emote-love");
+        let icon_pixbuf = pixbuf::get_pixbuf_or_fallback(&icon, "emote-love");
         let action = Rc::new(RefCell::new(action));
 
         view! {

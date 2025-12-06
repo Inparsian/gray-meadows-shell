@@ -17,6 +17,7 @@ mod matching;
 mod process;
 mod scss;
 mod unit;
+mod pixbuf;
 
 use std::{cell::RefCell, collections::HashMap, path::Path, sync::{LazyLock, Mutex, OnceLock}};
 use futures_signals::signal::Mutable;
