@@ -32,6 +32,7 @@ pub struct GrayMeadowsLocal {
     provider: gtk4::CssProvider,
     icon_theme: gtk4::IconTheme,
     pub bars: RefCell<Vec<widgets::bar::BarWindow>>,
+    pub osd: RefCell<Option<widgets::osd::OsdWindow>>,
     pub windows: RefCell<HashMap<String, Box<dyn GmsWindow>>>,
 }
 
@@ -40,6 +41,7 @@ thread_local! {
         provider: gtk4::CssProvider::new(),
         icon_theme: gtk4::IconTheme::default(),
         bars: RefCell::new(Vec::new()),
+        osd: RefCell::new(None),
         windows: RefCell::new(HashMap::new()),
     });
 }
@@ -121,9 +123,15 @@ fn watch_scss() {
 fn activate(application: &Application) {
     for monitor in display::get_all_monitors(&gdk4::Display::default().expect("Failed to get default display")) {
         let bar = widgets::bar::BarWindow::new(application, &monitor);
+        let osd = widgets::osd::OsdWindow::new(application, &monitor);
+
         bar.window.show();
+        osd.window.show();
+
         APP_LOCAL.with(|app| {
-            app.borrow().bars.borrow_mut().push(bar);
+            let app = app.borrow();
+            app.bars.borrow_mut().push(bar);
+            *app.osd.borrow_mut() = Some(osd);
         });
     }
 
