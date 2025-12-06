@@ -752,7 +752,7 @@
 
                     .bar-mpris-extended-background {
                         min-width: 350px;
-                        min-height: 150px;
+                        min-height: 160px;
                         background-size: cover;
                         background-position: center;
                         filter: blur(4px);
@@ -762,7 +762,7 @@
                     .bar-mpris-extended-no-players {
                         @include large-text;
                         min-width: 350px;
-                        min-height: 150px;
+                        min-height: 160px;
                     }
 
                     .bar-mpris-extended-metadata {
@@ -785,6 +785,11 @@
                     .bar-mpris-extended-box {
                         background: #131313bb;
                         padding: 20px;
+                    }
+
+                    .bar-mpris-extended-progress-bar {
+                        padding-top: 4px;
+                        padding-bottom: 4px;
                     }
 
                     .bar-mpris-button {

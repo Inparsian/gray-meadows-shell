@@ -1,5 +1,6 @@
 mod minimal;
 mod extended;
+mod progress;
 
 use gtk4::prelude::*;
 

@@ -2,7 +2,9 @@ use futures_signals::signal_vec::VecDiff;
 use gtk4::prelude::*;
 use relm4::RelmIterChildrenExt;
 
-use crate::{gesture, singletons::mpris::{self, MPRIS, mpris_player::PlaybackStatus, set_default_player}};
+use crate::{gesture, singletons::mpris::{self, MPRIS, mpris_player::PlaybackStatus, set_default_player}, widgets::bar::modules::mpris::progress};
+
+pub static SEEK_STEP_MICROSECONDS: i64 = 5_000_000;
 
 fn format_artist_list(artists: &[String]) -> String {
     artists.join(", ")
@@ -30,6 +32,7 @@ fn get_background_css() -> Option<String> {
 
 fn default_mpris_player() -> gtk4::Box {
     let background_style_provider = gtk4::CssProvider::new();
+    let progress_bar = progress::ProgressBar::new();
 
     view! {
         previous_button = gtk4::Button {
@@ -184,6 +187,7 @@ fn default_mpris_player() -> gtk4::Box {
             set_hexpand: true,
 
             append: &metadata,
+            append: &progress_bar.drawing_area,
             append: &controls,
         },
 
@@ -216,11 +220,10 @@ fn default_mpris_player() -> gtk4::Box {
             return eprintln!("No MPRIS player available to seek.");
         };
 
-        let step_microseconds = 5_000_000; // 5 seconds in microseconds
         let seek_amount = if delta < 0.0 {
-            step_microseconds
+            SEEK_STEP_MICROSECONDS
         } else {
-            -step_microseconds
+            -SEEK_STEP_MICROSECONDS
         };
 
         if let Err(e) = player.seek(seek_amount) {
@@ -230,6 +233,7 @@ fn default_mpris_player() -> gtk4::Box {
 
     mpris::subscribe_to_default_player_changes({
         let progress = progress.clone();
+        let progress_bar = progress_bar.clone();
         move |_| {
             if let Some(default_player) = mpris::get_default_player() {
                 no_players_widget.hide();
@@ -253,6 +257,8 @@ fn default_mpris_player() -> gtk4::Box {
 
                 if let (position, Some(duration)) = (default_player.position, default_player.metadata.length) {
                     progress.set_label(&format!("{} / {}", format_duration(position), format_duration(duration)));
+                    progress_bar.set_position(position as f64);
+                    progress_bar.set_duration(duration as f64);
                 }
 
                 // update metadata labels
@@ -280,11 +286,14 @@ fn default_mpris_player() -> gtk4::Box {
             loop {
                 gtk4::glib::source::idle_add_local_once({
                     let progress = progress.clone();
+                    let progress_bar = progress_bar.clone();
                     move || {
                         mpris::with_default_player_mut(|player| {
                             if player.playback_status == PlaybackStatus::Playing {
                                 if let (Ok(position), Some(duration)) = (player.get_and_update_position(), player.metadata.length) {
                                     progress.set_label(&format!("{} / {}", format_duration(position), format_duration(duration)));
+                                    progress_bar.set_position(position as f64);
+                                    progress_bar.set_duration(duration as f64);
                                 }
                             }
                         });
