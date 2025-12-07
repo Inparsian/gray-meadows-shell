@@ -27,7 +27,7 @@ use libadwaita::Application;
 use notify::{EventKind, event::{AccessKind, AccessMode}, Watcher};
 use sqlite::Connection;
 
-use crate::widgets::windows::{self, GmsWindow};
+use crate::widgets::{bar, windows::{self, GmsWindow}};
 
 pub struct GrayMeadowsLocal {
     provider: gtk4::CssProvider,
@@ -202,6 +202,7 @@ async fn main() {
 
             singletons::activate_all();
             windows::listen_for_ipc_messages();
+            bar::listen_for_ipc_messages();
 
             let application = Application::new(
                 Some("sn.inpr.gray_meadows_shell"),

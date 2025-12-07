@@ -10,25 +10,26 @@ mod modules {
     pub mod volume;
 }
 
+use std::collections::HashMap;
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
-use crate::{gesture, widgets::bar::module::{BarModuleWrapper, hide_all_expanded_modules}};
+use crate::{APP_LOCAL, gesture, ipc, singletons::hyprland, widgets::bar::module::{BarModuleWrapper, hide_all_expanded_modules}};
 
 static BAR_HEIGHT: i32 = 33;
 
 pub struct BarWindow {
     pub window: gtk4::ApplicationWindow,
+    pub monitor: gdk4::Monitor,
     pub steal_window: gtk4::ApplicationWindow,
-    pub modules: Vec<BarModuleWrapper>,
+    pub modules: HashMap<String, BarModuleWrapper>,
 }
 
 impl BarWindow {
     pub fn new(application: &libadwaita::Application, monitor: &gdk4::Monitor) -> Self {
         let mpris_module = modules::mpris::new();
-        let modules = vec![
-            mpris_module.clone()
-        ];
+        let mut modules = HashMap::new();
+        modules.insert("mpris".to_owned(), mpris_module.clone());
 
         view! {
             left_box = gtk4::Box {
@@ -109,7 +110,7 @@ impl BarWindow {
             move |_, (px, py), (rx, ry)| {
                 if py > BAR_HEIGHT as f64 && ry > BAR_HEIGHT as f64 {
                     let mut inside_any = false;
-                    for wrapper in &modules {
+                    for wrapper in modules.values() {
                         if wrapper.module.is_expanded() {
                             let mod_allocation = wrapper.bx.allocation();
                             let parent_allocation = wrapper.bx.parent().unwrap().allocation();
@@ -137,7 +138,7 @@ impl BarWindow {
                 }
 
                 // if any are expanded at this point, activate the steal window
-                let any_expanded = modules.iter().any(|wrapper| wrapper.module.is_expanded());
+                let any_expanded = modules.values().any(|wrapper| wrapper.module.is_expanded());
                 if any_expanded {
                     steal_window.set_visible(true);
                     window.set_layer(Layer::Overlay);
@@ -152,7 +153,7 @@ impl BarWindow {
             let modules = modules.clone();
             move |_, _, _| {
                 // usually signifies that a module is being collapsed, but we should make sure that all are collapsed
-                let any_expanded = modules.iter().any(|wrapper| wrapper.module.is_expanded());
+                let any_expanded = modules.values().any(|wrapper| wrapper.module.is_expanded());
                 if !any_expanded {
                     steal_window.set_visible(false);
                     window.set_layer(Layer::Top);
@@ -168,13 +169,14 @@ impl BarWindow {
 
         BarWindow {
             window,
+            monitor: monitor.clone(),
             steal_window,
             modules,
         }
     }
 
     pub fn hide_all_expanded_modules(&self) {
-        for wrapper in &self.modules {
+        for wrapper in self.modules.values() {
             wrapper.module.set_expanded(false);
         }
 
@@ -182,4 +184,42 @@ impl BarWindow {
         self.window.set_layer(Layer::Top);
         self.window.set_keyboard_mode(KeyboardMode::None);
     }
+}
+
+pub fn toggle_module_by_name(name: &str) {
+    let Some(monitor) = hyprland::get_active_monitor() else {
+        return;
+    };
+
+    APP_LOCAL.with(|app| {
+        let app = app.borrow();
+        let bar_windows = app.bars.borrow();
+        for bar_window in &*bar_windows {
+            if bar_window.monitor == monitor {
+                if let Some(wrapper) = bar_window.modules.get(name) {
+                    wrapper.module.set_expanded(!wrapper.module.is_expanded());
+
+                    // manage steal window visibility
+                    let any_expanded = bar_window.modules.values().any(|w| w.module.is_expanded());
+                    if any_expanded {
+                        bar_window.steal_window.set_visible(true);
+                        bar_window.window.set_layer(Layer::Overlay);
+                        bar_window.window.set_keyboard_mode(KeyboardMode::OnDemand);
+                    } else {
+                        bar_window.steal_window.set_visible(false);
+                        bar_window.window.set_layer(Layer::Top);
+                        bar_window.window.set_keyboard_mode(KeyboardMode::None);
+                    }
+                }
+            }
+        }
+    });
+}
+
+pub fn listen_for_ipc_messages() {
+    ipc::listen_for_messages_local(|message| {
+        if let Some(module_name) = message.strip_prefix("toggle_bar_module_") {
+            toggle_module_by_name(module_name);
+        }
+    });
 }
