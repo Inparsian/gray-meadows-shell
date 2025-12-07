@@ -102,12 +102,12 @@ impl BarWindow {
         }
 
         // collapse expanded modules when clicking outside of them
-        window.add_controller(gesture::on_primary_up({
+        window.add_controller(gesture::on_primary_full_press({
             let window = window.clone();
             let steal_window = steal_window.clone();
             let modules = modules.clone();
-            move |_, x, y| {
-                if y > BAR_HEIGHT as f64 {
+            move |_, (px, py), (rx, ry)| {
+                if py > BAR_HEIGHT as f64 && ry > BAR_HEIGHT as f64 {
                     let mut inside_any = false;
                     for wrapper in &modules {
                         if wrapper.module.is_expanded() {
@@ -120,9 +120,11 @@ impl BarWindow {
                                 mod_allocation.height(),
                             );
 
-                            let x_in = x >= allocation.x() as f64 && x <= (allocation.x() + allocation.width()) as f64;
-                            let y_in = y >= allocation.y() as f64 && y <= (allocation.y() + allocation.height()) as f64;
-                            if x_in && y_in {
+                            let px_in = px >= allocation.x() as f64 && px <= (allocation.x() + allocation.width()) as f64;
+                            let py_in = py >= allocation.y() as f64 && py <= (allocation.y() + allocation.height()) as f64;
+                            let rx_in = rx >= allocation.x() as f64 && rx <= (allocation.x() + allocation.width()) as f64;
+                            let ry_in = ry >= allocation.y() as f64 && ry <= (allocation.y() + allocation.height()) as f64;
+                            if (px_in && py_in) || (rx_in && ry_in) {
                                 inside_any = true;
                                 break;
                             }
