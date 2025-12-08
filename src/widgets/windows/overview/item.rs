@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 use gtk4::prelude::*;
 
-use crate::{widgets::windows, matching, pixbuf, scss, singletons::apps};
+use crate::{widgets::windows, matching, pixbuf, scss, singletons::{apps, clipboard}};
 
 pub static ITEM_ANIMATION_DURATION: u32 = 175;
 
@@ -268,14 +268,10 @@ pub fn run_action(action: &OverviewSearchItemAction) {
             });
         },
     
-        // TODO: Do this without wl-copy?
         OverviewSearchItemAction::Copy(text) => {
             std::thread::spawn({
                 let text = text.clone();
-            
-                move || std::process::Command::new("wl-copy")
-                    .arg(text)
-                    .output()
+                move || clipboard::copy_text(&text)
             });
         }
     

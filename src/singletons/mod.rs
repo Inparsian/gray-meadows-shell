@@ -8,6 +8,7 @@ pub mod apps;
 pub mod calculator;
 pub mod g_translate;
 pub mod networkmanager;
+pub mod clipboard;
 
 pub fn activate_all() {
     date_time::activate();
@@ -20,4 +21,5 @@ pub fn activate_all() {
     calculator::activate();
     g_translate::activate();
     networkmanager::activate();
+    clipboard::activate();
 }

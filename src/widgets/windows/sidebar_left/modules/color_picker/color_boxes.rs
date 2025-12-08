@@ -2,7 +2,7 @@ use std::{rc::Rc, cell::RefCell};
 use futures_signals::signal::{Mutable, SignalExt};
 use gtk4::prelude::*;
 
-use crate::{color::{model::Hsv, LighterDarkerResult}, gesture, ipc, widgets::common::{dynamic_grid::DynamicGrid, tabs::Tabs}};
+use crate::{color::{model::Hsv, LighterDarkerResult}, singletons::clipboard, gesture, ipc, widgets::common::{dynamic_grid::DynamicGrid, tabs::Tabs}};
 
 #[derive(Debug, Clone)]
 pub struct ColorBox {
@@ -38,11 +38,7 @@ pub fn get_color_box(hsv: Hsv, color_tabs: &Tabs) -> ColorBox {
                         _ => hsv.as_hex()
                     };
 
-                    // TODO: Do this without wl-copy?
-                    std::thread::spawn(move || std::process::Command::new("wl-copy")
-                        .arg(text)
-                        .output()
-                    );
+                    std::thread::spawn(move || clipboard::copy_text(&text));
                 }
             },
 

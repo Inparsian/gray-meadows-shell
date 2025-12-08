@@ -45,6 +45,13 @@ pub fn is_command_available(command: &str) -> bool {
     false
 }
 
+pub fn kill_task_if_any(command: &str) {
+    let _ = std::process::Command::new("pkill")
+        .arg("-f")
+        .arg(command)
+        .output();
+}
+
 pub fn launch(input: &str) {
     // Remove field codes from argv (including those that are deprecated), we won't be needing them...
     let argv: Vec<String> = if let Some(args) = shlex::split(input) {
