@@ -1,17 +1,15 @@
-use std::collections::HashMap;
 use gdk4::cairo::Region;
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, Layer, LayerShell};
 
-use crate::{APP_LOCAL, widgets::osd::imp::Osd};
+use crate::widgets::osd::imp::{Osd, keybinds::KeybindsOsd};
 
 pub mod imp;
 
-#[derive(Debug, Clone)]
 pub struct OsdWindow {
     pub window: gtk4::ApplicationWindow,
     pub container: gtk4::Box,
-    pub osds: HashMap<String, imp::Osd>,
+    pub osds: Vec<KeybindsOsd>,
 }
 
 impl OsdWindow {
@@ -52,31 +50,12 @@ impl OsdWindow {
         OsdWindow {
             window,
             container,
-            osds: HashMap::new(),
+            osds: Vec::new(),
         }
     }
 
-    pub fn add_osd(&mut self, key: &str, osd: imp::Osd) {
-        self.container.append(&osd.reveal);
-        self.osds.insert(key.to_owned(), osd);
+    pub fn add_osd(&mut self, osd: KeybindsOsd) {
+        self.container.append(&osd.revealer().reveal);
+        self.osds.push(osd);
     }
-
-    pub fn get_osd(&self, key: &str) -> Option<&imp::Osd> {
-        self.osds.get(key)
-    }
-}
-
-pub fn get_osd(key: &str) -> Vec<Osd> {
-    APP_LOCAL.with(|app| {
-        let containers = &app.borrow().osd_containers;
-        let mut result = Vec::new();
-
-        for osd_container in containers.borrow().iter() {
-            if let Some(osd) = osd_container.get_osd(key) {
-                result.push(osd.clone());
-            }
-        }
-
-        result
-    })
 }

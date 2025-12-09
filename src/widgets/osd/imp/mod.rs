@@ -1,3 +1,5 @@
+pub mod keybinds;
+
 use std::time::Duration;
 use gtk4::prelude::*;
 
@@ -6,16 +8,22 @@ use crate::timeout::Timeout;
 static TRANSITION_DURATION_MS: u32 = 200;
 static DISPLAY_DURATION: f64 = 2.0;
 
-#[derive(Debug, Clone)]
-pub struct Osd {
-    timeout: Timeout,
-    pub reveal: gtk4::Revealer,
-    pub key_label: gtk4::Label,
-    pub value_label: gtk4::Label,
-    pub levelbar: gtk4::LevelBar
+pub trait Osd {
+    fn key() -> &'static str;
+    fn revealer(&self) -> &OsdRevealer;
+    fn listen_for_events(&self);
 }
 
-impl Default for Osd {
+#[derive(Debug, Clone)]
+pub struct OsdRevealer {
+    timeout: Timeout,
+    pub header_key: gtk4::Label,
+    pub header_value: gtk4::Label,
+    pub levelbar: gtk4::LevelBar,
+    pub reveal: gtk4::Revealer,
+}
+
+impl Default for OsdRevealer {
     fn default() -> Self {
         view! {
             header_key = gtk4::Label {
@@ -62,38 +70,17 @@ impl Default for Osd {
             }
         }
 
-        Osd {
+        Self {
             timeout: Timeout::default(),
-            reveal,
-            key_label: header_key,
-            value_label: header_value,
+            header_key,
+            header_value,
             levelbar,
+            reveal,
         }
     }
 }
 
-impl Osd {
-    pub fn set_key(&self, key: &str) {
-        self.key_label.set_label(key);
-    }
-
-    pub fn set_value(&self, value: &str) {
-        self.value_label.set_label(value);
-    }
-
-    pub fn set_levelbar_range(&self, min: f64, max: f64) {
-        self.levelbar.set_min_value(min);
-        self.levelbar.set_max_value(max);
-    }
-
-    pub fn set_levelbar_value(&self, value: f64) {
-        self.levelbar.set_value(value);
-    }
-
-    pub fn set_levelbar_visible(&self, visible: bool) {
-        self.levelbar.set_visible(visible);
-    }
-
+impl OsdRevealer {
     pub fn reveal(&self) {
         self.reveal.add_css_class("revealed");
         self.reveal.set_reveal_child(true);

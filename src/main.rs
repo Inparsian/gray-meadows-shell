@@ -27,7 +27,7 @@ use libadwaita::Application;
 use notify::{EventKind, event::{AccessKind, AccessMode}, Watcher};
 use sqlite::Connection;
 
-use crate::widgets::{bar, windows::{self, GmsWindow}};
+use crate::widgets::{bar, osd::imp::Osd, windows::{self, GmsWindow}};
 
 pub struct GrayMeadowsLocal {
     provider: gtk4::CssProvider,
@@ -124,7 +124,16 @@ fn watch_scss() {
 fn activate(application: &Application) {
     for monitor in display::get_all_monitors(&gdk4::Display::default().expect("Failed to get default display")) {
         let bar = widgets::bar::BarWindow::new(application, &monitor);
-        let osd = widgets::osd::OsdWindow::new(application, &monitor);
+        let mut osd = widgets::osd::OsdWindow::new(application, &monitor);
+
+        let osd_items = vec![
+            widgets::osd::imp::keybinds::KeybindsOsd::default(),
+        ];
+
+        for osd_item in osd_items {
+            osd_item.listen_for_events();
+            osd.add_osd(osd_item);
+        }
 
         bar.window.show();
         osd.window.show();
