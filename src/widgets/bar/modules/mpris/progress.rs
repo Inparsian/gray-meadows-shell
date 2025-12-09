@@ -1,12 +1,11 @@
 use std::{cell::RefCell, f64, rc::Rc};
 use gtk4::prelude::*;
 
-use crate::{gesture, singletons::mpris, widgets::bar::modules::mpris::extended::SEEK_STEP_MICROSECONDS};
+use crate::{gesture, scss, singletons::mpris, widgets::bar::modules::mpris::extended::SEEK_STEP_MICROSECONDS};
 
 static WAVE_AMPLITUDE_FACTOR: f64 = 10.0;
 static WAVE_SPEED: f64 = 3.0;
 static WAVE_LINE_WIDTH: f64 = 3.0;
-static WAVE_COLOR: (f64, f64, f64) = (226.0, 226.0, 226.0);
 
 #[derive(Debug, Clone)]
 pub struct ProgressBar {
@@ -46,7 +45,11 @@ impl ProgressBar {
                 let wave_offset = |x: f64| time.mul_add(WAVE_SPEED, x / 20.0).sin() * wave_amplitude;
 
                 let stroke = |alpha: f64, to: i32| {
-                    let (r, g, b) = WAVE_COLOR;
+                    let (r, g, b) = scss::get_color("foreground-color-primary").map_or(
+                        (226.0, 226.0, 226.0), 
+                        |wave_color| (wave_color.red as f64, wave_color.green as f64, wave_color.blue as f64)
+                    );
+
                     cr.set_source_rgba(r / 255.0, g / 255.0, b / 255.0, alpha);
                     cr.set_line_width(WAVE_LINE_WIDTH);
                     cr.move_to(0.0, v_center);
