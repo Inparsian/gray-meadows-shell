@@ -33,7 +33,7 @@ pub struct GrayMeadowsLocal {
     provider: gtk4::CssProvider,
     icon_theme: gtk4::IconTheme,
     pub bars: RefCell<Vec<widgets::bar::BarWindow>>,
-    pub osd: RefCell<Option<widgets::osd::OsdWindow>>,
+    pub osd_containers: RefCell<Vec<widgets::osd::OsdWindow>>,
     pub windows: RefCell<HashMap<String, Box<dyn GmsWindow>>>,
 }
 
@@ -42,7 +42,7 @@ thread_local! {
         provider: gtk4::CssProvider::new(),
         icon_theme: gtk4::IconTheme::default(),
         bars: RefCell::new(Vec::new()),
-        osd: RefCell::new(None),
+        osd_containers: RefCell::new(Vec::new()),
         windows: RefCell::new(HashMap::new()),
     });
 }
@@ -132,7 +132,7 @@ fn activate(application: &Application) {
         APP_LOCAL.with(|app| {
             let app = app.borrow();
             app.bars.borrow_mut().push(bar);
-            *app.osd.borrow_mut() = Some(osd);
+            app.osd_containers.borrow_mut().push(osd);
         });
     }
 

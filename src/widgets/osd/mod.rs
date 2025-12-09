@@ -3,6 +3,8 @@ use gdk4::cairo::Region;
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, Layer, LayerShell};
 
+use crate::{APP_LOCAL, widgets::osd::imp::Osd};
+
 pub mod imp;
 
 #[derive(Debug, Clone)]
@@ -62,4 +64,19 @@ impl OsdWindow {
     pub fn get_osd(&self, key: &str) -> Option<&imp::Osd> {
         self.osds.get(key)
     }
+}
+
+pub fn get_osd(key: &str) -> Vec<Osd> {
+    APP_LOCAL.with(|app| {
+        let containers = &app.borrow().osd_containers;
+        let mut result = Vec::new();
+
+        for osd_container in containers.borrow().iter() {
+            if let Some(osd) = osd_container.get_osd(key) {
+                result.push(osd.clone());
+            }
+        }
+
+        result
+    })
 }
