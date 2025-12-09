@@ -53,6 +53,6 @@ impl OsdWindow {
     }
 
     pub fn add_osd(&self, osd: &impl Osd) {
-        self.container.append(&osd.revealer().reveal);
+        self.container.append(&osd.make_revealer().reveal);
     }
 }

@@ -11,7 +11,7 @@ static DISPLAY_DURATION: f64 = 2.0;
 
 pub trait Osd {
     fn key() -> &'static str;
-    fn revealer(&self) -> &OsdRevealer;
+    fn make_revealer(&self) -> OsdRevealer;
     fn listen_for_events(&self);
 }
 

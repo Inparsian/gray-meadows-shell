@@ -122,12 +122,15 @@ fn watch_scss() {
 }
 
 fn activate(application: &Application) {
+    let keybinds_osd = widgets::osd::imp::keybinds::KeybindsOsd::default();
+    let volume_osd = widgets::osd::imp::volume::VolumeOsd::default();
+
     for monitor in display::get_all_monitors(&gdk4::Display::default().expect("Failed to get default display")) {
         let bar = widgets::bar::BarWindow::new(application, &monitor);
         let osd = widgets::osd::OsdWindow::new(application, &monitor);
 
-        osd.add_osd(&widgets::osd::imp::keybinds::KeybindsOsd::default());
-        osd.add_osd(&widgets::osd::imp::volume::VolumeOsd::default());
+        osd.add_osd(&keybinds_osd);
+        osd.add_osd(&volume_osd);
 
         bar.window.show();
         osd.window.show();
