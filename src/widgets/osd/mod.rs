@@ -2,14 +2,13 @@ use gdk4::cairo::Region;
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, Layer, LayerShell};
 
-use crate::widgets::osd::imp::{Osd, keybinds::KeybindsOsd};
+use crate::widgets::osd::imp::Osd;
 
 pub mod imp;
 
 pub struct OsdWindow {
     pub window: gtk4::ApplicationWindow,
     pub container: gtk4::Box,
-    pub osds: Vec<KeybindsOsd>,
 }
 
 impl OsdWindow {
@@ -50,12 +49,10 @@ impl OsdWindow {
         OsdWindow {
             window,
             container,
-            osds: Vec::new(),
         }
     }
 
-    pub fn add_osd(&mut self, osd: KeybindsOsd) {
+    pub fn add_osd(&self, osd: &impl Osd) {
         self.container.append(&osd.revealer().reveal);
-        self.osds.push(osd);
     }
 }

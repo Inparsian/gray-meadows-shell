@@ -1,3 +1,4 @@
+pub mod volume;
 pub mod keybinds;
 
 use std::time::Duration;
