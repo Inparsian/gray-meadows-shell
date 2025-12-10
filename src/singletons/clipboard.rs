@@ -1,5 +1,5 @@
 use std::{collections::HashMap, process::Stdio};
-use std::io::{Read, Write};
+use std::io::{Read as _, Write as _};
 use std::sync::{LazyLock, Mutex};
 use regex::Regex;
 

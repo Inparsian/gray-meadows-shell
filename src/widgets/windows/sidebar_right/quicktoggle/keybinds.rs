@@ -1,4 +1,4 @@
-use futures_signals::signal::SignalExt;
+use futures_signals::signal::SignalExt as _;
 use ::hyprland::dispatch;
 use ::hyprland::instance::Instance;
 

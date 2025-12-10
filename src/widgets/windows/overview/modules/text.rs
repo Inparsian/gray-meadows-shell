@@ -1,5 +1,5 @@
-use std::fmt::Write;
-use rand::seq::SliceRandom;
+use std::fmt::Write as _;
+use rand::seq::SliceRandom as _;
 
 use super::super::{item::{OverviewSearchItem, OverviewSearchItemAction}, modules::OverviewSearchModule};
 

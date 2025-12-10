@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 use gdk4::Key;
-use gtk4::{prelude::GestureSingleExt, EventControllerScrollFlags};
+use gtk4::{EventControllerScrollFlags, prelude::GestureSingleExt as _};
 
 type Xy = (f64, f64);
 

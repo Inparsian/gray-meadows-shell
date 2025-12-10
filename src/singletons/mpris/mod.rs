@@ -4,7 +4,7 @@ mod mpris_dbus;
 
 use std::{rc::Rc, sync::LazyLock};
 use dbus::message::{MatchRule, MessageType};
-use futures_signals::{signal::SignalExt, signal_vec::{SignalVecExt, VecDiff}};
+use futures_signals::{signal::SignalExt as _, signal_vec::{VecDiff, SignalVecExt as _}};
 
 use crate::dbus::start_monitoring;
 use crate::ipc;

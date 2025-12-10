@@ -1,6 +1,6 @@
 use gdk4::cairo::Region;
 use gtk4::prelude::*;
-use gtk4_layer_shell::{Edge, Layer, LayerShell};
+use gtk4_layer_shell::{Edge, Layer, LayerShell as _};
 
 use self::imp::Osd;
 

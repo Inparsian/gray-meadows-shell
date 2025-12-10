@@ -12,7 +12,7 @@ mod modules {
 
 use std::collections::HashMap;
 use gtk4::prelude::*;
-use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
+use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell as _};
 
 use crate::APP_LOCAL;
 use crate::gesture;

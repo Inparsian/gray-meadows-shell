@@ -1,6 +1,6 @@
 use futures_signals::signal_vec::VecDiff;
 use gtk4::prelude::*;
-use relm4::RelmIterChildrenExt;
+use relm4::RelmIterChildrenExt as _;
 
 use crate::gesture;
 use crate::singletons::mpris::{self, MPRIS, mpris_player::PlaybackStatus, set_default_player};

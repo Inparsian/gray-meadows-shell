@@ -2,14 +2,14 @@ use std::{rc::Rc, cell::RefCell};
 use gtk4::prelude::*;
 
 use crate::singletons::wireplumber;
-use super::{Osd, OsdRevealer};
+use super::{OsdRevealer, Osd};
 
 #[derive(Debug, Clone)]
 pub struct VolumeOsd {
     pub revealers: Rc<RefCell<Vec<OsdRevealer>>>,
 }
 
-impl super::Osd for VolumeOsd {
+impl Osd for VolumeOsd {
     fn key() -> &'static str {
         "Volume"
     }

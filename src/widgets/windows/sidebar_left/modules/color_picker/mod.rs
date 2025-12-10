@@ -3,7 +3,7 @@ mod saturation_value_picker;
 mod fields;
 mod color_boxes;
 
-use futures_signals::signal::{Mutable, SignalExt};
+use futures_signals::signal::{Mutable, SignalExt as _};
 use gtk4::{Adjustment, prelude::*};
 
 use crate::color::model::{int_to_hex, Hsv};

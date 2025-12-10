@@ -1,5 +1,5 @@
 use gtk4::prelude::*;
-use relm4::RelmRemoveAllExt;
+use relm4::RelmRemoveAllExt as _;
 
 pub struct DynamicGrid {
     pub grid: gtk4::Grid,

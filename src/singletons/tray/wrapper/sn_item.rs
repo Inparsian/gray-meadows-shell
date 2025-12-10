@@ -223,7 +223,7 @@ impl StatusNotifierItem {
     where
         T: for<'b> arg::Get<'b> + 'static,
     {
-        use blocking::stdintf::org_freedesktop_dbus::Properties;
+        use blocking::stdintf::org_freedesktop_dbus::Properties as _;
 
         let connection = blocking::Connection::new_session()?;
         let proxy = connection.with_proxy(

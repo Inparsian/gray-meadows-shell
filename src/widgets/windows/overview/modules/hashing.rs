@@ -1,7 +1,7 @@
-use std::fmt::Write;
+use std::fmt::Write as _;
 use md5;
-use sha::{self, utils::{Digest, DigestExt}};
-use whirlpool::{Whirlpool, Digest as WhirlpoolDigest};
+use sha::{self, utils::{Digest as _, DigestExt as _}};
+use whirlpool::{Whirlpool, Digest as _};
 
 use super::super::{item::{OverviewSearchItem, OverviewSearchItemAction}, modules::OverviewSearchModule};
 

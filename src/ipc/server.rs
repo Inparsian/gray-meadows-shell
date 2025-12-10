@@ -1,4 +1,4 @@
-use std::io::{self, Read, Write};
+use std::io::{self, Read as _, Write as _};
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::sync::OnceLock;
 use async_broadcast::Receiver;

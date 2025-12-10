@@ -1,5 +1,5 @@
 use gtk4::{prelude::*, RevealerTransitionType};
-use gtk4_layer_shell::{Edge, Layer, KeyboardMode, LayerShell};
+use gtk4_layer_shell::{Edge, Layer, KeyboardMode, LayerShell as _};
 use libadwaita::Clamp;
 
 use crate::gesture;

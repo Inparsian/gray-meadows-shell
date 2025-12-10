@@ -1,5 +1,5 @@
 use std::sync::LazyLock;
-use futures_signals::signal::{Mutable, SignalExt};
+use futures_signals::signal::{Mutable, SignalExt as _};
 use gtk4::prelude::*;
 
 use crate::gesture;

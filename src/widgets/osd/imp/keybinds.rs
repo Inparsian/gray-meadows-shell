@@ -1,15 +1,15 @@
 use std::{rc::Rc, cell::RefCell};
-use futures_signals::signal::SignalExt;
+use futures_signals::signal::SignalExt as _;
 
 use crate::singletons::hyprland;
-use super::{Osd, OsdRevealer};
+use super::{OsdRevealer, Osd};
 
 #[derive(Debug, Clone)]
 pub struct KeybindsOsd {
     pub revealers: Rc<RefCell<Vec<OsdRevealer>>>,
 }
 
-impl super::Osd for KeybindsOsd {
+impl Osd for KeybindsOsd {
     fn key() -> &'static str {
         "Keybinds"
     }

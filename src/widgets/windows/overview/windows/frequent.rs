@@ -1,5 +1,5 @@
 use gtk4::prelude::*;
-use relm4::RelmIterChildrenExt;
+use relm4::RelmIterChildrenExt as _;
 
 use crate::sql::wrappers::commands;
 

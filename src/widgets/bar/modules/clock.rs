@@ -1,4 +1,4 @@
-use futures_signals::signal::SignalExt;
+use futures_signals::signal::SignalExt as _;
 use gtk4::prelude::*;
 
 use crate::singletons::date_time::DATE_TIME;

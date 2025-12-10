@@ -2,7 +2,7 @@ mod client;
 mod crossroads;
 
 use std::time::Duration;
-use dbus::{channel::MatchingReceiver, message::MatchRule};
+use dbus::{message::MatchRule, channel::MatchingReceiver as _};
 
 pub fn start_monitoring<F>(rule: MatchRule<'static>, system: bool, callback: F)
 where

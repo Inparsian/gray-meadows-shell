@@ -1,5 +1,5 @@
 use std::os::unix::net::UnixStream;
-use std::io::{self, Read, Write};
+use std::io::{self, Read as _, Write as _};
 use std::time::Duration;
 
 pub fn get_stream() -> io::Result<UnixStream> {

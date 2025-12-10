@@ -1,6 +1,6 @@
 use std::time::Duration;
 use dbus::arg::{self, Append, IterAppend, RefArg};
-use dbus::blocking::{stdintf::org_freedesktop_dbus::Properties, BlockingSender, Connection};
+use dbus::blocking::{Connection, stdintf::org_freedesktop_dbus::Properties as _, BlockingSender as _};
 use dbus::strings::BusName;
 use dbus::{Error, Message};
 

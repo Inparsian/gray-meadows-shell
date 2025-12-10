@@ -1,6 +1,6 @@
 use std::{cell::RefCell, error::Error, rc::Rc};
 use gtk4::prelude::*;
-use relm4::RelmRemoveAllExt;
+use relm4::RelmRemoveAllExt as _;
 
 use crate::singletons::g_translate::language::{self, Language, AUTO_LANG, LANGUAGES};
 use super::super::translate::{self, LanguageSelectReveal, UiEvent};

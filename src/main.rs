@@ -26,7 +26,7 @@ use std::sync::{LazyLock, Mutex, OnceLock};
 use futures_signals::signal::Mutable;
 use gtk4::prelude::*;
 use libadwaita::Application;
-use notify::{EventKind, Watcher};
+use notify::{EventKind, Watcher as _};
 use notify::event::{AccessKind, AccessMode};
 use sqlite::Connection;
 

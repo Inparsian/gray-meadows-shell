@@ -1,9 +1,9 @@
 use std::{cell::RefCell, rc::Rc};
 use gtk4::prelude::*;
-use relm4::RelmRemoveAllExt;
 use image::codecs::png::PngEncoder;
 use image::imageops::FilterType;
-use image::ImageEncoder;
+use image::ImageEncoder as _;
+use relm4::RelmRemoveAllExt as _;
 
 use crate::color;
 use crate::ipc;

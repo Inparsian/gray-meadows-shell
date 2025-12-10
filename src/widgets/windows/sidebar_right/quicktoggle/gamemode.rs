@@ -1,4 +1,4 @@
-use futures_signals::signal::SignalExt;
+use futures_signals::signal::SignalExt as _;
 use ::hyprland::ctl::reload;
 
 use crate::APP;

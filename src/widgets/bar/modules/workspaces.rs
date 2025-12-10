@@ -1,5 +1,5 @@
 use std::sync::{Mutex, LazyLock};
-use futures_signals::signal::SignalExt;
+use futures_signals::signal::SignalExt as _;
 use gtk4::prelude::*;
 use ::hyprland::dispatch;
 use ::hyprland::dispatch::WorkspaceIdentifierWithSpecial;

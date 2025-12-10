@@ -1,6 +1,6 @@
 use std::{path::Path, process::Command};
-use futures_signals::signal::SignalExt;
 use gtk4::prelude::*;
+use futures_signals::signal::SignalExt as _;
 
 use crate::widgets::windows;
 use crate::filesystem;

@@ -1,5 +1,5 @@
 use std::{rc::Rc, cell::RefCell};
-use futures_signals::signal::{Mutable, SignalExt};
+use futures_signals::signal::{Mutable, SignalExt as _};
 use gtk4::prelude::*;
 
 use crate::color::model::Hsv;

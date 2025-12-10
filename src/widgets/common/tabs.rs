@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 use gtk4::prelude::*;
-use futures_signals::signal::{Mutable, SignalExt};
+use futures_signals::signal::{Mutable, SignalExt as _};
 
 use crate::gesture;
 
