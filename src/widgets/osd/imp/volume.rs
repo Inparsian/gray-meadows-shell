@@ -1,7 +1,7 @@
 use std::{rc::Rc, cell::RefCell};
 use gtk4::prelude::*;
 
-use crate::{ffi::astalwp::WpEvent, singletons::wireplumber, widgets::osd::imp::{Osd, OsdRevealer}};
+use crate::{singletons::wireplumber, widgets::osd::imp::{Osd, OsdRevealer}};
 
 #[derive(Debug, Clone)]
 pub struct VolumeOsd {
@@ -26,52 +26,13 @@ impl super::Osd for VolumeOsd {
     }
 
     fn listen_for_events(&self) {
-        // We can't initialize the volume immediately because the WirePlumber singleton
-        // might not be ready yet. Subscribe to events.
-        gtk4::glib::spawn_future_local({
+        wireplumber::subscribe_default_speaker_volume({
             let revealers = self.revealers.clone();
-            
-            async move {
-                let set = |volume: f32| {
-                    for revealer in &*revealers.borrow() {
-                        revealer.header_value.set_text(&format!("{:.0}%", volume * 100.0));
-                        revealer.levelbar.set_value((volume * 100.0).into());
-                        revealer.reveal();
-                    }
-                };
-
-                while let Ok(event) = wireplumber::subscribe().recv().await {
-                    match event {
-                        WpEvent::CreateSpeaker(endpoint) => {
-                            if endpoint.is_default {
-                                set(endpoint.node.volume);
-                            }
-                        },
-                    
-                        WpEvent::RemoveSpeaker(endpoint) => {
-                            if let Some(default_speaker) = wireplumber::get_default_speaker() {
-                                if default_speaker.node.id == endpoint.node.id {
-                                    set(default_speaker.node.volume);
-                                }
-                            }
-                        },
-                    
-                        WpEvent::UpdateDefaultSpeaker(id) => {
-                            if let Some(speaker) = wireplumber::get_endpoint(id) {
-                                set(speaker.node.volume);
-                            }
-                        },
-                    
-                        WpEvent::UpdateEndpoint(id, property_name) => if property_name == "volume" {
-                            if let Some(default_speaker) = wireplumber::get_default_speaker() {
-                                if default_speaker.node.id == id {
-                                    set(default_speaker.node.volume);
-                                }
-                            }
-                        },
-                    
-                        _ => {}
-                    }
+            move |volume: f32| {
+                for revealer in &*revealers.borrow() {
+                    revealer.header_value.set_text(&format!("{:.0}%", volume * 100.0));
+                    revealer.levelbar.set_value((volume * 100.0).into());
+                    revealer.reveal();
                 }
             }
         });

@@ -25,6 +25,47 @@ pub fn subscribe() -> Receiver<WpEvent> {
     EVENT_CHANNEL.subscribe()
 }
 
+pub fn subscribe_default_speaker_volume<F>(callback: F)
+where 
+    F: Fn(f32) + 'static
+{
+    gtk4::glib::spawn_future_local(async move {
+        while let Ok(event) = subscribe().recv().await {
+            match event {
+                WpEvent::CreateSpeaker(endpoint) => {
+                    if endpoint.is_default {
+                        callback(endpoint.node.volume);
+                    }
+                },
+            
+                WpEvent::RemoveSpeaker(endpoint) => {
+                    if let Some(default_speaker) = get_default_speaker() {
+                        if default_speaker.node.id == endpoint.node.id {
+                            callback(default_speaker.node.volume);
+                        }
+                    }
+                },
+            
+                WpEvent::UpdateDefaultSpeaker(id) => {
+                    if let Some(speaker) = get_endpoint(id) {
+                        callback(speaker.node.volume);
+                    }
+                },
+            
+                WpEvent::UpdateEndpoint(id, property_name) => if property_name == "volume" {
+                    if let Some(default_speaker) = get_default_speaker() {
+                        if default_speaker.node.id == id {
+                            callback(default_speaker.node.volume);
+                        }
+                    }
+                },
+            
+                _ => {}
+            }
+        }
+    });
+}
+
 pub fn get_node(id: i32) -> Option<ffi::Node> {
     NODES.get()?.try_lock().ok()?.iter().find(|&n| n.id == id).cloned()
 }

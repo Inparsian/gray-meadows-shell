@@ -1,7 +1,7 @@
 use gtk4::prelude::*;
 
 use crate::{
-    ffi::astalwp::{WpEvent, ffi},
+    ffi::astalwp::ffi,
     gesture,
     singletons::wireplumber,
     widgets::{windows, bar::wrapper::SimpleBarModuleWrapper}
@@ -54,47 +54,9 @@ pub fn new() -> gtk4::Box {
         }
     }
 
-    // We can't initialize the volume immediately because the WirePlumber singleton
-    // might not be ready yet. Subscribe to events.
-    gtk4::glib::spawn_future_local(async move {
-        while let Ok(event) = wireplumber::subscribe().recv().await {
-            let set = |volume: f32| {
-                volume_char_label.set_label(&volume_to_char(volume));
-                volume_percentage_label.set_label(&format!("{:.0}%", volume * 100.0));
-            };
-
-            match event {
-                WpEvent::CreateSpeaker(endpoint) => {
-                    if endpoint.is_default {
-                        set(endpoint.node.volume);
-                    }
-                },
-            
-                WpEvent::RemoveSpeaker(endpoint) => {
-                    if let Some(default_speaker) = wireplumber::get_default_speaker() {
-                        if default_speaker.node.id == endpoint.node.id {
-                            set(default_speaker.node.volume);
-                        }
-                    }
-                },
-            
-                WpEvent::UpdateDefaultSpeaker(id) => {
-                    if let Some(speaker) = wireplumber::get_endpoint(id) {
-                        set(speaker.node.volume);
-                    }
-                },
-            
-                WpEvent::UpdateEndpoint(id, property_name) => if property_name == "volume" {
-                    if let Some(default_speaker) = wireplumber::get_default_speaker() {
-                        if default_speaker.node.id == id {
-                            set(default_speaker.node.volume);
-                        }
-                    }
-                },
-            
-                _ => {}
-            }
-        }
+    wireplumber::subscribe_default_speaker_volume(move |volume: f32| {
+        volume_char_label.set_label(&volume_to_char(volume));
+        volume_percentage_label.set_label(&format!("{:.0}%", volume * 100.0));
     });
 
     SimpleBarModuleWrapper::new(&widget)
