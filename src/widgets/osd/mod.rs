@@ -2,7 +2,7 @@ use gdk4::cairo::Region;
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, Layer, LayerShell};
 
-use crate::widgets::osd::imp::Osd;
+use self::imp::Osd;
 
 pub mod imp;
 

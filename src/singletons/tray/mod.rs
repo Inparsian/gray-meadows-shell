@@ -2,10 +2,10 @@ use std::sync::{Arc, LazyLock, OnceLock, RwLock};
 
 use async_broadcast::Receiver;
 
-use crate::{broadcast::BroadcastChannel, singletons::tray::{bus::BusEvent, wrapper::{
-    sn_item::StatusNotifierItem,
-    sn_watcher::StatusNotifierWatcher
-}}};
+use crate::broadcast::BroadcastChannel;
+use self::bus::BusEvent;
+use self::wrapper::sn_item::StatusNotifierItem;
+use self::wrapper::sn_watcher::StatusNotifierWatcher;
 
 pub mod proxy;
 pub mod wrapper;

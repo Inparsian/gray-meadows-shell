@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use std::sync::{Arc, RwLock};
 
-use crate::singletons::networkmanager::{enums::*, wrapper::access_point::NetworkManagerAccessPoint};
+use super::super::{enums::*, wrapper::access_point::NetworkManagerAccessPoint};
 
 #[derive(Debug, Clone)]
 pub enum NetworkManagerDeviceType {

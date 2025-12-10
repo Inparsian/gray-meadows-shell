@@ -1,7 +1,10 @@
 use std::{cell::RefCell, f64, rc::Rc};
 use gtk4::prelude::*;
 
-use crate::{gesture, scss, singletons::mpris, widgets::bar::modules::mpris::extended::SEEK_STEP_MICROSECONDS};
+use crate::gesture;
+use crate::scss;
+use crate::singletons::mpris;
+use super::extended::SEEK_STEP_MICROSECONDS;
 
 static WAVE_AMPLITUDE_FACTOR: f64 = 10.0;
 static WAVE_SPEED: f64 = 3.0;

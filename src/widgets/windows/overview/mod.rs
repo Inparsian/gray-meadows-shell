@@ -9,17 +9,14 @@ use gtk4::prelude::*;
 use regex::Regex;
 use urlencoding::encode;
 
-use crate::{
-    gesture,
-    ipc,
-    singletons::apps,
-    widgets::windows::{overview::{
-        item::{OverviewSearchItem, OverviewSearchItemAction},
-        list::{OverviewSearchList, get_button_from_row},
-        modules::{OverviewSearchModule, input_without_extensions, validate_input},
-        windows::{frequent::OverviewFrequentWindow, recent::OverviewRecentWindow}
-    }, fullscreen::FullscreenWindow}
-};
+use crate::gesture;
+use crate::ipc;
+use crate::singletons::apps;
+use self::item::{OverviewSearchItem, OverviewSearchItemAction};
+use self::list::{OverviewSearchList, get_button_from_row};
+use self::modules::{OverviewSearchModule, input_without_extensions, validate_input};
+use self::windows::{frequent::OverviewFrequentWindow, recent::OverviewRecentWindow};
+use super::fullscreen::FullscreenWindow;
 
 static MODULES: LazyLock<Vec<&(dyn OverviewSearchModule + Send + Sync)>> = LazyLock::new(|| vec![
     &modules::calculator::OverviewCalculatorModule,

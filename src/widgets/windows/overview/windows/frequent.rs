@@ -1,7 +1,7 @@
 use gtk4::prelude::*;
 use relm4::RelmIterChildrenExt;
 
-use crate::{sql::wrappers::commands};
+use crate::sql::wrappers::commands;
 
 pub struct OverviewFrequentWindow {
     pub widget: gtk4::Box,

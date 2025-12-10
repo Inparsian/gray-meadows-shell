@@ -5,10 +5,11 @@ use std::{sync::{Mutex, LazyLock}, time::Duration};
 use async_broadcast::Receiver;
 use gtk4::prelude::*;
 
-use crate::{broadcast::BroadcastChannel, singletons::g_translate::{
-    language::{self, AUTO_LANG, Language},
-    result::GoogleTranslateResult, translate
-}, timeout::Timeout};
+use crate::broadcast::BroadcastChannel;
+use crate::singletons::g_translate::language::{self, AUTO_LANG, Language};
+use crate::singletons::g_translate::result::GoogleTranslateResult;
+use crate::singletons::g_translate::translate;
+use crate::timeout::Timeout;
 
 static WORKING: LazyLock<Mutex<bool>> = LazyLock::new(|| Mutex::new(false));
 static SOURCE_LANG: LazyLock<Mutex<Option<Language>>> = LazyLock::new(|| Mutex::new(language::get_by_name("English")));

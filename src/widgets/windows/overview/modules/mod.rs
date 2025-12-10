@@ -1,4 +1,4 @@
-use crate::widgets::windows::overview::item::OverviewSearchItem;
+use super::item::OverviewSearchItem;
 
 pub mod calculator;
 pub mod text;

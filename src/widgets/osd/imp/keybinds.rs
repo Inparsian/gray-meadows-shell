@@ -1,7 +1,8 @@
 use std::{rc::Rc, cell::RefCell};
 use futures_signals::signal::SignalExt;
 
-use crate::{singletons::hyprland, widgets::osd::imp::{Osd, OsdRevealer}};
+use crate::singletons::hyprland;
+use super::{Osd, OsdRevealer};
 
 #[derive(Debug, Clone)]
 pub struct KeybindsOsd {

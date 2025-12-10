@@ -1,7 +1,7 @@
 use std::time::SystemTime;
 use dbus::{arg::{self, RefArg, Variant}, Error, blocking};
 
-use crate::singletons::tray::{bus::{self, make_key_value_pairs}};
+use super::super::bus::{self, make_key_value_pairs};
 
 pub type RawLayout = (u32, RawMenuItem);
 pub type RawMenuItem = (i32, arg::PropMap, Vec<arg::Variant<Box<dyn arg::RefArg + 'static>>>,);

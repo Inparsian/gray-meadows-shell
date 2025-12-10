@@ -1,6 +1,6 @@
 use dbus::{arg, blocking, Path};
 
-use crate::singletons::tray::{icon::compress_icon_pixmap, bus};
+use super::super::{icon::compress_icon_pixmap, bus};
 
 pub type RawPixmap = (i32, i32, Vec<u8>);
 pub type RawToolTip = (String, Vec<RawPixmap>, String, String);

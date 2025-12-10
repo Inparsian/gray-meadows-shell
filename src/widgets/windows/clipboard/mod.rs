@@ -5,7 +5,10 @@ use image::codecs::png::PngEncoder;
 use image::imageops::FilterType;
 use image::ImageEncoder;
 
-use crate::{color, ipc, singletons::clipboard, widgets::windows::{self, fullscreen::FullscreenWindow}};
+use crate::color;
+use crate::ipc;
+use crate::singletons::clipboard;
+use super::super::windows::{self, fullscreen::FullscreenWindow};
 
 static IMAGE_SIZE: u32 = 192;
 

@@ -1,6 +1,6 @@
 use dbus::{arg::{self, RefArg}, Error, Message};
 
-use crate::singletons::mpris::{mpris_dbus, mpris_metadata};
+use super::{mpris_dbus, mpris_metadata};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum PlaybackStatus {

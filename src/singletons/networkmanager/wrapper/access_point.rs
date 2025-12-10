@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use crate::singletons::networkmanager::enums::*;
+use super::super::enums::*;
 
 #[derive(Debug, Clone)]
 pub struct NetworkManagerAccessPoint {

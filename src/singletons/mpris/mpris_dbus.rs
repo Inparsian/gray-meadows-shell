@@ -1,16 +1,11 @@
 use std::time::Duration;
-use dbus::{
-    arg::{self, Append, IterAppend, RefArg},
-    blocking::{stdintf::org_freedesktop_dbus::Properties, BlockingSender, Connection},
-    strings::BusName,
-    Error,
-    Message
-};
+use dbus::arg::{self, Append, IterAppend, RefArg};
+use dbus::blocking::{stdintf::org_freedesktop_dbus::Properties, BlockingSender, Connection};
+use dbus::strings::BusName;
+use dbus::{Error, Message};
 
-use crate::singletons::mpris::{
-    mpris_player::{self, MprisPlayer},
-    MPRIS, MPRIS_DBUS_PATH, MPRIS_DBUS_PREFIX
-};
+use super::{MPRIS, MPRIS_DBUS_PATH, MPRIS_DBUS_PREFIX};
+use super::mpris_player::{self, MprisPlayer};
 
 pub fn handle_master_message(msg: &Message) {
     if let Some(member) = msg.member() {

@@ -1,4 +1,4 @@
-use crate::color::model::{Hsv, int_to_hex};
+use self::model::{Hsv, int_to_hex};
 
 const FLOAT_TOLERANCE: f64 = 0.0001;
 

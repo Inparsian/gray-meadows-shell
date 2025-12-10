@@ -3,7 +3,8 @@ mod gpu {
     pub mod nvidia;
 }
 
-use std::{time::Duration, sync::{Mutex, LazyLock}};
+use std::time::Duration;
+use std::sync::{Mutex, LazyLock};
 use futures_signals::signal::Mutable;
 use nvml_wrapper::enum_wrappers::device::TemperatureSensor;
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind};

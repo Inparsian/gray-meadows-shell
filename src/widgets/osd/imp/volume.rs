@@ -1,7 +1,8 @@
 use std::{rc::Rc, cell::RefCell};
 use gtk4::prelude::*;
 
-use crate::{singletons::wireplumber, widgets::osd::imp::{Osd, OsdRevealer}};
+use crate::singletons::wireplumber;
+use super::{Osd, OsdRevealer};
 
 #[derive(Debug, Clone)]
 pub struct VolumeOsd {

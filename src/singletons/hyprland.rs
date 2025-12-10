@@ -1,11 +1,9 @@
 use std::sync::LazyLock;
 use futures_signals::signal::Mutable;
 use gdk4::prelude::MonitorExt;
-use hyprland::{
-    data::{Client, Monitor, Workspace, Workspaces},
-    event_listener::AsyncEventListener,
-    shared::{HyprData, HyprDataActive, HyprDataActiveOptional}
-};
+use hyprland::data::{Client, Monitor, Workspace, Workspaces};
+use hyprland::event_listener::AsyncEventListener;
+use hyprland::shared::{HyprData, HyprDataActive, HyprDataActiveOptional};
 
 use crate::display;
 

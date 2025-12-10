@@ -1,4 +1,4 @@
-use crate::singletons::tray::wrapper::sn_item::RawPixmap;
+use super::wrapper::sn_item::RawPixmap;
 
 // Rationale: Some icons have the possibility of being absurdly large (e.g. 1024x1024). This may not seem like an
 // issue at first, however, compared to a measly 28x28 icon, which has a total of 3136 (28^2*4) ARGB values, a

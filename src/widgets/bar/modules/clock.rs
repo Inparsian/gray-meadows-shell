@@ -1,10 +1,9 @@
 use futures_signals::signal::SignalExt;
 use gtk4::prelude::*;
 
-use crate::{
-    singletons::date_time::DATE_TIME,
-    widgets::{self, bar::wrapper::SimpleBarModuleWrapper}
-};
+use crate::singletons::date_time::DATE_TIME;
+use crate::widgets::common::dot_separator;
+use super::super::wrapper::SimpleBarModuleWrapper;
 
 pub fn new() -> gtk4::Box {
     view! {
@@ -15,7 +14,7 @@ pub fn new() -> gtk4::Box {
             set_hexpand: false,
 
             append: &time_label,
-            widgets::common::dot_separator::new() {},
+            append: &dot_separator::new(),
             append: &date_label
         }
     }

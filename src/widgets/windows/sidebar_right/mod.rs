@@ -3,7 +3,7 @@ mod quicktoggle;
 
 use gtk4::prelude::*;
 
-use crate::widgets::windows::popup::{PopupWindow, PopupMargin, PopupOptions};
+use super::popup::{PopupWindow, PopupMargin, PopupOptions};
 
 pub fn new(application: &libadwaita::Application) -> PopupWindow {
     let header = header::new();

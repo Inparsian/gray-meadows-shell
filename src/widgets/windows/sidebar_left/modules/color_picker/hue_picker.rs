@@ -2,7 +2,8 @@ use std::{rc::Rc, cell::RefCell};
 use futures_signals::signal::{Mutable, SignalExt};
 use gtk4::prelude::*;
 
-use crate::{color::model::Hsv, gesture};
+use crate::color::model::Hsv;
+use crate::gesture;
 
 #[derive(Debug, Clone)]
 pub struct HuePicker {

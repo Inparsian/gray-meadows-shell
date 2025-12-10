@@ -2,7 +2,9 @@ use gtk4::{prelude::*, RevealerTransitionType};
 use gtk4_layer_shell::{Edge, Layer, KeyboardMode, LayerShell};
 use libadwaita::Clamp;
 
-use crate::{gesture, singletons::hyprland, widgets::windows::{GmsWindow, hide_all_popups}};
+use crate::gesture;
+use crate::singletons::hyprland;
+use super::{GmsWindow, hide_all_popups};
 
 /// A popup window that displays content on top of other windows. It closes itself when it loses focus.
 #[derive(Clone)]

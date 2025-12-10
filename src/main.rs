@@ -21,11 +21,13 @@ mod pixbuf;
 mod timeout;
 mod broadcast;
 
-use std::{cell::RefCell, collections::HashMap, path::Path, sync::{LazyLock, Mutex, OnceLock}};
+use std::{cell::RefCell, collections::HashMap, path::Path};
+use std::sync::{LazyLock, Mutex, OnceLock};
 use futures_signals::signal::Mutable;
 use gtk4::prelude::*;
 use libadwaita::Application;
-use notify::{EventKind, event::{AccessKind, AccessMode}, Watcher};
+use notify::{EventKind, Watcher};
+use notify::event::{AccessKind, AccessMode};
 use sqlite::Connection;
 
 use crate::widgets::{bar, windows::{self, GmsWindow}};

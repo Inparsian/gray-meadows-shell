@@ -1,14 +1,10 @@
 use gdk4::gio;
 use gtk4::prelude::*;
 
-use crate::{
-    gesture,
-    pixbuf,
-    singletons::{
-        tray::{self, bus::BusEvent, icon::make_icon_pixbuf, subscribe, tray_menu, wrapper::{dbus_menu::Menu, sn_item::StatusNotifierItem}}
-    },
-    widgets::bar::wrapper::SimpleBarModuleWrapper
-};
+use crate::gesture;
+use crate::pixbuf;
+use crate::singletons::tray::{self, bus::BusEvent, icon, tray_menu, wrapper::{dbus_menu::Menu, sn_item::StatusNotifierItem}};
+use super::super::wrapper::SimpleBarModuleWrapper;
 
 #[derive(Default, Clone)]
 struct SystemTrayItem {
@@ -88,7 +84,7 @@ impl SystemTrayItem {
 
         if let Some(item) = crate::singletons::tray::try_read_item(&self.service) {
             if !item.icon_pixmap.is_empty() {
-                new_widget.set_from_pixbuf(make_icon_pixbuf(Some(&item.icon_pixmap)).as_ref());
+                new_widget.set_from_pixbuf(icon::make_icon_pixbuf(Some(&item.icon_pixmap)).as_ref());
             } else {
                 let icon_pixbuf = pixbuf::get_pixbuf_or_fallback(&item.icon_name, "emote-love");
                 new_widget.set_from_pixbuf(icon_pixbuf.as_ref());
@@ -115,7 +111,7 @@ impl SystemTrayItem {
 
                 "NewIcon" => {
                     if !item.icon_pixmap.is_empty() {
-                        widget.set_from_pixbuf(make_icon_pixbuf(Some(&item.icon_pixmap)).as_ref());
+                        widget.set_from_pixbuf(icon::make_icon_pixbuf(Some(&item.icon_pixmap)).as_ref());
                     } else {
                         let icon_pixbuf = pixbuf::get_pixbuf_or_fallback(&item.icon_name, "emote-love");
                         widget.set_from_pixbuf(icon_pixbuf.as_ref());
@@ -234,7 +230,7 @@ pub fn new() -> gtk4::Box {
 
     // Watch for tray events
     gtk4::glib::spawn_future_local(async move {
-        while let Ok(event) = subscribe().recv().await {
+        while let Ok(event) = tray::subscribe().recv().await {
             match event {
                 BusEvent::ItemRegistered(item) => {
                     if tray.add_item(item.service.clone()) {

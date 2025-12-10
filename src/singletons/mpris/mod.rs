@@ -6,7 +6,8 @@ use std::{rc::Rc, sync::LazyLock};
 use dbus::message::{MatchRule, MessageType};
 use futures_signals::{signal::SignalExt, signal_vec::{SignalVecExt, VecDiff}};
 
-use crate::{dbus::start_monitoring, ipc};
+use crate::dbus::start_monitoring;
+use crate::ipc;
 
 const MPRIS_DBUS_PREFIX: &str = "org.mpris.MediaPlayer2";
 const MPRIS_DBUS_PATH: &str = "/org/mpris/MediaPlayer2";

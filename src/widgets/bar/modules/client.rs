@@ -1,11 +1,9 @@
 use futures_signals::signal::{Mutable, SignalExt};
 use gtk4::prelude::*;
 
-use crate::{
-    singletons::hyprland,
-    widgets::bar::wrapper::SimpleBarModuleWrapper,
-    APP_LOCAL
-};
+use crate::singletons::hyprland;
+use crate::APP_LOCAL;
+use super::super::wrapper::SimpleBarModuleWrapper;
 
 const MAX_CLASS_WIDTH: i32 = 29;
 const MAX_TITLE_WIDTH: i32 = 54;

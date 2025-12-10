@@ -1,6 +1,6 @@
 use dbus::arg::RefArg;
 
-use crate::singletons::tray::wrapper::sn_item::StatusNotifierItem;
+use super::wrapper::sn_item::StatusNotifierItem;
 
 pub const WATCHER_DBUS_BUS: &str = "org.kde.StatusNotifierWatcher";
 pub const WATCHER_DBUS_OBJECT: &str = "/StatusNotifierWatcher";

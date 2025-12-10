@@ -2,10 +2,8 @@ use std::{cell::RefCell, error::Error, rc::Rc};
 use gtk4::prelude::*;
 use relm4::RelmRemoveAllExt;
 
-use crate::{
-    singletons::g_translate::language::{self, Language, AUTO_LANG, LANGUAGES},
-    widgets::windows::sidebar_left::modules::translate::{send_ui_event, set_source_language, set_target_language, subscribe_to_ui_events, LanguageSelectReveal, UiEvent}
-};
+use crate::singletons::g_translate::language::{self, Language, AUTO_LANG, LANGUAGES};
+use super::super::translate::{self, LanguageSelectReveal, UiEvent};
 
 const BUTTONS_PER_ROW: usize = 3;
 const BUTTONS_PER_PAGE: usize = BUTTONS_PER_ROW * 12;
@@ -38,12 +36,12 @@ fn get_page_boxes(reveal_type: &LanguageSelectReveal, filter: Option<&str>) -> V
 
             move |_| {
                 match reveal_type {
-                    LanguageSelectReveal::Source => set_source_language(language::get_by_name(&lang_name)),
-                    LanguageSelectReveal::Target => set_target_language(language::get_by_name(&lang_name)),
+                    LanguageSelectReveal::Source => translate::set_source_language(language::get_by_name(&lang_name)),
+                    LanguageSelectReveal::Target => translate::set_target_language(language::get_by_name(&lang_name)),
                     _ => unreachable!(),
                 }
 
-                send_ui_event(&UiEvent::LanguageSelectRevealChanged(LanguageSelectReveal::None));
+                translate::send_ui_event(&UiEvent::LanguageSelectRevealChanged(LanguageSelectReveal::None));
             }
         });
 
@@ -246,7 +244,7 @@ impl LanguageSelectView {
         gtk4::glib::spawn_future_local({
             let view = view.clone();
             async move {
-                let mut receiver = subscribe_to_ui_events();
+                let mut receiver = translate::subscribe_to_ui_events();
                 while let Ok(event) = receiver.recv().await {
                     if let UiEvent::LanguageSelectRevealChanged(reveal) = event {
                         if reveal == view.reveal_type {

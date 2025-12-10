@@ -1,4 +1,4 @@
-use crate::singletons::g_translate::language::Language;
+use super::language::Language;
 
 #[derive(Debug, Clone, Default)]
 pub struct GoogleTranslateResult {

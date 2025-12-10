@@ -3,7 +3,7 @@ use md5;
 use sha::{self, utils::{Digest, DigestExt}};
 use whirlpool::{Whirlpool, Digest as WhirlpoolDigest};
 
-use crate::widgets::windows::overview::{item::{OverviewSearchItem, OverviewSearchItemAction}, modules::OverviewSearchModule};
+use super::super::{item::{OverviewSearchItem, OverviewSearchItemAction}, modules::OverviewSearchModule};
 
 #[derive(Debug, Clone)]
 enum Algorithm {

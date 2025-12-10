@@ -1,11 +1,10 @@
 use gtk4::prelude::*;
 
-use crate::{
-    ffi::astalwp::ffi,
-    gesture,
-    singletons::wireplumber,
-    widgets::{windows, bar::wrapper::SimpleBarModuleWrapper}
-};
+use crate::ffi::astalwp::ffi;
+use crate::gesture;
+use crate::singletons::wireplumber;
+use crate::widgets::windows;
+use super::super::wrapper::SimpleBarModuleWrapper;
 
 const VOLUME_STEP: f32 = 0.05;
 const LOW_VOLUME_CHAR: &str = "";

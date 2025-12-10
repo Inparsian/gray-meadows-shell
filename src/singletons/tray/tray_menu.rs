@@ -1,6 +1,6 @@
 use gdk4::gio::{self, prelude::ActionMapExtManual};
 
-use crate::singletons::tray::wrapper::{dbus_menu::{self, Menu}, sn_item::StatusNotifierItem};
+use super::wrapper::{dbus_menu::{self, Menu}, sn_item::StatusNotifierItem};
 
 fn label_to_action(label: &str) -> Option<String> {
     Some(label.chars()

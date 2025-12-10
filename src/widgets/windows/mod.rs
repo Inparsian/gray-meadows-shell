@@ -8,7 +8,8 @@ pub mod clipboard;
 
 use std::any::Any;
 
-use crate::{APP_LOCAL, ipc};
+use crate::APP_LOCAL;
+use crate::ipc;
 
 pub trait GmsWindow: Any {
     fn show(&self);

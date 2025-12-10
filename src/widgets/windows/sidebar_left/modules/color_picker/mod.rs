@@ -6,11 +6,11 @@ mod color_boxes;
 use futures_signals::signal::{Mutable, SignalExt};
 use gtk4::{Adjustment, prelude::*};
 
-use crate::{
-    color::model::{int_to_hex, Hsv},
-    ipc,
-    widgets::{common::{tabs::{TabSize, Tabs, TabsStack}}, windows::sidebar_left::modules::color_picker::fields::Fields}
-};
+use crate::color::model::{int_to_hex, Hsv};
+use crate::ipc;
+use crate::widgets::common::tabs::{TabSize, Tabs, TabsStack};
+use self::fields::Fields;
+use self::{saturation_value_picker::SaturationValuePicker, hue_picker::HuePicker};
 
 pub fn new() -> gtk4::Box {
     let hsv = Mutable::new(Hsv {
@@ -19,8 +19,8 @@ pub fn new() -> gtk4::Box {
         value: 100.0
     });
 
-    let hue_picker = hue_picker::HuePicker::new(&hsv);
-    let saturation_value_picker = saturation_value_picker::SaturationValuePicker::new(&hsv);
+    let hue_picker = HuePicker::new(&hsv);
+    let saturation_value_picker = SaturationValuePicker::new(&hsv);
 
     let color_tabs = Tabs::new(TabSize::Normal, false);
     color_tabs.current_tab.set(Some("hsv".to_owned()));

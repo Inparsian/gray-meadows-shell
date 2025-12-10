@@ -2,7 +2,9 @@ use futures_signals::signal_vec::VecDiff;
 use gtk4::prelude::*;
 use relm4::RelmIterChildrenExt;
 
-use crate::{gesture, singletons::mpris::{self, MPRIS, mpris_player::PlaybackStatus, set_default_player}, widgets::bar::modules::mpris::progress};
+use crate::gesture;
+use crate::singletons::mpris::{self, MPRIS, mpris_player::PlaybackStatus, set_default_player};
+use super::progress;
 
 pub static SEEK_STEP_MICROSECONDS: i64 = 5_000_000;
 

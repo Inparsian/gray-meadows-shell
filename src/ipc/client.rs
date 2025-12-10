@@ -2,10 +2,8 @@ use std::os::unix::net::UnixStream;
 use std::io::{self, Read, Write};
 use std::time::Duration;
 
-use crate::ipc;
-
 pub fn get_stream() -> io::Result<UnixStream> {
-    let stream = UnixStream::connect(ipc::get_socket_path())?;
+    let stream = UnixStream::connect(super::get_socket_path())?;
     stream.set_read_timeout(Some(Duration::from_secs(5)))?;
     stream.set_write_timeout(Some(Duration::from_secs(5)))?;
 

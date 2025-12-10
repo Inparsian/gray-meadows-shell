@@ -1,7 +1,9 @@
 use freedesktop_desktop_entry::get_languages_from_env;
 use gtk4::prelude::*;
 
-use crate::{pixbuf, widgets::windows, singletons::apps};
+use crate::pixbuf;
+use crate::widgets::windows;
+use crate::singletons::apps;
 
 pub mod frequent;
 pub mod recent;

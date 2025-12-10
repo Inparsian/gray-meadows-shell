@@ -1,7 +1,7 @@
 use std::fmt::Write;
 use rand::seq::SliceRandom;
 
-use crate::widgets::windows::overview::{item::{OverviewSearchItem, OverviewSearchItemAction}, modules::OverviewSearchModule};
+use super::super::{item::{OverviewSearchItem, OverviewSearchItemAction}, modules::OverviewSearchModule};
 
 #[derive(Debug, Clone)]
 enum TextOperation {

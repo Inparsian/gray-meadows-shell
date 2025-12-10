@@ -1,7 +1,9 @@
 #![allow(dead_code)]
 use std::sync::{Arc, RwLock};
 
-use crate::{broadcast::BroadcastChannel, singletons::networkmanager::{bus::BusEvent, wrapper::device::NetworkManagerDevice}};
+use crate::broadcast::BroadcastChannel;
+use super::device::NetworkManagerDevice;
+use super::super::bus::BusEvent;
 
 /// https://www.networkmanager.dev/docs/api/latest/gdbus-org.freedesktop.NetworkManager.html
 #[derive(Debug, Clone)]

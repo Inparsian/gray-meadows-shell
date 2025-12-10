@@ -1,9 +1,7 @@
 use regex::Regex;
 
-use crate::{
-    ffi::libqalculate::ffi,
-    widgets::windows::overview::{item::{OverviewSearchItem, OverviewSearchItemAction}, modules::OverviewSearchModule}
-};
+use crate::ffi::libqalculate::ffi;
+use super::super::{item::{OverviewSearchItem, OverviewSearchItemAction}, modules::OverviewSearchModule};
 
 /// Table of number suffixes & amount of zeroes needed to reach them
 const NUM_SUFFIXES: [(u16, &str); 102] = [

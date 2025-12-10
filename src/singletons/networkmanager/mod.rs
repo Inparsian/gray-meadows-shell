@@ -3,7 +3,7 @@ pub mod wrapper;
 pub mod enums;
 pub mod bus;
 
-use dbus::{message::{MatchRule, MessageType}};
+use dbus::message::{MatchRule, MessageType};
 
 #[allow(dead_code)]
 pub fn handle_nm_signal_message(_msg: &dbus::Message) {

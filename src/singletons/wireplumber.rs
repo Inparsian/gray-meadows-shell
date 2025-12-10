@@ -1,7 +1,8 @@
 use std::sync::{Mutex, OnceLock, LazyLock};
 use async_broadcast::Receiver;
 
-use crate::{broadcast::BroadcastChannel, ffi::astalwp::{CHANNEL, WpEvent, ffi}};
+use crate::broadcast::BroadcastChannel;
+use crate::ffi::astalwp::{CHANNEL, WpEvent, ffi};
 
 const POSSIBLE_NODE_PROPERTIES: [&str; 7] = [
     "description",

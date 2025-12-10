@@ -5,7 +5,7 @@ pub mod result;
 use std::sync::{Mutex, LazyLock};
 use serde::Serialize;
 
-use crate::singletons::g_translate::{language::Language, result::GoogleTranslateResult};
+use self::{language::Language, result::GoogleTranslateResult};
 
 pub static SESSION: LazyLock<Mutex<GoogleTranslateSession>> = LazyLock::new(|| Mutex::new(GoogleTranslateSession::default()));
 static LENGTH_REGEX: LazyLock<regex::Regex> = LazyLock::new(|| regex::Regex::new(r"^(\d+)").unwrap());

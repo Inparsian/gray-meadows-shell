@@ -2,7 +2,9 @@ pub mod modules;
 
 use gtk4::prelude::*;
 
-use crate::{ipc, widgets::{common::tabs::{TabSize, Tabs, TabsStack}, windows::popup::{PopupWindow, PopupMargin, PopupOptions}}};
+use crate::ipc;
+use crate::widgets::common::tabs::{TabSize, Tabs, TabsStack};
+use super::popup::{PopupWindow, PopupMargin, PopupOptions};
 
 pub fn new(application: &libadwaita::Application) -> PopupWindow {
     let tabs = Tabs::new(TabSize::Large, true);

@@ -1,4 +1,4 @@
-use crate::widgets::windows::overview::{item::{OverviewSearchItem, OverviewSearchItemAction}, modules::OverviewSearchModule};
+use super::super::{item::{OverviewSearchItem, OverviewSearchItemAction}, modules::OverviewSearchModule};
 
 pub struct OverviewTerminalModule;
 

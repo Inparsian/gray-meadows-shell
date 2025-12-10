@@ -14,7 +14,11 @@ use std::collections::HashMap;
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell};
 
-use crate::{APP_LOCAL, gesture, ipc, singletons::hyprland, widgets::bar::module::{BarModuleWrapper, hide_all_expanded_modules}};
+use crate::APP_LOCAL;
+use crate::gesture;
+use crate::ipc;
+use crate::singletons::hyprland;
+use self::module::{BarModuleWrapper, hide_all_expanded_modules};
 
 static BAR_HEIGHT: i32 = 33;
 

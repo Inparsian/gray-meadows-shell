@@ -4,19 +4,18 @@ use std::sync::OnceLock;
 use async_broadcast::Receiver;
 
 use crate::broadcast::BroadcastChannel;
-use crate::ipc;
 
 static CHANNEL: OnceLock<BroadcastChannel<String>> = OnceLock::new();
 
 pub fn drop_socket() -> io::Result<()> {
-    std::fs::remove_file(ipc::get_socket_path())
+    std::fs::remove_file(super::get_socket_path())
 }
 
 pub async fn start() -> io::Result<()> {
-    let socket_path = ipc::get_socket_path();
+    let socket_path = super::get_socket_path();
 
     // Ensure the socket is removed before starting
-    if ipc::client::get_stream().is_err() {
+    if super::client::get_stream().is_err() {
         let _ = drop_socket();
     } else {
         return Err(io::Error::new(
