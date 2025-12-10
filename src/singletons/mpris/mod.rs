@@ -185,16 +185,16 @@ pub fn activate() {
     }));
 
     // Monitor IPC commands for controlling MPRIS players
-    ipc::listen_for_messages(move |message| {
-        match message.as_str() {
-            "mpris_next" => { let _ = crate::singletons::mpris::with_default_player_mut(|p| p.next()); },
-            "mpris_previous" => { let _ = crate::singletons::mpris::with_default_player_mut(|p| p.previous()); },
-            "mpris_play_pause" => { let _ = crate::singletons::mpris::get_default_player().map(|p| p.play_pause()); },
-            "mpris_play" => { let _ = crate::singletons::mpris::get_default_player().map(|p| p.play()); },
-            "mpris_pause" => { let _ = crate::singletons::mpris::get_default_player().map(|p| p.pause()); },
-            "mpris_volume_up" => { let _ = crate::singletons::mpris::get_default_player().map(|p| p.adjust_volume(0.05)); },
-            "mpris_volume_down" => { let _ = crate::singletons::mpris::get_default_player().map(|p| p.adjust_volume(-0.05)); },
+    ipc::listen_for_messages_local(move |message| {
+        std::thread::spawn(move || match message.as_str() {
+            "mpris_next" => { let _ = with_default_player_mut(|p| p.next()); },
+            "mpris_previous" => { let _ = with_default_player_mut(|p| p.previous()); },
+            "mpris_play_pause" => { let _ = get_default_player().map(|p| p.play_pause()); },
+            "mpris_play" => { let _ = get_default_player().map(|p| p.play()); },
+            "mpris_pause" => { let _ = get_default_player().map(|p| p.pause()); },
+            "mpris_volume_up" => { let _ = get_default_player().map(|p| p.adjust_volume(0.05)); },
+            "mpris_volume_down" => { let _ = get_default_player().map(|p| p.adjust_volume(-0.05)); },
             _ => {},
-        }
+        });
     });
 }
