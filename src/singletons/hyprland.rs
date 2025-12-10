@@ -77,6 +77,7 @@ pub fn activate() {
     tokio::spawn(async move {
         let mut event_listener = AsyncEventListener::new();
 
+        event_listener.add_window_opened_handler(|_| Box::pin(async { refresh_active_client(); refresh_workspaces(); }));
         event_listener.add_window_closed_handler(|_| Box::pin(async { refresh_active_client() }));
         event_listener.add_active_window_changed_handler(|_| Box::pin(async { refresh_active_client() }));
         event_listener.add_float_state_changed_handler(|_| Box::pin(async { refresh_active_client() }));

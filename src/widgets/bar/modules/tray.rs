@@ -157,11 +157,20 @@ impl SystemTray {
         }
     }
 
-    fn add_item(&mut self, service: String) {
+    fn add_item(&mut self, service: String) -> bool {
+        if self.has_item(&service) {
+            return false;
+        }
+
         let item = SystemTrayItem::new(service);
 
         self.items.push(item);
         self.update_visibility();
+        true
+    }
+
+    fn has_item(&self, service: &str) -> bool {
+        self.items.iter().any(|i| i.service == service)
     }
 
     fn build_item(&mut self, service: &str) {
@@ -224,19 +233,13 @@ pub fn new() -> gtk4::Box {
     }
 
     // Watch for tray events
-    let (tx, rx) = async_channel::bounded::<BusEvent>(1);
-    tokio::spawn(async move {
-        while let Ok(event) = subscribe().recv().await {
-            tx.send(event).await.unwrap();
-        }
-    });
-
     gtk4::glib::spawn_future_local(async move {
-        while let Ok(event) = rx.recv().await {
+        while let Ok(event) = subscribe().recv().await {
             match event {
                 BusEvent::ItemRegistered(item) => {
-                    tray.add_item(item.service.clone());
-                    tray.build_item(&item.service);
+                    if tray.add_item(item.service.clone()) {
+                        tray.build_item(&item.service);
+                    }
                 },
 
                 BusEvent::ItemUpdated(member, item) => {

@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc, time::Duration};
 use gtk4::prelude::*;
 
-use crate::{APP_LOCAL, gesture, timeout::Timeout};
+use crate::{APP_LOCAL, broadcast::BroadcastChannel, gesture, timeout::Timeout};
 
 static TRANSITION_DURATION: f64 = 0.4;
 static DOWNSCALE_FACTOR: f64 = 0.000_000_001;
@@ -9,7 +9,7 @@ static BLUR_FACTOR_PX: i32 = 8;
 
 #[derive(Clone)]
 pub struct BarModule {
-    tx: tokio::sync::broadcast::Sender<(i32, i32)>,
+    channel: BroadcastChannel<(i32, i32)>,
     timeout: Timeout,
     pub minimal: gtk4::Widget,
     pub expanded: gtk4::Widget,
@@ -33,9 +33,8 @@ impl BarModule {
         minimal.set_halign(gtk4::Align::Center);
         expanded.set_halign(gtk4::Align::Center);
 
-        let (tx, _) = tokio::sync::broadcast::channel::<(i32, i32)>(16);
         let module = BarModule {
-            tx,
+            channel: BroadcastChannel::new(10),
             timeout: Timeout::default(),
             minimal: minimal.upcast(),
             expanded: expanded.upcast(),
@@ -48,7 +47,7 @@ impl BarModule {
         gtk4::glib::spawn_future_local({
             let expanded = module.expanded.clone();
             let expanded_provider = module.expanded_provider.clone();
-            let mut rx = module.tx.subscribe();
+            let mut rx = module.channel.subscribe();
             async move {
                 if let Ok((width, height)) = rx.recv().await {
                     expanded_provider.load_from_data(&format!(
@@ -106,17 +105,17 @@ impl BarModule {
     fn connect_expanded_map(&self) {
         self.expanded.connect_map({
             let expanded = self.expanded.clone();
-            let tx = self.tx.clone();
+            let channel = self.channel.clone();
             move |_| {
                 gtk4::glib::spawn_future_local({
                     let expanded = expanded.clone();
-                    let tx = tx.clone();
+                    let channel = channel.clone();
                     async move {
                         while expanded.allocated_width() == 0 || expanded.allocated_height() == 0 {
                             gtk4::glib::timeout_future(std::time::Duration::from_millis(1)).await;
                         }
 
-                        let _ = tx.send((expanded.allocated_width(), expanded.allocated_height()));
+                        channel.send((expanded.allocated_width(), expanded.allocated_height())).await;
                     }
                 });
             }

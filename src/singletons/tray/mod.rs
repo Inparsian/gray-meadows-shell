@@ -1,10 +1,11 @@
 use std::sync::{Arc, LazyLock, OnceLock, RwLock};
-use tokio::sync::broadcast;
 
-use crate::singletons::tray::{bus::BusEvent, wrapper::{
+use async_broadcast::Receiver;
+
+use crate::{broadcast::BroadcastChannel, singletons::tray::{bus::BusEvent, wrapper::{
     sn_item::StatusNotifierItem,
     sn_watcher::StatusNotifierWatcher
-}};
+}}};
 
 pub mod proxy;
 pub mod wrapper;
@@ -12,9 +13,7 @@ pub mod bus;
 pub mod icon;
 pub mod tray_menu;
 
-static SENDER: LazyLock<broadcast::Sender<BusEvent>> = LazyLock::new(|| {
-    broadcast::channel(100).0
-});
+static CHANNEL: LazyLock<BroadcastChannel<BusEvent>> = LazyLock::new(|| BroadcastChannel::new(10));
 
 pub static ITEMS: OnceLock<Arc<RwLock<Vec<StatusNotifierItem>>>> = OnceLock::new();
 
@@ -27,15 +26,15 @@ pub fn activate() {
 
     tokio::spawn(async move {
         while let Ok(event) = receiver.recv().await {
-            let _ = SENDER.send(event);
+            CHANNEL.send(event).await;
         }
     });
 
     std::thread::spawn(move || watcher.serve());
 }
 
-pub fn subscribe() -> tokio::sync::broadcast::Receiver<bus::BusEvent> {
-    SENDER.subscribe()
+pub fn subscribe() -> Receiver<bus::BusEvent> {
+    CHANNEL.subscribe()
 }
 
 pub fn try_read_item(service: &str) -> Option<StatusNotifierItem> {

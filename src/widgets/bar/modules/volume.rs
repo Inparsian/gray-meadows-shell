@@ -56,47 +56,44 @@ pub fn new() -> gtk4::Box {
 
     // We can't initialize the volume immediately because the WirePlumber singleton
     // might not be ready yet. Subscribe to events.
-    let (tx, rx) = async_channel::bounded::<f32>(1);
-    tokio::spawn(async move {
+    gtk4::glib::spawn_future_local(async move {
         while let Ok(event) = wireplumber::subscribe().recv().await {
+            let set = |volume: f32| {
+                volume_char_label.set_label(&volume_to_char(volume));
+                volume_percentage_label.set_label(&format!("{:.0}%", volume * 100.0));
+            };
+
             match event {
                 WpEvent::CreateSpeaker(endpoint) => {
                     if endpoint.is_default {
-                        let _ = tx.send(endpoint.node.volume).await;
+                        set(endpoint.node.volume);
                     }
                 },
             
                 WpEvent::RemoveSpeaker(endpoint) => {
                     if let Some(default_speaker) = wireplumber::get_default_speaker() {
                         if default_speaker.node.id == endpoint.node.id {
-                            let _ = tx.send(default_speaker.node.volume).await;
+                            set(default_speaker.node.volume);
                         }
                     }
                 },
             
                 WpEvent::UpdateDefaultSpeaker(id) => {
                     if let Some(speaker) = wireplumber::get_endpoint(id) {
-                        let _ = tx.send(speaker.node.volume).await;
+                        set(speaker.node.volume);
                     }
                 },
             
                 WpEvent::UpdateEndpoint(id, property_name) => if property_name == "volume" {
                     if let Some(default_speaker) = wireplumber::get_default_speaker() {
                         if default_speaker.node.id == id {
-                            let _ = tx.send(default_speaker.node.volume).await;
+                            set(default_speaker.node.volume);
                         }
                     }
                 },
             
                 _ => {}
             }
-        }
-    });
-
-    gtk4::glib::spawn_future_local(async move {
-        while let Ok(volume) = rx.recv().await {
-            volume_char_label.set_label(&volume_to_char(volume));
-            volume_percentage_label.set_label(&format!("{:.0}%", volume * 100.0));
         }
     });
 

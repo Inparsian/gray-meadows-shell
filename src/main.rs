@@ -19,6 +19,7 @@ mod scss;
 mod unit;
 mod pixbuf;
 mod timeout;
+mod broadcast;
 
 use std::{cell::RefCell, collections::HashMap, path::Path, sync::{LazyLock, Mutex, OnceLock}};
 use futures_signals::signal::Mutable;
@@ -169,8 +170,8 @@ async fn main() {
             eprintln!("Another instance of gray-meadows-shell is already running.");
             std::process::exit(1);
         } else {
-            std::thread::spawn(|| {
-                if let Err(e) = ipc::server::start() {
+            tokio::spawn(async {
+                if let Err(e) = ipc::server::start().await {
                     eprintln!("Failed to start IPC server: {}", e);
                     std::process::exit(1);
                 }

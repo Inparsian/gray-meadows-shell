@@ -243,17 +243,15 @@ impl LanguageSelectView {
         let _ = view.update_page_boxes(None);
 
         // Start our event receiver task
-        let receiver = subscribe_to_ui_events();
         gtk4::glib::spawn_future_local({
             let view = view.clone();
             async move {
+                let mut receiver = subscribe_to_ui_events();
                 while let Ok(event) = receiver.recv().await {
                     if let UiEvent::LanguageSelectRevealChanged(reveal) = event {
-                        if reveal != view.reveal_type {
-                            continue;
+                        if reveal == view.reveal_type {
+                            view.clear_filter_entry();
                         }
-
-                        view.clear_filter_entry();
                     }
                 }
             }

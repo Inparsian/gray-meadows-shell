@@ -1,7 +1,7 @@
 use std::sync::{Mutex, OnceLock, LazyLock};
-use tokio::sync::broadcast;
+use async_broadcast::Receiver;
 
-use crate::ffi::astalwp::{ffi, CHANNEL, WpEvent};
+use crate::{broadcast::BroadcastChannel, ffi::astalwp::{CHANNEL, WpEvent, ffi}};
 
 const POSSIBLE_NODE_PROPERTIES: [&str; 7] = [
     "description",
@@ -17,12 +17,12 @@ const POSSIBLE_ENDPOINT_PROPERTIES: [&str; 1] = [
     "is-default"
 ];
 
-static SENDER: LazyLock<broadcast::Sender<WpEvent>> = LazyLock::new(|| broadcast::channel(100).0);
+static EVENT_CHANNEL: LazyLock<BroadcastChannel<WpEvent>> = LazyLock::new(|| BroadcastChannel::new(10));
 static NODES: OnceLock<Mutex<Vec<ffi::Node>>> = OnceLock::new();
 static ENDPOINTS: OnceLock<Mutex<Vec<ffi::Endpoint>>> = OnceLock::new();
 
-pub fn subscribe() -> tokio::sync::broadcast::Receiver<WpEvent> {
-    SENDER.subscribe()
+pub fn subscribe() -> Receiver<WpEvent> {
+    EVENT_CHANNEL.subscribe()
 }
 
 pub fn get_node(id: i32) -> Option<ffi::Node> {
@@ -67,7 +67,7 @@ pub fn activate() {
                     }
                     
                     if POSSIBLE_NODE_PROPERTIES.contains(&property_name.as_str()) {
-                        let _ = SENDER.send(WpEvent::UpdateNode(id, property_name));
+                        EVENT_CHANNEL.send(WpEvent::UpdateNode(id, property_name)).await;
                     }
                 },
 
@@ -105,17 +105,17 @@ pub fn activate() {
                         });
 
                         if POSSIBLE_ENDPOINT_PROPERTIES.contains(&property_name.as_str()) || POSSIBLE_NODE_PROPERTIES.contains(&property_name.as_str()) {
-                            let _ = SENDER.send(WpEvent::UpdateEndpoint(id, property_name));
+                            EVENT_CHANNEL.send(WpEvent::UpdateEndpoint(id, property_name)).await;
                         }
                     }
                 },
 
                 WpEvent::UpdateDefaultMicrophone(id) => {
-                    let _ = SENDER.send(WpEvent::UpdateDefaultMicrophone(id));
+                    EVENT_CHANNEL.send(WpEvent::UpdateDefaultMicrophone(id)).await;
                 },
 
                 WpEvent::UpdateDefaultSpeaker(id) => {
-                    let _ = SENDER.send(WpEvent::UpdateDefaultSpeaker(id));
+                    EVENT_CHANNEL.send(WpEvent::UpdateDefaultSpeaker(id)).await;
                 },
 
                 WpEvent::CreateStream(node) => {
@@ -125,7 +125,7 @@ pub fn activate() {
                         }
                     });
 
-                    let _ = SENDER.send(WpEvent::CreateStream(node));
+                    EVENT_CHANNEL.send(WpEvent::CreateStream(node)).await;
                 },
 
                 WpEvent::RemoveStream(node) => {
@@ -135,7 +135,7 @@ pub fn activate() {
                         }
                     });
 
-                    let _ = SENDER.send(WpEvent::RemoveStream(node));
+                    EVENT_CHANNEL.send(WpEvent::RemoveStream(node)).await;
                 },
 
                 WpEvent::CreateMicrophone(endpoint) => {
@@ -145,7 +145,7 @@ pub fn activate() {
                         }
                     });
 
-                    let _ = SENDER.send(WpEvent::CreateMicrophone(endpoint));
+                    EVENT_CHANNEL.send(WpEvent::CreateMicrophone(endpoint)).await;
                 },
 
                 WpEvent::RemoveMicrophone(endpoint) => {
@@ -155,7 +155,7 @@ pub fn activate() {
                         }
                     });
 
-                    let _ = SENDER.send(WpEvent::RemoveMicrophone(endpoint));
+                    EVENT_CHANNEL.send(WpEvent::RemoveMicrophone(endpoint)).await;
                 },
 
                 WpEvent::CreateSpeaker(endpoint) => {
@@ -165,7 +165,7 @@ pub fn activate() {
                         }
                     });
 
-                    let _ = SENDER.send(WpEvent::CreateSpeaker(endpoint));
+                    EVENT_CHANNEL.send(WpEvent::CreateSpeaker(endpoint)).await;
                 },
 
                 WpEvent::RemoveSpeaker(endpoint) => {
@@ -175,7 +175,7 @@ pub fn activate() {
                         }
                     });
 
-                    let _ = SENDER.send(WpEvent::RemoveSpeaker(endpoint));
+                    EVENT_CHANNEL.send(WpEvent::RemoveSpeaker(endpoint)).await;
                 }
             }
         }

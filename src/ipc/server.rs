@@ -1,17 +1,18 @@
 use std::io::{self, Read, Write};
 use std::os::unix::net::{UnixListener, UnixStream};
 use std::sync::OnceLock;
-use tokio::sync::broadcast;
+use async_broadcast::Receiver;
 
+use crate::broadcast::BroadcastChannel;
 use crate::ipc;
 
-static SENDER: OnceLock<broadcast::Sender<String>> = OnceLock::new();
+static CHANNEL: OnceLock<BroadcastChannel<String>> = OnceLock::new();
 
 pub fn drop_socket() -> io::Result<()> {
     std::fs::remove_file(ipc::get_socket_path())
 }
 
-pub fn start() -> io::Result<()> {
+pub async fn start() -> io::Result<()> {
     let socket_path = ipc::get_socket_path();
 
     // Ensure the socket is removed before starting
@@ -30,7 +31,7 @@ pub fn start() -> io::Result<()> {
     for stream in listener.incoming() {
         match stream {
             Ok(stream) => {
-                std::thread::spawn(move || handle_client(stream));
+                handle_client(stream).await;
             },
 
             Err(e) => eprintln!("Error accepting connection: {}", e)
@@ -40,11 +41,11 @@ pub fn start() -> io::Result<()> {
     Ok(())
 }
 
-pub fn subscribe() -> broadcast::Receiver<String> {
-    SENDER.get_or_init(|| broadcast::channel(100).0).subscribe()
+pub fn subscribe() -> Receiver<String> {
+    CHANNEL.get_or_init(|| BroadcastChannel::new(10)).subscribe()
 }
 
-pub fn handle_client(mut stream: UnixStream) {
+pub async fn handle_client(mut stream: UnixStream) {
     let mut buffer = [0; 1024];
 
     loop {
@@ -55,8 +56,8 @@ pub fn handle_client(mut stream: UnixStream) {
                 let message = String::from_utf8_lossy(&buffer[..n]).to_string();
 
                 // Send the message to all subscribers
-                if let Some(sender) = SENDER.get() {
-                    let _ = sender.send(message.clone());
+                if let Some(sender) = CHANNEL.get() {
+                    sender.send(message.clone()).await;
                 }
 
                 stream.write_all(b"Message received").unwrap();

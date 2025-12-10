@@ -1,16 +1,16 @@
 use std::sync::{Arc, RwLock};
+use async_broadcast::Receiver;
 use dbus::{blocking, message::MatchRule, MessageType};
 use dbus_crossroads::{Crossroads, IfaceToken};
 
-use crate::{dbus::start_monitoring, singletons::tray::{bus::{self, BusEvent}, proxy::{self, watcher::OrgKdeStatusNotifierWatcher}}};
-
+use crate::{broadcast::BroadcastChannel, dbus::start_monitoring, singletons::tray::{bus::{self, BusEvent}, proxy::{self, watcher::OrgKdeStatusNotifierWatcher}}};
 use super::sn_item::StatusNotifierItem;
 
 /// https://www.freedesktop.org/wiki/Specifications/StatusNotifierItem/StatusNotifierWatcher/
 #[derive(Debug, Clone)]
 pub struct StatusNotifierWatcher {
     items: Arc<RwLock<Vec<StatusNotifierItem>>>,
-    sender: tokio::sync::broadcast::Sender<BusEvent>,
+    channel: BroadcastChannel<BusEvent>,
     // We don't implement the rest of the fields for simplicity's sake.
 }
 
@@ -32,7 +32,7 @@ impl OrgKdeStatusNotifierWatcher for StatusNotifierWatcher {
             Err(dbus::MethodErr::failed(&"Item already registered"))
         } else if let Ok(mut items) = self.items.write() {
             items.push(item.clone());
-            self.sender.send(BusEvent::ItemRegistered(item)).unwrap();
+            self.channel.send_blocking(BusEvent::ItemRegistered(item));
             Ok(())
         } else {
             Err(dbus::MethodErr::failed(&"Failed to acquire write lock on items"))
@@ -67,11 +67,11 @@ impl Default for StatusNotifierWatcher {
 impl StatusNotifierWatcher {
     /// Creates a new `StatusNotifierWatcher` with an empty list of items.
     pub fn new() -> Self {
-        let (sender, _) = tokio::sync::broadcast::channel(100);
+        let channel = BroadcastChannel::new(10);
 
         StatusNotifierWatcher {
             items: Arc::new(RwLock::new(Vec::new())),
-            sender,
+            channel,
         }
     }
 
@@ -79,8 +79,8 @@ impl StatusNotifierWatcher {
     /// 
     /// You should call this before calling `serve`, so you won't miss any events and you 
     /// have the receiver you need before this object is consumed.
-    pub fn subscribe(&self) -> tokio::sync::broadcast::Receiver<BusEvent> {
-        self.sender.subscribe()
+    pub fn subscribe(&self) -> Receiver<BusEvent> {
+        self.channel.subscribe()
     }
 
     /// Retrieves an Arc to the items list's RwLock.
@@ -128,7 +128,7 @@ impl StatusNotifierWatcher {
 
         start_monitoring(rule, false, {
             let items = self.items();
-            let sender = self.sender.clone();
+            let channel = self.channel.clone();
 
             move |msg: &dbus::Message| {
                 if let Some(member) = msg.member() {
@@ -147,7 +147,7 @@ impl StatusNotifierWatcher {
                                             .map(|index| writer.remove(index))
                                     })
                                 {
-                                    sender.send(BusEvent::ItemUnregistered(item)).unwrap();
+                                    channel.send_blocking(BusEvent::ItemUnregistered(item));
                                 }
                             }
                         }
@@ -174,7 +174,7 @@ impl StatusNotifierWatcher {
                                 }
                             }
 
-                            sender.send(BusEvent::ItemUpdated(member, updated_item)).unwrap();
+                            channel.send_blocking(BusEvent::ItemUpdated(member, updated_item));
                         }
                     }
                 }

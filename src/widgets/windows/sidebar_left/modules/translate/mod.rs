@@ -2,10 +2,10 @@ mod lang_buttons;
 mod lang_select;
 
 use std::{sync::{Mutex, LazyLock}, time::Duration};
+use async_broadcast::Receiver;
 use gtk4::prelude::*;
-use tokio::sync::broadcast;
 
-use crate::{singletons::g_translate::{
+use crate::{broadcast::BroadcastChannel, singletons::g_translate::{
     language::{self, AUTO_LANG, Language},
     result::GoogleTranslateResult, translate
 }, timeout::Timeout};
@@ -15,9 +15,7 @@ static SOURCE_LANG: LazyLock<Mutex<Option<Language>>> = LazyLock::new(|| Mutex::
 static TARGET_LANG: LazyLock<Mutex<Option<Language>>> = LazyLock::new(|| Mutex::new(language::get_by_name("Spanish")));
 static AUTO_DETECTED_LANG: LazyLock<Mutex<Option<Language>>> = LazyLock::new(|| Mutex::new(None));
 static REVEAL: LazyLock<Mutex<LanguageSelectReveal>> = LazyLock::new(|| Mutex::new(LanguageSelectReveal::None));
-static UI_EVENT_CHANNEL: LazyLock<broadcast::Sender<UiEvent>> = LazyLock::new(|| {
-    broadcast::channel(100).0
-});
+static UI_EVENT_CHANNEL: LazyLock<BroadcastChannel<UiEvent>> = LazyLock::new(|| BroadcastChannel::new(10));
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LanguageSelectReveal {
@@ -39,17 +37,8 @@ fn is_working() -> bool {
     WORKING.try_lock().map(|w| *w).unwrap_or(true)
 }
 
-pub fn subscribe_to_ui_events() -> async_channel::Receiver<UiEvent> {
-    let mut receiver = UI_EVENT_CHANNEL.subscribe();
-    let (local_tx, local_rx) = async_channel::bounded::<UiEvent>(1);
-
-    tokio::spawn(async move {
-        while let Ok(event) = receiver.recv().await {
-            let _ = local_tx.send(event).await;
-        }
-    });
-
-    local_rx
+pub fn subscribe_to_ui_events() -> Receiver<UiEvent> {
+    UI_EVENT_CHANNEL.subscribe()
 }
 
 pub fn send_ui_event(event: &UiEvent) {
@@ -57,7 +46,7 @@ pub fn send_ui_event(event: &UiEvent) {
         let event = event.clone();
 
         async move {
-            let _ = UI_EVENT_CHANNEL.send(event);
+            UI_EVENT_CHANNEL.send(event).await;
         }
     });
 }
@@ -92,7 +81,7 @@ async fn translate_future(text: String, autocorrect: bool) {
 
             // Keep a hold of the working state for a while longer to prevent
             // an infinite translation loop due to buffer change signals.
-            std::thread::sleep(Duration::from_millis(10));
+            tokio::time::sleep(Duration::from_millis(10)).await;
             let _ = WORKING.lock().map(|mut w| *w = false);
         } else {
             eprintln!("Translation already in progress");
@@ -258,16 +247,14 @@ pub fn new() -> gtk4::Box {
         let text = buffer.text(&buffer.start_iter(), &buffer.end_iter(), false).to_string();
         if !text.is_empty() {
             timeout.set(Duration::from_millis(500), move || {
-                std::thread::spawn(|| {
-                    tokio::runtime::Runtime::new().unwrap().block_on(translate_future(text, false));
-                });
+                tokio::spawn(translate_future(text, false));
             });
         }
     });
 
     // Start our event receiver task
-    let receiver = subscribe_to_ui_events();
     gtk4::glib::spawn_future_local(async move {
+        let mut receiver = subscribe_to_ui_events();
         while let Ok(event) = receiver.recv().await {
             match event {
                 UiEvent::TranslationStarted => {

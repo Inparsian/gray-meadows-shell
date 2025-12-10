@@ -1,8 +1,6 @@
 pub mod client;
 pub mod server;
 
-use tokio::sync::broadcast;
-
 pub const SOCKET_FILE_NAME: &str = "gray-meadows-shell.sock";
 
 pub fn get_socket_path() -> String {
@@ -19,15 +17,10 @@ pub fn listen_for_messages<F>(callback: F)
 where
     F: Fn(String) + Send + 'static,
 {
-    let mut receiver = server::subscribe();
-
     tokio::spawn(async move {
-        loop {
-            match receiver.recv().await {
-                Ok(message) => callback(message),
-                Err(broadcast::error::RecvError::Closed) => break, // Channel closed
-                Err(broadcast::error::RecvError::Lagged(_)) => {}, // Lagged messages
-            }
+        let mut receiver = server::subscribe();
+        while let Ok(message) = receiver.recv().await {
+            callback(message);
         }
     });
 }
@@ -38,21 +31,9 @@ pub fn listen_for_messages_local<F>(callback: F)
 where
     F: Fn(String) + 'static,
 {
-    let mut receiver = server::subscribe();
-    let (tx, rx) = async_channel::bounded::<String>(1);
-
-    tokio::spawn(async move {
-        loop {
-            match receiver.recv().await {
-                Ok(message) => tx.send(message).await.unwrap(),
-                Err(broadcast::error::RecvError::Closed) => break, // Channel closed
-                Err(broadcast::error::RecvError::Lagged(_)) => {}, // Lagged messages
-            }
-        }
-    });
-
     gtk4::glib::spawn_future_local(async move {
-        while let Ok(message) = rx.recv().await {
+        let mut receiver = server::subscribe();
+        while let Ok(message) = receiver.recv().await {
             callback(message);
         }
     });
