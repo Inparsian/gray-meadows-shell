@@ -1,5 +1,7 @@
 <div align="center">
   <h1><img width="700" alt="image" src="https://github.com/user-attachments/assets/16859424-f9f0-4b0d-8c8a-0f77c98331ec" /></h1>
+  <img alt="GitHub License" src="https://img.shields.io/github/license/Inparsian/gray-meadows-shell">
+  <img alt="GitHub top language" src="https://img.shields.io/github/languages/top/Inparsian/gray-meadows-shell">
   <img alt="GitHub contributors" src="https://img.shields.io/github/contributors/Inparsian/gray-meadows-shell"/>
   <img alt="GitHub commit activity" src="https://img.shields.io/github/commit-activity/w/Inparsian/gray-meadows-shell"/>
   <img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/Inparsian/gray-meadows-shell?style=flat"/>
@@ -11,7 +13,7 @@
 
 My personal stand-alone Hyprland desktop shell using gtk4 and gtk4-layer-shell, re-written from scratch in Rust and C++ (originally in TypeScript + JSX using AGSv2).
 
-## Show me the screenshots
+## 📷 Show me the screenshots
 ok
 
 <table align="center">
@@ -33,7 +35,7 @@ ok
   </tr>
 </table>
 
-## Current status
+## 🛠️ Current status
 
 Currently not ready for daily use yet, but it is getting closer. Technically you could use it right now if you wanted to, but it is not fully feature-complete and there may be bugs.
 
@@ -41,16 +43,16 @@ The To-Do list has been moved to [Trello](https://trello.com/b/bzhLDyI8/gray-mea
 
 Contributions are welcome!
 
-## Why the name "Gray Meadows"?
+## 🤔 Why the name "Gray Meadows"?
 grayscale color scheme, first screenshot of the agsv2 version used a foggy forest wallpaper. was too lazy to come up with a better name
 
-## Niri support?
+## 🤔 Niri support?
 Not any time soon.
 
-## Recommended icon theme
+## 🔵 Recommended icon theme
 Since Gray Meadows is intended to have a monochrome/grayscale aesthetic, I recommend you use an icon theme that matches it. My personal favorite is [Besgnulinux Monochrome](https://www.gnome-look.org/p/2151189/), but any monochrome or grayscale icon theme should work well.
 
-## Building
+## 🔨 Building
 ### Dependencies
 There's no exhaustive list of dependencies at the moment, as this project is still in it's infancy. However, I can say with confidence that you will need the following:
 
@@ -79,7 +81,7 @@ cargo build --release
 ```
 3. The compiled binary will be located in the `target/release` directory.
 
-## Running Gray Meadows
+## ⚙️ Running Gray Meadows
 To run Gray Meadows, execute the following command from the project root directory:
 ```bash
 # To build the project before running it
