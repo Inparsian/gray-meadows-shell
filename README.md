@@ -56,15 +56,19 @@ Since Gray Meadows is intended to have a monochrome/grayscale aesthetic, I recom
 ### Dependencies
 There's no exhaustive list of dependencies at the moment, as this project is still in it's infancy. However, I can say with confidence that you will need the following:
 
+#### Required
+
 - `libqalculate`
-- `libadwaita` (you might already have it)
-- `cozette-ttf` (primary font)
-- `ttf-gohu-nerd` (secondary font for small & big text)
+- `libadwaita`
 - `gtk4` (of course)
 - `gtk4-layer-shell`
 - `dart-sass` (for compiling SASS stylesheets)
 - `libastal-wireplumber` (for WirePlumber support)
-- (optional) `cliphist` and `wl-clipboard` (for clipboard history support)
+
+#### Optional
+- `cozette-ttf` (recommended primary font)
+- `ttf-gohu-nerd` (recommended secondary font for small & big text)
+- `cliphist` and `wl-clipboard` (for clipboard history support)
 
 If I've missed any, or any of these are redundant, please open an issue or PR and I'll update this list accordingly.
 
