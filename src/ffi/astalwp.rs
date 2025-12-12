@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use crate::broadcast::BroadcastChannel;
+use crate::{broadcast::BroadcastChannel, singletons::wireplumber::intercept_event};
 
 pub static CHANNEL: LazyLock<BroadcastChannel<WpEvent>> = LazyLock::new(|| BroadcastChannel::new(10));
 
@@ -8,7 +8,7 @@ pub static CHANNEL: LazyLock<BroadcastChannel<WpEvent>> = LazyLock::new(|| Broad
 pub enum WpEvent {
     UpdateNode(i32, String),
     UpdateEndpoint(i32, String),
-    UpdateDefaultMicrophone(i32),
+    UpdateDefaultMicrophone(()),
     UpdateDefaultSpeaker(i32),
     CreateStream(ffi::Node),
     RemoveStream(ffi::Node),
@@ -80,67 +80,73 @@ pub mod ffi {
     }
 }
 
-pub fn receive_update_node(id: i32, property_name: String) {
-    CHANNEL.spawn_send(WpEvent::UpdateNode(
+fn broadcast(event: WpEvent) {
+    intercept_event(event.clone());
+    CHANNEL.spawn_send(event);
+}
+
+fn receive_update_node(id: i32, property_name: String) {
+    broadcast(WpEvent::UpdateNode(
         id,
         property_name,
     ));
 }
 
-pub fn receive_update_microphone(id: i32, property_name: String) {
+fn receive_update_microphone(id: i32, property_name: String) {
     if property_name == "is-default" && ffi::endpoint_get_is_default(id) {
-        CHANNEL.spawn_send(WpEvent::UpdateDefaultMicrophone(id));
+        // TODO: UNUSED
+        broadcast(WpEvent::UpdateDefaultMicrophone(()));
     }
     
-    CHANNEL.spawn_send(WpEvent::UpdateEndpoint(
+    broadcast(WpEvent::UpdateEndpoint(
         id,
         property_name,
     ));
 }
 
-pub fn receive_update_speaker(id: i32, property_name: String) {
+fn receive_update_speaker(id: i32, property_name: String) {
     if property_name == "is-default" && ffi::endpoint_get_is_default(id) {
-        CHANNEL.spawn_send(WpEvent::UpdateDefaultSpeaker(id));
+        broadcast(WpEvent::UpdateDefaultSpeaker(id));
     }
 
-    CHANNEL.spawn_send(WpEvent::UpdateEndpoint(
+    broadcast(WpEvent::UpdateEndpoint(
         id,
         property_name,
     ));
 }
 
-pub fn receive_create_stream(node: ffi::Node) {
-    CHANNEL.spawn_send(WpEvent::CreateStream(
+fn receive_create_stream(node: ffi::Node) {
+    broadcast(WpEvent::CreateStream(
         node,
     ));
 }
 
-pub fn receive_remove_stream(node: ffi::Node) {
-    CHANNEL.spawn_send(WpEvent::RemoveStream(
+fn receive_remove_stream(node: ffi::Node) {
+    broadcast(WpEvent::RemoveStream(
         node,
     ));
 }
 
-pub fn receive_create_microphone(endpoint: ffi::Endpoint) {
-    CHANNEL.spawn_send(WpEvent::CreateMicrophone(
+fn receive_create_microphone(endpoint: ffi::Endpoint) {
+    broadcast(WpEvent::CreateMicrophone(
         endpoint,
     ));
 }
 
-pub fn receive_remove_microphone(endpoint: ffi::Endpoint) {
-    CHANNEL.spawn_send(WpEvent::RemoveMicrophone(
+fn receive_remove_microphone(endpoint: ffi::Endpoint) {
+    broadcast(WpEvent::RemoveMicrophone(
         endpoint,
     ));
 }
 
-pub fn receive_create_speaker(endpoint: ffi::Endpoint) {
-    CHANNEL.spawn_send(WpEvent::CreateSpeaker(
+fn receive_create_speaker(endpoint: ffi::Endpoint) {
+    broadcast(WpEvent::CreateSpeaker(
         endpoint,
     ));
 }
 
-pub fn receive_remove_speaker(endpoint: ffi::Endpoint) {
-    CHANNEL.spawn_send(WpEvent::RemoveSpeaker(
+fn receive_remove_speaker(endpoint: ffi::Endpoint) {
+    broadcast(WpEvent::RemoveSpeaker(
         endpoint,
     ));
 }
