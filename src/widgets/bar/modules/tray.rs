@@ -230,7 +230,8 @@ pub fn new() -> gtk4::Box {
 
     // Watch for tray events
     gtk4::glib::spawn_future_local(async move {
-        while let Ok(event) = tray::subscribe().recv().await {
+        let mut receiver = tray::subscribe();
+        while let Ok(event) = receiver.recv().await {
             match event {
                 BusEvent::ItemRegistered(item) => {
                     if tray.add_item(item.service.clone()) {

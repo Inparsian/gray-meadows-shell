@@ -78,7 +78,7 @@ pub fn escape_html(input: char) -> String {
 
 pub fn get_color(name: &str) -> Option<Rgba> {
     let scss_vars = SCSS_VARS.lock().unwrap();
-    scss_vars.get_color(name).cloned()
+    scss_vars.get_color(name).copied()
 }
 
 #[allow(dead_code)]

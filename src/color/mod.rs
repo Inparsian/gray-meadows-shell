@@ -92,7 +92,7 @@ pub fn get_lighter_darker_colors(base_hsv: Hsv, count: u32) -> Vec<LighterDarker
         let a_diff = (a.lightness - base_hsv.as_hsl().lightness).abs();
         let b_diff = (b.lightness - base_hsv.as_hsl().lightness).abs();
         a_diff.partial_cmp(&b_diff).unwrap_or(std::cmp::Ordering::Equal)
-    }).cloned();
+    }).copied();
 
     // Remove the color that is closest to the original from the list
     // to ensure the count is correct. If the original lightness is divisible
