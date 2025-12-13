@@ -98,6 +98,8 @@ pub fn get_color_box(hsv: Hsv, color_tabs: &Tabs) -> ColorBox {
 
 pub fn get_analogous_color_boxes(hsv: &Mutable<Hsv>, count: u32, color_tabs: &Tabs) -> gtk4::Box {
     let box_container = gtk4::Box::new(gtk4::Orientation::Horizontal, 8);
+    box_container.set_valign(gtk4::Align::Start);
+    
     let mut boxes: Vec<ColorBox> = Vec::new();
 
     for _ in 0..count {
