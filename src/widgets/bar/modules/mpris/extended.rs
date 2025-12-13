@@ -42,7 +42,7 @@ fn default_mpris_player() -> gtk4::Box {
             set_label: "skip_previous",
             set_hexpand: false,
             connect_clicked => |_| {
-                mpris::with_default_player_mut(|player|  if let Err(e) = player.previous() {
+                mpris::with_default_player_mut(|player| if let Err(e) = player.previous() {
                     eprintln!("Failed to skip to previous track: {}", e);
                 });
             }

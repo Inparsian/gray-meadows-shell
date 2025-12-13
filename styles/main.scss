@@ -916,6 +916,11 @@
                         color: $foreground-color-secondary;
                     }
                 }
+
+                .bar-sysstats-extended {
+                    min-width: 375px;
+                    min-height: 200px;
+                }
             }
 
             &.bar-client {

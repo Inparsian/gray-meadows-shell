@@ -2,15 +2,13 @@ use std::sync::LazyLock;
 use futures_signals::signal::{Mutable, SignalExt as _};
 use gtk4::prelude::*;
 
-use crate::gesture;
 use crate::unit;
 use crate::singletons;
-use super::super::wrapper::SimpleBarModuleWrapper;
 
 const SWAP_SHOW_THRESHOLD: f64 = 5.0; // Show swap usage only if it's above this threshold, 
                                       // indicating that the system is under memory pressure.
 
-static DETAILED: LazyLock<Mutable<bool>> = LazyLock::new(|| Mutable::new(false));
+pub static DETAILED: LazyLock<Mutable<bool>> = LazyLock::new(|| Mutable::new(false));
 
 fn format_percentage(percentage: f64) -> String {
     if percentage <= 100.0 {
@@ -70,7 +68,7 @@ fn get_gpu_temperature_label_text() -> String {
     )
 }
 
-pub fn new() -> gtk4::Box {
+pub fn minimal() -> gtk4::Box {
     let create_sysstats_item = |icon: &str, label: &gtk4::Label, detail_label: &gtk4::Label| -> gtk4::Box {
         let box_ = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
 
@@ -95,9 +93,7 @@ pub fn new() -> gtk4::Box {
         box_
     };
 
-    view! {
-        detailed_toggle_gesture = gesture::on_primary_down(|_, _, _| DETAILED.set(!DETAILED.get())),
-        
+    view! {        
         ram_usage_label = gtk4::Label {
             set_label: &get_ram_usage_label_text(),
             set_halign: gtk4::Align::Start,
@@ -146,7 +142,6 @@ pub fn new() -> gtk4::Box {
         swap_usage_box = create_sysstats_item("", &swap_usage_label, &detailed_swap_usage_label),
 
         widget = gtk4::Box {
-            set_css_classes: &["bar-widget", "bar-sysstats"],
             set_hexpand: false,
 
             create_sysstats_item("󰍛", &ram_usage_label, &detailed_ram_usage_label) {},
@@ -183,7 +178,5 @@ pub fn new() -> gtk4::Box {
         gpu_temperature_label.set_label(&get_gpu_temperature_label_text());
     }));
 
-    SimpleBarModuleWrapper::new(&widget)
-        .add_controller(detailed_toggle_gesture)
-        .get_widget()
+    widget
 }
