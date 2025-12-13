@@ -105,6 +105,16 @@ pub fn copy_text(text: &str) {
         .map_err(|e| println!("Failed to copy text to clipboard: {}", e));
 }
 
+pub fn fetch_text_clipboard() -> Option<String> {
+    let output = std::process::Command::new("wl-paste")
+        .arg("--type")
+        .arg("text")
+        .output()
+        .ok()?;
+
+    output.status.success().then(|| String::from_utf8_lossy(&output.stdout).to_string())
+}
+
 pub fn spawn_indefinite_watcher(type_arg: &'static str) {
     if !process::is_command_available("wl-paste") || !process::is_command_available("cliphist") {
         println!("wl-paste or cliphist not found, cannot spawn clipboard watcher");

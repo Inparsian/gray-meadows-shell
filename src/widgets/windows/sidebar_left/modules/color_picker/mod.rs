@@ -3,11 +3,16 @@ mod saturation_value_picker;
 mod fields;
 mod color_boxes;
 
+use std::time::Duration;
 use futures_signals::signal::{Mutable, SignalExt as _};
 use gtk4::{Adjustment, prelude::*};
+use relm4::RelmIterChildrenExt as _;
 
+use crate::color::parse_color_into_hex;
 use crate::color::model::{int_to_hex, Hsv};
 use crate::ipc;
+use crate::singletons::clipboard;
+use crate::timeout::Timeout;
 use crate::widgets::common::tabs::{TabSize, Tabs, TabsStack};
 use self::fields::Fields;
 use self::{saturation_value_picker::SaturationValuePicker, hue_picker::HuePicker};
@@ -168,6 +173,27 @@ pub fn new() -> gtk4::Box {
     });
 
     view! {
+        paste_from_clipboard_button = gtk4::Button {
+            set_label: "Paste from Clipboard",
+            set_css_classes: &["color-picker-button"],
+
+            gtk4::Box {
+                set_orientation: gtk4::Orientation::Horizontal,
+                set_spacing: 6,
+                set_halign: gtk4::Align::Center,
+
+                gtk4::Label {
+                    set_css_classes: &["material-icons"],
+                    set_label: "content_paste",
+                },
+
+                gtk4::Label {
+                    set_widget_name: "paste-from-clipboard-label",
+                    set_label: "Paste from Clipboard",
+                }
+            }
+        },
+
         widget = gtk4::Box {
             set_css_classes: &["ColorPicker"],
             set_orientation: gtk4::Orientation::Vertical,
@@ -183,12 +209,44 @@ pub fn new() -> gtk4::Box {
                 append: saturation_value_picker.get_widget()
             },
 
+            append: &paste_from_clipboard_button,
             append: &color_tabs.widget,
             append: &color_tabs_stack.widget,
             append: &transform_tabs.widget,
             append: &transform_tabs_stack.widget
         }
     }
+
+    let button_label_change_timeout = Timeout::default();
+    paste_from_clipboard_button.connect_clicked({
+        let hsv = hsv.clone();
+        move |button| {
+            let Some(clipboard_text) = clipboard::fetch_text_clipboard() else {
+                return;
+            };
+        
+            if let Some(hex) = parse_color_into_hex(&clipboard_text) {
+                let hsv_value = Hsv::from_hex(&hex);
+            
+                hsv.set(hsv_value);
+            } else {
+                let Some(bx) = button.child().and_then(|child| child.downcast::<gtk4::Box>().ok()) else {
+                    return;
+                };
+
+                let Some(label) = bx
+                    .iter_children()
+                    .find_map(|child| child.downcast::<gtk4::Label>().ok().filter(|lbl| lbl.widget_name() == "paste-from-clipboard-label"))
+                else {
+                    return;
+                };
+
+                label.set_text("No valid color in clipboard!");
+
+                button_label_change_timeout.set(Duration::from_secs(2), move || label.set_text("Paste from Clipboard"));
+            }
+        }
+    });
 
     color_tabs_stack.add_tab(Some("hex"), &hex_fields.widget);
     color_tabs_stack.add_tab(Some("int"), &int_fields.widget);
