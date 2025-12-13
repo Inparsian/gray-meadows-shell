@@ -32,6 +32,8 @@ use sqlite::Connection;
 
 use crate::widgets::{bar, windows::{self, GmsWindow}};
 
+const FLOAT_TOLERANCE: f64 = 0.0001;
+
 pub struct GrayMeadowsLocal {
     provider: gtk4::CssProvider,
     icon_theme: gtk4::IconTheme,

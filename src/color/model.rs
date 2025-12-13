@@ -1,11 +1,7 @@
 use std::sync::LazyLock;
 use regex::Regex;
 
-const FLOAT_TOLERANCE: f64 = 0.0001;
-
-pub static INT_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^\d{1,8}$").unwrap()
-});
+use crate::FLOAT_TOLERANCE;
 
 pub static RGB_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$").unwrap()
@@ -335,6 +331,23 @@ impl Hsl {
         };
 
         format!("#{:02x}{:02x}{:02x}", normalize(rr), normalize(gg), normalize(bb))
+    }
+
+    pub fn h_diff(&self, b: &Self) -> f64 {
+        let diff = (self.hue - b.hue).abs();
+        if diff > 180.0 {
+            360.0 - diff
+        } else {
+            diff
+        }
+    }
+
+    pub fn s_diff(&self, b: &Self) -> f64 {
+        (self.saturation - b.saturation).abs()
+    }
+
+    pub fn l_diff(&self, b: &Self) -> f64 {
+        (self.lightness - b.lightness).abs()
     }
 }
 
