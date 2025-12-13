@@ -107,6 +107,7 @@ pub fn copy_text(text: &str) {
 
 pub fn fetch_text_clipboard() -> Option<String> {
     let output = std::process::Command::new("wl-paste")
+        .arg("--no-newline")
         .arg("--type")
         .arg("text")
         .output()
