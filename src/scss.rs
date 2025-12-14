@@ -1,23 +1,24 @@
 use std::sync::{Mutex, LazyLock};
+use std::collections::HashMap;
 use regex::Regex;
 
 use crate::color::{is_valid_hex_color, model::Rgba};
 use crate::filesystem;
 
-const VAR_REGEX: &str = r"^\$([a-zA-Z0-9_-]+):\s*([a-zA-Z0-9#() ,.-]+);$";
+const VAR_REGEX: &str = r#"^\$([a-zA-Z0-9_-]+):\s*(?:"?([^"]+)"?|([a-zA-Z0-9#() ,.-])+);$"#;
 
 pub static SCSS_VARS: LazyLock<Mutex<ScssVars>> = LazyLock::new(|| Mutex::new(ScssVars::new()));
 
 pub struct ScssVars {
-    string_vars: std::collections::HashMap<String, String>,
-    color_vars: std::collections::HashMap<String, Rgba>,
+    string_vars: HashMap<String, String>,
+    color_vars: HashMap<String, Rgba>,
 }
 
 impl ScssVars {
     pub fn new() -> Self {
         Self {
-            string_vars: std::collections::HashMap::new(),
-            color_vars: std::collections::HashMap::new(),
+            string_vars: HashMap::new(),
+            color_vars: HashMap::new(),
         }
     }
 
@@ -29,7 +30,6 @@ impl ScssVars {
         self.color_vars.insert(name, value);
     }
 
-    #[allow(dead_code)]
     pub fn get_string(&self, name: &str) -> Option<&String> {
         self.string_vars.get(name)
     }
@@ -81,7 +81,6 @@ pub fn get_color(name: &str) -> Option<Rgba> {
     scss_vars.get_color(name).copied()
 }
 
-#[allow(dead_code)]
 pub fn get_string(name: &str) -> Option<String> {
     let scss_vars = SCSS_VARS.lock().unwrap();
     scss_vars.get_string(name).cloned()
