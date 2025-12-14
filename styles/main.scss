@@ -918,8 +918,21 @@
                 }
 
                 .bar-sysstats-extended {
-                    min-width: 375px;
-                    min-height: 200px;
+                    min-width: 350px;
+                    min-height: 175px;
+                    padding: 16px;
+
+                    .bar-sysstats-compact-stat-row {
+                        .bar-sysstats-compact-stat-row-label {
+                            @include large-text;
+                            font-weight: bold;
+                        }
+
+                        .bar-sysstats-compact-stat-row-secondary-value {
+                            margin-left: 4px;
+                            color: $foreground-color-secondary;
+                        }
+                    }
                 }
             }
 

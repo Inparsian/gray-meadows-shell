@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use std::{rc::Rc, cell::RefCell};
 use gdk4::cairo::{FontSlant, FontWeight};
 use gtk4::prelude::*;

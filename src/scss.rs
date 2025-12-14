@@ -30,6 +30,7 @@ impl ScssVars {
         self.color_vars.insert(name, value);
     }
 
+    #[allow(dead_code)]
     pub fn get_string(&self, name: &str) -> Option<&String> {
         self.string_vars.get(name)
     }
@@ -81,6 +82,7 @@ pub fn get_color(name: &str) -> Option<Rgba> {
     scss_vars.get_color(name).copied()
 }
 
+#[allow(dead_code)]
 pub fn get_string(name: &str) -> Option<String> {
     let scss_vars = SCSS_VARS.lock().unwrap();
     scss_vars.get_string(name).cloned()
