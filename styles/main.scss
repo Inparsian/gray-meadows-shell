@@ -920,7 +920,11 @@
                 .bar-sysstats-extended {
                     min-width: 350px;
                     min-height: 175px;
-                    padding: 16px;
+                    padding: 8px;
+
+                    .bar-sysstats-extended-tabs-stack {
+                        padding: 8px;
+                    }
 
                     .bar-sysstats-compact-stat-row {
                         .bar-sysstats-compact-stat-row-label {
