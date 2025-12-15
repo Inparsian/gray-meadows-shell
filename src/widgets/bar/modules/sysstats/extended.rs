@@ -4,6 +4,7 @@ use futures_signals::signal::SignalExt as _;
 use crate::singletons::sysstats::SYS_STATS;
 use crate::singletons::sysstats::sensors::SENSORS;
 use crate::unit::bytes_to_gib;
+use super::SWAP_SHOW_THRESHOLD;
 
 #[derive(Clone)]
 pub struct CompactStatRow {
@@ -92,9 +93,16 @@ pub fn extended() -> gtk4::Box {
 
     gtk4::glib::spawn_future_local(signal!(SYS_STATS.lock().unwrap().used_swap, (used_swap) {
         let sys_stats = SYS_STATS.lock().unwrap();
+        let usage_percentage = sys_stats.swap_usage_percentage();
         let total_swap = sys_stats.total_swap.get();
         swap_stat_row.set_value(&format!("{:.1} / {:.1} GB", bytes_to_gib(used_swap), bytes_to_gib(total_swap)));
-        swap_stat_row.set_secondary_value(&format!("{:.1}%", sys_stats.swap_usage_percentage()));
+        swap_stat_row.set_secondary_value(&format!("{:.1}%", usage_percentage));
+
+        if usage_percentage <= SWAP_SHOW_THRESHOLD {
+            swap_stat_row.container.add_css_class("irrelevant");
+        } else {
+            swap_stat_row.container.remove_css_class("irrelevant");
+        }
     }));
 
     gtk4::glib::spawn_future_local({

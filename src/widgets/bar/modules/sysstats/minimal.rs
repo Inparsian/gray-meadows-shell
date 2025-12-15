@@ -5,9 +5,7 @@ use gtk4::prelude::*;
 use crate::singletons::sysstats::SYS_STATS;
 use crate::singletons::sysstats::sensors::SENSORS;
 use crate::unit::bytes_to_gib;
-
-const SWAP_SHOW_THRESHOLD: f64 = 5.0; // Show swap usage only if it's above this threshold, 
-                                      // indicating that the system is under memory pressure.
+use super::SWAP_SHOW_THRESHOLD;
 
 pub static DETAILED: LazyLock<Mutable<bool>> = LazyLock::new(|| Mutable::new(false));
 
@@ -139,7 +137,6 @@ pub fn minimal() -> gtk4::Box {
             set_halign: gtk4::Align::Start,
         },
 
-        // Rationale behind var binding: see SWAP_SHOW_THRESHOLD const.
         swap_usage_box = create_sysstats_item("", &swap_usage_label, &detailed_swap_usage_label),
 
         widget = gtk4::Box {

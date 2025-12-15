@@ -932,6 +932,10 @@
                             color: $foreground-color-tertiary;
                             min-width: 4.5em;
                         }
+
+                        &.irrelevant {
+                            opacity: 0.415;
+                        }
                     }
                 }
             }
