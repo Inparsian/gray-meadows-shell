@@ -7,6 +7,7 @@ use std::time::Duration;
 use std::sync::{Mutex, LazyLock};
 use futures_signals::signal::Mutable;
 use nvml_wrapper::enum_wrappers::device::TemperatureSensor;
+use nvml_wrapper::struct_wrappers::device::MemoryInfo;
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind};
 
 const REFRESH_INTERVAL: Duration = Duration::from_secs(1);
@@ -34,7 +35,10 @@ pub struct SysStats {
 
     // nvml
     pub gpu_utilization: Mutable<f64>,
-    pub gpu_temperature: Mutable<f64>
+    pub gpu_temperature: Mutable<f64>,
+    pub gpu_free_memory: Mutable<u64>,
+    pub gpu_used_memory: Mutable<u64>,
+    pub gpu_total_memory: Mutable<u64>,
 }
 
 impl SysStats {
@@ -63,6 +67,15 @@ impl SysStats {
                 Ok(temp) => self.gpu_temperature.set(temp as f64),
                 Err(err) => eprintln!("Failed to get GPU temperature: {:?}", err)
             }
+
+            match device.memory_info() {
+                Ok(MemoryInfo { total, used, free, .. }) => {
+                    self.gpu_total_memory.set(total);
+                    self.gpu_used_memory.set(used);
+                    self.gpu_free_memory.set(free);
+                },
+                Err(err) => eprintln!("Failed to get GPU memory info: {:?}", err)
+            }
         }
     }
 
@@ -79,6 +92,14 @@ impl SysStats {
             0.0
         } else {
             (self.used_swap.get() as f64 / self.total_swap.get() as f64) * 100.0
+        }
+    }
+
+    pub fn vram_usage_percentage(&self) -> f64 {
+        if self.gpu_total_memory.get() == 0 {
+            0.0
+        } else {
+            (self.gpu_used_memory.get() as f64 / self.gpu_total_memory.get() as f64) * 100.0
         }
     }
 }

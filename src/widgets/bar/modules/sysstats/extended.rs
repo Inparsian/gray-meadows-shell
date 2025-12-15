@@ -54,8 +54,9 @@ impl CompactStatRow {
 pub fn extended() -> gtk4::Box {
     let cpu_stat_row = CompactStatRow::new("CPU", true);
     let mem_stat_row = CompactStatRow::new("RAM", true);
-    let gpu_stat_row = CompactStatRow::new("GPU", true);
     let swap_stat_row = CompactStatRow::new("SWAP", true);
+    let gpu_stat_row = CompactStatRow::new("GPU", true);
+    let vram_stat_row = CompactStatRow::new("VRAM", true);
 
     view! {
         widget = gtk4::Box {
@@ -65,8 +66,9 @@ pub fn extended() -> gtk4::Box {
 
             append: &cpu_stat_row.container,
             append: &mem_stat_row.container,
-            append: &gpu_stat_row.container,
             append: &swap_stat_row.container,
+            append: &gpu_stat_row.container,
+            append: &vram_stat_row.container,
         },
     }
 
@@ -104,6 +106,13 @@ pub fn extended() -> gtk4::Box {
     
     gtk4::glib::spawn_future_local(signal!(SYS_STATS.lock().unwrap().gpu_temperature, (gpu_temperature) {
         gpu_stat_row.set_secondary_value(&format!("{:.1}°C", gpu_temperature));
+    }));
+
+    gtk4::glib::spawn_future_local(signal!(SYS_STATS.lock().unwrap().gpu_used_memory, (used_vram) {
+        let sys_stats = SYS_STATS.lock().unwrap();
+        let total_vram = sys_stats.gpu_total_memory.get();
+        vram_stat_row.set_value(&format!("{:.1} / {:.1} GB", bytes_to_gib(used_vram), bytes_to_gib(total_vram)));
+        vram_stat_row.set_secondary_value(&format!("{:.1}%", sys_stats.vram_usage_percentage()));
     }));
 
     widget
