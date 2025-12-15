@@ -4,7 +4,7 @@ use futures_signals::signal::SignalExt as _;
 
 use crate::widgets::windows;
 use crate::filesystem;
-use crate::singletons::sysstats;
+use crate::singletons::sysstats::SYS_STATS;
 
 fn parse_uptime_seconds(seconds: u64) -> String {
     let days = seconds / 86400;
@@ -26,10 +26,10 @@ fn format_uptime_seconds(uptime: u64) -> String {
 }
 
 fn get_uptime_label_text(uptime: Option<u64>) -> String {
-    uptime.map_or_else(|| {
-        let sys_stats = sysstats::SYS_STATS.lock().unwrap();
-        format_uptime_seconds(sys_stats.uptime.get())
-    }, format_uptime_seconds)
+    uptime.map_or_else(
+        || format_uptime_seconds(SYS_STATS.uptime.get()),
+        format_uptime_seconds
+    )
 }
 
 pub fn new() -> gtk4::Box {
@@ -101,7 +101,7 @@ pub fn new() -> gtk4::Box {
         face.set_from_file(Some(face_path));
     }
 
-    gtk4::glib::spawn_future_local(signal!(sysstats::SYS_STATS.lock().unwrap().uptime, (uptime) {
+    gtk4::glib::spawn_future_local(signal!(SYS_STATS.uptime, (uptime) {
         uptime_label.set_label(&get_uptime_label_text(Some(uptime)));
     }));
 

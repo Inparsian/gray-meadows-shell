@@ -19,7 +19,7 @@ static SYS: LazyLock<Mutex<sysinfo::System>> = LazyLock::new(|| {
     ))
 });
 
-pub static SYS_STATS: LazyLock<Mutex<SysStats>> = LazyLock::new(|| Mutex::new(SysStats::default()));
+pub static SYS_STATS: LazyLock<SysStats> = LazyLock::new(SysStats::default);
 
 #[derive(Default, Clone, Copy)]
 pub struct MemoryInfo {
@@ -95,13 +95,11 @@ pub fn activate() {
     // TODO: Add support for other GPU vendors
     let _ = gpu::nvidia::init_nvml();
     sensors::init_sensors();
-    
-    SYS_STATS.lock().unwrap().uptime.set(sysinfo::System::uptime());
 
     std::thread::spawn(|| {
         loop {
+            SYS_STATS.refresh();
             std::thread::sleep(REFRESH_INTERVAL);
-            SYS_STATS.lock().unwrap().refresh();
         }
     });
 }
