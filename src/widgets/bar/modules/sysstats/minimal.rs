@@ -2,7 +2,7 @@ use std::sync::LazyLock;
 use futures_signals::signal::{Mutable, SignalExt as _};
 use gtk4::prelude::*;
 
-use crate::singletons::sysstats::SYS_STATS;
+use crate::singletons::sysstats::{MemoryInfo, SYS_STATS};
 use crate::singletons::sysstats::sensors::SENSORS;
 use crate::unit::bytes_to_gib;
 use super::SWAP_SHOW_THRESHOLD;
@@ -17,54 +17,16 @@ fn format_percentage(percentage: f64) -> String {
     }
 }
 
-fn get_ram_usage_label_text() -> String {
-    let usage = SYS_STATS.lock().unwrap().memory_usage_percentage();
-    format_percentage(usage)
-}
-
-fn get_detailed_ram_usage_label_text() -> String {
-    let sys_stats = SYS_STATS.lock().unwrap();
+fn get_detailed_memory_usage_label_text(memory: &MemoryInfo) -> String {
     format!(
         "({:.1}/{:.1}GiB)",
-        bytes_to_gib(sys_stats.used_memory.get()),
-        bytes_to_gib(sys_stats.total_memory.get())
+        bytes_to_gib(memory.used),
+        bytes_to_gib(memory.total)
     )
 }
 
-fn get_swap_usage_label_text() -> String {
-    let usage = SYS_STATS.lock().unwrap().swap_usage_percentage();
-    format_percentage(usage)
-}
-
-fn get_detailed_swap_usage_label_text() -> String {
-    let sys_stats = SYS_STATS.lock().unwrap();
-    format!(
-        "({:.1}/{:.1}GiB)",
-        bytes_to_gib(sys_stats.used_swap.get()),
-        bytes_to_gib(sys_stats.total_swap.get())
-    )
-}
-
-fn get_cpu_usage_label_text() -> String {
-    let usage = SYS_STATS.lock().unwrap().global_cpu_usage.get();
-    format_percentage(usage)
-}
-
-fn get_cpu_temperature_label_text() -> String {
-    format!("({:.1}°C)", SENSORS.cpu_temp.get())
-}
-
-fn get_gpu_usage_label_text() -> String {
-    let sys_stats = SYS_STATS.lock().unwrap();
-    format_percentage(sys_stats.gpu_utilization.get())
-}
-
-fn get_gpu_temperature_label_text() -> String {
-    let sys_stats = SYS_STATS.lock().unwrap();
-    format!(
-        "({:.1}°C)",
-        sys_stats.gpu_temperature.get()
-    )
+fn get_temperature_label_text(cpu_temp: f64) -> String {
+    format!("({:.1}°C)", cpu_temp)
 }
 
 pub fn minimal() -> gtk4::Box {
@@ -94,46 +56,38 @@ pub fn minimal() -> gtk4::Box {
 
     view! {        
         ram_usage_label = gtk4::Label {
-            set_label: &get_ram_usage_label_text(),
             set_halign: gtk4::Align::Start,
         },
 
         detailed_ram_usage_label = gtk4::Label {
             set_css_classes: &["bar-sysstats-detailed-label"],
-            set_label: &get_detailed_ram_usage_label_text(),
             set_halign: gtk4::Align::Start,
         },
 
         swap_usage_label = gtk4::Label {
-            set_label: &get_swap_usage_label_text(),
             set_halign: gtk4::Align::Start,
         },
 
         detailed_swap_usage_label = gtk4::Label {
             set_css_classes: &["bar-sysstats-detailed-label"],
-            set_label: &get_detailed_swap_usage_label_text(),
             set_halign: gtk4::Align::Start,
         },
 
         cpu_usage_label = gtk4::Label {
-            set_label: &get_cpu_usage_label_text(),
             set_halign: gtk4::Align::Start,
         },
 
         cpu_temperature_label = gtk4::Label {
             set_css_classes: &["bar-sysstats-detailed-label"],
-            set_label: &get_cpu_temperature_label_text(),
             set_halign: gtk4::Align::Start,
         },
 
         gpu_usage_label = gtk4::Label {
-            set_label: &get_gpu_usage_label_text(),
             set_halign: gtk4::Align::Start,
         },
 
         gpu_temperature_label = gtk4::Label {
             set_css_classes: &["bar-sysstats-detailed-label"],
-            set_label: &get_gpu_temperature_label_text(),
             set_halign: gtk4::Align::Start,
         },
 
@@ -149,31 +103,31 @@ pub fn minimal() -> gtk4::Box {
         }
     }
 
-    gtk4::glib::spawn_future_local(signal!(SYS_STATS.lock().unwrap().used_memory, (_) {
-        ram_usage_label.set_label(&get_ram_usage_label_text());
-        detailed_ram_usage_label.set_label(&get_detailed_ram_usage_label_text());
+    gtk4::glib::spawn_future_local(signal!(SYS_STATS.lock().unwrap().memory, (memory) {
+        ram_usage_label.set_label(&format_percentage(memory.usage_percentage()));
+        detailed_ram_usage_label.set_label(&get_detailed_memory_usage_label_text(&memory));
     }));
 
-    gtk4::glib::spawn_future_local(signal!(SYS_STATS.lock().unwrap().used_swap, (_) {
-        swap_usage_label.set_label(&get_swap_usage_label_text());
-        detailed_swap_usage_label.set_label(&get_detailed_swap_usage_label_text());
-        swap_usage_box.set_visible(SYS_STATS.lock().unwrap().swap_usage_percentage() > SWAP_SHOW_THRESHOLD);
+    gtk4::glib::spawn_future_local(signal!(SYS_STATS.lock().unwrap().swap, (swap) {
+        swap_usage_label.set_label(&format_percentage(swap.usage_percentage()));
+        detailed_swap_usage_label.set_label(&get_detailed_memory_usage_label_text(&swap));
+        swap_usage_box.set_visible(swap.usage_percentage() > SWAP_SHOW_THRESHOLD);
     }));
 
-    gtk4::glib::spawn_future_local(signal!(SYS_STATS.lock().unwrap().global_cpu_usage, (_) {
-        cpu_usage_label.set_label(&get_cpu_usage_label_text());
+    gtk4::glib::spawn_future_local(signal!(SYS_STATS.lock().unwrap().global_cpu_usage, (global_cpu_usage) {
+        cpu_usage_label.set_label(&format_percentage(global_cpu_usage));
     }));
 
-    gtk4::glib::spawn_future_local(signal!(SENSORS.cpu_temp, (_) {
-        cpu_temperature_label.set_label(&get_cpu_temperature_label_text());
+    gtk4::glib::spawn_future_local(signal!(SENSORS.cpu_temp, (cpu_temp) {
+        cpu_temperature_label.set_label(&get_temperature_label_text(cpu_temp));
     }));
 
-    gtk4::glib::spawn_future_local(signal!(SYS_STATS.lock().unwrap().gpu_utilization, (_) {
-        gpu_usage_label.set_label(&get_gpu_usage_label_text());
+    gtk4::glib::spawn_future_local(signal!(SYS_STATS.lock().unwrap().gpu_utilization, (gpu_utilization) {
+        gpu_usage_label.set_label(&format_percentage(gpu_utilization));
     }));
     
-    gtk4::glib::spawn_future_local(signal!(SYS_STATS.lock().unwrap().gpu_temperature, (_) {
-        gpu_temperature_label.set_label(&get_gpu_temperature_label_text());
+    gtk4::glib::spawn_future_local(signal!(SYS_STATS.lock().unwrap().gpu_temperature, (gpu_temperature) {
+        gpu_temperature_label.set_label(&get_temperature_label_text(gpu_temperature));
     }));
 
     widget

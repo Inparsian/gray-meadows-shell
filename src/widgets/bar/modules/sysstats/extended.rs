@@ -84,21 +84,16 @@ pub fn extended() -> gtk4::Box {
         cpu_stat_row.set_secondary_value(&format!("{:.1}°C", cpu_temp));
     }));
 
-    gtk4::glib::spawn_future_local(signal!(SYS_STATS.lock().unwrap().used_memory, (used_memory) {
-        let sys_stats = SYS_STATS.lock().unwrap();
-        let total_memory = sys_stats.total_memory.get();
-        mem_stat_row.set_value(&format!("{:.1} / {:.1} GB", bytes_to_gib(used_memory), bytes_to_gib(total_memory)));
-        mem_stat_row.set_secondary_value(&format!("{:.1}%", sys_stats.memory_usage_percentage()));
+    gtk4::glib::spawn_future_local(signal!(SYS_STATS.lock().unwrap().memory, (memory) {
+        mem_stat_row.set_value(&format!("{:.1} / {:.1} GB", bytes_to_gib(memory.used), bytes_to_gib(memory.total)));
+        mem_stat_row.set_secondary_value(&format!("{:.1}%", memory.usage_percentage()));
     }));
 
-    gtk4::glib::spawn_future_local(signal!(SYS_STATS.lock().unwrap().used_swap, (used_swap) {
-        let sys_stats = SYS_STATS.lock().unwrap();
-        let usage_percentage = sys_stats.swap_usage_percentage();
-        let total_swap = sys_stats.total_swap.get();
-        swap_stat_row.set_value(&format!("{:.1} / {:.1} GB", bytes_to_gib(used_swap), bytes_to_gib(total_swap)));
-        swap_stat_row.set_secondary_value(&format!("{:.1}%", usage_percentage));
+    gtk4::glib::spawn_future_local(signal!(SYS_STATS.lock().unwrap().swap, (swap) {
+        swap_stat_row.set_value(&format!("{:.1} / {:.1} GB", bytes_to_gib(swap.used), bytes_to_gib(swap.total)));
+        swap_stat_row.set_secondary_value(&format!("{:.1}%", swap.usage_percentage()));
 
-        if usage_percentage <= SWAP_SHOW_THRESHOLD {
+        if swap.usage_percentage() <= SWAP_SHOW_THRESHOLD {
             swap_stat_row.container.add_css_class("irrelevant");
         } else {
             swap_stat_row.container.remove_css_class("irrelevant");
@@ -116,11 +111,9 @@ pub fn extended() -> gtk4::Box {
         gpu_stat_row.set_secondary_value(&format!("{:.1}°C", gpu_temperature));
     }));
 
-    gtk4::glib::spawn_future_local(signal!(SYS_STATS.lock().unwrap().gpu_used_memory, (used_vram) {
-        let sys_stats = SYS_STATS.lock().unwrap();
-        let total_vram = sys_stats.gpu_total_memory.get();
-        vram_stat_row.set_value(&format!("{:.1} / {:.1} GB", bytes_to_gib(used_vram), bytes_to_gib(total_vram)));
-        vram_stat_row.set_secondary_value(&format!("{:.1}%", sys_stats.vram_usage_percentage()));
+    gtk4::glib::spawn_future_local(signal!(SYS_STATS.lock().unwrap().gpu_memory, (gpu_memory) {
+        vram_stat_row.set_value(&format!("{:.1} / {:.1} GB", bytes_to_gib(gpu_memory.used), bytes_to_gib(gpu_memory.total)));
+        vram_stat_row.set_secondary_value(&format!("{:.1}%", gpu_memory.usage_percentage()));
     }));
 
     widget

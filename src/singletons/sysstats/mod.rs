@@ -7,7 +7,7 @@ use std::time::Duration;
 use std::sync::{Mutex, LazyLock};
 use futures_signals::signal::Mutable;
 use nvml_wrapper::enum_wrappers::device::TemperatureSensor;
-use nvml_wrapper::struct_wrappers::device::MemoryInfo;
+use nvml_wrapper::struct_wrappers::device::MemoryInfo as NvmlMemoryInfo;
 use sysinfo::{CpuRefreshKind, MemoryRefreshKind};
 
 const REFRESH_INTERVAL: Duration = Duration::from_secs(1);
@@ -21,24 +21,34 @@ static SYS: LazyLock<Mutex<sysinfo::System>> = LazyLock::new(|| {
 
 pub static SYS_STATS: LazyLock<Mutex<SysStats>> = LazyLock::new(|| Mutex::new(SysStats::default()));
 
+#[derive(Default, Clone, Copy)]
+pub struct MemoryInfo {
+    pub total: u64,
+    pub used: u64,
+}
+
+impl MemoryInfo {
+    pub fn usage_percentage(&self) -> f64 {
+        if self.total == 0 {
+            0.0
+        } else {
+            (self.used as f64 / self.total as f64) * 100.0
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct SysStats {
     // sysstats
     pub uptime: Mutable<u64>,
-    pub used_memory: Mutable<u64>,
-    pub total_memory: Mutable<u64>,
-    pub free_memory: Mutable<u64>,
-    pub used_swap: Mutable<u64>,
-    pub total_swap: Mutable<u64>,
-    pub free_swap: Mutable<u64>,
+    pub memory: Mutable<MemoryInfo>,
+    pub swap: Mutable<MemoryInfo>,
     pub global_cpu_usage: Mutable<f64>,
 
     // nvml
     pub gpu_utilization: Mutable<f64>,
     pub gpu_temperature: Mutable<f64>,
-    pub gpu_free_memory: Mutable<u64>,
-    pub gpu_used_memory: Mutable<u64>,
-    pub gpu_total_memory: Mutable<u64>,
+    pub gpu_memory: Mutable<MemoryInfo>,
 }
 
 impl SysStats {
@@ -48,12 +58,14 @@ impl SysStats {
         sys.refresh_cpu_usage();
 
         self.uptime.set(sysinfo::System::uptime());
-        self.used_memory.set(sys.used_memory());
-        self.total_memory.set(sys.total_memory());
-        self.free_memory.set(sys.free_memory());
-        self.used_swap.set(sys.used_swap());
-        self.total_swap.set(sys.total_swap());
-        self.free_swap.set(sys.free_swap());
+        self.memory.set(MemoryInfo {
+            total: sys.total_memory(),
+            used: sys.used_memory(),
+        });
+        self.swap.set(MemoryInfo {
+            total: sys.total_swap(),
+            used: sys.used_swap(),
+        });
         self.global_cpu_usage.set(sys.global_cpu_usage() as f64);
 
         // Refresh GPU stats if NVML is initialized
@@ -69,37 +81,12 @@ impl SysStats {
             }
 
             match device.memory_info() {
-                Ok(MemoryInfo { total, used, free, .. }) => {
-                    self.gpu_total_memory.set(total);
-                    self.gpu_used_memory.set(used);
-                    self.gpu_free_memory.set(free);
-                },
+                Ok(NvmlMemoryInfo { total, used, .. }) => self.gpu_memory.set(MemoryInfo {
+                    total,
+                    used,
+                }),
                 Err(err) => eprintln!("Failed to get GPU memory info: {:?}", err)
             }
-        }
-    }
-
-    pub fn memory_usage_percentage(&self) -> f64 {
-        if self.total_memory.get() == 0 {
-            0.0
-        } else {
-            (self.used_memory.get() as f64 / self.total_memory.get() as f64) * 100.0
-        }
-    }
-
-    pub fn swap_usage_percentage(&self) -> f64 {
-        if self.total_swap.get() == 0 {
-            0.0
-        } else {
-            (self.used_swap.get() as f64 / self.total_swap.get() as f64) * 100.0
-        }
-    }
-
-    pub fn vram_usage_percentage(&self) -> f64 {
-        if self.gpu_total_memory.get() == 0 {
-            0.0
-        } else {
-            (self.gpu_used_memory.get() as f64 / self.gpu_total_memory.get() as f64) * 100.0
         }
     }
 }
