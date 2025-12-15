@@ -32,8 +32,10 @@ pub struct BarWindow {
 impl BarWindow {
     pub fn new(application: &libadwaita::Application, monitor: &gdk4::Monitor) -> Self {
         let mpris_module = modules::mpris::new();
+        let sysstats_module = modules::sysstats::new();
         let mut modules = HashMap::new();
         modules.insert("mpris".to_owned(), mpris_module.clone());
+        modules.insert("sysstats".to_owned(), sysstats_module.clone());
 
         view! {
             left_box = gtk4::Box {
@@ -50,7 +52,7 @@ impl BarWindow {
                 set_spacing: 1,
                 set_valign: gtk4::Align::Start,
 
-                append: &modules::sysstats::new(),
+                append: &sysstats_module.bx,
                 append: &mpris_module.bx,
                 append: &modules::clock::new()
             },
