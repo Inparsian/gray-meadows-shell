@@ -52,16 +52,16 @@ impl CompactStatRow {
 }
 
 pub fn extended() -> gtk4::Box {
-    let cpu_stat_row = CompactStatRow::new("CPU:", true);
-    let mem_stat_row = CompactStatRow::new("RAM:", true);
-    let gpu_stat_row = CompactStatRow::new("GPU:", true);
-    let swap_stat_row = CompactStatRow::new("SWAP:", true);
+    let cpu_stat_row = CompactStatRow::new("CPU", true);
+    let mem_stat_row = CompactStatRow::new("RAM", true);
+    let gpu_stat_row = CompactStatRow::new("GPU", true);
+    let swap_stat_row = CompactStatRow::new("SWAP", true);
 
     view! {
         widget = gtk4::Box {
             set_css_classes: &["bar-sysstats-extended"],
             set_orientation: gtk4::Orientation::Vertical,
-            set_spacing: 4,
+            set_spacing: 8,
 
             append: &cpu_stat_row.container,
             append: &mem_stat_row.container,
@@ -73,7 +73,7 @@ pub fn extended() -> gtk4::Box {
     gtk4::glib::spawn_future_local({
         let cpu_stat_row = cpu_stat_row.clone();
         signal!(SYS_STATS.lock().unwrap().global_cpu_usage, (cpu_usage) {
-            cpu_stat_row.set_value(&format!("{:.2}%", cpu_usage));
+            cpu_stat_row.set_value(&format!("{:.1}%", cpu_usage));
         })
     });
 
@@ -84,21 +84,21 @@ pub fn extended() -> gtk4::Box {
     gtk4::glib::spawn_future_local(signal!(SYS_STATS.lock().unwrap().used_memory, (used_memory) {
         let sys_stats = SYS_STATS.lock().unwrap();
         let total_memory = sys_stats.total_memory.get();
-        mem_stat_row.set_value(&format!("{:.2} / {:.2} GB", bytes_to_gib(used_memory), bytes_to_gib(total_memory)));
-        mem_stat_row.set_secondary_value(&format!("{:.2}%", sys_stats.memory_usage_percentage()));
+        mem_stat_row.set_value(&format!("{:.1} / {:.1} GB", bytes_to_gib(used_memory), bytes_to_gib(total_memory)));
+        mem_stat_row.set_secondary_value(&format!("{:.1}%", sys_stats.memory_usage_percentage()));
     }));
 
     gtk4::glib::spawn_future_local(signal!(SYS_STATS.lock().unwrap().used_swap, (used_swap) {
         let sys_stats = SYS_STATS.lock().unwrap();
         let total_swap = sys_stats.total_swap.get();
-        swap_stat_row.set_value(&format!("{:.2} / {:.2} GB", bytes_to_gib(used_swap), bytes_to_gib(total_swap)));
-        swap_stat_row.set_secondary_value(&format!("{:.2}%", sys_stats.swap_usage_percentage()));
+        swap_stat_row.set_value(&format!("{:.1} / {:.1} GB", bytes_to_gib(used_swap), bytes_to_gib(total_swap)));
+        swap_stat_row.set_secondary_value(&format!("{:.1}%", sys_stats.swap_usage_percentage()));
     }));
 
     gtk4::glib::spawn_future_local({
         let gpu_stat_row = gpu_stat_row.clone();
         signal!(SYS_STATS.lock().unwrap().gpu_utilization, (gpu_utilization) {
-            gpu_stat_row.set_value(&format!("{:.2}%", gpu_utilization));
+            gpu_stat_row.set_value(&format!("{:.1}%", gpu_utilization));
         })
     });
     
