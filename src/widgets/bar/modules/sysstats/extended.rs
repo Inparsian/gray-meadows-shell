@@ -85,12 +85,12 @@ pub fn extended() -> gtk4::Box {
     }));
 
     gtk4::glib::spawn_future_local(signal!(SYS_STATS.memory, (memory) {
-        mem_stat_row.set_value(&format!("{:.1} / {:.1} GB", bytes_to_gib(memory.used), bytes_to_gib(memory.total)));
+        mem_stat_row.set_value(&format!("{:.1} / {:.1} GiB", bytes_to_gib(memory.used), bytes_to_gib(memory.total)));
         mem_stat_row.set_secondary_value(&format!("{:.1}%", memory.usage_percentage()));
     }));
 
     gtk4::glib::spawn_future_local(signal!(SYS_STATS.swap, (swap) {
-        swap_stat_row.set_value(&format!("{:.1} / {:.1} GB", bytes_to_gib(swap.used), bytes_to_gib(swap.total)));
+        swap_stat_row.set_value(&format!("{:.1} / {:.1} GiB", bytes_to_gib(swap.used), bytes_to_gib(swap.total)));
         swap_stat_row.set_secondary_value(&format!("{:.1}%", swap.usage_percentage()));
 
         if swap.usage_percentage() <= SWAP_SHOW_THRESHOLD {
@@ -112,7 +112,7 @@ pub fn extended() -> gtk4::Box {
     }));
 
     gtk4::glib::spawn_future_local(signal!(SYS_STATS.gpu_memory, (gpu_memory) {
-        vram_stat_row.set_value(&format!("{:.1} / {:.1} GB", bytes_to_gib(gpu_memory.used), bytes_to_gib(gpu_memory.total)));
+        vram_stat_row.set_value(&format!("{:.1} / {:.1} GiB", bytes_to_gib(gpu_memory.used), bytes_to_gib(gpu_memory.total)));
         vram_stat_row.set_secondary_value(&format!("{:.1}%", gpu_memory.usage_percentage()));
     }));
 
