@@ -116,21 +116,19 @@ impl Fields {
         }
 
         for (i, update) in updates.into_iter().enumerate() {
-            if let Some(field) = self.fields.get(i) {
-                if !field.is_locked() {
-                    field.lock();
-                    
-                    match update {
-                        FieldUpdate::Text(text) => {
-                            if let Some(entry) = field.widget.downcast_ref::<gtk4::Entry>() {
-                                entry.set_text(&text);
-                            }
-                        },
+            if let Some(field) = self.fields.get(i) && !field.is_locked() {
+                field.lock();
+                
+                match update {
+                    FieldUpdate::Text(text) => {
+                        if let Some(entry) = field.widget.downcast_ref::<gtk4::Entry>() {
+                            entry.set_text(&text);
+                        }
+                    },
 
-                        FieldUpdate::Float(value) => {
-                            if let Some(spin_button) = field.widget.downcast_ref::<gtk4::SpinButton>() {
-                                spin_button.set_value(value);
-                            }
+                    FieldUpdate::Float(value) => {
+                        if let Some(spin_button) = field.widget.downcast_ref::<gtk4::SpinButton>() {
+                            spin_button.set_value(value);
                         }
                     }
                 }

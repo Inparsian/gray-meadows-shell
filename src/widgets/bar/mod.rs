@@ -201,21 +201,19 @@ pub fn toggle_module_by_name(name: &str) {
         let app = app.borrow();
         let bar_windows = app.bars.borrow();
         for bar_window in &*bar_windows {
-            if bar_window.monitor == monitor {
-                if let Some(wrapper) = bar_window.modules.get(name) {
-                    wrapper.module.set_expanded(!wrapper.module.is_expanded());
+            if bar_window.monitor == monitor && let Some(wrapper) = bar_window.modules.get(name) {
+                wrapper.module.set_expanded(!wrapper.module.is_expanded());
 
-                    // manage steal window visibility
-                    let any_expanded = bar_window.modules.values().any(|w| w.module.is_expanded());
-                    if any_expanded {
-                        bar_window.steal_window.set_visible(true);
-                        bar_window.window.set_layer(Layer::Overlay);
-                        bar_window.window.set_keyboard_mode(KeyboardMode::OnDemand);
-                    } else {
-                        bar_window.steal_window.set_visible(false);
-                        bar_window.window.set_layer(Layer::Top);
-                        bar_window.window.set_keyboard_mode(KeyboardMode::None);
-                    }
+                // manage steal window visibility
+                let any_expanded = bar_window.modules.values().any(|w| w.module.is_expanded());
+                if any_expanded {
+                    bar_window.steal_window.set_visible(true);
+                    bar_window.window.set_layer(Layer::Overlay);
+                    bar_window.window.set_keyboard_mode(KeyboardMode::OnDemand);
+                } else {
+                    bar_window.steal_window.set_visible(false);
+                    bar_window.window.set_layer(Layer::Top);
+                    bar_window.window.set_keyboard_mode(KeyboardMode::None);
                 }
             }
         }

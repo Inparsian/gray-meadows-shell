@@ -38,20 +38,20 @@ pub fn fetch_clipboard_entries() -> Vec<(usize, String)> {
     if let Ok(output) = std::process::Command::new("cliphist")
         .arg("list")
         .output()
+        && output.status.success()
     {
-        if output.status.success() {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            return stdout.lines().filter_map(|line| {
-                let mut parts = line.splitn(2, '\t');
-                let id_str = parts.next()?.trim();
-                let preview = parts.next()?.trim().to_owned();
-                let id = id_str.parse::<usize>().ok()?;
-                Some((id, preview))
-            }).collect();
-        }
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        
+        stdout.lines().filter_map(|line| {
+            let mut parts = line.splitn(2, '\t');
+            let id_str = parts.next()?.trim();
+            let preview = parts.next()?.trim().to_owned();
+            let id = id_str.parse::<usize>().ok()?;
+            Some((id, preview))
+        }).collect()
+    } else {
+        Vec::new()
     }
-
-    Vec::new()
 }
 
 pub fn copy_entry(id: usize) {

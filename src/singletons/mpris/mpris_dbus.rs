@@ -28,29 +28,27 @@ pub fn handle_master_message(msg: &Message) {
             }
         }
 
-        else if let Some(path) = msg.path() {
-            if path.starts_with(MPRIS_DBUS_PATH) {
-                let sender: Option<BusName> = msg.sender();
+        else if let Some(path) = msg.path()
+            && path.starts_with(MPRIS_DBUS_PATH) 
+            && let Some(sender) = msg.sender()
+        {
+            let mut players_mut = MPRIS.players.lock_mut();
+            let player_index = players_mut.iter()
+                .position(|p| sender == BusName::new(&p.owner).unwrap())
+                .unwrap_or(usize::MAX); // Default to an impossible index if not found
 
-                if let Some(sender) = sender {
-                    let mut players_mut = MPRIS.players.lock_mut();
-                    let player_index = players_mut.iter().position(|p| sender == BusName::new(&p.owner).unwrap())
-                        .unwrap_or(usize::MAX); // Default to an impossible index if not found
+            if let Some(player) = players_mut.get(player_index) {
+                let mut player = player.clone();
 
-                    if let Some(player) = players_mut.get(player_index) {
-                        let mut player = player.clone();
-
-                        match member {
-                            "PropertiesChanged" => player.properties_changed(msg),
-                            "Seeked" => player.seeked(msg),
-                            _ => eprintln!("Unknown MPRIS signal member: {}", member),
-                        }
-
-                        players_mut.set_cloned(player_index, player);
-                    } else {
-                        eprintln!("Failed to find MPRIS player for owner: {}", sender);
-                    }
+                match member {
+                    "PropertiesChanged" => player.properties_changed(msg),
+                    "Seeked" => player.seeked(msg),
+                    _ => eprintln!("Unknown MPRIS signal member: {}", member),
                 }
+
+                players_mut.set_cloned(player_index, player);
+            } else {
+                eprintln!("Failed to find MPRIS player for owner: {}", sender);
             }
         }
     }

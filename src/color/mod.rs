@@ -51,6 +51,9 @@ pub fn get_analogous_colors(hsv: Hsv, count: u32) -> Vec<Hsv> {
 
 pub fn get_lighter_darker_colors(base_hsv: Hsv, count: u32) -> Vec<LighterDarkerResult> {
     let base_hsl = base_hsv.as_hsl();
+    let l_comp = |a: &model::Hsl, b: &model::Hsl, c: &model::Hsl| {
+        a.l_diff(c).partial_cmp(&b.l_diff(c)).unwrap_or(Equal)
+    };
     let hsl_below_tolerance = |a: &model::Hsl, b: &model::Hsl| {
         a.h_diff(b) < FLOAT_TOLERANCE && 
         a.s_diff(b) < FLOAT_TOLERANCE && 
@@ -69,21 +72,17 @@ pub fn get_lighter_darker_colors(base_hsv: Hsv, count: u32) -> Vec<LighterDarker
     colors.dedup_by(|a, b| hsl_below_tolerance(a, b));
 
     // Whatever color is closest to the original color, mark it as the original
-    let original_color = colors.iter().min_by(|a, b| {
-        a.l_diff(&base_hsl).partial_cmp(&b.l_diff(&base_hsl)).unwrap_or(Equal)
-    }).copied();
+    let original_color = colors.iter().min_by(|a, b| l_comp(a, b, &base_hsl)).copied();
 
     // If the original lightness is divisible by exactly 5, it'll have been
     // deduped already at this point.
-    if let Some(original) = original_color {
-        if (original.lightness % 5.0) >= FLOAT_TOLERANCE {
-            if let Some((index, _)) = colors.iter().enumerate()
-                .filter(|(_, c)| (c.lightness % 5.0).abs() <= FLOAT_TOLERANCE)
-                .min_by(|(_, a), (_, b)| a.l_diff(&original).partial_cmp(&b.l_diff(&original)).unwrap_or(Equal))
-            {
-                colors.remove(index);
-            }
-        }
+    if let Some(original) = original_color 
+        && (original.lightness % 5.0) >= FLOAT_TOLERANCE
+        && let Some((index, _)) = colors.iter().enumerate()
+            .filter(|(_, c)| (c.lightness % 5.0).abs() <= FLOAT_TOLERANCE)
+            .min_by(|(_, a), (_, b)| l_comp(a, b, &original))
+    {
+        colors.remove(index);
     }
 
     colors.into_iter().map(|hsl| LighterDarkerResult {

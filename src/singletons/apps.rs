@@ -60,12 +60,11 @@ pub fn calculate_weight(entry: &DesktopEntry, query: &str) -> f32 {
     }
 
     // How many times has this entry been run?
-    if weight > 0.0 {
-        if let Ok(runs) = commands::get_runs(entry.exec().unwrap_or_default()) {
-            if runs > 0 {
-                weight *= f32::max(1.25, runs as f32 / 4.0);
-            }
-        }
+    if weight > 0.0
+        && let Ok(runs) = commands::get_runs(entry.exec().unwrap_or_default())
+        && runs > 0
+    {
+        weight *= f32::max(1.25, runs as f32 / 4.0);
     }
 
     weight

@@ -82,19 +82,17 @@ pub fn listen_for_ipc_messages() {
             show(window_name);
         } else if let Some(window_name) = message.strip_prefix("hide_") {
             hide(window_name);
-        } else if let Some(window_name) = message.strip_prefix("toggle_") {
-            if toggle(window_name) {
-                match window_name {
-                    "overview" => {
-                        let _ = ipc::client::send_message("update_overview_windows");
-                    },
+        } else if let Some(window_name) = message.strip_prefix("toggle_") && toggle(window_name) {
+            match window_name {
+                "overview" => {
+                    let _ = ipc::client::send_message("update_overview_windows");
+                },
 
-                    "clipboard" => {
-                        let _ = ipc::client::send_message("update_clipboard_window_entries");
-                    },
+                "clipboard" => {
+                    let _ = ipc::client::send_message("update_clipboard_window_entries");
+                },
 
-                    _ => {}
-                }
+                _ => {}
             }
         }
     });

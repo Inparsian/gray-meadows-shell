@@ -20,16 +20,18 @@ fn format_duration(microseconds: i64) -> String {
 }
 
 fn get_background_css() -> Option<String> {
-    if let Some(default_player) = mpris::get_default_player() {
-        if let Some(art_url) = default_player.metadata.art_url {
-            let css = format!(
-                ".bar-mpris-extended-background {{ background-image: url('{}'); }}",
-                art_url.replace('\'', "\\'")
-            );
-            return Some(css);
-        }
+    if let Some(default_player) = mpris::get_default_player()
+        && let Some(art_url) = default_player.metadata.art_url
+    {
+        let css = format!(
+            ".bar-mpris-extended-background {{ background-image: url('{}'); }}",
+            art_url.replace('\'', "\\'")
+        );
+
+        Some(css)
+    } else {
+        None
     }
-    None
 }
 
 fn default_mpris_player() -> gtk4::Box {
@@ -291,12 +293,13 @@ fn default_mpris_player() -> gtk4::Box {
                     let progress_bar = progress_bar.clone();
                     move || {
                         mpris::with_default_player_mut(|player| {
-                            if player.playback_status == PlaybackStatus::Playing {
-                                if let (Ok(position), Some(duration)) = (player.get_and_update_position(), player.metadata.length) {
-                                    progress.set_label(&format!("{} / {}", format_duration(position), format_duration(duration)));
-                                    progress_bar.set_position(position as f64);
-                                    progress_bar.set_duration(duration as f64);
-                                }
+                            if player.playback_status == PlaybackStatus::Playing
+                                && let Ok(position) = player.get_and_update_position()
+                                && let Some(duration) = player.metadata.length
+                            {
+                                progress.set_label(&format!("{} / {}", format_duration(position), format_duration(duration)));
+                                progress_bar.set_position(position as f64);
+                                progress_bar.set_duration(duration as f64);
                             }
                         });
                     }

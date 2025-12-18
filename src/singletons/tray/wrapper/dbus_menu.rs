@@ -29,7 +29,10 @@ impl Menu {
         let mut item = MenuItem::default();
         let mut iter = struct_.as_iter().unwrap();
 
-        if let (Some(id), Some(properties), Some(submenus)) = (iter.next(), iter.next(), iter.next()) {
+        if let Some(id) = iter.next()
+            && let Some(properties) = iter.next()
+            && let Some(submenus) = iter.next()
+        {
             let submenus = submenus.as_iter().unwrap().collect::<Vec<&dyn RefArg>>();
             let properties = make_key_value_pairs(properties);
             
@@ -43,7 +46,9 @@ impl Menu {
                     "type" => item.type_ = value.as_str().unwrap_or_default().to_owned(),
                     "visible" => item.visible = value.as_i64().unwrap_or(0) != 0,
                     "children-display" => item.children_display = value.as_str().unwrap_or_default().to_owned(),
-                    "icon-data" => if let Some(icon_data) = value.as_iter().and_then(|mut v| v.next()?.as_iter()) {
+                    "icon-data" => if let Some(icon_data) = value.as_iter()
+                        .and_then(|mut v| v.next()?.as_iter())
+                    {
                         item.icon_data = icon_data.map(|v| v.as_i64().unwrap_or_default() as u8)
                             .collect::<Vec<u8>>()
                             .into();
@@ -100,10 +105,8 @@ impl Menu {
         for value in iter {
             let variant = value.as_iter().unwrap().next().unwrap();
 
-            if variant.arg_type() == arg::ArgType::Struct {
-                if let Some(item) = Self::unpack_item(&variant) {
-                    menu.items.push(item);
-                }
+            if variant.arg_type() == arg::ArgType::Struct && let Some(item) = Self::unpack_item(&variant) {
+                menu.items.push(item);
             }
         }
 

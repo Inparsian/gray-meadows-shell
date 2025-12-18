@@ -1,10 +1,15 @@
 use gdk4::gdk_pixbuf::Pixbuf;
 use gdk4::gio::prelude::FileExt as _;
 use gtk4::TextDirection;
+use gtk4::gdk_pixbuf::InterpType;
 use std::cell::RefCell;
 use std::collections::HashMap;
+use std::path::Path;
 
 use crate::APP_LOCAL;
+
+const PIXBUF_WIDTH: i32 = 24;
+const PIXBUF_HEIGHT: i32 = 24;
 
 thread_local! {
     pub static PIXBUF_CACHE: RefCell<HashMap<String, Pixbuf>> = RefCell::new(HashMap::new());
@@ -23,15 +28,16 @@ pub fn get_pixbuf(icon_name: &str) -> Option<Pixbuf> {
         }
 
         // Is this a path to an image file (e.g., /path/to/image.png)?
-        if std::path::Path::new(icon_name).exists() {
-            if let Ok(pixbuf) = Pixbuf::from_file(icon_name) {
-                let pixbuf = pixbuf.scale_simple(24, 24, gtk4::gdk_pixbuf::InterpType::Bilinear);
-                
-                if let Some(pixbuf) = pixbuf {
-                    pixbufs.insert(icon_name.to_owned(), pixbuf.clone());
-                    return Some(pixbuf);
-                }
-            }
+        if Path::new(icon_name).exists() 
+            && let Ok(pixbuf) = Pixbuf::from_file(icon_name)
+            && let Some(pixbuf) = pixbuf.scale_simple(
+                PIXBUF_WIDTH,
+                PIXBUF_HEIGHT,
+                InterpType::Bilinear
+            )
+        {
+            pixbufs.insert(icon_name.to_owned(), pixbuf.clone());
+            return Some(pixbuf);
         }
 
         // Otherwise, try to load it as an icon from the icon theme
@@ -39,23 +45,26 @@ pub fn get_pixbuf(icon_name: &str) -> Option<Pixbuf> {
         let icon_paintable = icon_theme.lookup_icon(
             icon_name,
             &[],
-            0, 1,
+            0, 
+            1,
             TextDirection::Ltr,
             gtk4::IconLookupFlags::empty()
         );
 
-        if let Some(path) = icon_paintable.file().and_then(|f| f.path()) {
-            if let Ok(pixbuf) = Pixbuf::from_file(path) {
-                let pixbuf = pixbuf.scale_simple(24, 24, gtk4::gdk_pixbuf::InterpType::Bilinear);
-                
-                if let Some(pixbuf) = pixbuf {
-                    pixbufs.insert(icon_name.to_owned(), pixbuf.clone());
-                    return Some(pixbuf);
-                }
-            }
-        }
+        if let Some(path) = icon_paintable.file().and_then(|f| f.path())
+            && let Ok(pixbuf) = Pixbuf::from_file(path)
+            && let Some(pixbuf) = pixbuf.scale_simple(
+                PIXBUF_WIDTH, 
+                PIXBUF_HEIGHT,
+                InterpType::Bilinear
+            )
+        {
+            pixbufs.insert(icon_name.to_owned(), pixbuf.clone());
 
-        None
+            Some(pixbuf)
+        } else {
+            None
+        }
     })
 }
 

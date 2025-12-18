@@ -49,10 +49,10 @@ impl SystemTrayItem {
                 tokio::spawn({
                     let service = service.clone();
                     async move {
-                        if let Some(item) = tray::try_read_item(&service) {
-                            if let Ok(menu_layout) = item.menu.get_layout() {
-                                let _ = sender.send((item, menu_layout)).await;
-                            }
+                        if let Some(item) = tray::try_read_item(&service)
+                            && let Ok(menu_layout) = item.menu.get_layout()
+                        {
+                            let _ = sender.send((item, menu_layout)).await;
                         }
                     }
                 });

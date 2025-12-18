@@ -29,10 +29,11 @@ pub fn make_key_value_pairs(value: &dyn RefArg) -> Vec<(String, &dyn RefArg)> {
         // Every odd entry is a key, every even entry is a value
         let mut enumerate = iter.enumerate();
         while let Some((i, entry)) = enumerate.next() {
-            if i % 2 == 0 {
-                if let (Some(key), Some(value)) = (entry.as_str(), enumerate.next()) {
-                    pairs.push((key.to_owned(), value.1));
-                }
+            if i % 2 == 0
+                && let Some(key) = entry.as_str()
+                && let Some((_, value)) = enumerate.next()
+            {
+                pairs.push((key.to_owned(), value));
             }
         }
     }

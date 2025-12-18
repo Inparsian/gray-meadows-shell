@@ -281,14 +281,13 @@ pub fn new() -> gtk4::Box {
     // Listen for IPC messages to update the HSV value
     ipc::listen_for_messages_local(move |message| {
         let mut split_whitespace_iterator = message.split_whitespace();
-        if let Some(message) = split_whitespace_iterator.next() {
-            if message == "color_picker_set_hex" {
-                if let Some(hex) = split_whitespace_iterator.next() {
-                    let hsv_value = Hsv::from_hex(hex);
+        if let Some(message) = split_whitespace_iterator.next()
+            && message == "color_picker_set_hex"
+            && let Some(hex) = split_whitespace_iterator.next()
+        {
+            let hsv_value = Hsv::from_hex(hex);
 
-                    hsv.set(hsv_value);
-                }
-            }
+            hsv.set(hsv_value);
         }
     });
 

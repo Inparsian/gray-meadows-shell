@@ -51,11 +51,12 @@ pub fn new() -> gtk4::Box {
         workspaces_click_gesture = gesture::on_primary_down(|_, x, _| {
             let ws = (((x - 5.0 - WORKSPACE_PADDING) / (WORKSPACE_WIDTH + WORKSPACE_PADDING)) + 1.0).floor() as i32;
 
-            if ws >= 1 && ws <= SHOWN_WORKSPACES as i32 {
-                if let Some(active_workspace) = hyprland::HYPRLAND.active_workspace.get_cloned() {
-                    let clamped = ((active_workspace.id - 1) / 10) * 10 + ws;
-                    let _ = dispatch!(Workspace, WorkspaceIdentifierWithSpecial::Id(clamped));
-                }
+            if ws >= 1
+                && ws <= SHOWN_WORKSPACES as i32
+                && let Some(active_workspace) = hyprland::HYPRLAND.active_workspace.get_cloned()
+            {
+                let clamped = ((active_workspace.id - 1) / 10) * 10 + ws;
+                let _ = dispatch!(Workspace, WorkspaceIdentifierWithSpecial::Id(clamped));
             }
         }),
 

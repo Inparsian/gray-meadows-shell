@@ -246,10 +246,10 @@ impl LanguageSelectView {
             async move {
                 let mut receiver = translate::subscribe_to_ui_events();
                 while let Ok(event) = receiver.recv().await {
-                    if let UiEvent::LanguageSelectRevealChanged(reveal) = event {
-                        if reveal == view.reveal_type {
-                            view.clear_filter_entry();
-                        }
+                    if let UiEvent::LanguageSelectRevealChanged(reveal) = event
+                        && reveal == view.reveal_type
+                    {
+                        view.clear_filter_entry();
                     }
                 }
             }

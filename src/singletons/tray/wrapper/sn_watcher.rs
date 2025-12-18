@@ -141,18 +141,16 @@ impl StatusNotifierWatcher {
                     if member == "NameOwnerChanged" {
                         let (_, old_owner, new_owner) = msg.get3::<String, String, String>();
 
-                        if let (Some(old_owner), Some(new_owner)) = (old_owner, new_owner) {
-                            if new_owner.is_empty() && !old_owner.is_empty() {
-                                if let Some(item) = items.write()
-                                    .map_or(None, |mut writer| {
-                                        writer.iter()
-                                            .position(|item| item.service == old_owner)
-                                            .map(|index| writer.remove(index))
-                                    })
-                                {
-                                    channel.send_blocking(BusEvent::ItemUnregistered(item));
-                                }
-                            }
+                        if let (Some(old_owner), Some(new_owner)) = (old_owner, new_owner)
+                            && new_owner.is_empty() && !old_owner.is_empty()
+                            && let Some(item) = items.write()
+                                .map_or(None, |mut writer| {
+                                    writer.iter()
+                                        .position(|item| item.service == old_owner)
+                                        .map(|index| writer.remove(index))
+                                })
+                        {
+                            channel.send_blocking(BusEvent::ItemUnregistered(item));
                         }
                     }
                     
@@ -169,12 +167,11 @@ impl StatusNotifierWatcher {
                                 updated_item
                             })
                         ) {
-                            if let Ok(mut writer) = items.write() {
-                                if let Some(original_item) = writer.iter_mut()
-                                    .find(|item| item.service == service)
-                                {
-                                    original_item.update_from(&updated_item);
-                                }
+                            if let Ok(mut writer) = items.write()
+                            && let Some(original_item) = writer.iter_mut()
+                                .find(|item| item.service == service)
+                            {
+                                original_item.update_from(&updated_item);
                             }
 
                             channel.send_blocking(BusEvent::ItemUpdated(member, updated_item));

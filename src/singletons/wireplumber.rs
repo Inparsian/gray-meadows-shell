@@ -25,10 +25,10 @@ where
                 },
             
                 WpEvent::RemoveSpeaker(endpoint) => {
-                    if let Some(default_speaker) = get_default_speaker() {
-                        if default_speaker.node.id == endpoint.node.id {
-                            callback(default_speaker.node.volume);
-                        }
+                    if let Some(default_speaker) = get_default_speaker()
+                        && default_speaker.node.id == endpoint.node.id
+                    {
+                        callback(default_speaker.node.volume);
                     }
                 },
             
@@ -38,13 +38,12 @@ where
                     }
                 },
             
-                WpEvent::UpdateEndpoint(id, property_name) => if property_name == "volume" {
-                    if let Some(default_speaker) = get_default_speaker() {
-                        if default_speaker.node.id == id {
-                            callback(default_speaker.node.volume);
-                        }
-                    }
-                },
+                WpEvent::UpdateEndpoint(id, property_name) => if property_name == "volume"
+                    && let Some(default_speaker) = get_default_speaker()
+                    && default_speaker.node.id == id
+                    {
+                        callback(default_speaker.node.volume);
+                    },
             
                 _ => {}
             }
@@ -69,18 +68,18 @@ pub fn intercept_event(event: WpEvent) {
         WpEvent::UpdateNode(id, property_name) => {
             if let Some(node) = get_node(id) {
                 let _ = NODES.get().map(|nodes| {
-                    if let Ok(mut nodes) = nodes.write() {
-                        if let Some(existing_node) = nodes.iter_mut().find(|n| n.id == node.id) {
-                            match property_name.as_str() {
-                                "description" => existing_node.description = ffi::node_get_description(id),
-                                "icon" => existing_node.icon = ffi::node_get_icon(id),
-                                "mute" => existing_node.mute = ffi::node_get_mute(id),
-                                "name" => existing_node.name = ffi::node_get_name(id),
-                                "path" => existing_node.path = ffi::node_get_path(id),
-                                "serial" => existing_node.serial = ffi::node_get_serial(id),
-                                "volume" => existing_node.volume = ffi::node_get_volume(id),
-                                _ => {}
-                            }
+                    if let Ok(mut nodes) = nodes.write()
+                        && let Some(existing_node) = nodes.iter_mut().find(|n| n.id == node.id)
+                    {
+                        match property_name.as_str() {
+                            "description" => existing_node.description = ffi::node_get_description(id),
+                            "icon" => existing_node.icon = ffi::node_get_icon(id),
+                            "mute" => existing_node.mute = ffi::node_get_mute(id),
+                            "name" => existing_node.name = ffi::node_get_name(id),
+                            "path" => existing_node.path = ffi::node_get_path(id),
+                            "serial" => existing_node.serial = ffi::node_get_serial(id),
+                            "volume" => existing_node.volume = ffi::node_get_volume(id),
+                            _ => {}
                         }
                     }
                 });

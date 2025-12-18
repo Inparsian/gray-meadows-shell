@@ -31,14 +31,12 @@ pub fn new(application: &libadwaita::Application) -> PopupWindow {
 
     ipc::listen_for_messages_local(move |message| {
         let mut split_whitespace_iterator = message.split_whitespace();
-        if let Some(message) = split_whitespace_iterator.next() {
-            if message == "change_left_sidebar_tab" {
-                if let Some(tab) = split_whitespace_iterator.next() {
-                    if tabs.items.try_borrow().is_ok_and(|vec| vec.iter().any(|t| t.name == tab)) {
-                        tabs.current_tab.set(Some(tab.to_owned()));
-                    }
-                }
-            }
+        if let Some(message) = split_whitespace_iterator.next()
+            && message == "change_left_sidebar_tab"
+            && let Some(tab) = split_whitespace_iterator.next()
+            && tabs.items.try_borrow().is_ok_and(|vec| vec.iter().any(|t| t.name == tab))
+        {
+            tabs.current_tab.set(Some(tab.to_owned()));
         }
     });
 
