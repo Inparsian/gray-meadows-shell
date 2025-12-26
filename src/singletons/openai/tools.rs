@@ -2,9 +2,86 @@ use serde_json::json;
 use async_openai::error::OpenAIError;
 use async_openai::types::chat::{ChatCompletionTools, ChatCompletionTool, FunctionObjectArgs};
 
+use crate::APP;
+
 pub fn get_tools() -> Result<Vec<ChatCompletionTools>, OpenAIError> {
-    let tools = vec![
-        ChatCompletionTools::Function(ChatCompletionTool {
+    let mut tools = vec![];
+
+    if APP.config.ai.features.mpris_control {
+        tools.extend(vec![
+            ChatCompletionTools::Function(ChatCompletionTool {
+                function: FunctionObjectArgs::default()
+                    .name("control_mpris_player")
+                    .description("Performs an action on the default MPRIS player such as play, pause, toggle play/pause, or skip tracks.")
+                    .strict(true)
+                    .parameters(json!({
+                        "type": "object",
+                        "properties": {
+                            "action": {
+                                "type": "string",
+                                "description": "The action to perform on the player",
+                                "enum": [
+                                    "toggle",
+                                    "play",
+                                    "pause",
+                                    "next",
+                                    "previous"
+                                ]
+                            }
+                        },
+                        "required": [
+                            "action"
+                        ],
+                        "additionalProperties": false
+                    }))
+                    .build()?,
+            }),
+            ChatCompletionTools::Function(ChatCompletionTool {
+                function: FunctionObjectArgs::default()
+                    .name("set_mpris_loop_state")
+                    .description("Change or cycle the loop state for the default MPRIS player.")
+                    .strict(false)
+                    .parameters(json!({
+                        "type": "object",
+                        "properties": {
+                            "loop_state": {
+                                "type": "string",
+                                "description": "Requested loop state for the player. Must be one of 'off', 'playlist', or 'track'. If omitted, cycles to the next state.",
+                                "enum": [
+                                    "off",
+                                    "playlist",
+                                    "track"
+                                ]
+                            }
+                        },
+                        "required": [],
+                        "additionalProperties": false
+                    }))
+                    .build()?,
+            }),
+            ChatCompletionTools::Function(ChatCompletionTool {
+                function: FunctionObjectArgs::default()
+                    .name("set_mpris_shuffle_state")
+                    .description("Change or toggle the shuffle state for the default MPRIS player.")
+                    .strict(false)
+                    .parameters(json!({
+                        "type": "object",
+                        "properties": {
+                            "shuffle": {
+                                "type": "boolean",
+                                "description": "If provided, sets shuffle to this value; if omitted, the shuffle state will be toggled."
+                            }
+                        },
+                        "required": [],
+                        "additionalProperties": false
+                    }))
+                    .build()?,
+            }),
+        ]);
+    }
+
+    if APP.config.ai.features.power_control {
+        tools.push(ChatCompletionTools::Function(ChatCompletionTool {
             function: FunctionObjectArgs::default()
                 .name("perform_power_action")
                 .description("Performs a system power action.")
@@ -31,88 +108,26 @@ pub fn get_tools() -> Result<Vec<ChatCompletionTools>, OpenAIError> {
                     "additionalProperties": false
                 }))
                 .build()?,
-        }),
-        ChatCompletionTools::Function(ChatCompletionTool {
-            function: FunctionObjectArgs::default()
-                .name("control_mpris_player")
-                .description("Performs an action on the default MPRIS player such as play, pause, toggle play/pause, or skip tracks.")
-                .strict(true)
-                .parameters(json!({
-                    "type": "object",
-                    "properties": {
-                        "action": {
-                            "type": "string",
-                            "description": "The action to perform on the player",
-                            "enum": [
-                                "toggle",
-                                "play",
-                                "pause",
-                                "next",
-                                "previous"
-                            ]
-                        }
-                    },
-                    "required": [
-                        "action"
-                    ],
-                    "additionalProperties": false
-                }))
-                .build()?,
-        }),
-        ChatCompletionTools::Function(ChatCompletionTool {
-            function: FunctionObjectArgs::default()
-                .name("set_mpris_loop_state")
-                .description("Change or cycle the loop state for the default MPRIS player.")
-                .strict(false)
-                .parameters(json!({
-                    "type": "object",
-                    "properties": {
-                        "loop_state": {
-                            "type": "string",
-                            "description": "Requested loop state for the player. Must be one of 'off', 'playlist', or 'track'. If omitted, cycles to the next state.",
-                            "enum": [
-                                "off",
-                                "playlist",
-                                "track"
-                            ]
-                        }
-                    },
-                    "required": [],
-                    "additionalProperties": false
-                }))
-                .build()?,
-        }),
-        ChatCompletionTools::Function(ChatCompletionTool {
-            function: FunctionObjectArgs::default()
-                .name("set_mpris_shuffle_state")
-                .description("Change or toggle the shuffle state for the default MPRIS player.")
-                .strict(false)
-                .parameters(json!({
-                    "type": "object",
-                    "properties": {
-                        "shuffle": {
-                            "type": "boolean",
-                            "description": "If provided, sets shuffle to this value; if omitted, the shuffle state will be toggled."
-                        }
-                    },
-                    "required": [],
-                    "additionalProperties": false
-                }))
-                .build()?,
-        }),
-        ChatCompletionTools::Function(ChatCompletionTool {
+        }));
+    }
+        
+    if APP.config.ai.features.wayland_info {
+        tools.push(ChatCompletionTools::Function(ChatCompletionTool {
             function: FunctionObjectArgs::default()
                 .name("get_focused_wayland_window")
                 .description("Gets the currently focused Wayland window along with the current workspace.")
                 .build()?,
-        }),
-        ChatCompletionTools::Function(ChatCompletionTool {
+        }));
+    }
+
+    if APP.config.ai.features.current_date_time {
+        tools.push(ChatCompletionTools::Function(ChatCompletionTool {
             function: FunctionObjectArgs::default()
                 .name("get_current_datetime")
                 .description("Get the current date and time")
                 .build()?,
-        }),
-    ];
+        }));
+    }
 
     Ok(tools)
 }
