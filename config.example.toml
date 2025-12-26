@@ -3,7 +3,7 @@
 enabled = true
 
 # Your OpenAI API key. Required to access OpenAI services.
-api-key = "your-api-key-here"
+api_key = "your-api-key-here"
 
 # The model to use for AI tasks.
 model = "gpt-4.1"
@@ -13,21 +13,13 @@ prompt = "You are a helpful AI assistant running on a sidebar in a Linux desktop
 
 [ai.features]
 # Whether the AI can get the current date and time.
-current-date-time-enabled = true
+current_date_time = true
 
 # Whether the AI can perform system power control actions (shutdown, restart, etc.).
-power-control-enabled = true
+power_control = true
 
 # Whether the AI can get information about currently playing media via MPRIS and control it.
-mpris-control-enabled = true
+mpris_control = true
 
 # Whether the AI can get information about the Wayland compositor and connected displays.
-wayland-info-enabled = true
-
-[weather]
-# Whether the weather service is enabled.
-enabled = true
-
-# The latitude and longitude for the weather service.
-latitude = 0.0
-longitude = -0.0
+wayland_info = true

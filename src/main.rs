@@ -20,6 +20,7 @@ mod unit;
 mod pixbuf;
 mod timeout;
 mod broadcast;
+mod config;
 
 use std::{cell::RefCell, collections::HashMap};
 use std::sync::{LazyLock, Mutex, OnceLock};
@@ -52,10 +53,13 @@ thread_local! {
 
 #[derive(Debug, Clone)]
 pub struct GrayMeadowsGlobal {
+    #[allow(dead_code)]
+    config: config::Config,
     game_mode: Mutable<bool>,
 }
 
 pub static APP: LazyLock<GrayMeadowsGlobal> = LazyLock::new(|| GrayMeadowsGlobal {
+    config: config::read().expect("Failed to read configuration"),
     game_mode: Mutable::new(false),
 });
 
