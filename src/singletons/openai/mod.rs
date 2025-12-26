@@ -45,6 +45,10 @@ fn make_client() -> Client<OpenAIConfig> {
 }
 
 pub fn activate() {
+    if !APP.config.ai.enabled || APP.config.ai.api_key.is_empty() {
+        return;
+    }
+
     let session = AISession {
         client: make_client(),
         messages: Arc::new(RwLock::new(vec![
