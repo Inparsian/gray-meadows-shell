@@ -199,7 +199,7 @@ pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'st
     })
 }
 
-async fn start_request_cycle() {
+pub async fn start_request_cycle() {
     loop {
         match make_request().await {
             Ok(should_request_again) if !should_request_again => break,
