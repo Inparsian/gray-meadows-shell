@@ -21,13 +21,11 @@ mod pixbuf;
 mod timeout;
 mod broadcast;
 
-use std::{cell::RefCell, collections::HashMap, path::Path};
+use std::{cell::RefCell, collections::HashMap};
 use std::sync::{LazyLock, Mutex, OnceLock};
 use futures_signals::signal::Mutable;
 use gtk4::prelude::*;
 use libadwaita::Application;
-use notify::{EventKind, Watcher as _};
-use notify::event::{AccessKind, AccessMode};
 use sqlite::Connection;
 
 use crate::widgets::{bar, windows::{self, GmsWindow}};
@@ -62,69 +60,6 @@ pub static APP: LazyLock<GrayMeadowsGlobal> = LazyLock::new(|| GrayMeadowsGlobal
 });
 
 pub static SQL_CONNECTION: OnceLock<Mutex<Connection>> = OnceLock::new();
-
-pub fn bundle_apply_scss() {
-    gtk4::glib::MainContext::default().invoke(|| {
-        let styles_path = filesystem::get_styles_directory();
-        
-        // Run sass
-        let output = std::process::Command::new("sass")
-            .arg(format!("-I {}", styles_path))
-            .arg(format!("{}/main.scss", styles_path))
-            .arg(format!("{}/output.css", styles_path))
-            .output()
-            .expect("Failed to run sass command");
-        
-        if !output.status.success() {
-            eprintln!("Error running sass: {}", String::from_utf8_lossy(&output.stderr));
-            return;
-        }
-    
-        // Load the generated CSS into the provider
-        let css = std::fs::read_to_string(format!("{}/output.css", styles_path))
-            .expect("Failed to read output.css");
-
-        APP_LOCAL.with(|app| app.borrow().provider.load_from_data(&css));
-        
-        // Refresh SCSS variables
-        scss::refresh_variables();
-    });
-}
-
-fn watch_scss() {
-    tokio::spawn(async move {
-        let (tx, rx) = std::sync::mpsc::channel();
-        let styles_path = filesystem::get_styles_directory();
-
-        let mut watcher = notify::recommended_watcher(tx).unwrap();
-        let result = watcher.watch(
-            Path::new(&styles_path),
-            notify::RecursiveMode::Recursive,
-        );
-
-        if result.is_ok() {
-            println!("Watching styles directory: {}", styles_path);
-
-            for res in rx {
-                match res {
-                    Ok(event) => {
-                        // If the event kind is Access(Close(Write)), it means the file is done being written to
-                        if event.paths.iter().any(|p| p.extension() == Some("scss".as_ref()) && matches!(event.kind, EventKind::Access(AccessKind::Close(AccessMode::Write)))) {
-                            println!("Styles changed: {:?}", event.paths);
-                            bundle_apply_scss();
-                        }
-                    },
-
-                    Err(e) => {
-                        eprintln!("Error watching styles directory: {}", e);
-                    }
-                }
-            }
-        } else {
-            eprintln!("Failed to watch styles directory: {}", result.unwrap_err());
-        }
-    });
-}
 
 fn activate(application: &Application) {
     let keybinds_osd = widgets::osd::imp::keybinds::KeybindsOsd::default();
@@ -208,8 +143,8 @@ async fn main() {
                 });
             }
 
-            bundle_apply_scss();
-            watch_scss();
+            scss::bundle_apply_scss();
+            scss::watch_scss();
 
             singletons::activate_all();
             windows::listen_for_ipc_messages();
