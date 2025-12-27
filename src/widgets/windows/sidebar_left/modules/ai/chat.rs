@@ -1,6 +1,9 @@
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::path::Path;
 use gtk4::prelude::*;
+
+use crate::filesystem;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ChatRole {
@@ -25,13 +28,33 @@ impl ChatMessage {
         let sender_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
         sender_box.set_css_classes(&["ai-chat-message-sender"]);
 
-        let sender_icon = match role {
-            ChatRole::User => gtk4::Label::new(Some("person")),
-            ChatRole::Assistant => gtk4::Label::new(Some("robot")),
+        let sender_icon: gtk4::Widget = match role {
+            ChatRole::User => {
+                let face_path = format!("{}/.face", filesystem::get_home_directory());
+                if Path::new(&face_path).exists() {
+                    let sender_face = gtk4::Image::new();
+                    sender_face.set_css_classes(&["ai-chat-message-sender-icon"]);
+                    sender_face.set_pixel_size(24);
+                    sender_face.set_halign(gtk4::Align::Start);
+                    sender_face.set_from_file(Some(face_path));
+                    sender_face.upcast()
+                } else {
+                    let sender_mui_icon = gtk4::Label::new(Some("person"));
+                    sender_mui_icon.set_css_classes(&["ai-chat-message-sender-mui-icon"]);
+                    sender_mui_icon.set_halign(gtk4::Align::Start);
+                    sender_mui_icon.set_xalign(0.0);
+                    sender_mui_icon.upcast()
+                }
+            },
+            
+            ChatRole::Assistant => {
+                let sender_mui_icon = gtk4::Label::new(Some("robot"));
+                sender_mui_icon.set_css_classes(&["ai-chat-message-sender-mui-icon"]);
+                sender_mui_icon.set_halign(gtk4::Align::Start);
+                sender_mui_icon.set_xalign(0.0);
+                sender_mui_icon.upcast()
+            },
         };
-        sender_icon.set_css_classes(&["ai-chat-message-sender-icon"]);
-        sender_icon.set_halign(gtk4::Align::Start);
-        sender_icon.set_xalign(0.0);
 
         let sender_label = gtk4::Label::new(Some(match role {
             ChatRole::User => "You",

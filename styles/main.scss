@@ -281,9 +281,15 @@
                     margin-bottom: 8px;
 
                     .ai-chat-message-sender-icon {
+                        background: $background-color-secondary;
+                        border: 1px solid $background-color-tertiary;
+                        margin-right: 8px;
+                    }
+
+                    .ai-chat-message-sender-mui-icon {
                         @include material-icons;
-                        font-size: 20px;
-                        margin-right: 6px;
+                        font-size: 24px;
+                        margin-right: 8px;
                     }
 
                     .ai-chat-message-sender-label {
