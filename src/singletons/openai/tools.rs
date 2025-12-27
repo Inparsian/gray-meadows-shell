@@ -3,6 +3,7 @@ use async_openai::error::OpenAIError;
 use async_openai::types::chat::{ChatCompletionTools, ChatCompletionTool, FunctionObjectArgs};
 
 use crate::APP;
+use crate::session::SessionAction;
 
 pub fn get_tools() -> Result<Vec<ChatCompletionTools>, OpenAIError> {
     let mut tools = vec![];
@@ -144,18 +145,22 @@ pub fn call_tool(name: &str, args: &str) -> serde_json::Value {
                     args.get("action").and_then(|v| v.as_str()).map_or_else(|| json!({
                         "success": false,
                         "error": "Missing 'action' parameter"
-                    }), |action| match action {
-                        "lock" |
-                        "logout" |
-                        "suspend" |
-                        "hibernate" |
-                        "reboot" |
-                        "shutdown" => success,
+                    }), |action| {
+                        match action {
+                            "lock" => SessionAction::Lock.run(),
+                            "logout" => SessionAction::Logout.run(),
+                            "suspend" => SessionAction::Suspend.run(),
+                            "hibernate" => SessionAction::Hibernate.run(),
+                            "reboot" => SessionAction::Reboot.run(),
+                            "shutdown" => SessionAction::Shutdown.run(),
 
-                        _ => json!({
-                            "success": false,
-                            "error": format!("Invalid action: {}", action)
-                        }),
+                            _ => return json!({
+                                "success": false,
+                                "error": format!("Invalid action: {}", action)
+                            }),
+                        }
+
+                        success
                     })
                 }
                 
