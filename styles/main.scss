@@ -304,6 +304,23 @@
                         border: 1px solid $background-color-quaternary;
                     }
                 }
+
+                .ai-chat-message-tool-call {
+                    margin-top: 12px;
+                    padding: 12px;
+                    background: $background-color-primary;
+                    border: 1px solid $border-color-primary;
+
+                    .ai-chat-message-tool-call-name {
+                        @include large-text;
+                        margin-bottom: 6px;
+                    }
+
+                    .ai-chat-message-tool-call-arguments {
+                        @include normal-text;
+                        color: $foreground-color-secondary;
+                    }
+                }
             }
 
             .ai-chat-input {

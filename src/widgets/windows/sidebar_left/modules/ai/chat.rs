@@ -13,6 +13,7 @@ pub struct ChatMessage {
     pub content: String,
     pub root: gtk4::Box,
     pub markdown: gtk4cmark::view::MarkdownView,
+    pub footer: gtk4::Box,
 }
 
 impl ChatMessage {
@@ -50,13 +51,20 @@ impl ChatMessage {
         markdown.set_vexpand(true);
         markdown.set_hexpand(true);
 
+        // This will start out with empty content, to be filled in later
+        let footer = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        footer.set_css_classes(&["ai-chat-message-footer"]);
+        footer.set_valign(gtk4::Align::End);
+
         root.append(&sender_box);
         root.append(&markdown);
+        root.append(&footer);
 
         Self {
             content,
             root,
             markdown,
+            footer,
         }
     }
 
@@ -89,5 +97,28 @@ impl Chat {
     pub fn add_message(&self, message: ChatMessage) {
         self.root.append(&message.root);
         self.messages.borrow_mut().push(message);
+    }
+
+    pub fn append_tool_call_to_latest_message(&self, tool_name: &str, arguments: &str) {
+        let mut messages = self.messages.borrow_mut();
+        if let Some(latest_message) = messages.last_mut() {
+            let tool_call_box = gtk4::Box::new(gtk4::Orientation::Vertical, 4);
+            tool_call_box.set_css_classes(&["ai-chat-message-tool-call"]);
+
+            let tool_name_label = gtk4::Label::new(Some(tool_name));
+            tool_name_label.set_css_classes(&["ai-chat-message-tool-call-name"]);
+            tool_name_label.set_halign(gtk4::Align::Start);
+            tool_name_label.set_xalign(0.0);
+
+            let arguments_label = gtk4::Label::new(Some(arguments));
+            arguments_label.set_css_classes(&["ai-chat-message-tool-call-arguments"]);
+            arguments_label.set_halign(gtk4::Align::Start);
+            arguments_label.set_xalign(0.0);
+
+            tool_call_box.append(&tool_name_label);
+            tool_call_box.append(&arguments_label);
+
+            latest_message.footer.append(&tool_call_box);
+        }
     }
 }

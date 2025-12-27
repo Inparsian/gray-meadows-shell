@@ -61,6 +61,10 @@ pub fn new() -> gtk4::Box {
                         }
                     },
 
+                    openai::AIChannelMessage::ToolCall(tool_name, arguments) => {
+                        chat.append_tool_call_to_latest_message(&tool_name, &arguments);
+                    },
+
                     _ => {},
                 }
             }

@@ -29,7 +29,8 @@ pub static SESSION: OnceLock<AISession> = OnceLock::new();
 pub enum AIChannelMessage {
     StreamStart,
     StreamChunk(String),
-    StreamComplete(ChatCompletionRequestMessage)
+    StreamComplete(ChatCompletionRequestMessage),
+    ToolCall(String, String), // (tool name, arguments)
 }
 
 pub struct AISession {
@@ -141,6 +142,10 @@ pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'st
                         });
 
                         execution_handles.push(handle);
+                        channel.send(AIChannelMessage::ToolCall(
+                            tool_call.function.name.clone(),
+                            tool_call.function.arguments.clone(),
+                        )).await;
                     }
                 }
             }
