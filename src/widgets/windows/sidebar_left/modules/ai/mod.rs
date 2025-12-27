@@ -29,7 +29,7 @@ pub fn new() -> gtk4::Box {
             }
 
             chat.add_message(chat::ChatMessage::new(
-                chat::ChatRole::User,
+                &chat::ChatRole::User,
                 text.clone(),
             ));
 
@@ -49,7 +49,7 @@ pub fn new() -> gtk4::Box {
                 match message {
                     openai::AIChannelMessage::StreamStart => {
                         chat.add_message(chat::ChatMessage::new(
-                            chat::ChatRole::Assistant,
+                            &chat::ChatRole::Assistant,
                             String::new()
                         ));
                     },

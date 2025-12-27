@@ -17,6 +17,14 @@ impl PlaybackStatus {
             _ => PlaybackStatus::Stopped
         }
     }
+
+    pub fn as_string(self) -> String {
+        match self {
+            PlaybackStatus::Playing => "Playing".to_owned(),
+            PlaybackStatus::Paused => "Paused".to_owned(),
+            PlaybackStatus::Stopped => "Stopped".to_owned(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -312,7 +320,6 @@ impl MprisPlayer {
         result
     }
 
-    #[allow(dead_code)]
     pub fn previous(&mut self) -> Result<Message, Error> {
         if !self.can_go_previous {
             return Err(Error::new_failed("Cannot go to previous track, player does not support it"));
@@ -328,7 +335,6 @@ impl MprisPlayer {
         result
     }
 
-    #[allow(dead_code)]
     pub fn play(&self) -> Result<Message, Error> {
         if !self.can_play {
             return Err(Error::new_failed("Cannot play, player does not support it"));
@@ -337,7 +343,6 @@ impl MprisPlayer {
         mpris_dbus::run_dbus_method(self, "Play")
     }
 
-    #[allow(dead_code)]
     pub fn pause(&self) -> Result<Message, Error> {
         if !self.can_pause {
             return Err(Error::new_failed("Cannot pause, player does not support it"));
@@ -354,7 +359,6 @@ impl MprisPlayer {
         mpris_dbus::run_dbus_method(self, "PlayPause")
     }
 
-    #[allow(dead_code)]
     pub fn stop(&self) -> Result<Message, Error> {
         if !self.can_control {
             return Err(Error::new_failed("Cannot stop, player does not support it"));

@@ -10,14 +10,13 @@ pub enum ChatRole {
 
 #[derive(Debug, Clone)]
 pub struct ChatMessage {
-    pub role: ChatRole,
     pub content: String,
     pub root: gtk4::Box,
     pub markdown: gtk4cmark::view::MarkdownView,
 }
 
 impl ChatMessage {
-    pub fn new(role: ChatRole, content: String) -> Self {
+    pub fn new(role: &ChatRole, content: String) -> Self {
         let root = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
         root.set_css_classes(&["ai-chat-message"]);
         root.set_valign(gtk4::Align::Start);
@@ -55,7 +54,6 @@ impl ChatMessage {
         root.append(&markdown);
 
         Self {
-            role,
             content,
             root,
             markdown,
