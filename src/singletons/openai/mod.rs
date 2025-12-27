@@ -31,6 +31,8 @@ pub enum AIChannelMessage {
     StreamChunk(String),
     StreamComplete(ChatCompletionRequestMessage),
     ToolCall(String, String), // (tool name, arguments)
+    CycleStarted,
+    CycleFinished,
 }
 
 pub struct AISession {
@@ -205,6 +207,10 @@ pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'st
 }
 
 pub async fn start_request_cycle() {
+    if let Some(channel) = CHANNEL.get() {
+        channel.send(AIChannelMessage::CycleStarted).await;
+    }
+
     loop {
         match make_request().await {
             Ok(should_request_again) if !should_request_again => break,
@@ -214,6 +220,10 @@ pub async fn start_request_cycle() {
                 break;
             }
         }
+    }
+
+    if let Some(channel) = CHANNEL.get() {
+        channel.send(AIChannelMessage::CycleFinished).await;
     }
 }
 

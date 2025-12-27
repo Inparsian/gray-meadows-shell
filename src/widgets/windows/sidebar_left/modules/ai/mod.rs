@@ -1,10 +1,13 @@
 mod chat;
 
+use std::rc::Rc;
+use std::cell::RefCell;
 use gtk4::prelude::*;
 
 use crate::singletons::openai;
 
 pub fn new() -> gtk4::Box {
+    let blocked = Rc::new(RefCell::new(false));
     let widget = gtk4::Box::new(gtk4::Orientation::Vertical, 4);
     widget.set_css_classes(&["AiChat"]);
 
@@ -22,9 +25,10 @@ pub fn new() -> gtk4::Box {
     input.set_hexpand(true);
     input.connect_activate({
         let chat = chat.clone();
+        let blocked = blocked.clone();
         move |entry| {
             let text = entry.text().to_string();
-            if text.is_empty() {
+            if text.is_empty() || *blocked.borrow() {
                 return;
             }
 
@@ -43,29 +47,41 @@ pub fn new() -> gtk4::Box {
     if let Some(channel) = openai::CHANNEL.get() {
         let mut receiver = channel.subscribe();
 
-        gtk4::glib::spawn_future_local(async move {
-            let chat = chat.clone();
-            while let Ok(message) = receiver.recv().await {
-                match message {
-                    openai::AIChannelMessage::StreamStart => {
-                        chat.add_message(chat::ChatMessage::new(
-                            &chat::ChatRole::Assistant,
-                            String::new()
-                        ));
-                    },
+        gtk4::glib::spawn_future_local({
+            let input = input.clone();
+            async move {
+                while let Ok(message) = receiver.recv().await {
+                    match message {
+                        openai::AIChannelMessage::CycleStarted => {
+                            input.set_editable(false);
+                            *blocked.borrow_mut() = true;
+                        },
 
-                    openai::AIChannelMessage::StreamChunk(chunk) => {
-                        if let Some(latest_message) = chat.messages.borrow_mut().last_mut() {
-                            let new_content = format!("{}{}", latest_message.content, chunk);
-                            latest_message.set_content(&new_content);
-                        }
-                    },
+                        openai::AIChannelMessage::CycleFinished => {
+                            input.set_editable(true);
+                            *blocked.borrow_mut() = false;
+                        },
 
-                    openai::AIChannelMessage::ToolCall(tool_name, arguments) => {
-                        chat.append_tool_call_to_latest_message(&tool_name, &arguments);
-                    },
+                        openai::AIChannelMessage::StreamStart => {
+                            chat.add_message(chat::ChatMessage::new(
+                                &chat::ChatRole::Assistant,
+                                String::new()
+                            ));
+                        },
 
-                    _ => {},
+                        openai::AIChannelMessage::StreamChunk(chunk) => {
+                            if let Some(latest_message) = chat.messages.borrow_mut().last_mut() {
+                                let new_content = format!("{}{}", latest_message.content, chunk);
+                                latest_message.set_content(&new_content);
+                            }
+                        },
+
+                        openai::AIChannelMessage::ToolCall(tool_name, arguments) => {
+                            chat.append_tool_call_to_latest_message(&tool_name, &arguments);
+                        },
+
+                        _ => {},
+                    }
                 }
             }
         });
