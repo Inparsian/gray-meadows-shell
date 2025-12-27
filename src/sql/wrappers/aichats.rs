@@ -35,13 +35,14 @@ pub fn ensure_default_conversation() -> Result<(), Box<dyn std::error::Error>> {
                 ))?;
             }
         }
-        return Ok(());
+        Ok(())
+    } else {
+        Err("No database connection available".into())
     }
-    Err("No database connection available".into())
 }
 
-/// Adds a message to the specified AI chat conversation.
-pub fn add_message(message: &SqlAiConversationMessage) -> Result<(), Box<dyn std::error::Error>> {
+/// Adds a message to the specified AI chat conversation and returns its new ID.
+pub fn add_message(message: &SqlAiConversationMessage) -> Result<i64, Box<dyn std::error::Error>> {
     if let Some(connection) = SQL_CONNECTION.get() {
         let connection = connection.lock()?;
         let statement = format!(
@@ -55,9 +56,16 @@ pub fn add_message(message: &SqlAiConversationMessage) -> Result<(), Box<dyn std
             message.tool_call_arguments.as_ref().map_or_else(|| "NULL".to_owned(), |args| format!("'{}'", args.replace('\'', "''")))
         );
         connection.execute(&statement)?;
-        return Ok(());
+        let mut cursor = connection.prepare("SELECT last_insert_rowid()")?;
+        let new_id = if cursor.next()? == sqlite::State::Row {
+            cursor.read::<i64, _>(0)?
+        } else {
+            0
+        };
+        Ok(new_id)
+    } else {
+        Err("No database connection available".into())
     }
-    Err("No database connection available".into())
 }
 
 /// Removes messages down to the specified message ID in a conversation.
@@ -69,9 +77,10 @@ pub fn trim_messages(conversation_id: i64, down_to_message_id: i64) -> Result<()
             conversation_id, down_to_message_id
         );
         connection.execute(&statement)?;
-        return Ok(());
+        Ok(())
+    } else {
+        Err("No database connection available".into())
     }
-    Err("No database connection available".into())
 }
 
 /// Retrieves information about an AI chat conversation by its ID.
@@ -91,6 +100,7 @@ pub fn get_conversation(conversation_id: i64) -> Result<SqlAiConversation, Box<d
             return Ok(conversation);
         }
     }
+
     Err("Conversation not found".into())
 }
 
@@ -117,7 +127,8 @@ pub fn get_messages(conversation_id: i64) -> Result<Vec<SqlAiConversationMessage
             };
             messages.push(message);
         }
-        return Ok(messages);
+        Ok(messages)
+    } else {
+        Err("No database connection available".into())
     }
-    Err("No database connection available".into())
 }

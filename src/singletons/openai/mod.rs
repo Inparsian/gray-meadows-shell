@@ -33,7 +33,7 @@ pub static SESSION: OnceLock<AISession> = OnceLock::new();
 pub enum AIChannelMessage {
     StreamStart,
     StreamChunk(String),
-    StreamComplete,
+    StreamComplete(i64), // message ID
     ToolCall(String, String), // (tool name, arguments)
     CycleStarted,
     CycleFinished,
@@ -46,18 +46,6 @@ pub struct AISession {
     pub conversation: Arc<RwLock<Option<SqlAiConversation>>>,
     pub messages: Arc<RwLock<HashMap<i64, ChatCompletionRequestMessage>>>,
     pub currently_in_cycle: Arc<RwLock<bool>>,
-}
-
-pub fn get_highest_indice() -> i64 {
-    if let Some(session) = SESSION.get() {
-        let messages = session.messages.read().unwrap();
-        if messages.is_empty() {
-            return -1;
-        }
-        *messages.keys().max().unwrap()
-    } else {
-        -1
-    }
 }
 
 pub fn get_sorted_messages() -> Vec<(i64, ChatCompletionRequestMessage)> {
@@ -82,23 +70,28 @@ fn make_client() -> Client<OpenAIConfig> {
     Client::with_config(config)
 }
 
-fn write_message(msg: &ChatCompletionRequestMessage) {
+fn write_message(msg: &ChatCompletionRequestMessage) -> i64 {
     let Some(session) = SESSION.get() else {
         eprintln!("AI session not initialized");
-        return;
+        return 0;
     };
-
-    let highest_indice = get_highest_indice();
-    session.messages.write().unwrap().insert(highest_indice + 1, msg.clone());
 
     let Some(conversation) = &*session.conversation.read().unwrap() else {
         eprintln!("AI conversation not initialized");
-        return;
+        return 0;
     };
 
     let sql_message = sql::chat_message_to_sql_message(msg, conversation.id);
-    if let Err(err) = aichats::add_message(&sql_message) {
-        eprintln!("Failed to save AI message to database: {}", err);
+    match aichats::add_message(&sql_message) {
+        Ok(id) => {
+            session.messages.write().unwrap().insert(id, msg.clone());
+            id
+        },
+
+        Err(err) => {
+            eprintln!("Failed to save AI message to database: {}", err);
+            0
+        },
     }
 }
 
@@ -329,8 +322,8 @@ pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'st
                 ..Default::default()
             }.into();
             
-            write_message(&message);
-            channel.send(AIChannelMessage::StreamComplete).await;
+            let id = write_message(&message);
+            channel.send(AIChannelMessage::StreamComplete(id)).await;
 
             for (tool_call_id, response) in tool_responses {
                 write_message(&ChatCompletionRequestToolMessage {
@@ -349,8 +342,8 @@ pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'st
             }.into();
 
             // We're done
-            channel.send(AIChannelMessage::StreamComplete).await;
-            write_message(&message);
+            let id = write_message(&message);
+            channel.send(AIChannelMessage::StreamComplete(id)).await;
 
             Ok(false)
         }
@@ -395,11 +388,11 @@ pub async fn start_request_cycle() {
     }
 }
 
-pub fn send_user_message(message: &str) {
+pub fn send_user_message(message: &str) -> i64 {
     if SESSION.get().is_none() {
         eprintln!("AI session not initialized");
-        return;
+        return 0;
     }
 
-    write_message(&ChatCompletionRequestUserMessage::from(message).into());
+    write_message(&ChatCompletionRequestUserMessage::from(message).into())
 }

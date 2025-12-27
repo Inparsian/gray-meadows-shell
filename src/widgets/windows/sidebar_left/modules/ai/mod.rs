@@ -56,12 +56,12 @@ pub fn new() -> gtk4::Box {
                 return;
             }
 
-            openai::send_user_message(&text);
+            let id = openai::send_user_message(&text);
             let message = chat::ChatMessage::new(
                 &chat::ChatRole::User,
                 text,
             );
-            message.set_id(openai::get_highest_indice() + 1);
+            message.set_id(id);
             chat.add_message(message);
             scroll_to_bottom();
 
@@ -145,9 +145,9 @@ pub fn new() -> gtk4::Box {
                         }
                     },
 
-                    openai::AIChannelMessage::StreamComplete => {
+                    openai::AIChannelMessage::StreamComplete(id) => {
                         if let Some(latest_message) = chat.messages.borrow_mut().last_mut() {
-                            latest_message.set_id(openai::get_highest_indice() + 1);
+                            latest_message.set_id(id);
                         }
                     },
 
