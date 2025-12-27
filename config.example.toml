@@ -8,6 +8,12 @@ api_key = "your-api-key-here"
 # The model to use for AI tasks.
 model = "gpt-4.1"
 
+# The service tier to use for AI tasks.
+# "flex" provides lower costs, in exchange for slower response times and occasional unavailability.
+# "default" is the default tier with the standard latency and cost.
+# "priority" gives significantly lower and more consistent latency, at a higher cost.
+service_tier = "default"
+
 # The prompt to use for AI interactions.
 prompt = "You are a helpful AI assistant running on a sidebar in a Linux desktop environment."
 

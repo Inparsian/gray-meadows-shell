@@ -8,13 +8,15 @@ use super::popup::{PopupWindow, PopupMargin, PopupOptions};
 
 pub fn new(application: &libadwaita::Application) -> PopupWindow {
     let tabs = Tabs::new(TabSize::Large, true);
-    tabs.current_tab.set(Some("color_picker".to_owned()));
+    tabs.current_tab.set(Some("ai".to_owned()));
     tabs.add_tab("translate", "translate".to_owned(), Some("g_translate"));
     tabs.add_tab("color picker", "color_picker".to_owned(), Some("palette"));
+    tabs.add_tab("ai", "ai".to_owned(), Some("chat"));
 
     let tabs_stack = TabsStack::new(&tabs, None);
     tabs_stack.add_tab(Some("translate"), &modules::translate::new());
     tabs_stack.add_tab(Some("color_picker"), &modules::color_picker::new());
+    tabs_stack.add_tab(Some("ai"), &modules::ai::new());
 
     view! {
         left_sidebar_box = gtk4::Box {

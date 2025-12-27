@@ -21,6 +21,7 @@ mod pixbuf;
 mod timeout;
 mod broadcast;
 mod config;
+mod session;
 
 use std::{cell::RefCell, collections::HashMap};
 use std::sync::{LazyLock, Mutex, OnceLock};

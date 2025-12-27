@@ -1,22 +1,17 @@
 use gtk4::prelude::*;
 
+use crate::session::SessionAction;
 use super::super::windows::{self, fullscreen::FullscreenWindow};
 
-pub fn session_button(icon: &str, command: &str) -> gtk4::Button {
+pub fn session_button(icon: &str, action: SessionAction) -> gtk4::Button {
     let icon = icon.to_owned();
-    let command = command.to_owned();
 
     let button = gtk4::Button::new();
     button.set_valign(gtk4::Align::Center);
     button.set_css_classes(&["session-button"]);
     button.connect_clicked(move |_| {
         windows::hide("session");
-
-        std::process::Command::new("bash")
-            .arg("-c")
-            .arg(&command)
-            .output()
-            .expect("Failed to execute command");
+        action.run();
     });
 
     let label = gtk4::Label::new(Some(&icon));
@@ -27,12 +22,12 @@ pub fn session_button(icon: &str, command: &str) -> gtk4::Button {
 }
 
 pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
-    let lock_button = session_button("lock", "loginctl lock-session");
-    let logout_button = session_button("logout", "pkill Hyprland || loginctl terminate-user $USER");
-    let suspend_button = session_button("remove_circle_outline", "systemctl suspend || loginctl suspend");
-    let hibernate_button = session_button("mode_standby", "systemctl hibernate || loginctl hibernate");
-    let reboot_button = session_button("restart_alt", "systemctl reboot || loginctl reboot");
-    let shutdown_button = session_button("power_settings_new", "systemctl poweroff || loginctl poweroff");
+    let lock_button = session_button("lock", SessionAction::Lock);
+    let logout_button = session_button("logout", SessionAction::Logout);
+    let suspend_button = session_button("remove_circle_outline", SessionAction::Suspend);
+    let hibernate_button = session_button("mode_standby", SessionAction::Hibernate);
+    let reboot_button = session_button("restart_alt", SessionAction::Reboot);
+    let shutdown_button = session_button("power_settings_new", SessionAction::Shutdown);
 
     view! {
         session_box = gtk4::Box {
