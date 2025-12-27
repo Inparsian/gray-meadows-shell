@@ -4,8 +4,8 @@ use async_openai::types::chat::{ChatCompletionTools, ChatCompletionTool, Functio
 
 use crate::APP;
 use crate::session::SessionAction;
-use crate::singletons::mpris;
-use crate::singletons::mpris::mpris_player::LoopStatus;
+use crate::singletons::hyprland::HYPRLAND;
+use crate::singletons::mpris::{self, mpris_player::LoopStatus};
 
 pub fn get_tools() -> Result<Vec<ChatCompletionTools>, OpenAIError> {
     let mut tools = vec![];
@@ -302,12 +302,37 @@ pub fn call_tool(name: &str, args: &str) -> serde_json::Value {
             }
         },
 
-        "get_focused_wayland_window" => json!({
-            "success": true,
-            "class": "example_app",
-            "title": "Example Application",
-            "workspace": 1
-        }),
+        "get_focused_wayland_window" => {
+            let Some(workspace) = HYPRLAND.active_workspace.get_cloned() else {
+                return json!({
+                    "success": false,
+                    "error": "Could not get active workspace"
+                });
+            };
+
+            let active_window = if let Some(client) = HYPRLAND.active_client.get_cloned() {
+                Some(json!({
+                    "title": client.title,
+                    "class": client.class,
+                    "pid": client.pid,
+                    "monitor_id": client.monitor,
+                }))
+            } else {
+                None
+            };
+
+            json!({
+                "success": true,
+                "active_window": active_window,
+                "workspace": {
+                    "id": workspace.id,
+                    "name": workspace.name,
+                    "monitor": workspace.monitor,
+                    "monitor_id": workspace.monitor_id,
+                    "windows": workspace.windows
+                }
+            })
+        },
 
         "get_current_datetime" => {
             let now = chrono::Local::now();
