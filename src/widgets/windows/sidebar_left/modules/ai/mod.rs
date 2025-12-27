@@ -2,6 +2,7 @@ mod chat;
 
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::time::Duration;
 use gtk4::prelude::*;
 
 use crate::singletons::openai;
@@ -19,12 +20,23 @@ pub fn new() -> gtk4::Box {
     chat_window.set_child(Some(&chat.root));
     widget.append(&chat_window);
 
+    let scroll_to_bottom = move || {
+        gtk4::glib::timeout_add_local_once(Duration::from_millis(50), {
+            let chat_window = chat_window.clone();
+            move || {
+                let adjustment = chat_window.vadjustment();
+                adjustment.set_value(adjustment.upper() - adjustment.page_size());
+            }
+        });
+    };
+
     let input = gtk4::Entry::new();
     input.set_placeholder_text(Some("Type your message here..."));
     input.set_css_classes(&["ai-chat-input"]);
     input.set_hexpand(true);
     input.connect_activate({
         let chat = chat.clone();
+        let scroll_to_bottom = scroll_to_bottom.clone();
         let blocked = blocked.clone();
         move |entry| {
             let text = entry.text().to_string();
@@ -36,6 +48,7 @@ pub fn new() -> gtk4::Box {
                 &chat::ChatRole::User,
                 text.clone(),
             ));
+            scroll_to_bottom();
 
             openai::send_user_message(&text);
             tokio::spawn(openai::start_request_cycle());
@@ -47,42 +60,38 @@ pub fn new() -> gtk4::Box {
     if let Some(channel) = openai::CHANNEL.get() {
         let mut receiver = channel.subscribe();
 
-        gtk4::glib::spawn_future_local({
-            let input = input.clone();
-            async move {
-                while let Ok(message) = receiver.recv().await {
-                    match message {
-                        openai::AIChannelMessage::CycleStarted => {
-                            input.set_editable(false);
-                            *blocked.borrow_mut() = true;
-                        },
+        gtk4::glib::spawn_future_local(async move {
+            while let Ok(message) = receiver.recv().await {
+                match message {
+                    openai::AIChannelMessage::CycleStarted => {
+                        *blocked.borrow_mut() = true;
+                    },
 
-                        openai::AIChannelMessage::CycleFinished => {
-                            input.set_editable(true);
-                            *blocked.borrow_mut() = false;
-                        },
+                    openai::AIChannelMessage::CycleFinished => {
+                        *blocked.borrow_mut() = false;
+                    },
 
-                        openai::AIChannelMessage::StreamStart => {
-                            chat.add_message(chat::ChatMessage::new(
-                                &chat::ChatRole::Assistant,
-                                String::new()
-                            ));
-                        },
+                    openai::AIChannelMessage::StreamStart => {
+                        chat.add_message(chat::ChatMessage::new(
+                            &chat::ChatRole::Assistant,
+                            String::new()
+                        ));
+                    },
 
-                        openai::AIChannelMessage::StreamChunk(chunk) => {
-                            if let Some(latest_message) = chat.messages.borrow_mut().last_mut() {
-                                let new_content = format!("{}{}", latest_message.content, chunk);
-                                latest_message.set_content(&new_content);
-                            }
-                        },
+                    openai::AIChannelMessage::StreamChunk(chunk) => {
+                        if let Some(latest_message) = chat.messages.borrow_mut().last_mut() {
+                            let new_content = format!("{}{}", latest_message.content, chunk);
+                            latest_message.set_content(&new_content);
+                        }
+                    },
 
-                        openai::AIChannelMessage::ToolCall(tool_name, arguments) => {
-                            chat.append_tool_call_to_latest_message(&tool_name, &arguments);
-                        },
+                    openai::AIChannelMessage::ToolCall(tool_name, arguments) => {
+                        chat.append_tool_call_to_latest_message(&tool_name, &arguments);
+                    },
 
-                        _ => {},
-                    }
+                    _ => {},
                 }
+                scroll_to_bottom();
             }
         });
     }
