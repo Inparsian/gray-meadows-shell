@@ -18,6 +18,16 @@ pub fn new() -> gtk4::Box {
     let widget = gtk4::Box::new(gtk4::Orientation::Vertical, 4);
     widget.set_css_classes(&["AiChat"]);
 
+    let conversation_controls = gtk4::Box::new(gtk4::Orientation::Horizontal, 4);
+    conversation_controls.set_css_classes(&["ai-chat-conversation-controls"]);
+    widget.append(&conversation_controls);
+
+    let conversation_title = gtk4::Label::new(Some("Untitled"));
+    conversation_title.set_halign(gtk4::Align::Start);
+    conversation_title.set_xalign(0.0);
+    conversation_title.set_css_classes(&["ai-chat-conversation-title"]);
+    conversation_controls.append(&conversation_title);
+
     let chat = chat::Chat::default();
     let chat_window = gtk4::ScrolledWindow::new();
     chat_window.set_policy(gtk4::PolicyType::Automatic, gtk4::PolicyType::Automatic);
@@ -67,8 +77,56 @@ pub fn new() -> gtk4::Box {
         let mut receiver = channel.subscribe();
 
         gtk4::glib::spawn_future_local(async move {
+            let chat = chat.clone();
+            let conversation_title = conversation_title.clone();
             while let Ok(message) = receiver.recv().await {
                 match message {
+                    openai::AIChannelMessage::ConversationLoaded(conversation) => {
+                        chat.clear_messages();
+                        conversation_title.set_text(&conversation.title);
+
+                        let session = openai::SESSION.get().unwrap();
+
+                        for msg in session.messages.read().unwrap().iter() {
+                            match msg {
+                                ChatCompletionRequestMessage::User(msg) => {
+                                    chat.add_message(chat::ChatMessage::new(
+                                        &chat::ChatRole::User,
+                                        match &msg.content {
+                                            ChatCompletionRequestUserMessageContent::Text(str) => str.clone(),
+                                            _ => String::new(),
+                                        },
+                                    ));
+                                },
+
+                                ChatCompletionRequestMessage::Assistant(msg) => {
+                                    chat.add_message(chat::ChatMessage::new(
+                                        &chat::ChatRole::Assistant,
+                                        match &msg.content {
+                                            Some(ChatCompletionRequestAssistantMessageContent::Text(str)) => str.clone(),
+                                            _ => String::new(),
+                                        },
+                                    ));
+
+                                    // Append tool call info if present
+                                    if let Some(tool_calls) = &msg.tool_calls {
+                                        for tool_call in tool_calls {
+                                            if let ChatCompletionMessageToolCalls::Function(tool) = tool_call {
+                                                chat.append_tool_call_to_latest_message(
+                                                    &tool.function.name,
+                                                    &tool.function.arguments,
+                                                );
+                                            }
+                                        }
+                                    }
+                                },
+
+                                // System, tool, etc. messages are disregarded for chat display
+                                _ => {},
+                            }
+                        }
+                    },
+
                     openai::AIChannelMessage::CycleStarted => {
                         *blocked.borrow_mut() = true;
                     },
@@ -93,47 +151,6 @@ pub fn new() -> gtk4::Box {
 
                     openai::AIChannelMessage::ToolCall(tool_name, arguments) => {
                         chat.append_tool_call_to_latest_message(&tool_name, &arguments);
-                    },
-
-                    openai::AIChannelMessage::LoadMessage(msg) => {
-                        match msg {
-                            ChatCompletionRequestMessage::User(msg) => {
-                                chat.add_message(chat::ChatMessage::new(
-                                    &chat::ChatRole::User,
-                                    match &msg.content {
-                                        ChatCompletionRequestUserMessageContent::Text(str) => str.clone(),
-                                        _ => String::new(),
-                                    },
-                                ));
-                            },
-
-                            ChatCompletionRequestMessage::Assistant(msg) => {
-                                chat.add_message(chat::ChatMessage::new(
-                                    &chat::ChatRole::Assistant,
-                                    match &msg.content {
-                                        Some(ChatCompletionRequestAssistantMessageContent::Text(str)) => str.clone(),
-                                        _ => String::new(),
-                                    },
-                                ));
-
-                                // Append tool call info if present
-                                if let Some(tool_calls) = msg.tool_calls {
-                                    for tool_call in tool_calls {
-                                        if let ChatCompletionMessageToolCalls::Function(tool) = tool_call {
-                                            chat.append_tool_call_to_latest_message(
-                                                &tool.function.name,
-                                                &tool.function.arguments,
-                                            );
-                                        }
-                                    }
-                                }
-                            },
-
-                            // System, tool, etc. messages are disregarded for chat display
-                            _ => {},
-                        }
-
-                        scroll_to_bottom();
                     },
 
                     _ => {},

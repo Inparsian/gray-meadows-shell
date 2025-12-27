@@ -2,6 +2,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::path::Path;
 use gtk4::prelude::*;
+use relm4::RelmIterChildrenExt as _;
 
 use crate::filesystem;
 
@@ -117,6 +118,12 @@ impl Default for Chat {
 }
 
 impl Chat {
+    pub fn clear_messages(&self) {
+        self.root.iter_children().for_each(|child| {
+            self.root.remove(&child);
+        });
+    }
+
     pub fn add_message(&self, message: ChatMessage) {
         self.root.append(&message.root);
         self.messages.borrow_mut().push(message);

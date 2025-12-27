@@ -271,6 +271,13 @@
         }
 
         .AiChat {
+            .ai-chat-conversation-title {
+                @include large-text;
+                font-weight: 900;
+                margin-bottom: 12px;
+                color: $foreground-color-select;
+            }
+
             .ai-chat-message {
                 background: $background-color-secondary;
                 border: 1px solid $border-color-primary;

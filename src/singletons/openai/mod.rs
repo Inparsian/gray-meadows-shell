@@ -20,7 +20,7 @@ use async_openai::types::chat::{
     FinishReason,
 };
 
-use crate::sql::wrappers::aichats;
+use crate::sql::wrappers::aichats::{self, SqlAiConversation};
 use crate::{APP, broadcast::BroadcastChannel};
 
 pub static CHANNEL: OnceLock<BroadcastChannel<AIChannelMessage>> = OnceLock::new();
@@ -35,12 +35,12 @@ pub enum AIChannelMessage {
     ToolCall(String, String), // (tool name, arguments)
     CycleStarted,
     CycleFinished,
-    LoadMessage(ChatCompletionRequestMessage),
+    ConversationLoaded(SqlAiConversation),
 }
 
 pub struct AISession {
     pub client: Client<OpenAIConfig>,
-    pub conversation_id: Arc<RwLock<i64>>,
+    pub conversation: Arc<RwLock<Option<SqlAiConversation>>>,
     pub messages: Arc<RwLock<Vec<ChatCompletionRequestMessage>>>,
 }
 
@@ -59,8 +59,12 @@ fn write_message(msg: &ChatCompletionRequestMessage) {
 
     session.messages.write().unwrap().push(msg.clone());
 
-    let conversation_id = *session.conversation_id.read().unwrap();
-    let sql_message = sql::chat_message_to_sql_message(msg, conversation_id);
+    let Some(conversation) = &*session.conversation.read().unwrap() else {
+        eprintln!("AI conversation not initialized");
+        return;
+    };
+
+    let sql_message = sql::chat_message_to_sql_message(msg, conversation.id);
     if let Err(err) = aichats::add_message(&sql_message) {
         eprintln!("Failed to save AI message to database: {}", err);
     }
@@ -77,14 +81,47 @@ fn read_conversation(id: i64) -> Result<Vec<ChatCompletionRequestMessage>, Box<d
     Ok(chat_messages)
 }
 
+fn load_conversation(id: i64) {
+    if let Some(session) = SESSION.get() {
+        match read_conversation(id) {
+            Ok(messages) => {
+                let mut msgs = session.messages.write().unwrap();
+                *msgs = messages;
+
+                if let Some(channel) = CHANNEL.get() {
+                    let conversation = session.conversation.read().unwrap();
+
+                    channel.spawn_send(AIChannelMessage::ConversationLoaded(conversation.as_ref().unwrap().clone()));
+                }
+            },
+
+            Err(err) => {
+                eprintln!("Failed to load AI chat conversation from database: {}", err);
+            }
+        }
+    }
+}
+
 pub fn activate() {
     if !APP.config.ai.enabled || APP.config.ai.api_key.is_empty() {
         return;
     }
 
+    aichats::ensure_default_conversation().unwrap_or_else(|err| {
+        eprintln!("Failed to ensure default AI chat conversation: {}", err);
+    });
+
+    let conversation = match aichats::get_conversation(1) {
+        Ok(conv) => conv,
+        Err(err) => {
+            eprintln!("Failed to load default AI chat conversation: {}", err);
+            return;
+        }
+    };
+
     let session = AISession {
         client: make_client(),
-        conversation_id: Arc::new(RwLock::new(1)),
+        conversation: Arc::new(RwLock::new(Some(conversation))),
         messages: Arc::new(RwLock::new(vec![
             ChatCompletionRequestSystemMessage::from(APP.config.ai.prompt.as_str()).into()
         ])),
@@ -93,27 +130,13 @@ pub fn activate() {
     let _ = SESSION.set(session);
     let _ = CHANNEL.set(BroadcastChannel::new(100));
 
-    aichats::ensure_default_conversation().unwrap_or_else(|err| {
-        eprintln!("Failed to ensure default AI chat conversation: {}", err);
-    });
-
     if let Some(session) = SESSION.get() {
-        let conversation_id = *session.conversation_id.read().unwrap();
-        match read_conversation(conversation_id) {
-            Ok(messages) => {
-                let mut msgs = session.messages.write().unwrap();
-                *msgs = messages;
+        let Some(conversation) = &*session.conversation.read().unwrap() else {
+            eprintln!("AI conversation not initialized");
+            return;
+        };
 
-                if let Some(channel) = CHANNEL.get() {
-                    for msg in msgs.iter() {
-                        channel.spawn_send(AIChannelMessage::LoadMessage(msg.clone()));
-                    }
-                }
-            },
-            Err(err) => {
-                eprintln!("Failed to load AI chat conversation from database: {}", err);
-            }
-        }
+        load_conversation(conversation.id);
     }
 }
 
