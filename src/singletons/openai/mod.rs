@@ -19,6 +19,7 @@ use async_openai::types::chat::{
     ChatCompletionRequestUserMessage,
     CreateChatCompletionRequestArgs,
     FinishReason,
+    ServiceTier,
 };
 
 use crate::sql::wrappers::aichats::{self, SqlAiConversation};
@@ -223,6 +224,11 @@ pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'st
             .stream(true)
             .model(APP.config.ai.model.as_str())
             .messages(sorted_messages)
+            .service_tier(match APP.config.ai.service_tier.as_str() {
+                "flex" => ServiceTier::Flex,
+                "priority" => ServiceTier::Priority,
+                _ => ServiceTier::Default,
+            })
             .tools(tools::get_tools()?)
             .build()?;
 

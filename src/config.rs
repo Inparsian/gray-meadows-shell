@@ -19,6 +19,7 @@ pub struct AiConfig {
     pub enabled: bool,
     pub api_key: String,
     pub model: String,
+    pub service_tier: String,
     pub prompt: String,
     pub features: AiFeatures,
 }
@@ -35,6 +36,7 @@ impl Default for Config {
                 enabled: true,
                 api_key: "your-api-key-here".to_owned(),
                 model: "gpt-4.1".to_owned(),
+                service_tier: "default".to_owned(),
                 prompt: "You are a helpful AI assistant running on a sidebar in a Linux desktop environment.".to_owned(),
                 features: AiFeatures {
                     current_date_time: true,
