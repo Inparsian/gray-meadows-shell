@@ -24,6 +24,14 @@ pub fn ensure_default_conversation() -> Result<(), Box<dyn std::error::Error>> {
             let count = cursor.read::<i64, _>(0)?;
             if count == 0 {
                 connection.execute("INSERT INTO aichat_conversations (title) VALUES ('Default Conversation')")?;
+
+                // Insert our prompt
+                let prompt = crate::APP.config.ai.prompt.clone();
+                connection.execute(format!(
+                    "INSERT INTO aichat_messages (conversation_id, role, content) \
+                     VALUES (1, 'system', '{}')",
+                    prompt.replace('\'', "''")
+                ))?;
             }
         }
         return Ok(());
