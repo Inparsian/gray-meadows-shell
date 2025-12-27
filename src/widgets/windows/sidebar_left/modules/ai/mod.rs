@@ -4,6 +4,12 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::time::Duration;
 use gtk4::prelude::*;
+use async_openai::types::chat::{
+    ChatCompletionRequestMessage,
+    ChatCompletionRequestUserMessageContent,
+    ChatCompletionRequestAssistantMessageContent,
+    ChatCompletionMessageToolCalls,
+};
 
 use crate::singletons::openai;
 
@@ -87,6 +93,47 @@ pub fn new() -> gtk4::Box {
 
                     openai::AIChannelMessage::ToolCall(tool_name, arguments) => {
                         chat.append_tool_call_to_latest_message(&tool_name, &arguments);
+                    },
+
+                    openai::AIChannelMessage::LoadMessage(msg) => {
+                        match msg {
+                            ChatCompletionRequestMessage::User(msg) => {
+                                chat.add_message(chat::ChatMessage::new(
+                                    &chat::ChatRole::User,
+                                    match &msg.content {
+                                        ChatCompletionRequestUserMessageContent::Text(str) => str.clone(),
+                                        _ => String::new(),
+                                    },
+                                ));
+                            },
+
+                            ChatCompletionRequestMessage::Assistant(msg) => {
+                                chat.add_message(chat::ChatMessage::new(
+                                    &chat::ChatRole::Assistant,
+                                    match &msg.content {
+                                        Some(ChatCompletionRequestAssistantMessageContent::Text(str)) => str.clone(),
+                                        _ => String::new(),
+                                    },
+                                ));
+
+                                // Append tool call info if present
+                                if let Some(tool_calls) = msg.tool_calls {
+                                    for tool_call in tool_calls {
+                                        if let ChatCompletionMessageToolCalls::Function(tool) = tool_call {
+                                            chat.append_tool_call_to_latest_message(
+                                                &tool.function.name,
+                                                &tool.function.arguments,
+                                            );
+                                        }
+                                    }
+                                }
+                            },
+
+                            // System, tool, etc. messages are disregarded for chat display
+                            _ => {},
+                        }
+
+                        scroll_to_bottom();
                     },
 
                     _ => {},

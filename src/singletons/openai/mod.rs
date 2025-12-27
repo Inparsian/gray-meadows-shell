@@ -1,24 +1,26 @@
-#![allow(dead_code)]
 mod tools;
+mod sql;
 
 use std::pin::Pin;
+use std::error::Error;
 use std::sync::{Arc, OnceLock, RwLock};
 use futures_lite::stream::StreamExt as _;
 use async_openai::Client;
 use async_openai::config::OpenAIConfig;
 use async_openai::types::chat::{
+    ChatCompletionMessageToolCall,
     ChatCompletionMessageToolCalls,
     ChatCompletionRequestAssistantMessage,
     ChatCompletionRequestAssistantMessageContent,
     ChatCompletionRequestMessage,
+    ChatCompletionRequestSystemMessage,
     ChatCompletionRequestToolMessage,
     ChatCompletionRequestUserMessage,
-    ChatCompletionRequestSystemMessage,
-    ChatCompletionMessageToolCall,
     CreateChatCompletionRequestArgs,
-    FinishReason
+    FinishReason,
 };
 
+use crate::sql::wrappers::aichats;
 use crate::{APP, broadcast::BroadcastChannel};
 
 pub static CHANNEL: OnceLock<BroadcastChannel<AIChannelMessage>> = OnceLock::new();
@@ -29,14 +31,16 @@ pub static SESSION: OnceLock<AISession> = OnceLock::new();
 pub enum AIChannelMessage {
     StreamStart,
     StreamChunk(String),
-    StreamComplete(ChatCompletionRequestMessage),
+    StreamComplete,
     ToolCall(String, String), // (tool name, arguments)
     CycleStarted,
     CycleFinished,
+    LoadMessage(ChatCompletionRequestMessage),
 }
 
 pub struct AISession {
     pub client: Client<OpenAIConfig>,
+    pub conversation_id: Arc<RwLock<i64>>,
     pub messages: Arc<RwLock<Vec<ChatCompletionRequestMessage>>>,
 }
 
@@ -47,6 +51,32 @@ fn make_client() -> Client<OpenAIConfig> {
     Client::with_config(config)
 }
 
+fn write_message(msg: &ChatCompletionRequestMessage) {
+    let Some(session) = SESSION.get() else {
+        eprintln!("AI session not initialized");
+        return;
+    };
+
+    session.messages.write().unwrap().push(msg.clone());
+
+    let conversation_id = *session.conversation_id.read().unwrap();
+    let sql_message = sql::chat_message_to_sql_message(msg, conversation_id);
+    if let Err(err) = aichats::add_message(&sql_message) {
+        eprintln!("Failed to save AI message to database: {}", err);
+    }
+}
+
+fn read_conversation(id: i64) -> Result<Vec<ChatCompletionRequestMessage>, Box<dyn Error>> {
+    let sql_messages = aichats::get_messages(id)?;
+
+    let chat_messages: Vec<ChatCompletionRequestMessage> = sql_messages
+        .iter()
+        .map(sql::sql_message_to_chat_message)
+        .collect();
+
+    Ok(chat_messages)
+}
+
 pub fn activate() {
     if !APP.config.ai.enabled || APP.config.ai.api_key.is_empty() {
         return;
@@ -54,6 +84,7 @@ pub fn activate() {
 
     let session = AISession {
         client: make_client(),
+        conversation_id: Arc::new(RwLock::new(1)),
         messages: Arc::new(RwLock::new(vec![
             ChatCompletionRequestSystemMessage::from(APP.config.ai.prompt.as_str()).into()
         ])),
@@ -61,6 +92,29 @@ pub fn activate() {
 
     let _ = SESSION.set(session);
     let _ = CHANNEL.set(BroadcastChannel::new(100));
+
+    aichats::ensure_default_conversation().unwrap_or_else(|err| {
+        eprintln!("Failed to ensure default AI chat conversation: {}", err);
+    });
+
+    if let Some(session) = SESSION.get() {
+        let conversation_id = *session.conversation_id.read().unwrap();
+        match read_conversation(conversation_id) {
+            Ok(messages) => {
+                let mut msgs = session.messages.write().unwrap();
+                *msgs = messages;
+
+                if let Some(channel) = CHANNEL.get() {
+                    for msg in msgs.iter() {
+                        channel.spawn_send(AIChannelMessage::LoadMessage(msg.clone()));
+                    }
+                }
+            },
+            Err(err) => {
+                eprintln!("Failed to load AI chat conversation from database: {}", err);
+            }
+        }
+    }
 }
 
 pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'static + Send>> {
@@ -178,11 +232,11 @@ pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'st
                 ..Default::default()
             }.into();
             
-            channel.send(AIChannelMessage::StreamComplete(message.clone())).await;
-            session.messages.write().unwrap().push(message);
+            channel.send(AIChannelMessage::StreamComplete).await;
+            write_message(&message);
 
             for (tool_call_id, response) in tool_responses {
-                session.messages.write().unwrap().push(ChatCompletionRequestToolMessage {
+                write_message(&ChatCompletionRequestToolMessage {
                     content: response.to_string().into(),
                     tool_call_id,
                 }.into());
@@ -198,8 +252,8 @@ pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'st
             }.into();
 
             // We're done
-            channel.send(AIChannelMessage::StreamComplete(message.clone())).await;
-            session.messages.write().unwrap().push(message);
+            channel.send(AIChannelMessage::StreamComplete).await;
+            write_message(&message);
 
             Ok(false)
         }
@@ -228,10 +282,10 @@ pub async fn start_request_cycle() {
 }
 
 pub fn send_user_message(message: &str) {
-    let Some(session) = SESSION.get() else {
+    if SESSION.get().is_none() {
         eprintln!("AI session not initialized");
         return;
-    };
+    }
 
-    session.messages.write().unwrap().push(ChatCompletionRequestUserMessage::from(message).into());
+    write_message(&ChatCompletionRequestUserMessage::from(message).into());
 }
