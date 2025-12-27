@@ -1,7 +1,5 @@
 mod chat;
 
-use std::rc::Rc;
-use std::cell::RefCell;
 use std::time::Duration;
 use gtk4::prelude::*;
 use async_openai::types::chat::{
@@ -14,7 +12,6 @@ use async_openai::types::chat::{
 use crate::singletons::openai;
 
 pub fn new() -> gtk4::Box {
-    let blocked = Rc::new(RefCell::new(false));
     let widget = gtk4::Box::new(gtk4::Orientation::Vertical, 4);
     widget.set_css_classes(&["AiChat"]);
 
@@ -53,20 +50,21 @@ pub fn new() -> gtk4::Box {
     input.connect_activate({
         let chat = chat.clone();
         let scroll_to_bottom = scroll_to_bottom.clone();
-        let blocked = blocked.clone();
         move |entry| {
             let text = entry.text().to_string();
-            if text.is_empty() || *blocked.borrow() {
+            if text.is_empty() || openai::is_currently_in_cycle() {
                 return;
             }
 
-            chat.add_message(chat::ChatMessage::new(
+            openai::send_user_message(&text);
+            let message = chat::ChatMessage::new(
                 &chat::ChatRole::User,
-                text.clone(),
-            ));
+                text,
+            );
+            message.set_id(openai::get_highest_indice() + 1);
+            chat.add_message(message);
             scroll_to_bottom();
 
-            openai::send_user_message(&text);
             tokio::spawn(openai::start_request_cycle());
 
             entry.set_text("");
@@ -85,28 +83,30 @@ pub fn new() -> gtk4::Box {
                         chat.clear_messages();
                         conversation_title.set_text(&conversation.title);
 
-                        let session = openai::SESSION.get().unwrap();
-
-                        for msg in session.messages.read().unwrap().iter() {
+                        for (id, msg) in &openai::get_sorted_messages() {
                             match msg {
                                 ChatCompletionRequestMessage::User(msg) => {
-                                    chat.add_message(chat::ChatMessage::new(
+                                    let message = chat::ChatMessage::new(
                                         &chat::ChatRole::User,
                                         match &msg.content {
                                             ChatCompletionRequestUserMessageContent::Text(str) => str.clone(),
                                             _ => String::new(),
                                         },
-                                    ));
+                                    );
+                                    message.set_id(*id);
+                                    chat.add_message(message);
                                 },
 
                                 ChatCompletionRequestMessage::Assistant(msg) => {
-                                    chat.add_message(chat::ChatMessage::new(
+                                    let message = chat::ChatMessage::new(
                                         &chat::ChatRole::Assistant,
                                         match &msg.content {
                                             Some(ChatCompletionRequestAssistantMessageContent::Text(str)) => str.clone(),
                                             _ => String::new(),
                                         },
-                                    ));
+                                    );
+                                    message.set_id(*id);
+                                    chat.add_message(message);
 
                                     // Append tool call info if present
                                     if let Some(tool_calls) = &msg.tool_calls {
@@ -127,12 +127,8 @@ pub fn new() -> gtk4::Box {
                         }
                     },
 
-                    openai::AIChannelMessage::CycleStarted => {
-                        *blocked.borrow_mut() = true;
-                    },
-
-                    openai::AIChannelMessage::CycleFinished => {
-                        *blocked.borrow_mut() = false;
+                    openai::AIChannelMessage::ConversationTrimmed(down_to_message_id) => {
+                        chat.trim_messages(down_to_message_id);
                     },
 
                     openai::AIChannelMessage::StreamStart => {
@@ -149,12 +145,19 @@ pub fn new() -> gtk4::Box {
                         }
                     },
 
+                    openai::AIChannelMessage::StreamComplete => {
+                        if let Some(latest_message) = chat.messages.borrow_mut().last_mut() {
+                            latest_message.set_id(openai::get_highest_indice() + 1);
+                        }
+                    },
+
                     openai::AIChannelMessage::ToolCall(tool_name, arguments) => {
                         chat.append_tool_call_to_latest_message(&tool_name, &arguments);
                     },
 
                     _ => {},
                 }
+
                 scroll_to_bottom();
             }
         });

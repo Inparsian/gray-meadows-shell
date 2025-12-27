@@ -304,6 +304,26 @@
                     }
                 }
 
+                .ai-chat-message-delete-button {
+                    @include material-icons;
+                    background: transparent;
+                    border: 0px;
+                    color: $foreground-color-quaternary;
+                    padding: 0px;
+                    margin: 0px;
+                    min-width: 0px;
+                    min-height: 0px;
+
+                    &:hover, &:focus {
+                        color: $foreground-color-tertiary;
+                        outline: none;
+                    }
+
+                    &:active {
+                        color: $foreground-color-secondary;
+                    }
+                }
+
                 .ai-chat-message-content {
                     @include variable-text;
 

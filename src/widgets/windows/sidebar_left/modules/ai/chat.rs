@@ -5,6 +5,8 @@ use gtk4::prelude::*;
 use relm4::RelmIterChildrenExt as _;
 
 use crate::filesystem;
+use crate::gesture;
+use crate::singletons::openai;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ChatRole {
@@ -14,6 +16,7 @@ pub enum ChatRole {
 
 #[derive(Debug, Clone)]
 pub struct ChatMessage {
+    pub id: Rc<RefCell<Option<i64>>>,
     pub content: String,
     pub root: gtk4::Box,
     pub markdown: gtk4cmark::view::MarkdownView,
@@ -22,9 +25,13 @@ pub struct ChatMessage {
 
 impl ChatMessage {
     pub fn new(role: &ChatRole, content: String) -> Self {
+        let id = Rc::new(RefCell::new(None));
         let root = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
         root.set_css_classes(&["ai-chat-message"]);
         root.set_valign(gtk4::Align::Start);
+
+        let header = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        header.set_css_classes(&["ai-chat-message-header"]);
 
         let sender_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
         sender_box.set_css_classes(&["ai-chat-message-sender"]);
@@ -67,6 +74,30 @@ impl ChatMessage {
 
         sender_box.append(&sender_icon);
         sender_box.append(&sender_label);
+        header.append(&sender_box);
+
+        let controls_revealer = gtk4::Revealer::new();
+        controls_revealer.set_css_classes(&["ai-chat-message-controls-revealer"]);
+        controls_revealer.set_halign(gtk4::Align::End);
+        controls_revealer.set_valign(gtk4::Align::Start);
+        controls_revealer.set_hexpand(true);
+        controls_revealer.set_transition_type(gtk4::RevealerTransitionType::Crossfade);
+        controls_revealer.set_transition_duration(150);
+
+        let delete_button = gtk4::Button::new();
+        delete_button.set_css_classes(&["ai-chat-message-delete-button"]);
+        delete_button.set_label("delete");
+        delete_button.connect_clicked({
+            let id = id.clone();
+            move |_| if !openai::is_currently_in_cycle()
+                && let Some(message_id) = *id.borrow() 
+            {
+                openai::trim_messages(message_id);
+            }
+        });
+        controls_revealer.set_child(Some(&delete_button));
+
+        header.append(&controls_revealer);
 
         let markdown = gtk4cmark::view::MarkdownView::default();
         markdown.set_css_classes(&["ai-chat-message-content"]);
@@ -80,11 +111,23 @@ impl ChatMessage {
         footer.set_css_classes(&["ai-chat-message-footer"]);
         footer.set_valign(gtk4::Align::End);
 
-        root.append(&sender_box);
+        root.append(&header);
         root.append(&markdown);
         root.append(&footer);
 
+        root.add_controller(gesture::on_enter({
+            let controls_revealer = controls_revealer.clone();
+            move |_, _| {
+                controls_revealer.set_reveal_child(true);
+            }
+        }));
+
+        root.add_controller(gesture::on_leave(move || {
+            controls_revealer.set_reveal_child(false);
+        }));
+
         Self {
+            id,
             content,
             root,
             markdown,
@@ -95,6 +138,10 @@ impl ChatMessage {
     pub fn set_content(&mut self, content: &str) {
         self.content = content.to_owned();
         self.markdown.set_markdown(content);
+    }
+
+    pub fn set_id(&self, id: i64) {
+        *self.id.borrow_mut() = Some(id);
     }
 }
 
@@ -121,6 +168,25 @@ impl Chat {
     pub fn clear_messages(&self) {
         self.root.iter_children().for_each(|child| {
             self.root.remove(&child);
+        });
+    }
+
+    pub fn trim_messages(&self, down_to_id: i64) {
+        let mut messages = self.messages.borrow_mut();
+        let mut ids_to_remove = Vec::new();
+
+        for message in messages.iter() {
+            if let Some(id) = *message.id.borrow() && id >= down_to_id {
+                ids_to_remove.push(id);
+            }
+        }
+
+        messages.retain(|message| {
+            if let Some(id) = *message.id.borrow() && ids_to_remove.contains(&id) {
+                self.root.remove(&message.root);
+                return false;
+            }
+            true
         });
     }
 

@@ -58,6 +58,7 @@ pub fn sql_message_to_chat_message(msg: &aichats::SqlAiConversationMessage) -> C
 pub fn chat_message_to_sql_message(msg: &ChatCompletionRequestMessage, conversation_id: i64) -> aichats::SqlAiConversationMessage {
     match msg {
         ChatCompletionRequestMessage::System(system_msg) => aichats::SqlAiConversationMessage {
+            id: 0,
             conversation_id,
             role: "system".to_owned(),
             content: match &system_msg.content {
@@ -70,6 +71,7 @@ pub fn chat_message_to_sql_message(msg: &ChatCompletionRequestMessage, conversat
         },
 
         ChatCompletionRequestMessage::User(user_msg) => aichats::SqlAiConversationMessage {
+            id: 0,
             conversation_id,
             role: "user".to_owned(),
             content: match &user_msg.content {
@@ -82,6 +84,7 @@ pub fn chat_message_to_sql_message(msg: &ChatCompletionRequestMessage, conversat
         },
 
         ChatCompletionRequestMessage::Tool(tool_msg) => aichats::SqlAiConversationMessage {
+            id: 0,
             conversation_id,
             role: "tool".to_owned(),
             content: match &tool_msg.content {
@@ -112,6 +115,7 @@ pub fn chat_message_to_sql_message(msg: &ChatCompletionRequestMessage, conversat
                 });
 
             aichats::SqlAiConversationMessage {
+                id: 0,
                 conversation_id,
                 role: "assistant".to_owned(),
                 content: match &assistant_msg.content {

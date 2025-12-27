@@ -7,6 +7,7 @@ pub struct SqlAiConversation {
 }
 
 pub struct SqlAiConversationMessage {
+    pub id: i64,
     pub conversation_id: i64,
     pub role: String,
     pub content: String,
@@ -59,6 +60,20 @@ pub fn add_message(message: &SqlAiConversationMessage) -> Result<(), Box<dyn std
     Err("No database connection available".into())
 }
 
+/// Removes messages down to the specified message ID in a conversation.
+pub fn trim_messages(conversation_id: i64, down_to_message_id: i64) -> Result<(), Box<dyn std::error::Error>> {
+    if let Some(connection) = SQL_CONNECTION.get() {
+        let connection = connection.lock()?;
+        let statement = format!(
+            "DELETE FROM aichat_messages WHERE conversation_id = {} AND id >= {}",
+            conversation_id, down_to_message_id
+        );
+        connection.execute(&statement)?;
+        return Ok(());
+    }
+    Err("No database connection available".into())
+}
+
 /// Retrieves information about an AI chat conversation by its ID.
 pub fn get_conversation(conversation_id: i64) -> Result<SqlAiConversation, Box<dyn std::error::Error>> {
     if let Some(connection) = SQL_CONNECTION.get() {
@@ -92,6 +107,7 @@ pub fn get_messages(conversation_id: i64) -> Result<Vec<SqlAiConversationMessage
         let mut cursor = connection.prepare(&statement)?;
         while cursor.next()? == sqlite::State::Row {
             let message = SqlAiConversationMessage {
+                id: cursor.read::<i64, _>(0)?,
                 conversation_id: cursor.read::<i64, _>(1)?,
                 role: cursor.read::<String, _>(2)?,
                 content: cursor.read::<String, _>(3)?,

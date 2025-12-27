@@ -4,6 +4,7 @@ mod sql;
 use std::pin::Pin;
 use std::error::Error;
 use std::sync::{Arc, OnceLock, RwLock};
+use std::collections::HashMap;
 use futures_lite::stream::StreamExt as _;
 use async_openai::Client;
 use async_openai::config::OpenAIConfig;
@@ -36,12 +37,41 @@ pub enum AIChannelMessage {
     CycleStarted,
     CycleFinished,
     ConversationLoaded(SqlAiConversation),
+    ConversationTrimmed(i64), // up to message ID
 }
 
 pub struct AISession {
     pub client: Client<OpenAIConfig>,
     pub conversation: Arc<RwLock<Option<SqlAiConversation>>>,
-    pub messages: Arc<RwLock<Vec<ChatCompletionRequestMessage>>>,
+    pub messages: Arc<RwLock<HashMap<i64, ChatCompletionRequestMessage>>>,
+    pub currently_in_cycle: Arc<RwLock<bool>>,
+}
+
+pub fn get_highest_indice() -> i64 {
+    if let Some(session) = SESSION.get() {
+        let messages = session.messages.read().unwrap();
+        if messages.is_empty() {
+            return -1;
+        }
+        *messages.keys().max().unwrap()
+    } else {
+        -1
+    }
+}
+
+pub fn get_sorted_messages() -> Vec<(i64, ChatCompletionRequestMessage)> {
+    SESSION.get().map_or_else(Vec::new, |session| {
+        let messages = session.messages.read().unwrap();
+        let mut sorted_messages: Vec<(i64, ChatCompletionRequestMessage)> = messages.iter()
+            .map(|(&id, msg)| (id, msg.clone()))
+            .collect();
+        sorted_messages.sort_by_key(|&(id, _)| id);
+        sorted_messages
+    })
+}
+
+pub fn is_currently_in_cycle() -> bool {
+    SESSION.get().is_some_and(|session| *session.currently_in_cycle.read().unwrap())
 }
 
 fn make_client() -> Client<OpenAIConfig> {
@@ -57,7 +87,8 @@ fn write_message(msg: &ChatCompletionRequestMessage) {
         return;
     };
 
-    session.messages.write().unwrap().push(msg.clone());
+    let highest_indice = get_highest_indice();
+    session.messages.write().unwrap().insert(highest_indice + 1, msg.clone());
 
     let Some(conversation) = &*session.conversation.read().unwrap() else {
         eprintln!("AI conversation not initialized");
@@ -70,13 +101,14 @@ fn write_message(msg: &ChatCompletionRequestMessage) {
     }
 }
 
-fn read_conversation(id: i64) -> Result<Vec<ChatCompletionRequestMessage>, Box<dyn Error>> {
+fn read_conversation(id: i64) -> Result<HashMap<i64, ChatCompletionRequestMessage>, Box<dyn Error>> {
     let sql_messages = aichats::get_messages(id)?;
 
-    let chat_messages: Vec<ChatCompletionRequestMessage> = sql_messages
-        .iter()
-        .map(sql::sql_message_to_chat_message)
-        .collect();
+    let mut chat_messages = HashMap::new();
+    for msg in &sql_messages {
+        let chat_msg = sql::sql_message_to_chat_message(msg);
+        chat_messages.insert(msg.id, chat_msg);
+    }
 
     Ok(chat_messages)
 }
@@ -86,7 +118,9 @@ fn load_conversation(id: i64) {
         match read_conversation(id) {
             Ok(messages) => {
                 let mut msgs = session.messages.write().unwrap();
-                *msgs = messages;
+                for (id, msg) in messages {
+                    msgs.insert(id, msg);
+                }
 
                 if let Some(channel) = CHANNEL.get() {
                     let conversation = session.conversation.read().unwrap();
@@ -98,6 +132,33 @@ fn load_conversation(id: i64) {
             Err(err) => {
                 eprintln!("Failed to load AI chat conversation from database: {}", err);
             }
+        }
+    }
+}
+
+pub fn trim_messages(down_to_message_id: i64) {
+    if let Some(session) = SESSION.get() {
+        let conversation = session.conversation.read().unwrap();
+        let Some(conversation) = &*conversation else {
+            eprintln!("AI conversation not initialized");
+            return;
+        };
+
+        if let Err(err) = aichats::trim_messages(conversation.id, down_to_message_id) {
+            eprintln!("Failed to trim AI chat messages in database: {}", err);
+            return;
+        }
+
+        let mut write = session.messages.write().unwrap();
+        let indices = write.iter()
+            .filter_map(|(&id, _)| (id >= down_to_message_id).then_some(id))
+            .collect::<Vec<i64>>();
+        for id in indices {
+            write.remove(&id);
+        }
+
+        if let Some(channel) = CHANNEL.get() {
+            channel.spawn_send(AIChannelMessage::ConversationTrimmed(down_to_message_id));
         }
     }
 }
@@ -122,9 +183,11 @@ pub fn activate() {
     let session = AISession {
         client: make_client(),
         conversation: Arc::new(RwLock::new(Some(conversation))),
-        messages: Arc::new(RwLock::new(vec![
+        messages: Arc::new(RwLock::new(HashMap::from([(
+            0,
             ChatCompletionRequestSystemMessage::from(APP.config.ai.prompt.as_str()).into()
-        ])),
+        )]))),
+        currently_in_cycle: Arc::new(RwLock::new(false)),
     };
 
     let _ = SESSION.set(session);
@@ -150,11 +213,16 @@ pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'st
             return Err(anyhow::anyhow!("AI session not initialized"));
         };
 
+        let sorted_messages = get_sorted_messages()
+            .iter()
+            .map(|(_, msg)| msg.clone())
+            .collect::<Vec<ChatCompletionRequestMessage>>();
+
         let request = CreateChatCompletionRequestArgs::default()
             .max_completion_tokens(2048_u32)
             .stream(true)
             .model(APP.config.ai.model.as_str())
-            .messages(session.messages.read().unwrap().clone())
+            .messages(sorted_messages)
             .tools(tools::get_tools()?)
             .build()?;
 
@@ -255,8 +323,8 @@ pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'st
                 ..Default::default()
             }.into();
             
-            channel.send(AIChannelMessage::StreamComplete).await;
             write_message(&message);
+            channel.send(AIChannelMessage::StreamComplete).await;
 
             for (tool_call_id, response) in tool_responses {
                 write_message(&ChatCompletionRequestToolMessage {
@@ -284,6 +352,18 @@ pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'st
 }
 
 pub async fn start_request_cycle() {
+    if let Some(session) = SESSION.get() {
+        let mut currently_in_cycle = session.currently_in_cycle.write().unwrap();
+        if *currently_in_cycle {
+            // Already in a request cycle
+            return;
+        }
+        *currently_in_cycle = true;
+    } else {
+        eprintln!("AI session not initialized");
+        return;
+    }
+
     if let Some(channel) = CHANNEL.get() {
         channel.send(AIChannelMessage::CycleStarted).await;
     }
@@ -301,6 +381,11 @@ pub async fn start_request_cycle() {
 
     if let Some(channel) = CHANNEL.get() {
         channel.send(AIChannelMessage::CycleFinished).await;
+    }
+
+    if let Some(session) = SESSION.get() {
+        let mut currently_in_cycle = session.currently_in_cycle.write().unwrap();
+        *currently_in_cycle = false;
     }
 }
 
