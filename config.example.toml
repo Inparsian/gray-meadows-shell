@@ -17,6 +17,12 @@ service_tier = "default"
 # The prompt to use for AI interactions.
 prompt = "You are a helpful AI assistant running on a sidebar in a Linux desktop environment."
 
+# The name of your AI assistant. Leave blank to use the default name.
+assistant_name = ""
+
+# The absolute path to the icon for your AI assistant. Leave blank to use the default icon.
+assistant_icon_path = ""
+
 [ai.features]
 # Whether the AI can get the current date and time.
 current_date_time = true

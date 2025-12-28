@@ -4,6 +4,7 @@ use std::path::Path;
 use gtk4::prelude::*;
 use relm4::RelmIterChildrenExt as _;
 
+use crate::APP;
 use crate::filesystem;
 use crate::gesture;
 use crate::singletons::openai;
@@ -24,6 +25,14 @@ pub struct ChatMessage {
 }
 
 impl ChatMessage {
+    fn default_assistant_icon() -> gtk4::Widget {
+        let sender_mui_icon = gtk4::Label::new(Some("robot"));
+        sender_mui_icon.set_css_classes(&["ai-chat-message-sender-mui-icon"]);
+        sender_mui_icon.set_halign(gtk4::Align::Start);
+        sender_mui_icon.set_xalign(0.0);
+        sender_mui_icon.upcast()
+    }
+
     pub fn new(role: &ChatRole, content: String) -> Self {
         let id = Rc::new(RefCell::new(None));
         let root = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
@@ -55,18 +64,23 @@ impl ChatMessage {
                 }
             },
             
-            ChatRole::Assistant => {
-                let sender_mui_icon = gtk4::Label::new(Some("robot"));
-                sender_mui_icon.set_css_classes(&["ai-chat-message-sender-mui-icon"]);
-                sender_mui_icon.set_halign(gtk4::Align::Start);
-                sender_mui_icon.set_xalign(0.0);
-                sender_mui_icon.upcast()
-            },
+            ChatRole::Assistant => APP.config.ai.assistant_icon_path.as_ref().map_or_else(|| {
+                Self::default_assistant_icon()
+            }, |icon_path| if Path::new(icon_path).exists() {
+                let assistant_icon = gtk4::Image::new();
+                assistant_icon.set_css_classes(&["ai-chat-message-sender-icon"]);
+                assistant_icon.set_pixel_size(24);
+                assistant_icon.set_halign(gtk4::Align::Start);
+                assistant_icon.set_from_file(Some(icon_path));
+                assistant_icon.upcast()
+            } else {
+                Self::default_assistant_icon()
+            }),
         };
 
         let sender_label = gtk4::Label::new(Some(match role {
             ChatRole::User => "You",
-            ChatRole::Assistant => "AI Assistant"
+            ChatRole::Assistant => APP.config.ai.assistant_name.as_ref().map_or("AI Assistant", |name| name.as_str()),
         }));
         sender_label.set_css_classes(&["ai-chat-message-sender-label"]);
         sender_label.set_halign(gtk4::Align::Start);
