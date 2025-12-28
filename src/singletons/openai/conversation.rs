@@ -135,3 +135,18 @@ pub fn delete_conversation(conversation_id: i64) {
         }
     }
 }
+
+pub fn clear_conversation(conversation_id: i64) {
+    // trim to 0, then re-insert system prompt
+    if let Err(err) = aichats::trim_messages(conversation_id, 0) {
+        eprintln!("Failed to clear AI chat conversation messages from database: {}", err);
+        return;
+    }
+
+    if let Err(err) = aichats::insert_system_prompt(conversation_id) {
+        eprintln!("Failed to re-insert system prompt into cleared AI chat conversation: {}", err);
+        return;
+    }
+
+    load_conversation(conversation_id);
+}

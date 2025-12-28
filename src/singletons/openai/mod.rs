@@ -1,6 +1,6 @@
 mod tools;
 mod sql;
-mod conversation;
+pub mod conversation;
 
 use std::pin::Pin;
 use std::sync::{Arc, OnceLock, RwLock};

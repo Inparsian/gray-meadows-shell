@@ -25,6 +25,27 @@ pub fn new() -> gtk4::Box {
     conversation_title.set_css_classes(&["ai-chat-conversation-title"]);
     conversation_controls.append(&conversation_title);
 
+    let clear_conversation_button = gtk4::Button::new();
+    clear_conversation_button.set_css_classes(&["ai-chat-clear-conversation-button"]);
+    clear_conversation_button.set_label("clear_all");
+    clear_conversation_button.set_valign(gtk4::Align::Start);
+    clear_conversation_button.set_halign(gtk4::Align::End);
+    clear_conversation_button.set_hexpand(true);
+    clear_conversation_button.connect_clicked(move |_| {
+        if !openai::is_currently_in_cycle() {
+            let conversation_id = if let Some(session) = openai::SESSION.get()
+                && let Some(conversation) = &*session.conversation.read().unwrap()
+            {
+                conversation.id
+            } else {
+                return;
+            };
+
+            openai::conversation::clear_conversation(conversation_id);
+        }
+    });
+    conversation_controls.append(&clear_conversation_button);
+
     let chat = chat::Chat::default();
     let chat_window = gtk4::ScrolledWindow::new();
     chat_window.set_policy(gtk4::PolicyType::Automatic, gtk4::PolicyType::Automatic);

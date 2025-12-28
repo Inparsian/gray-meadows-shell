@@ -29,7 +29,7 @@ pub fn ensure_default_conversation() -> Result<(), Box<dyn std::error::Error>> {
 
                 // Insert our prompt
                 let conversation_id = last_insert_rowid(&connection)?;
-                insert_system_prompt(conversation_id, &connection)?;
+                insert_system_prompt_with_connection(conversation_id, &connection)?;
             }
         }
         Ok(())
@@ -38,8 +38,8 @@ pub fn ensure_default_conversation() -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
-/// Inserts the default system prompt message into a conversation.
-pub fn insert_system_prompt(conversation_id: i64, connection: &sqlite::Connection) -> Result<(), Box<dyn std::error::Error>> {
+/// Inserts the default system prompt message into a conversation with the specified connection.
+fn insert_system_prompt_with_connection(conversation_id: i64, connection: &sqlite::Connection) -> Result<(), Box<dyn std::error::Error>> {
     let prompt = crate::APP.config.ai.prompt.clone();
     let statement = format!(
         "INSERT INTO aichat_messages (conversation_id, role, content) \
@@ -49,6 +49,15 @@ pub fn insert_system_prompt(conversation_id: i64, connection: &sqlite::Connectio
     );
     connection.execute(&statement)?;
     Ok(())
+}
+
+pub fn insert_system_prompt(conversation_id: i64) -> Result<(), Box<dyn std::error::Error>> {
+    if let Some(connection) = SQL_CONNECTION.get() {
+        let connection = connection.lock()?;
+        insert_system_prompt_with_connection(conversation_id, &connection)
+    } else {
+        Err("No database connection available".into())
+    }
 }
 
 /// Adds a message to the specified AI chat conversation and returns its new ID.
@@ -98,7 +107,7 @@ pub fn add_conversation(title: &str) -> Result<i64, Box<dyn std::error::Error>> 
         );
         connection.execute(&statement)?;
         let conversation_id = last_insert_rowid(&connection)?;
-        insert_system_prompt(conversation_id, &connection)?;
+        insert_system_prompt_with_connection(conversation_id, &connection)?;
         Ok(conversation_id)
     } else {
         Err("No database connection available".into())
