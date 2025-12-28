@@ -452,13 +452,13 @@
                     }
                 }
 
-                .ai-chat-conversation-ui-footer-button {
+                .ai-chat-conversation-ui-header-button {
                     @include normal-text;
                     background: $background-color-secondary;
                     font-weight: 300;
                     border: 0px;
                     color: $foreground-color-primary;
-                    padding: 6px 8px;
+                    padding: 4px 8px;
                     border-radius: 0px;
 
                     &:hover, &:focus {
@@ -470,7 +470,7 @@
                         background: $background-color-quaternary;
                     }
 
-                    .ai-chat-conversation-ui-footer-button-icon {
+                    .ai-chat-conversation-ui-header-button-icon {
                         @include material-icons;
                         font-weight: 400;
                         font-size: 16px;

@@ -33,22 +33,22 @@ pub fn conversation_control_button(icon: &str, label: &str) -> gtk4::Button {
     button
 }
 
-pub fn conversation_ui_footer_button(icon: &str, label: &str) -> gtk4::Button {
+pub fn conversation_ui_header_button(icon: &str, label: &str) -> gtk4::Button {
     let button = gtk4::Button::new();
-    button.set_css_classes(&["ai-chat-conversation-ui-footer-button"]);
+    button.set_css_classes(&["ai-chat-conversation-ui-header-button"]);
     button.set_valign(gtk4::Align::Center);
     button.set_halign(gtk4::Align::Center);
 
     let button_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 4);
-    button_box.set_css_classes(&["ai-chat-conversation-ui-footer-button-box"]);
+    button_box.set_css_classes(&["ai-chat-conversation-ui-header-button-box"]);
     button.set_child(Some(&button_box));
 
     let button_icon = gtk4::Label::new(Some(icon));
-    button_icon.set_css_classes(&["ai-chat-conversation-ui-footer-button-icon"]);
+    button_icon.set_css_classes(&["ai-chat-conversation-ui-header-button-icon"]);
     button_box.append(&button_icon);
 
     let button_label = gtk4::Label::new(Some(label));
-    button_label.set_css_classes(&["ai-chat-conversation-ui-footer-button-label"]);
+    button_label.set_css_classes(&["ai-chat-conversation-ui-header-button-label"]);
     button_box.append(&button_label);
 
     button
@@ -238,8 +238,27 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
 }
 
 pub fn conversations_ui(stack: &gtk4::Stack) -> gtk4::Box {
-    let widget = gtk4::Box::new(gtk4::Orientation::Vertical, 4);
+    let widget = gtk4::Box::new(gtk4::Orientation::Vertical, 8);
     widget.set_css_classes(&["ai-conversations-ui"]);
+
+    let header = gtk4::Box::new(gtk4::Orientation::Horizontal, 4);
+    header.set_css_classes(&["ai-conversations-ui-header"]);
+    widget.append(&header);
+
+    let back_button = conversation_ui_header_button("arrow_back", "Back");
+    back_button.connect_clicked({
+        let stack = stack.clone();
+        move |_| {
+            stack.set_visible_child_name("chat_ui");
+        }
+    });
+    header.append(&back_button);
+
+    let new_conversation_button = conversation_ui_header_button("add", "New Conversation");
+    new_conversation_button.connect_clicked(move |_| {
+        openai::conversation::add_conversation("Untitled");
+    });
+    header.append(&new_conversation_button);
 
     let conversations_list = conversations::ConversationsList::new();
     let conversations_window = gtk4::ScrolledWindow::new();
@@ -248,25 +267,6 @@ pub fn conversations_ui(stack: &gtk4::Stack) -> gtk4::Box {
     conversations_window.set_hexpand(true);
     conversations_window.set_child(Some(&conversations_list.root));
     widget.append(&conversations_window);
-
-    let footer = gtk4::Box::new(gtk4::Orientation::Horizontal, 4);
-    footer.set_css_classes(&["ai-conversations-ui-footer"]);
-    widget.append(&footer);
-
-    let back_button = conversation_ui_footer_button("arrow_back", "Back");
-    back_button.connect_clicked({
-        let stack = stack.clone();
-        move |_| {
-            stack.set_visible_child_name("chat_ui");
-        }
-    });
-    footer.append(&back_button);
-
-    let new_conversation_button = conversation_ui_footer_button("add", "New Conversation");
-    new_conversation_button.connect_clicked(move |_| {
-        openai::conversation::add_conversation("Untitled");
-    });
-    footer.append(&new_conversation_button);
 
     widget
 }
