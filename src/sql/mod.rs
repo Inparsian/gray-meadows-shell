@@ -73,3 +73,13 @@ pub fn establish_connection() -> Result<Connection, Box<dyn std::error::Error>> 
 
     Ok(connection)
 }
+
+pub fn last_insert_rowid(connection: &Connection) -> Result<i64, Box<dyn std::error::Error>> {
+    let mut cursor = connection.prepare("SELECT last_insert_rowid()")?;
+    let rowid = if cursor.next()? == sqlite::State::Row {
+        cursor.read::<i64, _>(0)?
+    } else {
+        0
+    };
+    Ok(rowid)
+}

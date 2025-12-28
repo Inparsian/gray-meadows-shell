@@ -1,8 +1,8 @@
 mod tools;
 mod sql;
+mod conversation;
 
 use std::pin::Pin;
-use std::error::Error;
 use std::sync::{Arc, OnceLock, RwLock};
 use std::collections::HashMap;
 use futures_lite::stream::StreamExt as _;
@@ -30,6 +30,7 @@ pub static SESSION: OnceLock<AISession> = OnceLock::new();
 
 #[derive(Debug, Clone)]
 #[allow(clippy::enum_variant_names)]
+#[allow(dead_code)]
 pub enum AIChannelMessage {
     StreamStart,
     StreamChunk(String),
@@ -39,6 +40,9 @@ pub enum AIChannelMessage {
     CycleFinished,
     ConversationLoaded(SqlAiConversation),
     ConversationTrimmed(i64), // up to message ID
+    ConversationAdded(SqlAiConversation),
+    ConversationRenamed(i64, String), // (conversation ID, new title)
+    ConversationDeleted(i64), // conversation ID
 }
 
 pub struct AISession {
@@ -95,41 +99,6 @@ fn write_message(msg: &ChatCompletionRequestMessage) -> i64 {
     }
 }
 
-fn read_conversation(id: i64) -> Result<HashMap<i64, ChatCompletionRequestMessage>, Box<dyn Error>> {
-    let sql_messages = aichats::get_messages(id)?;
-
-    let mut chat_messages = HashMap::new();
-    for msg in &sql_messages {
-        let chat_msg = sql::sql_message_to_chat_message(msg);
-        chat_messages.insert(msg.id, chat_msg);
-    }
-
-    Ok(chat_messages)
-}
-
-fn load_conversation(id: i64) {
-    if let Some(session) = SESSION.get() {
-        match read_conversation(id) {
-            Ok(messages) => {
-                let mut msgs = session.messages.write().unwrap();
-                for (id, msg) in messages {
-                    msgs.insert(id, msg);
-                }
-
-                if let Some(channel) = CHANNEL.get() {
-                    let conversation = session.conversation.read().unwrap();
-
-                    channel.spawn_send(AIChannelMessage::ConversationLoaded(conversation.as_ref().unwrap().clone()));
-                }
-            },
-
-            Err(err) => {
-                eprintln!("Failed to load AI chat conversation from database: {}", err);
-            }
-        }
-    }
-}
-
 pub fn trim_messages(down_to_message_id: i64) {
     if let Some(session) = SESSION.get() {
         let conversation = session.conversation.read().unwrap();
@@ -166,17 +135,9 @@ pub fn activate() {
         eprintln!("Failed to ensure default AI chat conversation: {}", err);
     });
 
-    let conversation = match aichats::get_conversation(1) {
-        Ok(conv) => conv,
-        Err(err) => {
-            eprintln!("Failed to load default AI chat conversation: {}", err);
-            return;
-        }
-    };
-
     let session = AISession {
         client: make_client(),
-        conversation: Arc::new(RwLock::new(Some(conversation))),
+        conversation: Arc::new(RwLock::new(None)),
         messages: Arc::new(RwLock::new(HashMap::from([(
             0,
             ChatCompletionRequestSystemMessage::from(APP.config.ai.prompt.as_str()).into()
@@ -187,14 +148,7 @@ pub fn activate() {
     let _ = SESSION.set(session);
     let _ = CHANNEL.set(BroadcastChannel::new(100));
 
-    if let Some(session) = SESSION.get() {
-        let Some(conversation) = &*session.conversation.read().unwrap() else {
-            eprintln!("AI conversation not initialized");
-            return;
-        };
-
-        load_conversation(conversation.id);
-    }
+    conversation::load_conversation(1);
 }
 
 pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'static + Send>> {
