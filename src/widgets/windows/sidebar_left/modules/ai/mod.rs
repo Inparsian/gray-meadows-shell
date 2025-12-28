@@ -128,7 +128,7 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
             let id = openai::send_user_message(&text);
             let message = chat::ChatMessage::new(
                 &chat::ChatRole::User,
-                text,
+                Some(text),
             );
             message.set_id(id);
             chat.add_message(message);
@@ -158,8 +158,8 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                                     let message = chat::ChatMessage::new(
                                         &chat::ChatRole::User,
                                         match &msg.content {
-                                            ChatCompletionRequestUserMessageContent::Text(str) => str.clone(),
-                                            _ => String::new(),
+                                            ChatCompletionRequestUserMessageContent::Text(str) => Some(str.clone()),
+                                            _ => Some("[Unsupported content]".to_owned()),
                                         },
                                     );
                                     message.set_id(*id);
@@ -170,8 +170,8 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                                     let message = chat::ChatMessage::new(
                                         &chat::ChatRole::Assistant,
                                         match &msg.content {
-                                            Some(ChatCompletionRequestAssistantMessageContent::Text(str)) => str.clone(),
-                                            _ => String::new(),
+                                            Some(ChatCompletionRequestAssistantMessageContent::Text(str)) => Some(str.clone()),
+                                            _ => Some("[Unsupported content]".to_owned()),
                                         },
                                     );
                                     message.set_id(*id);
@@ -203,13 +203,13 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                     openai::AIChannelMessage::StreamStart => {
                         chat.add_message(chat::ChatMessage::new(
                             &chat::ChatRole::Assistant,
-                            String::new()
+                            None,
                         ));
                     },
 
                     openai::AIChannelMessage::StreamChunk(chunk) => {
                         if let Some(latest_message) = chat.messages.borrow_mut().last_mut() {
-                            let new_content = format!("{}{}", latest_message.content, chunk);
+                            let new_content = format!("{}{}", latest_message.content.as_deref().unwrap_or_default(), chunk);
                             latest_message.set_content(&new_content);
                         }
                     },

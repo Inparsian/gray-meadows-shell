@@ -9,6 +9,7 @@ use crate::USERNAME;
 use crate::filesystem;
 use crate::gesture;
 use crate::singletons::openai;
+use crate::widgets::common::loading;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ChatRole {
@@ -19,9 +20,11 @@ pub enum ChatRole {
 #[derive(Debug, Clone)]
 pub struct ChatMessage {
     pub id: Rc<RefCell<Option<i64>>>,
-    pub content: String,
+    pub content: Option<String>,
     pub root: gtk4::Box,
     pub markdown: gtk4cmark::view::MarkdownView,
+    pub loading: gtk4::DrawingArea,
+    pub header: gtk4::Box,
     pub footer: gtk4::Box,
 }
 
@@ -34,7 +37,7 @@ impl ChatMessage {
         sender_mui_icon.upcast()
     }
 
-    pub fn new(role: &ChatRole, content: String) -> Self {
+    pub fn new(role: &ChatRole, content: Option<String>) -> Self {
         let id = Rc::new(RefCell::new(None));
         let root = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
         root.set_css_classes(&["ai-chat-message"]);
@@ -116,10 +119,13 @@ impl ChatMessage {
 
         let markdown = gtk4cmark::view::MarkdownView::default();
         markdown.set_css_classes(&["ai-chat-message-content"]);
-        markdown.set_markdown(content.as_str());
         markdown.set_overflow(gtk4::Overflow::Hidden);
         markdown.set_vexpand(true);
         markdown.set_hexpand(true);
+
+        let loading = loading::new();
+        loading.set_halign(gtk4::Align::Start);
+        loading.set_valign(gtk4::Align::Start);
 
         // This will start out with empty content, to be filled in later
         let footer = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
@@ -127,8 +133,14 @@ impl ChatMessage {
         footer.set_valign(gtk4::Align::End);
 
         root.append(&header);
-        root.append(&markdown);
         root.append(&footer);
+        
+        if let Some(initial_content) = &content {
+            root.insert_child_after(&markdown, Some(&header));
+            markdown.set_markdown(initial_content.as_str());
+        } else {
+            root.insert_child_after(&loading, Some(&header));
+        }
 
         root.add_controller(gesture::on_enter({
             let controls_revealer = controls_revealer.clone();
@@ -146,13 +158,22 @@ impl ChatMessage {
             content,
             root,
             markdown,
+            loading,
+            header,
             footer,
         }
     }
 
     pub fn set_content(&mut self, content: &str) {
-        self.content = content.to_owned();
+        let was_none = self.content.is_none();
+
+        self.content = Some(content.to_owned());
         self.markdown.set_markdown(content);
+
+        if was_none {
+            self.root.remove(&self.loading);
+            self.root.insert_child_after(&self.markdown, Some(&self.header));
+        }
     }
 
     pub fn set_id(&self, id: i64) {
@@ -230,6 +251,10 @@ impl Chat {
             tool_call_box.append(&arguments_label);
 
             latest_message.footer.append(&tool_call_box);
+            
+            if latest_message.content.is_none() {
+                latest_message.set_content("");
+            }
         }
     }
 }
