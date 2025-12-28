@@ -15,7 +15,7 @@ pub fn get_tools() -> Result<Vec<ChatCompletionTools>, OpenAIError> {
             ChatCompletionTools::Function(ChatCompletionTool {
                 function: FunctionObjectArgs::default()
                     .name("get_mpris_track_info")
-                    .description("Gets track information from the current MPRIS player")
+                    .description("Gets track information from the current MPRIS player. This function outputs ephemeral data and must be called each time up-to-date information is needed.")
                     .build()?,
             }),
             ChatCompletionTools::Function(ChatCompletionTool {
@@ -125,7 +125,7 @@ pub fn get_tools() -> Result<Vec<ChatCompletionTools>, OpenAIError> {
         tools.push(ChatCompletionTools::Function(ChatCompletionTool {
             function: FunctionObjectArgs::default()
                 .name("get_focused_wayland_window")
-                .description("Gets the currently focused Wayland window along with the current workspace.")
+                .description("Gets the currently focused Wayland window along with the current workspace. This function outputs ephemeral data and must be called each time up-to-date information is needed.")
                 .build()?,
         }));
     }
@@ -134,7 +134,7 @@ pub fn get_tools() -> Result<Vec<ChatCompletionTools>, OpenAIError> {
         tools.push(ChatCompletionTools::Function(ChatCompletionTool {
             function: FunctionObjectArgs::default()
                 .name("get_current_datetime")
-                .description("Get the current date and time")
+                .description("Gets the current date and time. This function outputs ephemeral data and must be called each time up-to-date information is needed.")
                 .build()?,
         }));
     }
