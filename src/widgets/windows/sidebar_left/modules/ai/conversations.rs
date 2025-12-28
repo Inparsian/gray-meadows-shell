@@ -25,10 +25,10 @@ pub struct ConversationItem {
 
 impl ConversationItem {
     pub fn new(conversation: SqlAiConversation) -> Self {
-        let root = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        let root = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
         root.set_css_classes(&["ai-chat-conversation-item"]);
 
-        let info_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        let info_box = gtk4::Box::new(gtk4::Orientation::Vertical, 4);
         info_box.set_css_classes(&["ai-chat-conversation-item-info-box"]);
         root.append(&info_box);
         
@@ -41,9 +41,6 @@ impl ConversationItem {
         let message_count = aichats::get_messages_length(conversation.id).unwrap_or(0);
         let length_label = gtk4::Label::new(Some(&format!("{} messages", message_count)));
         length_label.set_css_classes(&["ai-chat-conversation-item-length-label"]);
-        length_label.set_halign(gtk4::Align::End);
-        length_label.set_xalign(1.0);
-        length_label.set_hexpand(true);
         info_box.append(&length_label);
 
         let controls_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 8);
@@ -63,7 +60,10 @@ impl ConversationItem {
 
         let controls_revealer = gtk4::Revealer::new();
         controls_revealer.set_css_classes(&["ai-chat-conversation-item-controls-revealer"]);
-        controls_revealer.set_transition_type(gtk4::RevealerTransitionType::SlideDown);
+        controls_revealer.set_halign(gtk4::Align::End);
+        controls_revealer.set_valign(gtk4::Align::Start);
+        controls_revealer.set_hexpand(true);
+        controls_revealer.set_transition_type(gtk4::RevealerTransitionType::SlideLeft);
         controls_revealer.set_transition_duration(200);
         controls_revealer.set_child(Some(&controls_box));
         root.append(&controls_revealer);
