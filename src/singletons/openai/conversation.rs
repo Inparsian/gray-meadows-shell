@@ -49,6 +49,15 @@ pub fn load_conversation(id: i64) {
     }
 }
 
+pub fn load_first_conversation() {
+    if let Some(first_conversation) = aichats::get_all_conversations()
+        .unwrap_or_default()
+        .first()
+    {
+        load_conversation(first_conversation.id);
+    }
+}
+
 pub fn add_conversation(title: &str) {
     match aichats::add_conversation(title) {
         Ok(conversation_id) => {
@@ -99,34 +108,10 @@ pub fn delete_conversation(conversation_id: i64) {
             return;
         }
 
-        {
-            let mut conversation = session.conversation.write().unwrap();
-            if let Some(current) = &*conversation && current.id == conversation_id {
-                // Select a neighboring conversation if the deleted one is the current one
-                match aichats::get_all_conversations() {
-                    Ok(conversations) => {
-                        if let Some(pos) = conversations.iter().position(|c| c.id == conversation_id) {
-                            let new_conversation = if pos > 0 {
-                                conversations.get(pos - 1)
-                            } else {
-                                conversations.get(pos + 1)
-                            };
-                            if let Some(new_conv) = new_conversation {
-                                *conversation = Some(new_conv.clone());
-                            } else {
-                                *conversation = None;
-                            }
-                        }
-                    },
-                    Err(err) => {
-                        eprintln!("Failed to get AI chat conversations from database: {}", err);
-                        *conversation = None;
-                    }
-                }
-            }
+        let current_conversation_id = session.conversation.read().unwrap().as_ref().map(|c| c.id);
+        if current_conversation_id == Some(conversation_id) {
+            load_first_conversation();
         }
-
-        session.messages.write().unwrap().clear();
 
         if let Some(channel) = CHANNEL.get() {
             channel.spawn_send(AIChannelMessage::ConversationDeleted(conversation_id));

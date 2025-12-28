@@ -148,12 +148,7 @@ pub fn activate() {
     let _ = SESSION.set(session);
     let _ = CHANNEL.set(BroadcastChannel::new(100));
 
-    if let Some(first_conversation) = aichats::get_all_conversations()
-        .unwrap_or_default()
-        .first()
-    {
-        conversation::load_conversation(first_conversation.id);
-    }
+    conversation::load_first_conversation();
 }
 
 pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'static + Send>> {
