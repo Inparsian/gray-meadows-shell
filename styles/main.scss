@@ -271,124 +271,211 @@
         }
 
         .AiChat {
-            .ai-chat-conversation-title {
-                @include large-text;
-                font-weight: 900;
-                margin-bottom: 12px;
-                color: $foreground-color-select;
-            }
-
-            .ai-chat-clear-conversation-button {
-                @include material-icons;
-                background: transparent;
-                border: 0px;
-                color: $foreground-color-quaternary;
-                padding: 0px;
-                margin: 0px;
-                min-width: 0px;
-                min-height: 0px;
-
-                &:hover, &:focus {
-                    color: $foreground-color-tertiary;
-                    outline: none;
+            .ai-chat-ui {
+                .ai-chat-conversation-controls {
+                    margin-bottom: 12px;
+                }
+                
+                .ai-chat-conversation-title {
+                    @include large-text;
+                    font-weight: 900;
+                    color: $foreground-color-select;
                 }
 
-                &:active {
-                    color: $foreground-color-secondary;
-                }
-            }
-
-            .ai-chat-message {
-                background: $background-color-secondary;
-                border: 1px solid $border-color-primary;
-                padding: 12px;
-                color: $foreground-color-primary;
-
-                .ai-chat-message-sender {
-                    margin-bottom: 8px;
-
-                    .ai-chat-message-sender-icon {
-                        background: $background-color-secondary;
-                        border: 1px solid $background-color-tertiary;
-                        margin-right: 8px;
-                    }
-
-                    .ai-chat-message-sender-mui-icon {
-                        @include material-icons;
-                        font-size: 24px;
-                        margin-right: 8px;
-                    }
-
-                    .ai-chat-message-sender-label {
-                        @include large-text;
-                    }
-                }
-
-                .ai-chat-message-delete-button {
-                    @include material-icons;
-                    background: transparent;
-                    border: 0px;
-                    color: $foreground-color-quaternary;
-                    padding: 0px;
-                    margin: 0px;
-                    min-width: 0px;
-                    min-height: 0px;
+                .ai-chat-conversation-control-button {
+                    @include tiny-text;
+                    background: $background-color-secondary;
+                    border: 1px solid $border-color-primary;
+                    border-radius: 0px;
+                    color: $foreground-color-primary;
+                    padding-top: 0px;
+                    padding-bottom: 0px;
+                    padding-left: 6px;
+                    padding-right: 6px;
+                    font-weight: normal;
 
                     &:hover, &:focus {
-                        color: $foreground-color-tertiary;
+                        background: $background-color-tertiary;
                         outline: none;
                     }
 
                     &:active {
-                        color: $foreground-color-secondary;
+                        background: $background-color-quaternary;
+                    }
+
+                    .ai-chat-conversation-control-button-icon {
+                        @include material-icons;
+                        font-size: 13px;
                     }
                 }
 
-                .ai-chat-message-content {
-                    @include variable-text;
-
-                    .cmark-codeblock-header {
-                        background-color: #242424;
-                        padding: 6px 8px;
-                    }
-
-                    .cmark-table-cell {
-                        padding: 4px 8px;
-                        border: 1px solid $background-color-quaternary;
-                    }
-                }
-
-                .ai-chat-message-tool-call {
-                    margin-top: 12px;
-                    padding: 12px;
-                    background: $background-color-primary;
+                .ai-chat-message {
+                    background: $background-color-secondary;
                     border: 1px solid $border-color-primary;
+                    padding: 12px;
+                    color: $foreground-color-primary;
 
-                    .ai-chat-message-tool-call-name {
-                        @include large-text;
-                        margin-bottom: 6px;
+                    .ai-chat-message-sender {
+                        margin-bottom: 8px;
+
+                        .ai-chat-message-sender-icon {
+                            background: $background-color-secondary;
+                            border: 1px solid $background-color-tertiary;
+                            margin-right: 8px;
+                        }
+
+                        .ai-chat-message-sender-mui-icon {
+                            @include material-icons;
+                            font-size: 24px;
+                            margin-right: 8px;
+                        }
+
+                        .ai-chat-message-sender-label {
+                            @include large-text;
+                        }
                     }
 
-                    .ai-chat-message-tool-call-arguments {
-                        @include normal-text;
-                        color: $foreground-color-secondary;
+                    .ai-chat-message-delete-button {
+                        @include material-icons;
+                        background: transparent;
+                        border: 0px;
+                        color: $foreground-color-quaternary;
+                        padding: 0px;
+                        margin: 0px;
+                        min-width: 0px;
+                        min-height: 0px;
+
+                        &:hover, &:focus {
+                            color: $foreground-color-tertiary;
+                            outline: none;
+                        }
+
+                        &:active {
+                            color: $foreground-color-secondary;
+                        }
+                    }
+
+                    .ai-chat-message-content {
+                        @include variable-text;
+
+                        .cmark-codeblock-header {
+                            background-color: #242424;
+                            padding: 6px 8px;
+                        }
+
+                        .cmark-table-cell {
+                            padding: 4px 8px;
+                            border: 1px solid $background-color-quaternary;
+                        }
+                    }
+
+                    .ai-chat-message-tool-call {
+                        margin-top: 12px;
+                        padding: 12px;
+                        background: $background-color-primary;
+                        border: 1px solid $border-color-primary;
+
+                        .ai-chat-message-tool-call-name {
+                            @include large-text;
+                            margin-bottom: 6px;
+                        }
+
+                        .ai-chat-message-tool-call-arguments {
+                            @include normal-text;
+                            color: $foreground-color-secondary;
+                        }
+                    }
+                }
+
+                .ai-chat-input {
+                    background: $background-color-secondary;
+                    border: 1px solid $border-color-primary;
+                    color: $foreground-color-primary;
+                    border: 1px solid $border-color-primary;
+                    margin-top: 8px;
+                    border-radius: 0px;
+                    outline: none;
+                    box-shadow: none;
+
+                    selection {
+                        background-color: $foreground-color-select;
+                        color: $background-color-quaternary;
                     }
                 }
             }
 
-            .ai-chat-input {
-                background: $background-color-secondary;
-                border: 1px solid $border-color-primary;
-                color: $foreground-color-primary;
-                border: 1px solid $border-color-primary;
-                margin-top: 8px;
-                border-radius: 0px;
-                outline: none;
-                box-shadow: none;
+            .ai-conversations-ui {
+                .ai-chat-conversation-item {
+                    background: transparent;
+                    color: $foreground-color-primary;
+                    border: 0px;
+                    border-radius: 0px;
+                    padding-top: 8px;
+                    padding-bottom: 8px;
+                    padding-left: 8px;
+                    padding-right: 8px;
+                    font-weight: normal;
+                    transition: background 0.25s cubic-bezier(0.5, 0, 0.25, 1);
 
-                selection {
-                    background-color: $foreground-color-select;
-                    color: $background-color-quaternary;
+                    &:hover, &:focus {
+                        background: $background-color-tertiary;
+                        outline: none;
+                    }
+
+                    .ai-chat-conversation-item-title-label {
+                        @include large-text;
+                    }
+
+                    .ai-chat-conversation-item-length-label {
+                        color: $foreground-color-secondary;
+                    }
+
+                    .ai-chat-conversation-item-control-button {
+                        @include material-icons;
+                        font-size: 16px;
+                        margin-top: 8px;
+                        transition: color 0.25s cubic-bezier(0.5, 0, 0.25, 1);
+                        color: $foreground-color-primary;
+                        padding: 0px;
+                        min-width: 0px;
+                        min-height: 0px;
+                        background: transparent;
+                        border: 0px;
+
+                        &:hover, &:focus {
+                            color: $foreground-color-secondary;
+                            outline: none;
+                        }
+
+                        &:active {
+                            color: $foreground-color-primary;
+                        }
+                    }
+                }
+
+                .ai-chat-conversation-ui-footer-button {
+                    @include normal-text;
+                    background: $background-color-secondary;
+                    font-weight: 300;
+                    border: 0px;
+                    color: $foreground-color-primary;
+                    padding: 6px 8px;
+                    border-radius: 0px;
+
+                    &:hover, &:focus {
+                        background: $background-color-tertiary;
+                        outline: none;
+                    }
+
+                    &:active {
+                        background: $background-color-quaternary;
+                    }
+
+                    .ai-chat-conversation-ui-footer-button-icon {
+                        @include material-icons;
+                        font-weight: 400;
+                        font-size: 16px;
+                    }
                 }
             }
         }

@@ -49,7 +49,6 @@ pub fn load_conversation(id: i64) {
     }
 }
 
-#[allow(dead_code)]
 pub fn add_conversation(title: &str) {
     match aichats::add_conversation(title) {
         Ok(conversation_id) => {
@@ -93,7 +92,6 @@ pub fn rename_conversation(conversation_id: i64, new_title: &str) {
     }
 }
 
-#[allow(dead_code)]
 pub fn delete_conversation(conversation_id: i64) {
     if let Some(session) = SESSION.get() {
         if let Err(err) = aichats::delete_conversation(conversation_id) {
