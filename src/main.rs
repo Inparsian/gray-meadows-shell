@@ -66,6 +66,10 @@ pub static APP: LazyLock<GrayMeadowsGlobal> = LazyLock::new(|| GrayMeadowsGlobal
 
 pub static SQL_CONNECTION: OnceLock<Mutex<Connection>> = OnceLock::new();
 
+pub static USERNAME: LazyLock<String> = LazyLock::new(|| {
+    std::env::var("USER").unwrap_or_else(|_| "unknown".to_owned())
+});
+
 fn activate(application: &Application) {
     let keybinds_osd = widgets::osd::imp::keybinds::KeybindsOsd::default();
     let volume_osd = widgets::osd::imp::volume::VolumeOsd::default();

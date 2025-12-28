@@ -5,6 +5,7 @@ use gtk4::prelude::*;
 use relm4::RelmIterChildrenExt as _;
 
 use crate::APP;
+use crate::USERNAME;
 use crate::filesystem;
 use crate::gesture;
 use crate::singletons::openai;
@@ -79,7 +80,7 @@ impl ChatMessage {
         };
 
         let sender_label = gtk4::Label::new(Some(match role {
-            ChatRole::User => "You",
+            ChatRole::User => &USERNAME,
             ChatRole::Assistant => APP.config.ai.assistant_name.as_ref().map_or("AI Assistant", |name| name.as_str()),
         }));
         sender_label.set_css_classes(&["ai-chat-message-sender-label"]);
