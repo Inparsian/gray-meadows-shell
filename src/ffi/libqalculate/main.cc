@@ -1,4 +1,4 @@
-#include <main.h>
+#include "main.h"
 #include <libqalculate/qalculate.h>
 #include <rust/cxx.h>
 #include <memory>

@@ -1,4 +1,4 @@
-#include <data.h>
+#include "data.h"
 
 Node make_node_data_from_node(AstalWpNode *node) {
     Node data;
