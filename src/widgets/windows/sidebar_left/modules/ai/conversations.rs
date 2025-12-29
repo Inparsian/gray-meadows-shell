@@ -15,6 +15,14 @@ fn conversation_control_button(icon_name: &str, tooltip: &str) -> gtk4::Button {
     button
 }
 
+fn message_count_str(count: usize) -> String {
+    match count {
+        0 => "No messages".to_owned(),
+        1 => "1 message".to_owned(),
+        n => format!("{} messages", n),
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct ConversationItem {
     pub conversation: Rc<RefCell<SqlAiConversation>>,
@@ -62,7 +70,7 @@ impl ConversationItem {
         info_box.append(&title_input);
 
         let message_count = aichats::get_messages_length(conversation.borrow().id).unwrap_or(0);
-        let length_label = gtk4::Label::new(Some(&format!("{} messages", message_count)));
+        let length_label = gtk4::Label::new(Some(&message_count_str(message_count)));
         length_label.set_css_classes(&["ai-chat-conversation-item-length-label"]);
         length_label.set_halign(gtk4::Align::Start);
         length_label.set_xalign(0.0);
@@ -134,7 +142,7 @@ impl ConversationItem {
     }
 
     pub fn set_length(&self, new_length: usize) {
-        self.length_label.set_text(&format!("{} messages", new_length));
+        self.length_label.set_text(&message_count_str(new_length));
     }
 }
 

@@ -221,6 +221,8 @@ pub fn get_messages(conversation_id: i64) -> Result<Vec<SqlAiConversationMessage
 
 /// Gets the length of messages in a conversation.
 pub fn get_messages_length(conversation_id: i64) -> Result<usize, Box<dyn std::error::Error>> {
-    let messages = get_messages(conversation_id)?;
-    Ok(messages.len())
+    Ok(get_messages(conversation_id)?
+        .into_iter()
+        .filter(|msg| matches!(msg.role.as_str(), "user" | "assistant"))
+        .count())
 }
