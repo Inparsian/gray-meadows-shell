@@ -32,19 +32,22 @@ ok
 
 <table align="center">
   <tr>
-    <td colspan="1">
-      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/77459e91-98fc-4080-ac3f-304816f52d64" />
+    <td colspan="5">
+      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/23d9bd08-8650-49c4-8bf7-63fecff50be3" />
     </td>
-    <td colspan="1">
-      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/d6bd4dc4-6f7e-45c4-aadb-c61d61622aa5" />
+    <td colspan="5">
+      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/af613a04-1611-4afd-b829-e03d01b3eb20" />
     </td>
   </tr>
   <tr>
-    <td colspan="1">
-      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/87d6df6e-7bb2-41d8-a8c1-e5001a69d261" />
+    <td colspan="3.33333">
+      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/cb200c75-7a86-41d0-8e59-49003ac2aa24" />
     </td>
-    <td colspan="1">
-      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/fe30025e-d024-4757-ba01-5bf306996672" />
+    <td colspan="3.33333">
+      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/6c60f4a2-1650-4c20-8101-5c0fc221fc5c" />
+    </td>
+    <td colspan="3.33333">
+      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/07aae2e3-4740-4e34-b3c4-ec6ee8a4e752" />
     </td>
   </tr>
 </table>
