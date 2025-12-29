@@ -194,6 +194,17 @@ impl ConversationsList {
                                 }
                             },
 
+                            openai::AIChannelMessage::ConversationTrimmed(conversation_id, _) => {
+                                let conversations = me.conversations.borrow();
+                                for item in conversations.iter() {
+                                    if item.conversation.borrow().id == conversation_id {
+                                        let current_length = aichats::get_messages_length(conversation_id).unwrap_or(0);
+                                        item.set_length(current_length);
+                                        break;
+                                    }
+                                }
+                            },
+
                             openai::AIChannelMessage::ConversationLoaded(conversation) => {
                                 let conversations = me.conversations.borrow();
                                 for item in conversations.iter() {

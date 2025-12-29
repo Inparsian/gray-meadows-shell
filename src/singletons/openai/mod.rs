@@ -39,7 +39,7 @@ pub enum AIChannelMessage {
     CycleStarted,
     CycleFinished,
     ConversationLoaded(SqlAiConversation),
-    ConversationTrimmed(i64), // up to message ID
+    ConversationTrimmed(i64, i64), // (conversation ID, down to message ID)
     ConversationAdded(SqlAiConversation),
     ConversationRenamed(i64, String), // (conversation ID, new title)
     ConversationDeleted(i64), // conversation ID
@@ -121,7 +121,7 @@ pub fn trim_messages(down_to_message_id: i64) {
         }
 
         if let Some(channel) = CHANNEL.get() {
-            channel.spawn_send(AIChannelMessage::ConversationTrimmed(down_to_message_id));
+            channel.spawn_send(AIChannelMessage::ConversationTrimmed(conversation.id, down_to_message_id));
         }
     }
 }

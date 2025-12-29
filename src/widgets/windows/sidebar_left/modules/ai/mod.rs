@@ -196,8 +196,14 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                         }
                     },
 
-                    openai::AIChannelMessage::ConversationTrimmed(down_to_message_id) => {
-                        chat.trim_messages(down_to_message_id);
+                    openai::AIChannelMessage::ConversationTrimmed(conversation_id, down_to_message_id) => {
+                        if openai::SESSION.get().and_then(|session| {
+                            let conversation = session.conversation.read().unwrap();
+                            conversation.as_ref().map(|conv| conv.id)
+                        }) == Some(conversation_id)
+                        {
+                            chat.trim_messages(down_to_message_id);
+                        }
                     },
 
                     openai::AIChannelMessage::ConversationRenamed(conversation_id, new_title) => {
