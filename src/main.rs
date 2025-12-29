@@ -54,7 +54,6 @@ thread_local! {
 
 #[derive(Debug, Clone)]
 pub struct GrayMeadowsGlobal {
-    #[allow(dead_code)]
     config: config::Config,
     game_mode: Mutable<bool>,
 }

@@ -29,8 +29,6 @@ pub static CHANNEL: OnceLock<BroadcastChannel<AIChannelMessage>> = OnceLock::new
 pub static SESSION: OnceLock<AISession> = OnceLock::new();
 
 #[derive(Debug, Clone)]
-#[allow(clippy::enum_variant_names)]
-#[allow(dead_code)]
 pub enum AIChannelMessage {
     StreamStart,
     StreamChunk(String),
