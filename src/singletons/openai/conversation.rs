@@ -80,7 +80,6 @@ pub fn add_conversation(title: &str) {
     }
 }
 
-#[allow(dead_code)]
 pub fn rename_conversation(conversation_id: i64, new_title: &str) {
     if let Some(session) = SESSION.get() {
         if let Err(err) = aichats::rename_conversation(conversation_id, new_title) {
@@ -88,11 +87,9 @@ pub fn rename_conversation(conversation_id: i64, new_title: &str) {
             return;
         }
 
-        {
-            let mut conversation = session.conversation.write().unwrap();
-            if let Some(current) = &mut *conversation && current.id == conversation_id {
-                current.title = new_title.to_owned();
-            }
+        let mut conversation = session.conversation.write().unwrap();
+        if let Some(current) = &mut *conversation && current.id == conversation_id {
+            current.title = new_title.to_owned();
         }
 
         if let Some(channel) = CHANNEL.get() {

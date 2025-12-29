@@ -426,6 +426,18 @@
                         @include large-text;
                     }
 
+                    .ai-chat-conversation-item-title-input {
+                        @include large-text;
+                        background: transparent;
+                        color: $foreground-color-primary;
+                        padding: 0px;
+                        border-bottom: 1px solid $border-color-primary;
+                        min-height: 0px;
+                        border-radius: 0px;
+                        outline: none;
+                        box-shadow: none;
+                    }
+
                     .ai-chat-conversation-item-length-label {
                         color: $foreground-color-secondary;
                     }

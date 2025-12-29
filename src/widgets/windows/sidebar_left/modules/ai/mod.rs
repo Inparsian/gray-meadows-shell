@@ -200,6 +200,16 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                         chat.trim_messages(down_to_message_id);
                     },
 
+                    openai::AIChannelMessage::ConversationRenamed(conversation_id, new_title) => {
+                        if openai::SESSION.get().and_then(|session| {
+                            let conversation = session.conversation.read().unwrap();
+                            conversation.as_ref().map(|conv| conv.id)
+                        }) == Some(conversation_id)
+                        {
+                            conversation_title.set_text(&new_title);
+                        }
+                    },
+
                     openai::AIChannelMessage::StreamStart => {
                         chat.add_message(chat::ChatMessage::new(
                             &chat::ChatRole::Assistant,
