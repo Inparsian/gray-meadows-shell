@@ -1,7 +1,8 @@
-use std::{path::Path, process::Command};
+use std::path::Path;
 use gtk4::prelude::*;
 use futures_signals::signal::SignalExt as _;
 
+use crate::USERNAME;
 use crate::widgets::windows;
 use crate::filesystem;
 use crate::singletons::sysstats::SYS_STATS;
@@ -33,10 +34,6 @@ fn get_uptime_label_text(uptime: Option<u64>) -> String {
 }
 
 pub fn new() -> gtk4::Box {
-    let whoami = Command::new("whoami")
-        .output()
-        .map_or_else(|_| "Unknown User".to_owned(), |output| String::from_utf8_lossy(&output.stdout).trim().to_owned());
-
     view! {
         face = gtk4::Image {
             set_pixel_size: 40,
@@ -67,7 +64,7 @@ pub fn new() -> gtk4::Box {
                     set_spacing: 2,
 
                     gtk4::Label {
-                        set_label: &whoami, 
+                        set_label: &USERNAME, 
                         set_css_classes: &["sidebar-right-header-label"],
                         set_xalign: 0.0
                     },

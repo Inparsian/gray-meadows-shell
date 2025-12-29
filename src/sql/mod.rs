@@ -48,5 +48,38 @@ pub fn establish_connection() -> Result<Connection, Box<dyn std::error::Error>> 
         )
     ")?;
 
+    // Table for AI chat conversations
+    connection.execute("
+        CREATE TABLE IF NOT EXISTS aichat_conversations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+    ")?;
+
+    connection.execute("
+        CREATE TABLE IF NOT EXISTS aichat_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            conversation_id INTEGER NOT NULL,
+            role TEXT NOT NULL,
+            content TEXT NOT NULL,
+            tool_call_id TEXT,
+            tool_call_function TEXT,
+            tool_call_arguments TEXT,
+            timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(conversation_id) REFERENCES aichat_conversations(id) ON DELETE CASCADE
+        )
+    ")?;
+
     Ok(connection)
+}
+
+pub fn last_insert_rowid(connection: &Connection) -> Result<i64, Box<dyn std::error::Error>> {
+    let mut cursor = connection.prepare("SELECT last_insert_rowid()")?;
+    let rowid = if cursor.next()? == sqlite::State::Row {
+        cursor.read::<i64, _>(0)?
+    } else {
+        0
+    };
+    Ok(rowid)
 }
