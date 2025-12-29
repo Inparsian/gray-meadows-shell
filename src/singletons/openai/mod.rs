@@ -67,6 +67,12 @@ pub fn is_currently_in_cycle() -> bool {
     SESSION.get().is_some_and(|session| *session.currently_in_cycle.read().unwrap())
 }
 
+pub fn current_conversation_id() -> Option<i64> {
+    let session = SESSION.get()?;
+    let conversation = session.conversation.read().unwrap();
+    conversation.as_ref().map(|conv| conv.id)
+}
+
 fn make_client() -> Client<OpenAIConfig> {
     let config = OpenAIConfig::new()
         .with_api_key(APP.config.ai.api_key.as_str());

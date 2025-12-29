@@ -218,17 +218,14 @@ impl ConversationsList {
 
                             openai::AIChannelMessage::CycleStarted |
                             openai::AIChannelMessage::CycleFinished => {
-                                let Some(current_conversation) = openai::SESSION.get().and_then(|session| {
-                                    let conversation = session.conversation.read().unwrap();
-                                    conversation.clone()
-                                }) else {
+                                let Some(current_conversation_id) = openai::current_conversation_id() else {
                                     continue;
                                 };
 
                                 let conversations = me.conversations.borrow();
                                 for item in conversations.iter() {
-                                    if item.conversation.borrow().id == current_conversation.id {
-                                        let current_length = aichats::get_messages_length(current_conversation.id).unwrap_or(0);
+                                    if item.conversation.borrow().id == current_conversation_id {
+                                        let current_length = aichats::get_messages_length(current_conversation_id).unwrap_or(0);
                                         item.set_length(current_length);
                                         break;
                                     }

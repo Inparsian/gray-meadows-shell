@@ -71,15 +71,9 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
 
     let clear_conversation_button = conversation_control_button("clear_all", "Clear");
     clear_conversation_button.connect_clicked(move |_| {
-        if !openai::is_currently_in_cycle() {
-            let conversation_id = if let Some(session) = openai::SESSION.get()
-                && let Some(conversation) = &*session.conversation.read().unwrap()
-            {
-                conversation.id
-            } else {
-                return;
-            };
-
+        if !openai::is_currently_in_cycle()
+            && let Some(conversation_id) = openai::current_conversation_id()
+        {
             openai::conversation::clear_conversation(conversation_id);
         }
     });
@@ -197,21 +191,13 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                     },
 
                     openai::AIChannelMessage::ConversationTrimmed(conversation_id, down_to_message_id) => {
-                        if openai::SESSION.get().and_then(|session| {
-                            let conversation = session.conversation.read().unwrap();
-                            conversation.as_ref().map(|conv| conv.id)
-                        }) == Some(conversation_id)
-                        {
+                        if openai::current_conversation_id() == Some(conversation_id) {
                             chat.trim_messages(down_to_message_id);
                         }
                     },
 
                     openai::AIChannelMessage::ConversationRenamed(conversation_id, new_title) => {
-                        if openai::SESSION.get().and_then(|session| {
-                            let conversation = session.conversation.read().unwrap();
-                            conversation.as_ref().map(|conv| conv.id)
-                        }) == Some(conversation_id)
-                        {
+                        if openai::current_conversation_id() == Some(conversation_id) {
                             conversation_title.set_text(&new_title);
                         }
                     },
