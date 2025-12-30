@@ -108,7 +108,21 @@ pub fn listen_for_notifications() {
                     });
                 },
 
-                _ => { /* Ignore other events */ }
+                BusEvent::NotificationUpdated(id, notification) => {
+                    APP_LOCAL.with(move |app| {
+                        let app = app.borrow();
+                        for container in app.notification_containers.borrow().iter() {
+                            let widgets = container.widgets.borrow().clone();
+                            for widget in &widgets {
+                                if widget.notification.id == id {
+                                    widget.update(&notification);
+                                }
+                            }
+                        }
+                    });
+                },
+
+                _ => {},
             }
         }
     });

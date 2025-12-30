@@ -41,6 +41,8 @@ pub struct NotificationWidget {
     pub notification: Notification,
     pub bx: gtk4::Box,
     pub root: gtk4::Revealer,
+    pub summary: gtk4::Label,
+    pub body: gtk4::Label,
     pub style_provider: gtk4::CssProvider,
 }
 
@@ -50,6 +52,22 @@ impl NotificationWidget {
         let drag_gesture = gtk4::GestureDrag::new();
 
         view! {
+            summary = gtk4::Label {
+                set_label: &notification.summary,
+                set_css_classes: &["notification-summary"],
+                set_xalign: 0.0,
+                set_hexpand: true,
+                set_ellipsize: gtk4::pango::EllipsizeMode::End,
+            },
+
+            body = gtk4::Label {
+                set_label: &notification.body,
+                set_css_classes: &["notification-body"],
+                set_xalign: 0.0,
+                set_hexpand: true,
+                set_ellipsize: gtk4::pango::EllipsizeMode::End,
+            },
+
             bx = gtk4::Box {
                 set_css_classes: &["notification"],
                 set_orientation: gtk4::Orientation::Vertical,
@@ -60,22 +78,8 @@ impl NotificationWidget {
                     set_css_classes: &["notification-content"],
                     set_orientation: gtk4::Orientation::Vertical,
                     set_spacing: 4,
-
-                    gtk4::Label {
-                        set_label: &notification.summary,
-                        set_css_classes: &["notification-summary"],
-                        set_xalign: 0.0,
-                        set_hexpand: true,
-                        set_ellipsize: gtk4::pango::EllipsizeMode::End,
-                    },
-
-                    gtk4::Label {
-                        set_label: &notification.body,
-                        set_css_classes: &["notification-body"],
-                        set_xalign: 0.0,
-                        set_hexpand: true,
-                        set_ellipsize: gtk4::pango::EllipsizeMode::End,
-                    },
+                    append: &summary,
+                    append: &body,
                 },
             },
 
@@ -94,6 +98,8 @@ impl NotificationWidget {
             notification,
             bx,
             root,
+            summary,
+            body,
             style_provider,
         };
 
@@ -150,6 +156,11 @@ impl NotificationWidget {
 
     pub fn set_parent(&mut self, parent: Rc<super::NotificationsWindow>) {
         self.parent = Some(parent);
+    }
+
+    pub fn update(&self, notification: &Notification) {
+        self.summary.set_label(&notification.summary);
+        self.body.set_label(&notification.body);
     }
 
     pub fn get_offset_margin(&self, offset_x: f64) -> i32 {
