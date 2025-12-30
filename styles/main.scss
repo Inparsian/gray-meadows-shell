@@ -859,6 +859,33 @@
     }
 }
 
+.notifications-window {
+    background: #00000001;
+    padding: 5px;
+
+    .notification {
+        @include normal-text;
+    
+        background: $background-color-primary;
+        border: 1px solid $border-color-primary;
+        color: $foreground-color-primary;
+        min-width: 200px;
+        padding: 8px;
+        margin-bottom: 2px;
+
+        .notification-content {
+            .notification-summary {
+                font-weight: bold;
+            }
+
+            .notification-body {
+                color: $foreground-color-active;
+                margin-left: 1px;
+            }
+        }
+    }
+}
+
 .clipboard-window {
     background: transparent;
 

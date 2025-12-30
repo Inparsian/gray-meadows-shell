@@ -35,15 +35,9 @@ impl OsdWindow {
         }
 
         window.connect_visible_notify(move |win| {
-            let Some(native) = win.native() else {
-                return;
-            };
-
-            let Some(surface) = native.surface() else {
-                return;
-            };
-
-            surface.set_input_region(&Region::create());
+            if let Some(surface) = win.native().and_then(|n| n.surface()) {
+                surface.set_input_region(&Region::create());
+            }
         });
 
         OsdWindow {
