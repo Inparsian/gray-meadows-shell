@@ -1,4 +1,5 @@
 use std::time::Duration;
+use std::rc::Rc;
 use gtk4::prelude::*;
 
 use crate::singletons::notifications::wrapper::Notification;
@@ -8,36 +9,35 @@ const NOTIF_TRANSITION_DURATION: u32 = 175; // ms
 const DISMISS_ANIMATION_DELAY: u32 = 75; // ms
 const DRAG_BEGIN_THRESHOLD: u32 = 30; // px
 const DRAG_CONFIRM_THRESHOLD: u32 = 100; // px
+const DEFAULT_CSS: &str = ".notification {
+    margin-left: 0px;
+    margin-right: 0px;
+    opacity: 1.0;
+    transition: opacity 0.1s ease, margin-left 0.2s ease, margin-right 0.2s ease;
+}";
 
-fn left_animation_css(width: i32) -> String {
-    format!(
-        ".notification {{
-            margin-right: {}px;
-            margin-left: {}px;
-            opacity: 0;
-            transition: opacity 0.2s ease, margin-left 0.2s ease, margin-right 0.2s ease;
-        }}",
-        width,
-        -width
-    )
+pub enum NotificationDismissAnimation {
+    Left,
+    Right,
 }
 
-fn right_animation_css(width: i32) -> String {
-    format!(
-        ".notification {{
-            margin-left: {}px;
-            margin-right: {}px;
+impl NotificationDismissAnimation {
+    pub fn css(&self, width: i32) -> String {
+        let margin_left = if matches!(self, NotificationDismissAnimation::Left) { -width } else { width };
+        let margin_right = if matches!(self, NotificationDismissAnimation::Right) { -width } else { width };
+
+        format!(".notification {{
+            margin-left: {margin_left}px;
+            margin-right: {margin_right}px;
             opacity: 0;
-            transition: opacity 0.2s ease, margin-left 0.2s ease, margin-right 0.2s ease;
-        }}",
-        width,
-        -width
-    )
+            transition: opacity 0.1s ease, margin-left 0.2s ease, margin-right 0.2s ease;
+        }}")
+    }
 }
 
 #[derive(Clone)]
 pub struct NotificationWidget {
-    #[allow(dead_code)]
+    pub parent: Option<Rc<super::NotificationsWindow>>,
     pub notification: Notification,
     pub bx: gtk4::Box,
     pub root: gtk4::Revealer,
@@ -90,6 +90,7 @@ impl NotificationWidget {
         }
 
         let me = NotificationWidget {
+            parent: None,
             notification,
             bx,
             root,
@@ -114,9 +115,7 @@ impl NotificationWidget {
                         opacity,
                     ));
                 } else {
-                    style_provider.load_from_data(
-                        ".notification { margin-left: 0px; margin-right: 0px; transition: margin-left 0.2s ease, margin-right 0.2s ease; }",
-                    );
+                    style_provider.load_from_data(DEFAULT_CSS);
                 }
             }
         });
@@ -126,18 +125,15 @@ impl NotificationWidget {
             let style_provider = me.style_provider.clone();
             move |_, offset_x, _| {
                 if offset_x.abs() as u32 >= DRAG_CONFIRM_THRESHOLD {
-                    let allocation = me.bx.allocation();
-                    let width = allocation.width();
-                    if offset_x < 0.0 {
-                        style_provider.load_from_data(&left_animation_css(width));
+                    let animation = if offset_x < 0.0 {
+                        NotificationDismissAnimation::Left
                     } else {
-                        style_provider.load_from_data(&right_animation_css(width));
-                    }
-                    me.destroy();
+                        NotificationDismissAnimation::Right
+                    };
+
+                    me.destroy(Some(animation));
                 } else {
-                    style_provider.load_from_data(
-                        ".notification { margin-left: 0px; margin-right: 0px; transition: margin-left 0.2s ease, margin-right 0.2s ease; }",
-                    );
+                    style_provider.load_from_data(DEFAULT_CSS);
                 }
             }
         });
@@ -150,6 +146,10 @@ impl NotificationWidget {
         });
 
         me
+    }
+
+    pub fn set_parent(&mut self, parent: Rc<super::NotificationsWindow>) {
+        self.parent = Some(parent);
     }
 
     pub fn get_offset_margin(&self, offset_x: f64) -> i32 {
@@ -165,8 +165,18 @@ impl NotificationWidget {
         1.0 - progress * progress
     }
 
-    pub fn destroy(&self) {
+    pub fn destroy(&self, animation: Option<NotificationDismissAnimation>) {
         self.root.set_reveal_child(false);
+
+        if let Some(anim) = animation {
+            let allocation = self.bx.allocation();
+            let width = allocation.width();
+            self.style_provider.load_from_data(&anim.css(width));
+        }
+
+        if let Some(parent) = &self.parent {
+            parent.widgets.borrow_mut().retain(|w| !w.root.eq(&self.root));
+        }
 
         gtk4::glib::timeout_add_local_once(
             Duration::from_millis(NOTIF_TRANSITION_DURATION as u64),

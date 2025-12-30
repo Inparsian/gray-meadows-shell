@@ -17,8 +17,8 @@ pub enum NotificationHint {
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct Notification {
+    pub id: u32,
     pub app_name: String,
     pub replaces_id: u32,
     pub app_icon: String,
@@ -56,7 +56,8 @@ impl OrgFreedesktopNotifications for NotificationManager {
             }
         }).collect();
             
-        let notification = Notification {
+        let mut notification = Notification {
+            id: 0,
             app_name,
             replaces_id,
             app_icon,
@@ -71,6 +72,7 @@ impl OrgFreedesktopNotifications for NotificationManager {
             .map_err(|_| dbus::MethodErr::failed(&"Failed to acquire write lock on notifications"))?;
 
         if replaces_id > 0 {
+            notification.id = replaces_id;
             notifications.insert(replaces_id, notification.clone());
             self.channel.send_blocking(BusEvent::NotificationUpdated(replaces_id, notification));
             Ok(replaces_id)
@@ -83,6 +85,7 @@ impl OrgFreedesktopNotifications for NotificationManager {
                 *id_counter
             };
 
+            notification.id = id;
             notifications.insert(id, notification.clone());
             self.channel.send_blocking(BusEvent::NotificationAdded(id, notification));
             Ok(id)

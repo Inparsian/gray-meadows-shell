@@ -1,14 +1,18 @@
 pub mod notification;
 
+use std::rc::Rc;
+use std::cell::RefCell;
 use gtk4::prelude::*;
 use gdk4::cairo::{Region, RectangleInt};
 use gtk4_layer_shell::{Edge, Layer, LayerShell as _};
 
 use crate::APP_LOCAL;
 use crate::singletons::notifications;
+use self::notification::NotificationWidget;
 
 #[derive(Clone)]
 pub struct NotificationsWindow {
+    pub widgets: Rc<RefCell<Vec<NotificationWidget>>>,
     pub window: gtk4::ApplicationWindow,
     pub container: gtk4::Box,
 }
@@ -60,25 +64,51 @@ impl NotificationsWindow {
         });
 
         NotificationsWindow {
+            widgets: Rc::new(RefCell::new(Vec::new())),
             window,
             container,
         }
     }
+
+    pub fn add_widget(&self, widget: &NotificationWidget) {
+        self.widgets.borrow_mut().push(widget.clone());
+        self.container.prepend(&widget.root);
+    }
 }
 
 pub fn listen_for_notifications() {
+    use notifications::bus::BusEvent;
     let mut receiver = notifications::subscribe();
 
     gtk4::glib::spawn_future_local(async move {
         while let Ok(message) = receiver.recv().await {
-            if let notifications::bus::BusEvent::NotificationAdded(_, notification) = message {
-                APP_LOCAL.with(move |app| {
-                    let app = app.borrow();
-                    for container in app.notification_containers.borrow().iter() {
-                        let notif_widget = notification::NotificationWidget::new(notification.clone());
-                        container.container.prepend(&notif_widget.root);
-                    }
-                });
+            match message {
+                BusEvent::NotificationAdded(_, notification) => {
+                    APP_LOCAL.with(move |app| {
+                        let app = app.borrow();
+                        for container in app.notification_containers.borrow().iter() {
+                            let mut notif_widget = NotificationWidget::new(notification.clone());
+                            notif_widget.set_parent(Rc::new(container.clone()));
+                            container.add_widget(&notif_widget);
+                        }
+                    });
+                },
+
+                BusEvent::NotificationClosed(id) => {
+                    APP_LOCAL.with(move |app| {
+                        let app = app.borrow();
+                        for container in app.notification_containers.borrow().iter() {
+                            let widgets = container.widgets.borrow().clone();
+                            for widget in &widgets {
+                                if widget.notification.id == id {
+                                    widget.destroy(Some(notification::NotificationDismissAnimation::Right));
+                                }
+                            }
+                        }
+                    });
+                },
+
+                _ => { /* Ignore other events */ }
             }
         }
     });
