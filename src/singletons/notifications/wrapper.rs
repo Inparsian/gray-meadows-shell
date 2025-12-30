@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use async_broadcast::Receiver;
-use dbus::arg::RefArg as _;
 use dbus::blocking;
+use dbus::arg::RefArg as _;
+use dbus::channel::Sender as _;
 use dbus_crossroads::{Crossroads, IfaceToken};
 
 use crate::broadcast::BroadcastChannel;
@@ -98,6 +99,7 @@ impl OrgFreedesktopNotifications for NotificationManager {
 
         if notifications.remove(&id).is_some() {
             self.channel.send_blocking(BusEvent::NotificationClosed(id));
+            emit_notification_closed(id, 3);
             Ok(())
         } else {
             Err(dbus::MethodErr::failed(&"Notification ID not found"))
@@ -167,4 +169,21 @@ impl NotificationManager {
 
         crossroads.serve(&connection)
     }
+}
+
+/// Emits a NotificationClosed signal for the given notification ID.
+pub fn emit_notification_closed(id: u32, reason: u32) {
+    let connection = blocking::Connection::new_session().expect("Failed to create D-Bus connection");
+    let mut signal = dbus::Message::signal(
+        &bus::NOTIFICATIONS_DBUS_OBJECT.into(),
+        &bus::NOTIFICATIONS_DBUS_BUS.into(),
+        &"NotificationClosed".into(),
+    );
+
+    signal.append_all(proxy::OrgFreedesktopNotificationsNotificationClosed {
+        id,
+        reason,
+    });
+
+    connection.send(signal).expect("Failed to send NotificationClosed signal");
 }
