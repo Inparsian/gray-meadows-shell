@@ -1,5 +1,10 @@
-use std::sync::{Arc, LazyLock, OnceLock, RwLock};
+pub mod proxy;
+pub mod wrapper;
+pub mod bus;
+pub mod icon;
+pub mod tray_menu;
 
+use std::sync::{Arc, LazyLock, OnceLock, RwLock};
 use async_broadcast::Receiver;
 
 use crate::broadcast::BroadcastChannel;
@@ -7,18 +12,12 @@ use self::bus::BusEvent;
 use self::wrapper::sn_item::StatusNotifierItem;
 use self::wrapper::sn_watcher::StatusNotifierWatcher;
 
-pub mod proxy;
-pub mod wrapper;
-pub mod bus;
-pub mod icon;
-pub mod tray_menu;
-
 static CHANNEL: LazyLock<BroadcastChannel<BusEvent>> = LazyLock::new(|| BroadcastChannel::new(10));
 
 pub static ITEMS: OnceLock<Arc<RwLock<Vec<StatusNotifierItem>>>> = OnceLock::new();
 
 pub fn activate() {
-    let watcher = StatusNotifierWatcher::new();
+    let watcher = StatusNotifierWatcher::default();
     let mut receiver = watcher.subscribe();
 
     ITEMS.set(watcher.items())

@@ -118,13 +118,6 @@ impl OrgFreedesktopNotifications for NotificationManager {
 
 impl Default for NotificationManager {
     fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl NotificationManager {
-    /// Creates a new `NotificationManager` with an empty list of notifications.
-    pub fn new() -> Self {
         let channel = BroadcastChannel::new(10);
 
         NotificationManager {
@@ -133,7 +126,9 @@ impl NotificationManager {
             channel,
         }
     }
+}
 
+impl NotificationManager {
     /// Subscribes to notification events.
     pub fn subscribe(&self) -> Receiver<BusEvent> {
         self.channel.subscribe()

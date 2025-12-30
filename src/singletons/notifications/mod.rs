@@ -8,7 +8,7 @@ use async_broadcast::Receiver;
 
 use crate::broadcast::BroadcastChannel;
 use self::bus::BusEvent;
-use self::wrapper::Notification;
+use self::wrapper::{Notification, NotificationManager};
 
 #[allow(dead_code)]
 static CHANNEL: LazyLock<BroadcastChannel<BusEvent>> = LazyLock::new(|| BroadcastChannel::new(10));
@@ -16,7 +16,7 @@ static CHANNEL: LazyLock<BroadcastChannel<BusEvent>> = LazyLock::new(|| Broadcas
 pub static NOTIFICATIONS: OnceLock<Arc<RwLock<HashMap<u32, Notification>>>> = OnceLock::new();
 
 pub fn activate() {
-    let manager = wrapper::NotificationManager::new();
+    let manager = NotificationManager::default();
     let mut receiver = manager.subscribe();
 
     NOTIFICATIONS.set(manager.notifications())

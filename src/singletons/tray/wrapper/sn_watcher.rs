@@ -63,13 +63,6 @@ impl OrgKdeStatusNotifierWatcher for StatusNotifierWatcher {
 
 impl Default for StatusNotifierWatcher {
     fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl StatusNotifierWatcher {
-    /// Creates a new `StatusNotifierWatcher` with an empty list of items.
-    pub fn new() -> Self {
         let channel = BroadcastChannel::new(10);
 
         StatusNotifierWatcher {
@@ -77,7 +70,9 @@ impl StatusNotifierWatcher {
             channel,
         }
     }
+}
 
+impl StatusNotifierWatcher {
     /// Subscribes to events from this watcher.
     /// 
     /// You should call this before calling `serve`, so you won't miss any events and you 
