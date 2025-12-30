@@ -52,6 +52,10 @@ ok
   </tr>
 </table>
 
+## ❤️ Sponsors
+I express my deep gratitude to the following sponsors for their generous support, it means a lot to me!
+- [Alexis](https://github.com/garado)
+
 ## 🛠️ Current status
 
 Currently not ready for daily use yet, but it is getting closer. Technically you could use it right now if you wanted to, but it is not fully feature-complete and there may be bugs.
