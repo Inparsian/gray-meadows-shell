@@ -7,6 +7,7 @@ pub mod wireplumber;
 pub mod apps;
 pub mod calculator;
 pub mod g_translate;
+pub mod notifications;
 pub mod networkmanager;
 pub mod clipboard;
 pub mod openai;
@@ -21,6 +22,7 @@ pub fn activate_all() {
     apps::activate();
     calculator::activate();
     g_translate::activate();
+    notifications::activate();
     networkmanager::activate();
     clipboard::activate();
     openai::activate();
