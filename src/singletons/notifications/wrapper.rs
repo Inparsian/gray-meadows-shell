@@ -67,24 +67,26 @@ impl OrgFreedesktopNotifications for NotificationManager {
             expire_timeout,
         };
 
-        let id = {
-            let mut id_counter = self.id_counter.write().map_err(|_| dbus::MethodErr::failed(&"Failed to acquire write lock on id_counter"))?;
-            *id_counter += 1;
-            *id_counter
-        };
-
         let mut notifications = self.notifications.write()
             .map_err(|_| dbus::MethodErr::failed(&"Failed to acquire write lock on notifications"))?;
 
         if replaces_id > 0 {
             notifications.insert(replaces_id, notification.clone());
             self.channel.send_blocking(BusEvent::NotificationUpdated(replaces_id, notification));
+            Ok(replaces_id)
         } else {
+            let id = {
+                let mut id_counter = self.id_counter.write()
+                    .map_err(|_| dbus::MethodErr::failed(&"Failed to acquire write lock on id_counter"))?;
+
+                *id_counter += 1;
+                *id_counter
+            };
+
             notifications.insert(id, notification.clone());
             self.channel.send_blocking(BusEvent::NotificationAdded(id, notification));
+            Ok(id)
         }
-
-        Ok(id)
     }
 
     fn close_notification(&mut self, id: u32) -> Result<(), dbus::MethodErr> {
