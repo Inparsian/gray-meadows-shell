@@ -100,7 +100,7 @@ pub fn listen_for_notifications() {
                         for container in app.notification_containers.borrow().iter() {
                             let widgets = container.widgets.borrow().clone();
                             for widget in &widgets {
-                                if widget.notification.id == id {
+                                if widget.notification.borrow().id == id {
                                     widget.destroy(Some(notification::NotificationDismissAnimation::Right));
                                 }
                             }
@@ -114,7 +114,7 @@ pub fn listen_for_notifications() {
                         for container in app.notification_containers.borrow().iter() {
                             let widgets = container.widgets.borrow().clone();
                             for widget in &widgets {
-                                if widget.notification.id == id {
+                                if widget.notification.borrow().id == id {
                                     widget.update(&notification);
                                 }
                             }

@@ -1,4 +1,5 @@
 use std::time::Duration;
+use std::cell::RefCell;
 use std::rc::Rc;
 use gtk4::prelude::*;
 use relm4::RelmRemoveAllExt as _;
@@ -41,7 +42,7 @@ impl NotificationDismissAnimation {
 #[derive(Clone)]
 pub struct NotificationWidget {
     pub parent: Option<Rc<super::NotificationsWindow>>,
-    pub notification: Notification,
+    pub notification: Rc<RefCell<Notification>>,
     pub bx: gtk4::Box,
     pub root: gtk4::Revealer,
     pub summary: gtk4::Label,
@@ -137,7 +138,7 @@ impl NotificationWidget {
 
         let me = NotificationWidget {
             parent: None,
-            notification,
+            notification: Rc::new(RefCell::new(notification)),
             bx,
             root,
             summary,
@@ -182,7 +183,7 @@ impl NotificationWidget {
 
                     me.destroy(Some(animation));
                     let _ = close_notification_by_id(
-                        me.notification.id,
+                        me.notification.borrow().id,
                         NotificationCloseReason::Dismissed
                     );
                 } else {
@@ -193,9 +194,10 @@ impl NotificationWidget {
 
         me.root.add_controller(drag_gesture);
         me.root.add_controller(gesture::on_enter({
+            let notification = me.notification.clone();
             let actions = actions.clone();
             move |_, _| {
-                actions.set_reveal_child(true);
+                actions.set_reveal_child(!notification.borrow().actions.is_empty());
             }
         }));
         me.root.add_controller(gesture::on_leave(move || {
@@ -216,6 +218,7 @@ impl NotificationWidget {
     }
 
     pub fn update(&self, notification: &Notification) {
+        self.notification.replace(notification.clone());
         self.summary.set_label(&notification.summary);
         self.body.set_label(&notification.body);
 
