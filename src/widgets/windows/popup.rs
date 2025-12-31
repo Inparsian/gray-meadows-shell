@@ -38,11 +38,13 @@ impl GmsWindow for PopupWindow {
         let monitor = hyprland::get_active_monitor();
         self.window.set_monitor(monitor.as_ref());
         self.set_clickthrough(false);
+        self.window.add_css_class("visible");
         self.revealer.set_reveal_child(true);
     }
 
     fn hide(&self) {
         self.set_clickthrough(true);
+        self.window.remove_css_class("visible");
         self.revealer.set_reveal_child(false);
     }
 
@@ -83,9 +85,14 @@ impl PopupWindow {
         transition_type: RevealerTransitionType,
         transition_duration: u32
     ) -> Self {
+        let window_classes = vec!["popup-window"]
+            .into_iter()
+            .chain(classes.iter().copied())
+            .collect::<Vec<&str>>();
+
         let monitor = hyprland::get_active_monitor();
         let window = gtk4::ApplicationWindow::new(application);
-        window.set_css_classes(classes);
+        window.set_css_classes(&window_classes);
         window.init_layer_shell();
         window.set_monitor(monitor.as_ref());
         window.set_keyboard_mode(KeyboardMode::OnDemand);
