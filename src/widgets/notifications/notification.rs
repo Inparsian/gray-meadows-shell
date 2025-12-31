@@ -43,6 +43,7 @@ impl NotificationDismissAnimation {
 pub struct NotificationWidget {
     pub parent: Option<Rc<super::NotificationsWindow>>,
     pub notification: Rc<RefCell<Notification>>,
+    pub destroying: Rc<RefCell<bool>>,
     pub bx: gtk4::Box,
     pub root: gtk4::Revealer,
     pub summary: gtk4::Label,
@@ -88,6 +89,8 @@ impl NotificationWidget {
                 set_xalign: 0.0,
                 set_hexpand: true,
                 set_ellipsize: gtk4::pango::EllipsizeMode::End,
+                set_wrap_mode: gtk4::pango::WrapMode::WordChar,
+                set_wrap: false,
             },
 
             actions_box = gtk4::Box {
@@ -154,6 +157,7 @@ impl NotificationWidget {
         let me = NotificationWidget {
             parent: None,
             notification: Rc::new(RefCell::new(notification)),
+            destroying: Rc::new(RefCell::new(false)),
             bx,
             root,
             summary,
@@ -209,14 +213,19 @@ impl NotificationWidget {
 
         me.root.add_controller(drag_gesture);
         me.root.add_controller(gesture::on_enter({
-            let notification = me.notification.clone();
+            let me = me.clone();
             let actions = actions.clone();
             move |_, _| {
-                actions.set_reveal_child(!notification.borrow().actions.is_empty());
+                actions.set_reveal_child(!me.notification.borrow().actions.is_empty());
+                me.set_expand_state(!*me.destroying.borrow());
             }
         }));
-        me.root.add_controller(gesture::on_leave(move || {
-            actions.set_reveal_child(false);
+        me.root.add_controller(gesture::on_leave({
+            let me = me.clone();
+            move || {
+                actions.set_reveal_child(false);
+                me.set_expand_state(false);
+            }
         }));
 
         me.bx.style_context().add_provider(&me.style_provider, gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION);
@@ -230,6 +239,16 @@ impl NotificationWidget {
 
     pub fn set_parent(&mut self, parent: Rc<super::NotificationsWindow>) {
         self.parent = Some(parent);
+    }
+
+    pub fn set_expand_state(&self, expanded: bool) {
+        if expanded {
+            self.body.set_ellipsize(gtk4::pango::EllipsizeMode::None);
+            self.body.set_wrap(true);
+        } else {
+            self.body.set_ellipsize(gtk4::pango::EllipsizeMode::End);
+            self.body.set_wrap(false);
+        }
     }
 
     pub fn update(&self, notification: &Notification) {
@@ -262,6 +281,8 @@ impl NotificationWidget {
             return;
         }
 
+        self.destroying.replace(true);
+        self.set_expand_state(false);
         self.root.set_reveal_child(false);
 
         if let Some(anim) = animation {
