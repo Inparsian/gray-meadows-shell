@@ -1,4 +1,5 @@
 mod header;
+mod section;
 mod quicktoggle;
 
 use gtk4::prelude::*;
@@ -7,6 +8,12 @@ use super::popup::{PopupWindow, PopupMargin, PopupOptions};
 
 pub fn new(application: &libadwaita::Application) -> PopupWindow {
     let header = header::new();
+
+    let notification_section = section::SideRightSection::new(
+        "Notifications", 
+        "notifications", 
+        "0",
+    );
 
     view! {
         quick_toggles = gtk4::Box {
@@ -20,6 +27,27 @@ pub fn new(application: &libadwaita::Application) -> PopupWindow {
             append: &quicktoggle::gamemode::new(),
         },
 
+        sections = gtk4::Box {
+            set_css_classes: &["sidebar-right-sections-container"],
+            set_orientation: gtk4::Orientation::Vertical,
+            set_spacing: 8,
+            set_hexpand: true,
+            set_vexpand: true,
+
+            gtk4::Box {
+                set_css_classes: &["sidebar-right-sections-row"],
+                set_orientation: gtk4::Orientation::Horizontal,
+                set_homogeneous: true,
+                set_spacing: 8,
+                set_hexpand: true,
+                set_vexpand: false,
+
+                append: &notification_section.bx,
+
+                gtk4::Box {},
+            }
+        },
+
         right_sidebar_box = gtk4::Box {
             set_css_classes: &["right-sidebar-box"],
             set_orientation: gtk4::Orientation::Vertical,
@@ -28,7 +56,8 @@ pub fn new(application: &libadwaita::Application) -> PopupWindow {
             set_vexpand: true,
 
             append: &header,
-            append: &quick_toggles
+            append: &quick_toggles,
+            append: &sections,
         },
     };
 
