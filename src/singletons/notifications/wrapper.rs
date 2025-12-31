@@ -1,14 +1,18 @@
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, OnceLock, RwLock};
 use async_broadcast::Receiver;
-use dbus::blocking;
+use dbus::message::MatchRule;
+use dbus::nonblock::SyncConnection;
 use dbus::arg::RefArg as _;
-use dbus::channel::Sender as _;
+use dbus::channel::{MatchingReceiver as _, Sender as _};
 use dbus_crossroads::{Crossroads, IfaceToken};
+use dbus_tokio::connection;
 
 use crate::broadcast::BroadcastChannel;
 use super::bus::{self, BusEvent};
 use super::proxy::{self, OrgFreedesktopNotifications};
+
+static SHARED_CONNECTION: OnceLock<Arc<SyncConnection>> = OnceLock::new();
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
@@ -165,34 +169,67 @@ impl NotificationManager {
         Arc::clone(&self.notifications)
     }
     
-    /// Serves clients forever on a new D-Bus session, consuming this manager.
+    /// Serves clients forever on the shared D-Bus connection, consuming this manager.
     /// 
-    /// This is permanently blocking, you will probably want to run this in a separate thread:
-    /// 
-    /// ```rust
-    /// std::thread::spawn(move || manager.serve());
-    /// ```
-    pub fn serve(self) -> Result<(), dbus::Error> {
-        let connection = blocking::Connection::new_session()?;
+    /// The shared connection must be initialized via `init_shared_connection()` before calling this.
+    /// This future never completes under normal operation.
+    pub async fn serve(self) -> Result<(), dbus::Error> {
+        let connection = get_shared_connection()
+            .ok_or_else(|| dbus::Error::new_failed("Shared connection not initialized. Call init_shared_connection() first."))?;
 
         let mut crossroads = Crossroads::new();
         let watcher_token: IfaceToken<NotificationManager> = proxy::register_org_freedesktop_notifications(&mut crossroads);
 
         crossroads.insert(bus::NOTIFICATIONS_DBUS_OBJECT, &[watcher_token], self);
-        connection.request_name(
-            bus::NOTIFICATIONS_DBUS_BUS,
-            false,
-            true,
-            false
-        )?;
 
-        crossroads.serve(&connection)
+        connection.start_receive(
+            MatchRule::new_method_call(),
+            Box::new(move |msg, conn| {
+                let _ = crossroads.handle_message(msg, conn);
+                true
+            }),
+        );
+
+        std::future::pending::<()>().await;
+        Ok(())
     }
+}
+
+/// Initializes the shared D-Bus connection and requests the bus name.
+/// Must be called from within a tokio runtime context.
+pub async fn init_shared_connection() -> Result<(), dbus::Error> {
+    let (resource, connection) = connection::new_session_sync()?;
+
+    tokio::spawn(async move {
+        let err = resource.await;
+        panic!("Lost connection to D-Bus: {}", err);
+    });
+
+    connection.request_name(
+        bus::NOTIFICATIONS_DBUS_BUS,
+        false,
+        true,
+        false
+    ).await?;
+
+    SHARED_CONNECTION.set(connection)
+        .map_err(|_| dbus::Error::new_failed("Shared connection already initialized"))?;
+
+    Ok(())
+}
+
+/// Gets the shared D-Bus connection.
+fn get_shared_connection() -> Option<Arc<SyncConnection>> {
+    SHARED_CONNECTION.get().cloned()
 }
 
 /// Emits a NotificationClosed signal for the given notification ID.
 fn emit_notification_closed(id: u32, reason: u32) {
-    let connection = blocking::Connection::new_session().expect("Failed to create D-Bus connection");
+    let Some(connection) = get_shared_connection() else {
+        eprintln!("Failed to emit NotificationClosed: shared connection not initialized");
+        return;
+    };
+
     let mut signal = dbus::Message::signal(
         &bus::NOTIFICATIONS_DBUS_OBJECT.into(),
         &bus::NOTIFICATIONS_DBUS_BUS.into(),
@@ -204,12 +241,18 @@ fn emit_notification_closed(id: u32, reason: u32) {
         reason,
     });
 
-    connection.send(signal).expect("Failed to send NotificationClosed signal");
+    if connection.send(signal).is_err() {
+        eprintln!("Failed to send NotificationClosed signal");
+    }
 }
 
 /// Emits a NotificationActionInvoked signal for the given notification ID and action key.
 pub(super) fn emit_notification_action_invoked(id: u32, action_key: &str) {
-    let connection = blocking::Connection::new_session().expect("Failed to create D-Bus connection");
+    let Some(connection) = get_shared_connection() else {
+        eprintln!("Failed to emit ActionInvoked: shared connection not initialized");
+        return;
+    };
+
     let mut signal = dbus::Message::signal(
         &bus::NOTIFICATIONS_DBUS_OBJECT.into(),
         &bus::NOTIFICATIONS_DBUS_BUS.into(),
@@ -221,7 +264,9 @@ pub(super) fn emit_notification_action_invoked(id: u32, action_key: &str) {
         action_key: action_key.to_owned(),
     });
 
-    connection.send(signal).expect("Failed to send ActionInvoked signal");
+    if connection.send(signal).is_err() {
+        eprintln!("Failed to send ActionInvoked signal");
+    }
 }
 
 /// Closes a notification by ID with the given reason.

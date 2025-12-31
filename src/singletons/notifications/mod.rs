@@ -27,7 +27,14 @@ pub fn activate() {
         }
     });
 
-    std::thread::spawn(move || manager.serve());
+    // Initialize the shared D-Bus connection and then serve
+    tokio::spawn(async move {
+        wrapper::init_shared_connection().await
+            .expect("Failed to initialize shared D-Bus connection");
+
+        manager.serve().await
+            .expect("Notification manager serve failed");
+    });
 }
 
 pub fn subscribe() -> Receiver<bus::BusEvent> {
