@@ -2,7 +2,8 @@ use std::time::Duration;
 use std::rc::Rc;
 use gtk4::prelude::*;
 
-use crate::singletons::notifications::wrapper::Notification;
+use crate::singletons::notifications::close_notification_by_id;
+use crate::singletons::notifications::wrapper::{Notification, NotificationCloseReason};
 
 const NOTIF_TRANSITION_DURATION: u32 = 175; // ms
 #[allow(dead_code)]
@@ -138,6 +139,10 @@ impl NotificationWidget {
                     };
 
                     me.destroy(Some(animation));
+                    let _ = close_notification_by_id(
+                        me.notification.id,
+                        NotificationCloseReason::Dismissed
+                    );
                 } else {
                     style_provider.load_from_data(DEFAULT_CSS);
                 }
@@ -177,6 +182,10 @@ impl NotificationWidget {
     }
 
     pub fn destroy(&self, animation: Option<NotificationDismissAnimation>) {
+        if !self.root.reveals_child() {
+            return;
+        }
+
         self.root.set_reveal_child(false);
 
         if let Some(anim) = animation {

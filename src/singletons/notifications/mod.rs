@@ -8,7 +8,7 @@ use async_broadcast::Receiver;
 
 use crate::broadcast::BroadcastChannel;
 use self::bus::BusEvent;
-use self::wrapper::{Notification, NotificationManager};
+use self::wrapper::{Notification, NotificationCloseReason, NotificationManager};
 
 static CHANNEL: LazyLock<BroadcastChannel<BusEvent>> = LazyLock::new(|| BroadcastChannel::new(10));
 
@@ -32,4 +32,19 @@ pub fn activate() {
 
 pub fn subscribe() -> Receiver<bus::BusEvent> {
     CHANNEL.subscribe()
+}
+
+pub fn close_notification_by_id(
+    id: u32,
+    reason: NotificationCloseReason
+) -> Result<(), dbus::MethodErr> {
+    let notifications = NOTIFICATIONS.get()
+        .expect("Notifications singleton is not initialized");
+
+    wrapper::close_notification_by_id(
+        notifications,
+        &CHANNEL,
+        id,
+        reason,
+    )
 }

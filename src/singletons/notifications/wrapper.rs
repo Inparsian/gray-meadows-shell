@@ -12,6 +12,15 @@ use super::proxy::{self, OrgFreedesktopNotifications};
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
+pub enum NotificationCloseReason {
+    Expired = 1,
+    Dismissed = 2,
+    ClosedByCall = 3,
+    Undefined = 4,
+}
+
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum NotificationHint {
     Urgency(u8),
     Category(String),
@@ -94,16 +103,12 @@ impl OrgFreedesktopNotifications for NotificationManager {
     }
 
     fn close_notification(&mut self, id: u32) -> Result<(), dbus::MethodErr> {
-        let mut notifications = self.notifications.write()
-            .map_err(|_| dbus::MethodErr::failed(&"Failed to acquire write lock on notifications"))?;
-
-        if notifications.remove(&id).is_some() {
-            self.channel.send_blocking(BusEvent::NotificationClosed(id));
-            emit_notification_closed(id, 3);
-            Ok(())
-        } else {
-            Err(dbus::MethodErr::failed(&"Notification ID not found"))
-        }
+        close_notification_by_id(
+            &self.notifications,
+            &self.channel,
+            id,
+            NotificationCloseReason::ClosedByCall,
+        )
     }
 
     fn get_capabilities(&mut self) -> Result<Vec<String>, dbus::MethodErr> {
@@ -145,7 +150,7 @@ impl NotificationManager {
     pub fn notifications(&self) -> Arc<RwLock<HashMap<u32, Notification>>> {
         Arc::clone(&self.notifications)
     }
-
+    
     /// Serves clients forever on a new D-Bus session, consuming this manager.
     /// 
     /// This is permanently blocking, you will probably want to run this in a separate thread:
@@ -186,4 +191,24 @@ pub fn emit_notification_closed(id: u32, reason: u32) {
     });
 
     connection.send(signal).expect("Failed to send NotificationClosed signal");
+}
+
+/// Closes a notification by ID with the given reason.
+/// This will emit the NotificationClosed signal with the reason.
+pub(super) fn close_notification_by_id(
+    notifications_ref: &Arc<RwLock<HashMap<u32, Notification>>>,
+    channel: &BroadcastChannel<BusEvent>,
+    id: u32,
+    reason: NotificationCloseReason,
+) -> Result<(), dbus::MethodErr> {
+    let mut notifications = notifications_ref.write()
+        .map_err(|_| dbus::MethodErr::failed(&"Failed to acquire write lock on notifications"))?;
+
+    if notifications.remove(&id).is_some() {
+        channel.send_blocking(BusEvent::NotificationClosed(id));
+        emit_notification_closed(id, reason as u32);
+        Ok(())
+    } else {
+        Err(dbus::MethodErr::failed(&"Notification ID not found"))
+    }
 }
