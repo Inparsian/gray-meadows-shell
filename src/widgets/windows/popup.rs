@@ -167,10 +167,20 @@ impl PopupWindow {
         }));
 
         window.add_controller(gesture::on_primary_full_press({
+            let window = window.clone();
             let popup = popup.clone();
 
             move |_, p_xy, r_xy| {
-                let allocation = clamp.allocation();
+                let mut allocation = clamp.allocation();
+
+                if popup.options.anchor_right && !popup.options.anchor_left {
+                    allocation.set_x(window.allocation().width() - allocation.width());
+                }
+
+                if popup.options.anchor_bottom && !popup.options.anchor_top {
+                    allocation.set_y(window.allocation().height() - allocation.height());
+                }
+
                 let (px, py) = (p_xy.0 as i32, p_xy.1 as i32);
                 let (rx, ry) = (r_xy.0 as i32, r_xy.1 as i32);
 
