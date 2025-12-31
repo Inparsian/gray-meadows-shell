@@ -20,10 +20,15 @@ pub enum NotificationCloseReason {
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub enum NotificationHint {
     Urgency(u8),
     Category(String),
+}
+
+#[derive(Debug, Clone)]
+pub struct NotificationAction {
+    pub id: String,
+    pub localized_name: String,
 }
 
 #[derive(Debug, Clone)]
@@ -34,7 +39,7 @@ pub struct Notification {
     pub app_icon: String,
     pub summary: String,
     pub body: String,
-    pub actions: Vec<String>,
+    pub actions: Vec<NotificationAction>,
     pub hints: Vec<NotificationHint>,
     pub expire_timeout: i32,
 }
@@ -65,6 +70,15 @@ impl OrgFreedesktopNotifications for NotificationManager {
                 _ => None,
             }
         }).collect();
+
+        let actions = actions.as_chunks::<2>()
+            .0
+            .iter()
+            .map(|chunk| NotificationAction {
+                id: chunk[0].clone(),
+                localized_name: chunk[1].clone(),
+            })
+            .collect();
             
         let mut notification = Notification {
             id: 0,
