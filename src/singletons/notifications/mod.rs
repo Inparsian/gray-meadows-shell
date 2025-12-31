@@ -48,3 +48,10 @@ pub fn close_notification_by_id(
         reason,
     )
 }
+
+pub fn invoke_notification_action(
+    id: u32,
+    action_key: &str,
+) {
+    wrapper::emit_notification_action_invoked(id, action_key);
+}

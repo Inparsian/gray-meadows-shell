@@ -1,9 +1,11 @@
 use std::time::Duration;
 use std::rc::Rc;
 use gtk4::prelude::*;
+use relm4::RelmRemoveAllExt as _;
 
+use crate::gesture;
 use crate::singletons::notifications::close_notification_by_id;
-use crate::singletons::notifications::wrapper::{Notification, NotificationCloseReason};
+use crate::singletons::notifications::wrapper::{Notification, NotificationAction, NotificationCloseReason};
 
 const NOTIF_TRANSITION_DURATION: u32 = 175; // ms
 #[allow(dead_code)]
@@ -44,10 +46,28 @@ pub struct NotificationWidget {
     pub root: gtk4::Revealer,
     pub summary: gtk4::Label,
     pub body: gtk4::Label,
+    pub actions_box: gtk4::Box,
     pub style_provider: gtk4::CssProvider,
 }
 
 impl NotificationWidget {
+    fn make_action_button(
+        notification: &Notification,
+        action: &NotificationAction,
+    ) -> gtk4::Button {
+        let button = gtk4::Button::with_label(&action.localized_name);
+        button.set_css_classes(&["notification-action-button"]);
+        button.connect_clicked({
+            let notification_id = notification.id;
+            let action_id = action.id.clone();
+            move |_| {
+                crate::singletons::notifications::invoke_notification_action(notification_id, &action_id);
+            }
+        });
+        
+        button
+    }
+
     pub fn new(notification: Notification) -> Self {
         let style_provider = gtk4::CssProvider::new();
         let drag_gesture = gtk4::GestureDrag::new();
@@ -69,6 +89,20 @@ impl NotificationWidget {
                 set_ellipsize: gtk4::pango::EllipsizeMode::End,
             },
 
+            actions_box = gtk4::Box {
+                set_css_classes: &["notification-actions"],
+                set_orientation: gtk4::Orientation::Horizontal,
+                set_homogeneous: true,
+                set_spacing: 4,
+            },
+
+            actions = gtk4::Revealer {
+                set_reveal_child: false,
+                set_transition_type: gtk4::RevealerTransitionType::SlideDown,
+                set_transition_duration: NOTIF_TRANSITION_DURATION,
+                set_child: Some(&actions_box),
+            },
+
             bx = gtk4::Box {
                 set_css_classes: &["notification"],
                 set_orientation: gtk4::Orientation::Vertical,
@@ -82,6 +116,8 @@ impl NotificationWidget {
                     append: &summary,
                     append: &body,
                 },
+
+                append: &actions,
             },
 
             root = gtk4::Revealer {
@@ -94,6 +130,11 @@ impl NotificationWidget {
             }
         }
 
+        for action in &notification.actions {
+            let button = Self::make_action_button(&notification, action);
+            actions_box.append(&button);
+        }
+
         let me = NotificationWidget {
             parent: None,
             notification,
@@ -101,6 +142,7 @@ impl NotificationWidget {
             root,
             summary,
             body,
+            actions_box,
             style_provider,
         };
 
@@ -150,6 +192,16 @@ impl NotificationWidget {
         });
 
         me.root.add_controller(drag_gesture);
+        me.root.add_controller(gesture::on_enter({
+            let actions = actions.clone();
+            move |_, _| {
+                actions.set_reveal_child(true);
+            }
+        }));
+        me.root.add_controller(gesture::on_leave(move || {
+            actions.set_reveal_child(false);
+        }));
+
         me.bx.style_context().add_provider(&me.style_provider, gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION);
 
         me.root.connect_map(move |revealer| {
@@ -166,6 +218,12 @@ impl NotificationWidget {
     pub fn update(&self, notification: &Notification) {
         self.summary.set_label(&notification.summary);
         self.body.set_label(&notification.body);
+
+        self.actions_box.remove_all();
+        for action in &notification.actions {
+            let button = Self::make_action_button(notification, action);
+            self.actions_box.append(&button);
+        }
     }
 
     pub fn get_offset_margin(&self, offset_x: f64) -> i32 {

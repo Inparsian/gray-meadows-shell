@@ -191,7 +191,7 @@ impl NotificationManager {
 }
 
 /// Emits a NotificationClosed signal for the given notification ID.
-pub fn emit_notification_closed(id: u32, reason: u32) {
+fn emit_notification_closed(id: u32, reason: u32) {
     let connection = blocking::Connection::new_session().expect("Failed to create D-Bus connection");
     let mut signal = dbus::Message::signal(
         &bus::NOTIFICATIONS_DBUS_OBJECT.into(),
@@ -205,6 +205,23 @@ pub fn emit_notification_closed(id: u32, reason: u32) {
     });
 
     connection.send(signal).expect("Failed to send NotificationClosed signal");
+}
+
+/// Emits a NotificationActionInvoked signal for the given notification ID and action key.
+pub(super) fn emit_notification_action_invoked(id: u32, action_key: &str) {
+    let connection = blocking::Connection::new_session().expect("Failed to create D-Bus connection");
+    let mut signal = dbus::Message::signal(
+        &bus::NOTIFICATIONS_DBUS_OBJECT.into(),
+        &bus::NOTIFICATIONS_DBUS_BUS.into(),
+        &"ActionInvoked".into(),
+    );
+
+    signal.append_all(proxy::OrgFreedesktopNotificationsActionInvoked {
+        id,
+        action_key: action_key.to_owned(),
+    });
+
+    connection.send(signal).expect("Failed to send ActionInvoked signal");
 }
 
 /// Closes a notification by ID with the given reason.

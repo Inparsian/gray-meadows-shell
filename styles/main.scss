@@ -883,6 +883,29 @@
                 margin-left: 1px;
             }
         }
+
+        .notification-actions {
+            margin-top: 12px;
+            
+            .notification-action-button {
+                background: $background-color-secondary;
+                border-radius: 0px;
+                color: $foreground-color-primary;
+                padding: 8px;
+                font-weight: 300;
+                min-width: 64px;
+                min-height: 0px;
+
+                &:hover, &:focus {
+                    background: $background-color-tertiary;
+                    outline: none;
+                }
+
+                &:active {
+                    background: $background-color-quaternary;
+                }
+            }
+        }
     }
 }
 
