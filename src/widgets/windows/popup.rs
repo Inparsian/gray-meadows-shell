@@ -1,4 +1,5 @@
 use gtk4::{prelude::*, RevealerTransitionType};
+use gtk4::cairo::{RectangleInt, Region};
 use gtk4_layer_shell::{Edge, Layer, KeyboardMode, LayerShell as _};
 use libadwaita::Clamp;
 
@@ -11,8 +12,6 @@ use super::{GmsWindow, hide_all_popups};
 pub struct PopupWindow {
     pub window: gtk4::ApplicationWindow,
     pub revealer: gtk4::Revealer,
-    pub options: PopupOptions,
-    pub transition_duration: u32,
 }
 
 /// A margin for a popup window.
@@ -38,26 +37,13 @@ impl GmsWindow for PopupWindow {
         hide_all_popups();
         let monitor = hyprland::get_active_monitor();
         self.window.set_monitor(monitor.as_ref());
-        self.window.show();
-        self.steal_screen();
-
-        gtk4::glib::timeout_add_local_once(std::time::Duration::from_millis(10), {
-            let revealer = self.revealer.clone();
-            move || revealer.set_reveal_child(true)
-        });
+        self.set_clickthrough(false);
+        self.revealer.set_reveal_child(true);
     }
 
     fn hide(&self) {
+        self.set_clickthrough(true);
         self.revealer.set_reveal_child(false);
-        self.release_screen();
-
-        gtk4::glib::timeout_add_local_once(std::time::Duration::from_millis(self.transition_duration as u64), {
-            let window = self.window.clone();
-            let revealer = self.revealer.clone();
-            move || if !revealer.reveals_child() {
-                window.hide();
-            }
-        });
     }
 
     fn toggle(&self) -> bool {
@@ -109,6 +95,7 @@ impl PopupWindow {
         window.set_anchor(Edge::Top, true);
         window.set_anchor(Edge::Bottom, true);
         window.set_namespace(Some("gms-popup"));
+        window.show();
 
         let revealer = gtk4::Revealer::new();
         revealer.set_transition_type(transition_type);
@@ -154,8 +141,6 @@ impl PopupWindow {
         let popup = Self {
             window: window.clone(),
             revealer,
-            options,
-            transition_duration,
         };
 
         window.add_controller(gesture::on_key_press({
@@ -167,43 +152,41 @@ impl PopupWindow {
         }));
 
         window.add_controller(gesture::on_primary_full_press({
-            let window = window.clone();
+            let revealer = popup.revealer.clone();
             let popup = popup.clone();
 
             move |_, p_xy, r_xy| {
-                let mut allocation = clamp.allocation();
-
-                if popup.options.anchor_right && !popup.options.anchor_left {
-                    allocation.set_x(window.allocation().width() - allocation.width());
-                }
-
-                if popup.options.anchor_bottom && !popup.options.anchor_top {
-                    allocation.set_y(window.allocation().height() - allocation.height());
-                }
-
                 let (px, py) = (p_xy.0 as i32, p_xy.1 as i32);
                 let (rx, ry) = (r_xy.0 as i32, r_xy.1 as i32);
+                let allocation = revealer.allocation();
 
-                if popup.window.is_visible() && !allocation.contains_point(px, py) && !allocation.contains_point(rx, ry) {
+                if popup.window.is_visible()
+                    && !allocation.contains_point(px, py)
+                    && !allocation.contains_point(rx, ry)
+                {
                     popup.hide();
                 }
             }
         }));
 
+        popup.set_clickthrough(true);
         popup
     }
 
-    pub fn steal_screen(&self) {
-        self.window.set_anchor(Edge::Left, true);
-        self.window.set_anchor(Edge::Right, true);
-        self.window.set_anchor(Edge::Top, true);
-        self.window.set_anchor(Edge::Bottom, true);
-    }
-
-    pub fn release_screen(&self) {
-        self.window.set_anchor(Edge::Left, self.options.anchor_left);
-        self.window.set_anchor(Edge::Right, self.options.anchor_right);
-        self.window.set_anchor(Edge::Top, self.options.anchor_top);
-        self.window.set_anchor(Edge::Bottom, self.options.anchor_bottom);
+    pub fn set_clickthrough(&self, clickthrough: bool) {
+        if let Some(surface) = self.window.native().and_then(|n| n.surface()) {
+            let allocation = self.window.allocation();
+            let region = if clickthrough {
+                Region::create()
+            } else {
+                Region::create_rectangle(&RectangleInt::new(
+                    allocation.x(),
+                    allocation.y(),
+                    allocation.width(),
+                    allocation.height(),
+                ))
+            };
+            surface.set_input_region(&region);
+        }
     }
 }
