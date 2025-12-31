@@ -869,7 +869,6 @@
         background: $background-color-primary;
         border: 1px solid $border-color-primary;
         color: $foreground-color-primary;
-        min-width: 200px;
         padding: 8px;
         margin-bottom: 2px;
 
@@ -881,6 +880,11 @@
             .notification-body {
                 color: $foreground-color-active;
                 margin-left: 1px;
+            }
+
+            .notification-timestamp {
+                @include tiny-text;
+                color: $foreground-color-quaternary;
             }
         }
 

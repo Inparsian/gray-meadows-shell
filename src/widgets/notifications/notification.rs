@@ -114,7 +114,22 @@ impl NotificationWidget {
                     set_css_classes: &["notification-content"],
                     set_orientation: gtk4::Orientation::Vertical,
                     set_spacing: 4,
-                    append: &summary,
+
+                    gtk4::Box {
+                        set_css_classes: &["notification-header"],
+                        set_orientation: gtk4::Orientation::Horizontal,
+                        set_spacing: 4,
+
+                        append: &summary,
+
+                        gtk4::Label {
+                            set_css_classes: &["notification-timestamp"],
+                            set_label: &chrono::Local::now().format("%I:%M %p").to_string(),
+                            set_xalign: 1.0,
+                            set_halign: gtk4::Align::End,
+                            set_hexpand: true,
+                        }
+                    },
                     append: &body,
                 },
 
