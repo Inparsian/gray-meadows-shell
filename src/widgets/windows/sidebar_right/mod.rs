@@ -9,11 +9,7 @@ use super::popup::{PopupWindow, PopupMargin, PopupOptions};
 pub fn new(application: &libadwaita::Application) -> PopupWindow {
     let header = header::new();
 
-    let notification_section = section::SideRightSection::new(
-        "Notifications", 
-        "notifications", 
-        "0",
-    );
+    let notification_section = section::notifications::new();
 
     view! {
         quick_toggles = gtk4::Box {

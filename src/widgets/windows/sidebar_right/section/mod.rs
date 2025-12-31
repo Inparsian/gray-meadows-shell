@@ -1,5 +1,9 @@
+pub mod notifications;
+
 use gtk4::prelude::*;
 
+#[derive(Clone)]
+#[allow(dead_code)]
 pub struct SideRightSection {
     pub bx: gtk4::Box,
     pub title: gtk4::Label,
@@ -89,10 +93,12 @@ impl SideRightSection {
         self.content.set_label(content_str);
     }
 
+    #[allow(dead_code)]
     pub fn set_icon(&self, icon_str: &str) {
         self.icon.set_label(icon_str);
     }
 
+    #[allow(dead_code)]
     pub fn set_title(&self, title_str: &str) {
         self.title.set_label(title_str);
     }
