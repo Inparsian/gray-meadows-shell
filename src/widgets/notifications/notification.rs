@@ -43,6 +43,7 @@ impl NotificationDismissAnimation {
 pub struct NotificationWidget {
     pub parent: Option<Rc<super::NotificationsWindow>>,
     pub notification: Rc<RefCell<Notification>>,
+    pub expanded: Rc<RefCell<bool>>,
     pub destroying: Rc<RefCell<bool>>,
     pub bx: gtk4::Box,
     pub root: gtk4::Revealer,
@@ -157,6 +158,7 @@ impl NotificationWidget {
         let me = NotificationWidget {
             parent: None,
             notification: Rc::new(RefCell::new(notification)),
+            expanded: Rc::new(RefCell::new(false)),
             destroying: Rc::new(RefCell::new(false)),
             bx,
             root,
@@ -242,6 +244,7 @@ impl NotificationWidget {
     }
 
     pub fn set_expand_state(&self, expanded: bool) {
+        self.expanded.replace(expanded);
         if expanded {
             self.body.set_ellipsize(gtk4::pango::EllipsizeMode::None);
             self.body.set_wrap(true);
@@ -274,6 +277,30 @@ impl NotificationWidget {
         let width = allocation.width() as f64;
         let progress = (offset_x.abs() / width).clamp(0.0, 1.0);
         1.0 - progress * progress
+    }
+
+    pub async fn wait_until_not_expanded(&self) {
+        while *self.expanded.borrow() {
+            gtk4::glib::timeout_future(Duration::from_millis(50)).await;
+        }
+    }
+
+    pub fn queue_destroy(&self, animation: Option<NotificationDismissAnimation>) {
+        let me = self.clone();
+
+        // Wait until not expanded. if expanded, wait again
+        gtk4::glib::spawn_future_local(async move {
+            me.wait_until_not_expanded().await;
+
+            gtk4::glib::timeout_add_local_once(
+                Duration::from_millis(1000),
+                move || if *me.expanded.borrow() {
+                    me.queue_destroy(animation);
+                } else {
+                    me.destroy(animation);
+                }
+            );
+        });
     }
 
     pub fn destroy(&self, animation: Option<NotificationDismissAnimation>) {

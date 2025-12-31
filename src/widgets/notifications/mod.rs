@@ -2,13 +2,18 @@ pub mod notification;
 
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::time::Duration;
 use gtk4::prelude::*;
 use gdk4::cairo::{Region, RectangleInt};
 use gtk4_layer_shell::{Edge, Layer, LayerShell as _};
 
 use crate::APP_LOCAL;
-use crate::singletons::notifications;
+use crate::singletons::notifications::{self, wrapper::NotificationHint};
+use crate::widgets::notifications::notification::NotificationDismissAnimation;
 use self::notification::NotificationWidget;
+
+const NOTIF_DISPLAY_TIMEOUT: i32 = 2500; // ms
+const CRITICAL_NOTIF_DISPLAY_TIMEOUT: i32 = 5000; // ms
 
 #[derive(Clone)]
 pub struct NotificationsWindow {
@@ -80,6 +85,21 @@ impl NotificationsWindow {
         clamp.set_child(Some(&widget.root));
 
         self.container.prepend(&clamp);
+
+        let timeout = if widget.notification.borrow().hints.iter().any(|hint| {
+            matches!(hint, NotificationHint::Urgency(u) if *u >= 2)
+        }) {
+            CRITICAL_NOTIF_DISPLAY_TIMEOUT
+        } else {
+            NOTIF_DISPLAY_TIMEOUT
+        } as u64;
+
+        gtk4::glib::timeout_add_local_once(Duration::from_millis(timeout), {
+            let widget = widget.clone();
+            move || {
+                widget.queue_destroy(Some(NotificationDismissAnimation::Right));
+            }
+        });
     }
 }
 
