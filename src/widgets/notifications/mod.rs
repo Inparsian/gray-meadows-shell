@@ -72,7 +72,14 @@ impl NotificationsWindow {
 
     pub fn add_widget(&self, widget: &NotificationWidget) {
         self.widgets.borrow_mut().push(widget.clone());
-        self.container.prepend(&widget.root);
+
+        // clamp to 300px
+        let clamp = libadwaita::Clamp::new();
+        clamp.set_width_request(300);
+        clamp.set_maximum_size(300);
+        clamp.set_child(Some(&widget.root));
+
+        self.container.prepend(&clamp);
     }
 }
 
