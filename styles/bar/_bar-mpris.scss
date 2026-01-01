@@ -1,0 +1,137 @@
+.bar-window .bar .bar-widget.bar-mpris {
+    padding: 0px;
+
+    .bar-mpris-track {
+        padding-top: 4px;
+        padding-bottom: 4px;
+        padding-left: 6px;
+        padding-right: 6px;
+    }
+
+    .bar-mpris-paused-overlay {
+        background: $background-black-semi-trans;
+    }
+
+    .bar-mpris-extended {
+        padding: 0px;
+
+        .bar-mpris-extended-background {
+            min-width: 350px;
+            min-height: 160px;
+            background-size: cover;
+            background-position: center;
+            filter: blur(4px);
+            transform: scale(1.075);
+        }
+
+        .bar-mpris-extended-no-players {
+            @include large-text;
+            min-width: 350px;
+            min-height: 160px;
+        }
+
+        .bar-mpris-extended-metadata {
+            .bar-mpris-extended-artist {
+                @include large-text;
+                font-weight: 900;
+                color: $foreground-color-primary;
+                margin-top: 4px;
+                margin-bottom: 2px;
+            }
+        
+            .bar-mpris-extended-album {
+                @include normal-text;
+                color: $foreground-color-secondary;
+                margin-top: 2px;
+                margin-bottom: 8px;
+            }
+        }
+
+        .bar-mpris-extended-box {
+            background: #131313bb;
+            padding: 20px;
+        }
+
+        .bar-mpris-extended-progress-bar {
+            padding-top: 4px;
+            padding-bottom: 4px;
+        }
+
+        .bar-mpris-button {
+            @include material-icons;
+            font-size: 18px;
+            color: $foreground-color-primary;
+            border: 0px;
+            padding-top: 3px;
+            padding-bottom: 3px;
+            padding-left: 6px;
+            padding-right: 6px;
+            border-radius: 0px;
+
+            &:not(.toggled) {
+                background: transparent;
+
+                &:hover, &:focus {
+                    background: #ffffff44;
+                    outline: none;
+                }
+
+                &:active {
+                    background: #ffffff66;
+                }
+            }
+
+            &.toggled {
+                background: $foreground-color-primary;
+                color: $background-color-primary;
+
+                &:hover, &:focus {
+                    background: #ffffffaa;
+                    outline: none;
+                }
+
+                &:active {
+                    background: #ffffff88;
+                }
+            }
+        }
+
+        .bar-mpris-players-list {
+            .bar-mpris-players-list-item {
+                border: 0px;
+                padding-top: 4px;
+                padding-bottom: 4px;
+                padding-left: 8px;
+                padding-right: 8px;
+                border-radius: 0px;
+                min-width: 0px;
+
+                &:not(.is-default) {
+                    background: transparent;
+
+                    &:hover, &:focus {
+                        background: $background-color-secondary;
+                        outline: none;
+                    }
+
+                    &:active {
+                        background: $background-color-tertiary;
+                    }
+                }
+
+                &.is-default {
+                    background: $foreground-color-primary;
+
+                    &:hover, &:focus {
+                        background: $foreground-color-select;
+                        outline: none;
+                    }
+
+                    &:active {
+                        background: $foreground-color-active;
+                    }
+                }
+            }
+        }
+    }
+}

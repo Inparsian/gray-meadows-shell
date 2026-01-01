@@ -1,0 +1,145 @@
+.left-sidebar-window .left-sidebar-box .ColorPicker {
+    .color-picker-hue {
+        background: linear-gradient(to bottom, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+        min-height: 372px;
+        min-width: 16px;
+        margin-right: 2px;
+        margin-left: 2px;
+
+        .color-picker-hue-trough {
+            min-height: 4px;
+            background: #ffffff;
+        }
+    }
+
+    .color-picker-saturation-value {
+        background: $background-color-secondary;
+        min-height: 372px;
+        min-width: 372px;
+
+        .color-picker-saturation-value-trough {
+            transition: border-color 0.25s cubic-bezier(0.5, 0, 0.25, 1);
+            min-height: 5px;
+            min-width: 5px;
+            border-width: 1px;
+            border-style: solid;
+        }
+    }
+
+    .color-picker-tabs-stack {
+        padding: 0px;
+    }
+
+    .color-picker-button {
+        @include normal-text;
+        background: $background-color-secondary;
+        font-weight: 300;
+        border: 0px;
+        color: $foreground-color-primary;
+        padding: 8px 12px;
+        border-radius: 0px;
+
+        &:hover, &:focus {
+            background: $background-color-tertiary;
+            outline: none;
+        }
+
+        &:active {
+            background: $background-color-quaternary;
+        }
+
+        .material-icons {
+            font-weight: 400;
+            font-size: 16px;
+        }
+    }
+
+    .color-picker-entry {
+        background: #1b1b1b;
+        border-radius: 0px;
+        min-width: 0px;
+        min-height: 0px;
+        padding: 8px;
+        border: 1px solid #242424;
+        box-shadow: none;
+    }
+
+    .color-picker-spinbutton {
+        background: #1b1b1b;
+        color: #E2E2E2;
+        border: 1px solid #242424;
+        min-height: 0px;
+        min-width: 0px;
+        padding: 0px;
+        border-radius: 0px;
+        box-shadow: none;
+
+        entry {
+            background: transparent;
+            color: #E2E2E2;
+            padding: 8px;
+            min-height: 0px;
+            min-width: 0px;
+            border-radius: 0px;
+            outline: none;
+            box-shadow: none;
+        }
+
+        button {
+            background: transparent;
+            color: #777;
+            border: 0px;
+            border-radius: 0px;
+            padding: 0px;
+            padding-right: 4px;
+            min-height: 0px;
+            min-width: 0px;
+
+            &:hover {
+                color: #888;
+                outline: none;
+            }
+
+            &:active {
+                color: #aaa;
+            }
+
+            .material-icons {
+                font-size: 16px;
+            }
+        }
+    }
+
+    .color-picker-transform-copy-button {
+        background-color: $background-color-primary-semitrans;
+        color: $foreground-color-primary;
+        font-weight: 900;
+        border-radius: 0px;
+        border: 0px;
+        min-height: 0px;
+        min-width: 0px;
+        outline: none;
+        box-shadow: none;
+
+        &:hover, &:focus {
+            background-color: $background-color-primary-semitrans-hover;
+        }
+
+        &:active {
+            background-color: $background-color-primary-semitrans-active;
+        }
+    }
+
+    .color-picker-transform-color-label {
+        color: $foreground-color-quaternary;
+        margin-right: 8px;
+
+        &.original {
+            color: $foreground-color-primary;
+        }
+    }
+
+    .color-picker-transform-color {
+        min-height: 32px;
+    }
+}

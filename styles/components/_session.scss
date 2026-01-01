@@ -1,0 +1,52 @@
+.session-window {
+    @include normal-text;
+    background-color: transparent;
+    color: $foreground-color-primary;
+
+    .session-box-row1 .session-button:nth-child(2) {
+        margin-bottom: 108px;
+    }
+
+    .session-box-row2 .session-button:nth-child(2) {
+        margin-top: 108px;
+    }
+
+    .session-box-row1 {
+        margin-bottom: -53px;
+    }
+
+    .session-box-row2 {
+        margin-top: -53px;
+    }
+
+    .session-button {
+        background: $background-color-primary;
+        border: 1px solid $border-color-primary;
+        border-radius: 0px;
+        color: $foreground-color-primary;
+        padding: 8px;
+        font-weight: 300;
+        min-width: 96px;
+        min-height: 96px;
+        transition-property: transform, background;
+        transition-duration: 0.2s;
+        transition-timing-function: cubic-bezier(0.5, 0.33, 0.25, 1);
+        transition-delay: 0s;
+
+        &:hover, &:focus {
+            background: $background-color-tertiary;
+            outline: none;
+            transform: scale(1.05);
+        }
+
+        &:active {
+            background: $background-color-quaternary;
+            transform: scale(1.05);
+        }
+
+        .session-button-icon {
+            @include material-icons;
+            font-size: 48px;
+        }
+    }
+}

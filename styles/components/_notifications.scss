@@ -1,0 +1,53 @@
+.notifications-window {
+    background: #00000001;
+    padding: 5px;
+
+    .notification {
+        @include normal-text;
+    
+        background: $background-color-primary;
+        border: 1px solid $border-color-primary;
+        color: $foreground-color-primary;
+        padding: 8px;
+        margin-bottom: 2px;
+
+        .notification-content {
+            .notification-summary {
+                font-weight: bold;
+            }
+
+            .notification-body {
+                color: $foreground-color-active;
+                margin-left: 1px;
+            }
+
+            .notification-timestamp {
+                @include tiny-text;
+                color: $foreground-color-quaternary;
+            }
+        }
+
+        .notification-actions {
+            margin-top: 12px;
+            
+            .notification-action-button {
+                background: $background-color-secondary;
+                border-radius: 0px;
+                color: $foreground-color-primary;
+                padding: 8px;
+                font-weight: 300;
+                min-width: 64px;
+                min-height: 0px;
+
+                &:hover, &:focus {
+                    background: $background-color-tertiary;
+                    outline: none;
+                }
+
+                &:active {
+                    background: $background-color-quaternary;
+                }
+            }
+        }
+    }
+}

@@ -47,7 +47,7 @@ pub fn refresh_variables() {
     let regex = Regex::new(VAR_REGEX).unwrap();
 
     let styles_dir = filesystem::get_styles_directory();
-    let user_styles_path = format!("{}/user.scss", styles_dir);
+    let user_styles_path = format!("{}/_user.scss", styles_dir);
 
     if let Ok(content) = std::fs::read_to_string(user_styles_path) {
         for line in content.lines() {

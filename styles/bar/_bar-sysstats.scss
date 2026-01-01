@@ -1,0 +1,48 @@
+.bar-window .bar .bar-widget.bar-sysstats {
+    padding: 2px;
+    padding-right: 0px;
+
+    .bar-sysstats-item {
+        background: $background-color-secondary;
+        padding-top: 2px;
+        padding-bottom: 2px;
+        padding-left: 6px;
+        padding-right: 6px;
+        margin-right: 2px;
+
+        .bar-sysstats-icon {
+            margin-right: 6px;
+        }
+
+        .bar-sysstats-detailed-label {
+            margin-left: 6px;
+            color: $foreground-color-secondary;
+        }
+    }
+
+    .bar-sysstats-extended {
+        min-width: 350px;
+        min-height: 175px;
+        padding: 8px;
+
+        .bar-sysstats-extended-tabs-stack {
+            padding: 8px;
+        }
+
+        .bar-sysstats-compact-stat-row {
+            .bar-sysstats-compact-stat-row-label {
+                color: $foreground-color-secondary;
+            }
+
+            .bar-sysstats-compact-stat-row-secondary-value {
+                margin-left: 4px;
+                color: $foreground-color-tertiary;
+                min-width: 4.5em;
+            }
+
+            &.irrelevant {
+                opacity: 0.415;
+            }
+        }
+    }
+}

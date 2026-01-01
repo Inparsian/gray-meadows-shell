@@ -1,0 +1,35 @@
+.bar-window .bar .bar-widget.bar-tray {
+    .bar-tray-item {
+        padding-left: 3px;
+        padding-right: 3px;
+
+        &:first-child {
+            padding-left: 0px;
+        }
+
+        &:last-child {
+            padding-right: 0px;
+        }
+    }
+
+    popover.bar-tray-popover-menu {
+        contents {
+            background: $background-color-primary;
+
+            border-radius: 0px;
+            box-shadow: none;
+
+            modelbutton {
+                padding: 6px;
+
+                &:hover, &:focus {
+                    background: $background-color-secondary;
+                }
+
+                &:active {
+                    background: $background-color-tertiary;
+                }
+            }
+        }
+    }
+}
