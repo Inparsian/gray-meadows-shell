@@ -57,6 +57,7 @@ pub fn sql_message_to_chat_message(msg: &aichats::SqlAiConversationMessage) -> O
 }
 
 pub fn chat_message_to_sql_message(msg: &ChatCompletionRequestMessage, conversation_id: i64) -> aichats::SqlAiConversationMessage {
+    let now = chrono::Utc::now().format(super::TIMESTAMP_FORMAT).to_string();
     match msg {
         ChatCompletionRequestMessage::System(system_msg) => aichats::SqlAiConversationMessage {
             id: 0,
@@ -67,7 +68,7 @@ pub fn chat_message_to_sql_message(msg: &ChatCompletionRequestMessage, conversat
                 _ => String::new(),
             },
             tool_calls: Vec::new(),
-            timestamp: None,
+            timestamp: Some(now),
         },
 
         ChatCompletionRequestMessage::User(user_msg) => aichats::SqlAiConversationMessage {
@@ -79,7 +80,7 @@ pub fn chat_message_to_sql_message(msg: &ChatCompletionRequestMessage, conversat
                 _ => String::new(),
             },
             tool_calls: Vec::new(),
-            timestamp: None,
+            timestamp: Some(now),
         },
 
         ChatCompletionRequestMessage::Tool(tool_msg) => aichats::SqlAiConversationMessage {
@@ -95,7 +96,7 @@ pub fn chat_message_to_sql_message(msg: &ChatCompletionRequestMessage, conversat
                 function: String::new(),
                 arguments: String::new(),
             }],
-            timestamp: None,
+            timestamp: Some(now),
         },
 
         ChatCompletionRequestMessage::Assistant(assistant_msg) => {
@@ -125,7 +126,7 @@ pub fn chat_message_to_sql_message(msg: &ChatCompletionRequestMessage, conversat
                     _ => String::new(),
                 },
                 tool_calls,
-                timestamp: None,
+                timestamp: Some(now),
             }
         },
 

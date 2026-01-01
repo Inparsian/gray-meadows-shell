@@ -29,6 +29,8 @@ use crate::{APP, broadcast::BroadcastChannel};
 pub static CHANNEL: OnceLock<BroadcastChannel<AIChannelMessage>> = OnceLock::new();
 pub static SESSION: OnceLock<AISession> = OnceLock::new();
 
+const TIMESTAMP_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
+
 #[derive(Debug, Clone)]
 pub enum AIChannelMessage {
     StreamStart,
@@ -53,14 +55,20 @@ pub struct AISessionMessage {
 
 impl AISessionMessage {
     pub fn timestamp_or_now(&self) -> String {
-        self.timestamp.clone().unwrap_or_else(|| {
-            chrono::Local::now().format("%A, %B %d, %Y at %I:%M %p %Z").to_string()
-        })
+        self.timestamp.clone().map_or_else(
+            || chrono::Local::now().format(TIMESTAMP_FORMAT).to_string(), 
+            |timestamp| chrono::NaiveDateTime::parse_from_str(&timestamp, "%Y-%m-%d %H:%M:%S")
+                .map_or(timestamp, |dt| {
+                    let utc = chrono::DateTime::<chrono::Utc>::from_naive_utc_and_offset(dt, chrono::Utc);
+                    let local = utc.with_timezone(&chrono::Local);
+                    local.format(TIMESTAMP_FORMAT).to_string()
+                })
+        )
     }
 
     fn format_with_timestamp(timestamp: &str, content: &str) -> String {
         format!(
-            "[Sent at {}] {}",
+            "[Sent on {}] {}",
             timestamp,
             content
         )
