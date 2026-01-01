@@ -130,15 +130,6 @@ pub fn get_tools() -> Result<Vec<ChatCompletionTools>, OpenAIError> {
         }));
     }
 
-    if APP.config.ai.features.current_date_time {
-        tools.push(ChatCompletionTools::Function(ChatCompletionTool {
-            function: FunctionObjectArgs::default()
-                .name("get_current_datetime")
-                .description("Gets the current date and time. This function outputs ephemeral data and must be called each time up-to-date information is needed.")
-                .build()?,
-        }));
-    }
-
     Ok(tools)
 }
 
@@ -331,14 +322,6 @@ pub fn call_tool(name: &str, args: &str) -> serde_json::Value {
                     "monitor_id": workspace.monitor_id,
                     "windows": workspace.windows
                 }
-            })
-        },
-
-        "get_current_datetime" => {
-            let now = chrono::Local::now();
-            json!({
-                "success": true,
-                "datetime": now.to_rfc3339()
             })
         },
 

@@ -1,5 +1,6 @@
 mod tools;
 mod sql;
+mod variables;
 pub mod conversation;
 
 use std::pin::Pin;
@@ -170,7 +171,9 @@ pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'st
             .map(|(_, msg)| msg.clone())
             .collect::<Vec<ChatCompletionRequestMessage>>();
 
-        sorted_messages.insert(0, ChatCompletionRequestSystemMessage::from(APP.config.ai.prompt.as_str()).into());
+        sorted_messages.insert(0, ChatCompletionRequestSystemMessage::from(
+            variables::transform_variables(APP.config.ai.prompt.as_str())).into()
+        );
 
         let request = CreateChatCompletionRequestArgs::default()
             .max_completion_tokens(2048_u32)

@@ -8,7 +8,6 @@ const FILE_NAME: &str = "config.toml";
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AiFeatures {
-    pub current_date_time: bool,
     pub power_control: bool,
     pub mpris_control: bool,
     pub wayland_info: bool,
@@ -43,7 +42,6 @@ impl Default for Config {
                 assistant_name: None,
                 assistant_icon_path: None,
                 features: AiFeatures {
-                    current_date_time: true,
                     power_control: true,
                     mpris_control: true,
                     wayland_info: true,
