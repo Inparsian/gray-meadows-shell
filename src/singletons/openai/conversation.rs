@@ -10,7 +10,10 @@ fn read_conversation(id: i64) -> Result<HashMap<i64, ChatCompletionRequestMessag
 
     let mut chat_messages = HashMap::new();
     for msg in &sql_messages {
-        let chat_msg = sql::sql_message_to_chat_message(msg);
+        let Some(chat_msg) = sql::sql_message_to_chat_message(msg) else {
+            continue;
+        };
+
         chat_messages.insert(msg.id, chat_msg);
     }
 
@@ -117,14 +120,9 @@ pub fn delete_conversation(conversation_id: i64) {
 }
 
 pub fn clear_conversation(conversation_id: i64) {
-    // trim to 0, then re-insert system prompt
+    // trim to 0
     if let Err(err) = aichats::trim_messages(conversation_id, 0) {
         eprintln!("Failed to clear AI chat conversation messages from database: {}", err);
-        return;
-    }
-
-    if let Err(err) = aichats::insert_system_prompt(conversation_id) {
-        eprintln!("Failed to re-insert system prompt into cleared AI chat conversation: {}", err);
         return;
     }
 

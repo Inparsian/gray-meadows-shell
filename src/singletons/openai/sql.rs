@@ -4,7 +4,6 @@ use async_openai::types::chat::{
     ChatCompletionRequestAssistantMessage,
     ChatCompletionRequestAssistantMessageContent,
     ChatCompletionRequestMessage,
-    ChatCompletionRequestSystemMessage,
     ChatCompletionRequestSystemMessageContent,
     ChatCompletionRequestToolMessage,
     ChatCompletionRequestToolMessageContent,
@@ -15,16 +14,14 @@ use async_openai::types::chat::{
 
 use crate::sql::wrappers::aichats;
 
-pub fn sql_message_to_chat_message(msg: &aichats::SqlAiConversationMessage) -> ChatCompletionRequestMessage {
+pub fn sql_message_to_chat_message(msg: &aichats::SqlAiConversationMessage) -> Option<ChatCompletionRequestMessage> {
     match msg.role.as_str() {
-        "system" => ChatCompletionRequestSystemMessage::from(msg.content.as_str()).into(),
+        "user" => Some(ChatCompletionRequestUserMessage::from(msg.content.as_str()).into()),
 
-        "user" => ChatCompletionRequestUserMessage::from(msg.content.as_str()).into(),
-
-        "tool" => ChatCompletionRequestToolMessage {
+        "tool" => Some(ChatCompletionRequestToolMessage {
             content: msg.content.clone().into(),
             tool_call_id: msg.tool_call_id.clone().unwrap_or_default(),
-        }.into(),
+        }.into()),
 
         "assistant" => {
             let tool_calls = if let (Some(name), Some(arguments)) = (&msg.tool_call_function, &msg.tool_call_arguments) {
@@ -44,14 +41,17 @@ pub fn sql_message_to_chat_message(msg: &aichats::SqlAiConversationMessage) -> C
                 .map(|tc| tc.clone().into())
                 .collect();
 
-            ChatCompletionRequestAssistantMessage {
+            Some(ChatCompletionRequestAssistantMessage {
                 content: Some(ChatCompletionRequestAssistantMessageContent::from(msg.content.clone())),
                 tool_calls: if tool_calls.is_empty() { None } else { Some(tool_calls) },
                 ..Default::default()
-            }.into()
+            }.into())
         },
         
-        _ => panic!("Unknown message role: {}", msg.role),
+        _ => {
+            eprintln!("Unknown message role: {}", msg.role);
+            None
+        },
     }
 }
 

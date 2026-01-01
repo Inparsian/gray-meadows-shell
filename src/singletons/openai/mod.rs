@@ -165,10 +165,12 @@ pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'st
             return Err(anyhow::anyhow!("AI session not initialized"));
         };
 
-        let sorted_messages = get_sorted_messages()
+        let mut sorted_messages = get_sorted_messages()
             .iter()
             .map(|(_, msg)| msg.clone())
             .collect::<Vec<ChatCompletionRequestMessage>>();
+
+        sorted_messages.insert(0, ChatCompletionRequestSystemMessage::from(APP.config.ai.prompt.as_str()).into());
 
         let request = CreateChatCompletionRequestArgs::default()
             .max_completion_tokens(2048_u32)

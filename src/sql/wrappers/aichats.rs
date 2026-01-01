@@ -26,35 +26,9 @@ pub fn ensure_default_conversation() -> Result<(), Box<dyn std::error::Error>> {
             let count = cursor.read::<i64, _>(0)?;
             if count == 0 {
                 connection.execute("INSERT INTO aichat_conversations (title) VALUES ('Default Conversation')")?;
-
-                // Insert our prompt
-                let conversation_id = last_insert_rowid(&connection)?;
-                insert_system_prompt_with_connection(conversation_id, &connection)?;
             }
         }
         Ok(())
-    } else {
-        Err("No database connection available".into())
-    }
-}
-
-/// Inserts the default system prompt message into a conversation with the specified connection.
-fn insert_system_prompt_with_connection(conversation_id: i64, connection: &sqlite::Connection) -> Result<(), Box<dyn std::error::Error>> {
-    let prompt = crate::APP.config.ai.prompt.clone();
-    let statement = format!(
-        "INSERT INTO aichat_messages (conversation_id, role, content) \
-         VALUES ({}, 'system', '{}')",
-        conversation_id,
-        prompt.replace('\'', "''")
-    );
-    connection.execute(&statement)?;
-    Ok(())
-}
-
-pub fn insert_system_prompt(conversation_id: i64) -> Result<(), Box<dyn std::error::Error>> {
-    if let Some(connection) = SQL_CONNECTION.get() {
-        let connection = connection.lock()?;
-        insert_system_prompt_with_connection(conversation_id, &connection)
     } else {
         Err("No database connection available".into())
     }
@@ -97,7 +71,6 @@ pub fn trim_messages(conversation_id: i64, down_to_message_id: i64) -> Result<()
 }
 
 /// Adds a new AI chat conversation with the specified title,
-/// inserts the system prompt message, and returns its new ID.
 pub fn add_conversation(title: &str) -> Result<i64, Box<dyn std::error::Error>> {
     if let Some(connection) = SQL_CONNECTION.get() {
         let connection = connection.lock()?;
@@ -106,9 +79,7 @@ pub fn add_conversation(title: &str) -> Result<i64, Box<dyn std::error::Error>> 
             title.replace('\'', "''")
         );
         connection.execute(&statement)?;
-        let conversation_id = last_insert_rowid(&connection)?;
-        insert_system_prompt_with_connection(conversation_id, &connection)?;
-        Ok(conversation_id)
+        Ok(last_insert_rowid(&connection)?)
     } else {
         Err("No database connection available".into())
     }
