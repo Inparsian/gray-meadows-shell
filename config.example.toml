@@ -17,6 +17,10 @@ service_tier = "default"
 # The prompt to use for AI interactions.
 prompt = "You are a helpful AI assistant running on a sidebar in a Linux desktop environment."
 
+# Whether to inject timestamps into user messages.
+# This allows the AI to know when messages in a conversation were sent.
+user_message_timestamps = true
+
 # The name of your AI assistant. Leave blank to use the default name.
 assistant_name = ""
 
@@ -24,9 +28,6 @@ assistant_name = ""
 assistant_icon_path = ""
 
 [ai.features]
-# Whether the AI can get the current date and time.
-current_date_time = true
-
 # Whether the AI can perform system power control actions (shutdown, restart, etc.).
 power_control = true
 

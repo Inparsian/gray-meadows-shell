@@ -192,7 +192,9 @@ pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'st
             .clone()
             .iter_mut()
             .map(|msg| {
-                msg.inject_timestamp_into_content();
+                if APP.config.ai.user_message_timestamps {
+                    msg.inject_timestamp_into_content();
+                }
                 msg.message.clone()
             })
             .collect::<Vec<ChatCompletionRequestMessage>>();

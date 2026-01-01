@@ -20,6 +20,7 @@ pub struct AiConfig {
     pub model: String,
     pub service_tier: String,
     pub prompt: String,
+    pub user_message_timestamps: bool,
     pub assistant_name: Option<String>,
     pub assistant_icon_path: Option<String>,
     pub features: AiFeatures,
@@ -39,6 +40,7 @@ impl Default for Config {
                 model: "gpt-4.1".to_owned(),
                 service_tier: "default".to_owned(),
                 prompt: "You are a helpful AI assistant running on a sidebar in a Linux desktop environment.".to_owned(),
+                user_message_timestamps: true,
                 assistant_name: None,
                 assistant_icon_path: None,
                 features: AiFeatures {
