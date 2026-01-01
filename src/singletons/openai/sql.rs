@@ -18,28 +18,29 @@ pub fn sql_message_to_chat_message(msg: &aichats::SqlAiConversationMessage) -> O
     match msg.role.as_str() {
         "user" => Some(ChatCompletionRequestUserMessage::from(msg.content.as_str()).into()),
 
-        "tool" => Some(ChatCompletionRequestToolMessage {
-            content: msg.content.clone().into(),
-            tool_call_id: msg.tool_call_id.clone().unwrap_or_default(),
-        }.into()),
+        "tool" => {
+            let tool_call_id = msg.tool_calls.first()
+                .map(|tc| tc.id.clone())
+                .unwrap_or_default();
+
+            Some(ChatCompletionRequestToolMessage {
+                content: ChatCompletionRequestToolMessageContent::Text(msg.content.clone()),
+                tool_call_id,
+            }.into())
+        },
 
         "assistant" => {
-            let tool_calls = if let (Some(name), Some(arguments)) = (&msg.tool_call_function, &msg.tool_call_arguments) {
-                vec![ChatCompletionMessageToolCall {
-                    id: msg.tool_call_id.clone().unwrap_or_default(),
-                    function: FunctionCall {
-                        name: name.clone(),
-                        arguments: arguments.clone(),
-                    },
-                }]
-            } else {
-                Vec::new()
-            };
-
-            let tool_calls: Vec<ChatCompletionMessageToolCalls> = tool_calls
-                .iter()
-                .map(|tc| tc.clone().into())
-                .collect();
+            let tool_calls: Vec<ChatCompletionMessageToolCalls> = msg.tool_calls.iter().map(|tc| {
+                ChatCompletionMessageToolCalls::Function(
+                    ChatCompletionMessageToolCall {
+                        id: tc.id.clone(),
+                        function: FunctionCall {
+                            name: tc.function.clone(),
+                            arguments: tc.arguments.clone(),
+                        },
+                    }
+                )
+            }).collect();
 
             Some(ChatCompletionRequestAssistantMessage {
                 content: Some(ChatCompletionRequestAssistantMessageContent::from(msg.content.as_str())),
@@ -65,9 +66,7 @@ pub fn chat_message_to_sql_message(msg: &ChatCompletionRequestMessage, conversat
                 ChatCompletionRequestSystemMessageContent::Text(str) => str.clone(),
                 _ => String::new(),
             },
-            tool_call_id: None,
-            tool_call_function: None,
-            tool_call_arguments: None,
+            tool_calls: Vec::new(),
             timestamp: None,
         },
 
@@ -79,9 +78,7 @@ pub fn chat_message_to_sql_message(msg: &ChatCompletionRequestMessage, conversat
                 ChatCompletionRequestUserMessageContent::Text(str) => str.clone(),
                 _ => String::new(),
             },
-            tool_call_id: None,
-            tool_call_function: None,
-            tool_call_arguments: None,
+            tool_calls: Vec::new(),
             timestamp: None,
         },
 
@@ -93,28 +90,30 @@ pub fn chat_message_to_sql_message(msg: &ChatCompletionRequestMessage, conversat
                 ChatCompletionRequestToolMessageContent::Text(str) => str.clone(),
                 _ => String::new(),
             },
-            tool_call_id: Some(tool_msg.tool_call_id.clone()),
-            tool_call_function: None,
-            tool_call_arguments: None,
+            tool_calls: vec![aichats::SqlAiConversationToolCall {
+                id: tool_msg.tool_call_id.clone(),
+                function: String::new(),
+                arguments: String::new(),
+            }],
             timestamp: None,
         },
 
         ChatCompletionRequestMessage::Assistant(assistant_msg) => {
-            let (tool_call_id, tool_call_function, tool_call_arguments) = assistant_msg.tool_calls.as_ref()
-                .map_or((None, None, None), |tool_calls| if !tool_calls.is_empty() {
-                    let tc = &tool_calls[0];
-                    match tc {
-                        ChatCompletionMessageToolCalls::Function(tool) => {
-                            (
-                                Some(tool.id.clone()),
-                                Some(tool.function.name.clone()),
-                                Some(tool.function.arguments.clone()),
-                            )
-                        },
-                        _ => (None, None, None),
-                    }
-                } else {
-                    (None, None, None)
+            let tool_calls = assistant_msg.tool_calls.as_ref()
+                .map_or_else(Vec::new, |calls| {
+                    calls.iter().filter_map(|call| {
+                        match call {
+                            ChatCompletionMessageToolCalls::Function(tool) => {
+                                aichats::SqlAiConversationToolCall {
+                                    id: tool.id.clone(),
+                                    function: tool.function.name.clone(),
+                                    arguments: tool.function.arguments.clone(),
+                                }.into()
+                            },
+
+                            _ => None,
+                        }
+                    }).collect()
                 });
 
             aichats::SqlAiConversationMessage {
@@ -125,9 +124,7 @@ pub fn chat_message_to_sql_message(msg: &ChatCompletionRequestMessage, conversat
                     Some(ChatCompletionRequestAssistantMessageContent::Text(str)) => str.clone(),
                     _ => String::new(),
                 },
-                tool_call_id,
-                tool_call_function,
-                tool_call_arguments,
+                tool_calls,
                 timestamp: None,
             }
         },

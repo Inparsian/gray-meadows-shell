@@ -48,7 +48,7 @@ pub fn establish_connection() -> Result<Connection, Box<dyn std::error::Error>> 
         )
     ")?;
 
-    // Table for AI chat conversations
+    // Tables for AI chat conversations
     connection.execute("
         CREATE TABLE IF NOT EXISTS aichat_conversations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -63,11 +63,18 @@ pub fn establish_connection() -> Result<Connection, Box<dyn std::error::Error>> 
             conversation_id INTEGER NOT NULL,
             role TEXT NOT NULL,
             content TEXT NOT NULL,
-            tool_call_id TEXT,
-            tool_call_function TEXT,
-            tool_call_arguments TEXT,
             timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(conversation_id) REFERENCES aichat_conversations(id) ON DELETE CASCADE
+        )
+    ")?;
+
+    connection.execute("
+        CREATE TABLE IF NOT EXISTS aichat_tool_calls (
+            tool_id TEXT NOT NULL,
+            message_id INTEGER NOT NULL,
+            function TEXT NOT NULL,
+            arguments TEXT NOT NULL,
+            FOREIGN KEY(message_id) REFERENCES aichat_messages(id) ON DELETE CASCADE
         )
     ")?;
 
