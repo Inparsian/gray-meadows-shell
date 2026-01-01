@@ -42,7 +42,7 @@ pub fn sql_message_to_chat_message(msg: &aichats::SqlAiConversationMessage) -> O
                 .collect();
 
             Some(ChatCompletionRequestAssistantMessage {
-                content: Some(ChatCompletionRequestAssistantMessageContent::from(msg.content.clone())),
+                content: Some(ChatCompletionRequestAssistantMessageContent::from(msg.content.as_str())),
                 tool_calls: if tool_calls.is_empty() { None } else { Some(tool_calls) },
                 ..Default::default()
             }.into())
@@ -68,6 +68,7 @@ pub fn chat_message_to_sql_message(msg: &ChatCompletionRequestMessage, conversat
             tool_call_id: None,
             tool_call_function: None,
             tool_call_arguments: None,
+            timestamp: None,
         },
 
         ChatCompletionRequestMessage::User(user_msg) => aichats::SqlAiConversationMessage {
@@ -81,6 +82,7 @@ pub fn chat_message_to_sql_message(msg: &ChatCompletionRequestMessage, conversat
             tool_call_id: None,
             tool_call_function: None,
             tool_call_arguments: None,
+            timestamp: None,
         },
 
         ChatCompletionRequestMessage::Tool(tool_msg) => aichats::SqlAiConversationMessage {
@@ -94,6 +96,7 @@ pub fn chat_message_to_sql_message(msg: &ChatCompletionRequestMessage, conversat
             tool_call_id: Some(tool_msg.tool_call_id.clone()),
             tool_call_function: None,
             tool_call_arguments: None,
+            timestamp: None,
         },
 
         ChatCompletionRequestMessage::Assistant(assistant_msg) => {
@@ -125,6 +128,7 @@ pub fn chat_message_to_sql_message(msg: &ChatCompletionRequestMessage, conversat
                 tool_call_id,
                 tool_call_function,
                 tool_call_arguments,
+                timestamp: None,
             }
         },
 

@@ -5,7 +5,6 @@ pub mod conversation;
 
 use std::pin::Pin;
 use std::sync::{Arc, OnceLock, RwLock};
-use std::collections::HashMap;
 use futures_lite::stream::StreamExt as _;
 use async_openai::Client;
 use async_openai::config::OpenAIConfig;
@@ -18,6 +17,7 @@ use async_openai::types::chat::{
     ChatCompletionRequestSystemMessage,
     ChatCompletionRequestToolMessage,
     ChatCompletionRequestUserMessage,
+    ChatCompletionRequestUserMessageContent,
     CreateChatCompletionRequestArgs,
     FinishReason,
     ServiceTier,
@@ -44,22 +44,44 @@ pub enum AIChannelMessage {
     ConversationDeleted(i64), // conversation ID
 }
 
+#[derive(Debug, Clone)]
+pub struct AISessionMessage {
+    pub id: i64,
+    pub timestamp: Option<String>,
+    pub message: ChatCompletionRequestMessage,
+}
+
+impl AISessionMessage {
+    pub fn timestamp_or_now(&self) -> String {
+        self.timestamp.clone().unwrap_or_else(|| {
+            chrono::Local::now().format("%A, %B %d, %Y at %I:%M %p %Z").to_string()
+        })
+    }
+
+    fn format_with_timestamp(timestamp: &str, content: &str) -> String {
+        format!(
+            "[Sent at {}] {}",
+            timestamp,
+            content
+        )
+    }
+
+    pub fn inject_timestamp_into_content(&mut self) {
+        let timestamp = self.timestamp_or_now();
+        if let ChatCompletionRequestMessage::User(user_msg) = &mut self.message
+            && let ChatCompletionRequestUserMessageContent::Text(content) = &user_msg.content
+        {
+            let new_content = Self::format_with_timestamp(&timestamp, content);
+            user_msg.content = ChatCompletionRequestUserMessageContent::Text(new_content);
+        }
+    }
+}
+
 pub struct AISession {
     pub client: Client<OpenAIConfig>,
     pub conversation: Arc<RwLock<Option<SqlAiConversation>>>,
-    pub messages: Arc<RwLock<HashMap<i64, ChatCompletionRequestMessage>>>,
+    pub messages: Arc<RwLock<Vec<AISessionMessage>>>,
     pub currently_in_cycle: Arc<RwLock<bool>>,
-}
-
-pub fn get_sorted_messages() -> Vec<(i64, ChatCompletionRequestMessage)> {
-    SESSION.get().map_or_else(Vec::new, |session| {
-        let messages = session.messages.read().unwrap();
-        let mut sorted_messages: Vec<(i64, ChatCompletionRequestMessage)> = messages.iter()
-            .map(|(&id, msg)| (id, msg.clone()))
-            .collect();
-        sorted_messages.sort_by_key(|&(id, _)| id);
-        sorted_messages
-    })
 }
 
 pub fn is_currently_in_cycle() -> bool {
@@ -93,7 +115,12 @@ fn write_message(msg: &ChatCompletionRequestMessage) -> i64 {
     let sql_message = sql::chat_message_to_sql_message(msg, conversation.id);
     match aichats::add_message(&sql_message) {
         Ok(id) => {
-            session.messages.write().unwrap().insert(id, msg.clone());
+            session.messages.write().unwrap().push(AISessionMessage {
+                id,
+                timestamp: sql_message.timestamp.clone(),
+                message: msg.clone(),
+            });
+
             id
         },
 
@@ -119,11 +146,9 @@ pub fn trim_messages(down_to_message_id: i64) {
 
         let mut write = session.messages.write().unwrap();
         let indices = write.iter()
-            .filter_map(|(&id, _)| (id >= down_to_message_id).then_some(id))
+            .filter_map(|msg| (msg.id >= down_to_message_id).then_some(msg.id))
             .collect::<Vec<i64>>();
-        for id in indices {
-            write.remove(&id);
-        }
+        write.retain(|msg| !indices.contains(&msg.id));
 
         if let Some(channel) = CHANNEL.get() {
             channel.spawn_send(AIChannelMessage::ConversationTrimmed(conversation.id, down_to_message_id));
@@ -143,10 +168,7 @@ pub fn activate() {
     let session = AISession {
         client: make_client(),
         conversation: Arc::new(RwLock::new(None)),
-        messages: Arc::new(RwLock::new(HashMap::from([(
-            0,
-            ChatCompletionRequestSystemMessage::from(APP.config.ai.prompt.as_str()).into()
-        )]))),
+        messages: Arc::new(RwLock::new(Vec::new())),
         currently_in_cycle: Arc::new(RwLock::new(false)),
     };
 
@@ -166,9 +188,13 @@ pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'st
             return Err(anyhow::anyhow!("AI session not initialized"));
         };
 
-        let mut sorted_messages = get_sorted_messages()
-            .iter()
-            .map(|(_, msg)| msg.clone())
+        let mut sorted_messages = session.messages.read().unwrap()
+            .clone()
+            .iter_mut()
+            .map(|msg| {
+                msg.inject_timestamp_into_content();
+                msg.message.clone()
+            })
             .collect::<Vec<ChatCompletionRequestMessage>>();
 
         sorted_messages.insert(0, ChatCompletionRequestSystemMessage::from(

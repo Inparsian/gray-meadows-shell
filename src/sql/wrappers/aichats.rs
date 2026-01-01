@@ -15,6 +15,7 @@ pub struct SqlAiConversationMessage {
     pub tool_call_id: Option<String>,
     pub tool_call_function: Option<String>,
     pub tool_call_arguments: Option<String>,
+    pub timestamp: Option<String>,
 }
 
 /// Ensures there is at least one AI chat conversation in the database.
@@ -181,6 +182,7 @@ pub fn get_messages(conversation_id: i64) -> Result<Vec<SqlAiConversationMessage
                 tool_call_id: cursor.read::<Option<String>, _>(4)?,
                 tool_call_function: cursor.read::<Option<String>, _>(5)?,
                 tool_call_arguments: cursor.read::<Option<String>, _>(6)?,
+                timestamp: cursor.read::<Option<String>, _>(7)?,
             };
             messages.push(message);
         }

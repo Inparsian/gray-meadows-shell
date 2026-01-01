@@ -1,22 +1,25 @@
-use std::collections::HashMap;
 use std::error::Error;
-use async_openai::types::chat::ChatCompletionRequestMessage;
 
 use crate::sql::wrappers::aichats;
-use super::{sql, CHANNEL, SESSION, AIChannelMessage};
+use super::{sql, CHANNEL, SESSION, AIChannelMessage, AISessionMessage};
 
-fn read_conversation(id: i64) -> Result<HashMap<i64, ChatCompletionRequestMessage>, Box<dyn Error>> {
+fn read_conversation(id: i64) -> Result<Vec<AISessionMessage>, Box<dyn Error>> {
     let sql_messages = aichats::get_messages(id)?;
 
-    let mut chat_messages = HashMap::new();
+    let mut chat_messages = Vec::new();
     for msg in &sql_messages {
         let Some(chat_msg) = sql::sql_message_to_chat_message(msg) else {
             continue;
         };
 
-        chat_messages.insert(msg.id, chat_msg);
+        chat_messages.push(AISessionMessage {
+            id: msg.id,
+            timestamp: msg.timestamp.clone(),
+            message: chat_msg,
+        });
     }
 
+    chat_messages.sort_by_key(|msg| msg.id);
     Ok(chat_messages)
 }
 
@@ -27,12 +30,7 @@ pub fn load_conversation(id: i64) {
                 let mut conversation = session.conversation.write().unwrap();
                 match read_conversation(id) {
                     Ok(messages) => {
-                        let mut msgs = session.messages.write().unwrap();
-                        msgs.clear();
-                        for (id, msg) in messages {
-                            msgs.insert(id, msg);
-                        }
-
+                        *session.messages.write().unwrap() = messages;
                         *conversation = Some(conv);
                         if let Some(channel) = CHANNEL.get() {
                             channel.spawn_send(AIChannelMessage::ConversationLoaded(conversation.as_ref().unwrap().clone()));

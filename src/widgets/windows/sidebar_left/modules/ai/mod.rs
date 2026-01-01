@@ -143,36 +143,40 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
             while let Ok(message) = receiver.recv().await {
                 match message {
                     openai::AIChannelMessage::ConversationLoaded(conversation) => {
+                        let Some(session) = openai::SESSION.get() else {
+                            continue;
+                        };
+
                         chat.clear_messages();
                         conversation_title.set_text(&conversation.title);
 
-                        for (id, msg) in &openai::get_sorted_messages() {
-                            match msg {
-                                ChatCompletionRequestMessage::User(msg) => {
+                        for msg in session.messages.read().unwrap().iter() {
+                            match &msg.message {
+                                ChatCompletionRequestMessage::User(user_message) => {
                                     let message = chat::ChatMessage::new(
                                         &chat::ChatRole::User,
-                                        match &msg.content {
+                                        match &user_message.content {
                                             ChatCompletionRequestUserMessageContent::Text(str) => Some(str.clone()),
                                             _ => Some("[Unsupported content]".to_owned()),
                                         },
                                     );
-                                    message.set_id(*id);
+                                    message.set_id(msg.id);
                                     chat.add_message(message);
                                 },
 
-                                ChatCompletionRequestMessage::Assistant(msg) => {
+                                ChatCompletionRequestMessage::Assistant(assistant_message) => {
                                     let message = chat::ChatMessage::new(
                                         &chat::ChatRole::Assistant,
-                                        match &msg.content {
+                                        match &assistant_message.content {
                                             Some(ChatCompletionRequestAssistantMessageContent::Text(str)) => Some(str.clone()),
                                             _ => Some("[Unsupported content]".to_owned()),
                                         },
                                     );
-                                    message.set_id(*id);
+                                    message.set_id(msg.id);
                                     chat.add_message(message);
 
                                     // Append tool call info if present
-                                    if let Some(tool_calls) = &msg.tool_calls {
+                                    if let Some(tool_calls) = &assistant_message.tool_calls {
                                         for tool_call in tool_calls {
                                             if let ChatCompletionMessageToolCalls::Function(tool) = tool_call {
                                                 chat.append_tool_call_to_latest_message(
