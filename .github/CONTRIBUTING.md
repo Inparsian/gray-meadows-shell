@@ -16,10 +16,16 @@ Features that I don't personally plan to implement will be considered on the con
 
 If you'd like to contribute code (bug/performance fixes, new features, etc.), all I ask is that you:
 
-- Try to follow the existing coding style as closely as possible
-- Include comments where necessary to explain complex logic
+- Follow the coding style guidelines below
 - Test your changes thoroughly before submitting a pull request
 - Open multiple PRs if you have many unrelated changes
+
+### Coding Style Guidelines
+
+- Use 4 spaces for indentation (no tabs)
+- Use meaningful variable and function names
+- Keep lines under 100 characters wherever possible (excluding indentation)
+- Include comments where necessary to explain complex logic
 
 # License
 
