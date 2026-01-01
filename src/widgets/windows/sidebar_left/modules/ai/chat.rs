@@ -202,6 +202,7 @@ impl Default for Chat {
 
 impl Chat {
     pub fn clear_messages(&self) {
+        self.messages.borrow_mut().clear();
         self.root.iter_children().for_each(|child| {
             self.root.remove(&child);
         });
