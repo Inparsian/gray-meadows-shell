@@ -125,7 +125,7 @@ impl ChatMessage {
             let role = role.clone();
             move |_| if !openai::is_currently_in_cycle() && let Some(message_id) = *id.borrow() {
                 // Increase message_id by 1 if this is a user message to trim down to the
-                // previous assistant message before it
+                // assistant response directly after it
                 let message_id = if role == ChatRole::User {
                     message_id + 1
                 } else {
