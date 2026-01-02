@@ -20,13 +20,21 @@ pub struct OpenAiConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GeminiConfig {
+    pub api_key: String,
+    pub model: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AiConfig {
     pub enabled: bool,
+    pub service: String,
     pub prompt: String,
     pub user_message_timestamps: bool,
     pub assistant_name: Option<String>,
     pub assistant_icon_path: Option<String>,
     pub openai: OpenAiConfig,
+    pub gemini: GeminiConfig,
     pub features: AiFeatures,
 }
 
@@ -40,6 +48,7 @@ impl Default for Config {
         Config {
             ai: AiConfig {
                 enabled: true,
+                service: "openai".to_owned(),
                 prompt: "You are a helpful AI assistant running on a sidebar in a Linux desktop environment.".to_owned(),
                 user_message_timestamps: true,
                 assistant_name: None,
@@ -48,6 +57,10 @@ impl Default for Config {
                     api_key: "your-api-key-here".to_owned(),
                     model: "gpt-4.1".to_owned(),
                     service_tier: "default".to_owned(),
+                },
+                gemini: GeminiConfig {
+                    api_key: "your-api-key-here".to_owned(),
+                    model: "gemini-2.0-flash".to_owned(),
                 },
                 features: AiFeatures {
                     power_control: true,

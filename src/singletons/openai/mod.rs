@@ -1,12 +1,14 @@
 mod tools;
 mod sql;
 mod variables;
+mod types;
 pub mod conversation;
 
 use std::pin::Pin;
 use std::sync::{Arc, OnceLock, RwLock};
 use futures_lite::stream::StreamExt as _;
 use async_openai::Client;
+use async_openai::error::OpenAIError;
 use async_openai::config::OpenAIConfig;
 use async_openai::types::chat::{
     ChatCompletionMessageToolCall,
@@ -19,12 +21,12 @@ use async_openai::types::chat::{
     ChatCompletionRequestUserMessage,
     ChatCompletionRequestUserMessageContent,
     CreateChatCompletionRequestArgs,
-    FinishReason,
     ServiceTier,
 };
 
 use crate::sql::wrappers::aichats::{self, SqlAiConversation};
 use crate::{APP, broadcast::BroadcastChannel};
+use self::types::ChatCompletionResponseStream;
 
 pub static CHANNEL: OnceLock<BroadcastChannel<AIChannelMessage>> = OnceLock::new();
 pub static SESSION: OnceLock<AISession> = OnceLock::new();
@@ -104,8 +106,14 @@ pub fn current_conversation_id() -> Option<i64> {
 }
 
 fn make_client() -> Client<OpenAIConfig> {
-    let config = OpenAIConfig::new()
-        .with_api_key(APP.config.ai.openai.api_key.as_str());
+    let config = if APP.config.ai.service == "gemini" {
+        OpenAIConfig::new()
+            .with_api_base("https://generativelanguage.googleapis.com/v1beta/openai")
+            .with_api_key(APP.config.ai.gemini.api_key.as_str())
+    } else {
+        OpenAIConfig::new()
+            .with_api_key(APP.config.ai.openai.api_key.as_str())
+    };
 
     Client::with_config(config)
 }
@@ -188,32 +196,32 @@ pub fn activate() {
     conversation::load_first_conversation();
 }
 
-pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'static + Send>> {
-    Box::pin(async move {
-        let Some(channel) = CHANNEL.get() else {
-            return Err(anyhow::anyhow!("AI request channel not initialized"));
-        };
+async fn create_stream(session: &AISession) -> Result<ChatCompletionResponseStream, OpenAIError> {
+    let mut sorted_messages = session.messages.read().unwrap()
+        .clone()
+        .iter_mut()
+        .map(|msg| {
+            if APP.config.ai.user_message_timestamps {
+                msg.inject_timestamp_into_content();
+            }
+            msg.message.clone()
+        })
+        .collect::<Vec<ChatCompletionRequestMessage>>();
 
-        let Some(session) = SESSION.get() else {
-            return Err(anyhow::anyhow!("AI session not initialized"));
-        };
+    sorted_messages.insert(0, ChatCompletionRequestSystemMessage::from(
+        variables::transform_variables(APP.config.ai.prompt.as_str())).into()
+    );
 
-        let mut sorted_messages = session.messages.read().unwrap()
-            .clone()
-            .iter_mut()
-            .map(|msg| {
-                if APP.config.ai.user_message_timestamps {
-                    msg.inject_timestamp_into_content();
-                }
-                msg.message.clone()
-            })
-            .collect::<Vec<ChatCompletionRequestMessage>>();
-
-        sorted_messages.insert(0, ChatCompletionRequestSystemMessage::from(
-            variables::transform_variables(APP.config.ai.prompt.as_str())).into()
-        );
-
-        let request = CreateChatCompletionRequestArgs::default()
+    let request = if APP.config.ai.service == "gemini" {
+        CreateChatCompletionRequestArgs::default()
+            .max_completion_tokens(2048_u32)
+            .stream(true)
+            .model(APP.config.ai.gemini.model.as_str())
+            .messages(sorted_messages)
+            .tools(tools::get_tools()?)
+            .build()?
+    } else {
+        CreateChatCompletionRequestArgs::default()
             .max_completion_tokens(2048_u32)
             .stream(true)
             .model(APP.config.ai.openai.model.as_str())
@@ -224,33 +232,43 @@ pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'st
                 _ => ServiceTier::Default,
             })
             .tools(tools::get_tools()?)
-            .build()?;
+            .build()?
+    };
+
+    session.client.chat().create_stream_byot(request).await
+}
+
+pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'static + Send>> {
+    Box::pin(async move {
+        let Some(channel) = CHANNEL.get() else {
+            return Err(anyhow::anyhow!("AI request channel not initialized"));
+        };
+
+        let Some(session) = SESSION.get() else {
+            return Err(anyhow::anyhow!("AI session not initialized"));
+        };
 
         let mut should_request_again = true;
-        let mut stream = session.client.chat().create_stream(request).await?;
         let mut tool_calls = Vec::new();
         let mut content_chunks = Vec::new();
         let mut execution_handles = Vec::new();
+        let mut stream = create_stream(session).await?;
 
         channel.send(AIChannelMessage::StreamStart).await;
 
-        while let Some(result) = stream.next().await {
+        while let Some(response) = stream.next().await {
             if *session.stop_cycle_flag.read().unwrap() {
                 break;
             }
-
-            let response = result?;
-
-            for choice in response.choices {
+            
+            for choice in response?.choices {
                 if let Some(content) = &choice.delta.content {
                     channel.send(AIChannelMessage::StreamChunk(content.clone())).await;
                     content_chunks.push(content.clone());
                 }
 
                 if let Some(tool_call_chunks) = choice.delta.tool_calls {
-                    for chunk in tool_call_chunks {
-                        let index = chunk.index as usize;
-
+                    for (index, chunk) in tool_call_chunks.into_iter().enumerate() {
                         while tool_calls.len() <= index {
                             tool_calls.push(ChatCompletionMessageToolCall {
                                 id: String::new(),
@@ -280,7 +298,7 @@ pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'st
                     }
                 }
 
-                if choice.finish_reason == Some(FinishReason::ToolCalls) {
+                if choice.finish_reason.is_some() {
                     for tool_call in &tool_calls {
                         let handle = tokio::spawn({
                             let id = tool_call.id.clone();
@@ -381,7 +399,7 @@ pub async fn start_request_cycle() {
             Ok(should_request_again) if !should_request_again => break,
             Ok(_) => {},
             Err(e) => {
-                eprintln!("AI request failed: {}", e);
+                eprintln!("AI request failed: {:#?}", e);
                 break;
             }
         }

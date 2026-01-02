@@ -25,7 +25,7 @@ My personal stand-alone Hyprland desktop shell using gtk4 and gtk4-layer-shell, 
 - Left sidebar:
   - Google Translate integration
   - Advanced color picker
-  - Integrated AI assistant powered by OpenAI
+  - Integrated AI assistant powered by OpenAI/Gemini
 
 ## 📷 Show me the screenshots
 ok
