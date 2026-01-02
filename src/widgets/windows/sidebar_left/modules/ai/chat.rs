@@ -102,18 +102,41 @@ impl ChatMessage {
         controls_revealer.set_transition_type(gtk4::RevealerTransitionType::Crossfade);
         controls_revealer.set_transition_duration(150);
 
+        let controls_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 6);
+        controls_box.set_css_classes(&["ai-chat-message-controls-box"]);
+        controls_revealer.set_child(Some(&controls_box));
+
         let delete_button = gtk4::Button::new();
-        delete_button.set_css_classes(&["ai-chat-message-delete-button"]);
+        delete_button.set_css_classes(&["ai-chat-message-control-button"]);
         delete_button.set_label("delete");
         delete_button.connect_clicked({
             let id = id.clone();
-            move |_| if !openai::is_currently_in_cycle()
-                && let Some(message_id) = *id.borrow() 
-            {
+            move |_| if !openai::is_currently_in_cycle() && let Some(message_id) = *id.borrow() {
                 openai::trim_messages(message_id);
             }
         });
-        controls_revealer.set_child(Some(&delete_button));
+        controls_box.append(&delete_button);
+
+        let retry_button = gtk4::Button::new();
+        retry_button.set_css_classes(&["ai-chat-message-control-button"]);
+        retry_button.set_label("refresh");
+        retry_button.connect_clicked({
+            let id = id.clone();
+            let role = role.clone();
+            move |_| if !openai::is_currently_in_cycle() && let Some(message_id) = *id.borrow() {
+                // Increase message_id by 1 if this is a user message to trim down to the
+                // previous assistant message before it
+                let message_id = if role == ChatRole::User {
+                    message_id + 1
+                } else {
+                    message_id
+                };
+
+                openai::trim_messages(message_id);
+                tokio::spawn(openai::start_request_cycle());
+            }
+        });
+        controls_box.append(&retry_button);
 
         header.append(&controls_revealer);
 
