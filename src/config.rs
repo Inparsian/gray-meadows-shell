@@ -13,15 +13,20 @@ pub struct AiFeatures {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AiConfig {
-    pub enabled: bool,
+pub struct OpenAiConfig {
     pub api_key: String,
     pub model: String,
     pub service_tier: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AiConfig {
+    pub enabled: bool,
     pub prompt: String,
     pub user_message_timestamps: bool,
     pub assistant_name: Option<String>,
     pub assistant_icon_path: Option<String>,
+    pub openai: OpenAiConfig,
     pub features: AiFeatures,
 }
 
@@ -35,13 +40,15 @@ impl Default for Config {
         Config {
             ai: AiConfig {
                 enabled: true,
-                api_key: "your-api-key-here".to_owned(),
-                model: "gpt-4.1".to_owned(),
-                service_tier: "default".to_owned(),
                 prompt: "You are a helpful AI assistant running on a sidebar in a Linux desktop environment.".to_owned(),
                 user_message_timestamps: true,
                 assistant_name: None,
                 assistant_icon_path: None,
+                openai: OpenAiConfig {
+                    api_key: "your-api-key-here".to_owned(),
+                    model: "gpt-4.1".to_owned(),
+                    service_tier: "default".to_owned(),
+                },
                 features: AiFeatures {
                     power_control: true,
                     mpris_control: true,

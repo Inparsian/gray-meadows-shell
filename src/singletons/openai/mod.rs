@@ -105,7 +105,7 @@ pub fn current_conversation_id() -> Option<i64> {
 
 fn make_client() -> Client<OpenAIConfig> {
     let config = OpenAIConfig::new()
-        .with_api_key(APP.config.ai.api_key.as_str());
+        .with_api_key(APP.config.ai.openai.api_key.as_str());
 
     Client::with_config(config)
 }
@@ -166,7 +166,7 @@ pub fn trim_messages(down_to_message_id: i64) {
 }
 
 pub fn activate() {
-    if !APP.config.ai.enabled || APP.config.ai.api_key.is_empty() {
+    if !APP.config.ai.enabled || APP.config.ai.openai.api_key.is_empty() {
         return;
     }
 
@@ -216,9 +216,9 @@ pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'st
         let request = CreateChatCompletionRequestArgs::default()
             .max_completion_tokens(2048_u32)
             .stream(true)
-            .model(APP.config.ai.model.as_str())
+            .model(APP.config.ai.openai.model.as_str())
             .messages(sorted_messages)
-            .service_tier(match APP.config.ai.service_tier.as_str() {
+            .service_tier(match APP.config.ai.openai.service_tier.as_str() {
                 "flex" => ServiceTier::Flex,
                 "priority" => ServiceTier::Priority,
                 _ => ServiceTier::Default,
