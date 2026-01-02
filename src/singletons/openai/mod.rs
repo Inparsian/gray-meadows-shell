@@ -90,6 +90,7 @@ pub struct AISession {
     pub conversation: Arc<RwLock<Option<SqlAiConversation>>>,
     pub messages: Arc<RwLock<Vec<AISessionMessage>>>,
     pub currently_in_cycle: Arc<RwLock<bool>>,
+    pub stop_cycle_flag: Arc<RwLock<bool>>,
 }
 
 pub fn is_currently_in_cycle() -> bool {
@@ -178,6 +179,7 @@ pub fn activate() {
         conversation: Arc::new(RwLock::new(None)),
         messages: Arc::new(RwLock::new(Vec::new())),
         currently_in_cycle: Arc::new(RwLock::new(false)),
+        stop_cycle_flag: Arc::new(RwLock::new(false)),
     };
 
     let _ = SESSION.set(session);
@@ -233,6 +235,10 @@ pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'st
         channel.send(AIChannelMessage::StreamStart).await;
 
         while let Some(result) = stream.next().await {
+            if *session.stop_cycle_flag.read().unwrap() {
+                break;
+            }
+
             let response = result?;
 
             for choice in response.choices {
@@ -302,6 +308,10 @@ pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'st
         } else {
             Some(ChatCompletionRequestAssistantMessageContent::from(joined_content.clone()))
         };
+
+        if let Ok(mut stop_flag) = session.stop_cycle_flag.write() {
+            *stop_flag = false;
+        }
 
         if !execution_handles.is_empty() {
             let mut tool_responses = Vec::new();

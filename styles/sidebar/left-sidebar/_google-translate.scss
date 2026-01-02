@@ -67,6 +67,11 @@
             outline: none;
             box-shadow: none;
             border: none;
+            
+            selection {
+                background-color: $foreground-color-select;
+                color: $background-color-quaternary;
+            }
         }
 
         .google-translate-language-select-filter-clear-button {

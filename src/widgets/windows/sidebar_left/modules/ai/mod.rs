@@ -10,7 +10,7 @@ use async_openai::types::chat::{
     ChatCompletionMessageToolCalls,
 };
 
-use crate::singletons::openai;
+use crate::singletons::openai::{self, SESSION};
 
 pub fn conversation_control_button(icon: &str, label: &str) -> gtk4::Button {
     let button = gtk4::Button::new();
@@ -106,6 +106,10 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
         });
     };
 
+    let input_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 4);
+    input_box.set_css_classes(&["ai-chat-input-box"]);
+    widget.append(&input_box);
+
     let input = gtk4::Entry::new();
     input.set_placeholder_text(Some("Type your message here..."));
     input.set_css_classes(&["ai-chat-input"]);
@@ -133,17 +137,51 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
             entry.set_text("");
         }
     });
+    input_box.append(&input);
+
+    let input_send_button = gtk4::Button::new();
+    input_send_button.set_css_classes(&["ai-chat-input-send-button"]);
+    input_send_button.set_label("send");
+    input_send_button.connect_clicked({
+        let chat = chat.clone();
+        let scroll_to_bottom = scroll_to_bottom.clone();
+        move |_| {
+            let text = input.text().to_string();
+            if openai::is_currently_in_cycle() {
+                if let Some(session) = SESSION.get() 
+                    && let Ok(mut stop_flag) = session.stop_cycle_flag.write()
+                {
+                    *stop_flag = true;
+                }
+            } else if !text.is_empty() {
+                let id = openai::send_user_message(&text);
+                let message = chat::ChatMessage::new(
+                    &chat::ChatRole::User,
+                    Some(text),
+                );
+                message.set_id(id);
+                chat.add_message(message);
+                scroll_to_bottom();
+
+                tokio::spawn(openai::start_request_cycle());
+
+                input.set_text("");
+            }
+        }
+    });
+    input_box.append(&input_send_button);
 
     if let Some(channel) = openai::CHANNEL.get() {
         let mut receiver = channel.subscribe();
 
         gtk4::glib::spawn_future_local(async move {
             let chat = chat.clone();
+            let input_send_button = input_send_button.clone();
             let conversation_title = conversation_title.clone();
             while let Ok(message) = receiver.recv().await {
                 match message {
                     openai::AIChannelMessage::ConversationLoaded(conversation) => {
-                        let Some(session) = openai::SESSION.get() else {
+                        let Some(session) = SESSION.get() else {
                             continue;
                         };
 
@@ -206,6 +244,20 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                         }
                     },
 
+                    openai::AIChannelMessage::CycleStarted => {
+                        input_send_button.set_label("stop_circle");
+                    },
+
+                    openai::AIChannelMessage::CycleFinished => {
+                        input_send_button.set_label("send");
+
+                        if let Some(latest_message) = chat.messages.borrow_mut().last_mut()
+                            && latest_message.content.is_none()
+                        {
+                            latest_message.set_content("");
+                        }
+                    },
+
                     openai::AIChannelMessage::StreamStart => {
                         chat.add_message(chat::ChatMessage::new(
                             &chat::ChatRole::Assistant,
@@ -237,8 +289,6 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
             }
         });
     }
-
-    widget.append(&input);
 
     widget
 }
