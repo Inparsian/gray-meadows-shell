@@ -4,7 +4,6 @@ use async_openai::types::chat::{ChatCompletionTools, ChatCompletionTool, Functio
 
 use crate::APP;
 use crate::session::SessionAction;
-use crate::singletons::hyprland::HYPRLAND;
 use crate::singletons::mpris::{self, mpris_player::LoopStatus};
 
 pub fn get_tools() -> Result<Vec<ChatCompletionTools>, OpenAIError> {
@@ -12,12 +11,6 @@ pub fn get_tools() -> Result<Vec<ChatCompletionTools>, OpenAIError> {
 
     if APP.config.ai.features.mpris_control {
         tools.extend(vec![
-            ChatCompletionTools::Function(ChatCompletionTool {
-                function: FunctionObjectArgs::default()
-                    .name("get_mpris_track_info")
-                    .description("Gets track information from the current MPRIS player. This function outputs ephemeral data and must be called each time up-to-date information is needed.")
-                    .build()?,
-            }),
             ChatCompletionTools::Function(ChatCompletionTool {
                 function: FunctionObjectArgs::default()
                     .name("control_mpris_player")
@@ -120,15 +113,6 @@ pub fn get_tools() -> Result<Vec<ChatCompletionTools>, OpenAIError> {
                 .build()?,
         }));
     }
-        
-    if APP.config.ai.features.wayland_info {
-        tools.push(ChatCompletionTools::Function(ChatCompletionTool {
-            function: FunctionObjectArgs::default()
-                .name("get_focused_wayland_window")
-                .description("Gets the currently focused Wayland window along with the current workspace. This function outputs ephemeral data and must be called each time up-to-date information is needed.")
-                .build()?,
-        }));
-    }
 
     Ok(tools)
 }
@@ -169,29 +153,6 @@ pub fn call_tool(name: &str, args: &str) -> serde_json::Value {
                     "error": format!("Failed to parse arguments: {}", e)
                 }),
             }
-        },
-
-        "get_mpris_track_info" => {
-            let Some(player) = mpris::get_default_player() else {
-                return json!({
-                    "success": false,
-                    "error": "No MPRIS player found"
-                });
-            };
-
-            json!({
-                "success": true,
-                "track": {
-                    "title": player.metadata.title.unwrap_or("Unknown".to_owned()),
-                    "artist": player.metadata.artist.unwrap_or(vec!["Unknown".into()]).join(", "),
-                    "album": player.metadata.album.unwrap_or("Unknown".to_owned()),
-                    "length_ms": player.metadata.length.unwrap_or(0) / 1000,
-                    "position_ms": player.position / 1000,
-                    "playback_status": player.playback_status.as_string(),
-                    "loop": player.loop_status.as_string(),
-                    "shuffle": player.shuffle
-                }
-            })
         },
 
         "control_mpris_player" => {
@@ -291,38 +252,6 @@ pub fn call_tool(name: &str, args: &str) -> serde_json::Value {
                     "error": format!("Failed to parse arguments: {}", e)
                 }),
             }
-        },
-
-        "get_focused_wayland_window" => {
-            let Some(workspace) = HYPRLAND.active_workspace.get_cloned() else {
-                return json!({
-                    "success": false,
-                    "error": "Could not get active workspace"
-                });
-            };
-
-            let active_window = if let Some(client) = HYPRLAND.active_client.get_cloned() {
-                Some(json!({
-                    "title": client.title,
-                    "class": client.class,
-                    "pid": client.pid,
-                    "monitor_id": client.monitor,
-                }))
-            } else {
-                None
-            };
-
-            json!({
-                "success": true,
-                "active_window": active_window,
-                "workspace": {
-                    "id": workspace.id,
-                    "name": workspace.name,
-                    "monitor": workspace.monitor,
-                    "monitor_id": workspace.monitor_id,
-                    "windows": workspace.windows
-                }
-            })
         },
 
         _ => json!({

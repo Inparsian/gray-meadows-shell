@@ -31,8 +31,5 @@ assistant_icon_path = ""
 # Whether the AI can perform system power control actions (shutdown, restart, etc.).
 power_control = true
 
-# Whether the AI can get information about currently playing media via MPRIS and control it.
+# Whether the AI can control MPRIS-compatible media players.
 mpris_control = true
-
-# Whether the AI can get information about the Wayland compositor and connected displays.
-wayland_info = true
