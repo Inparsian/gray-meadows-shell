@@ -85,6 +85,7 @@ There's no exhaustive list of dependencies at the moment, as this project is sti
 - `gtk4-layer-shell`
 - `dart-sass` (for compiling SASS stylesheets)
 - `libastal-wireplumber` (for WirePlumber support)
+- `material-symbols` (for Material Symbols font)
 
 #### Optional
 - `cozette-ttf` (recommended primary font)
