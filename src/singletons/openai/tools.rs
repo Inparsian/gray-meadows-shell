@@ -1,117 +1,103 @@
 use serde_json::json;
 use async_openai::error::OpenAIError;
-use async_openai::types::chat::{ChatCompletionTools, ChatCompletionTool, FunctionObjectArgs};
+use async_openai::types::responses::{Tool, FunctionTool};
 
 use crate::config::read_config;
 use crate::session::SessionAction;
 use crate::singletons::mpris::{self, mpris_player::LoopStatus};
 
-pub fn get_tools() -> Result<Vec<ChatCompletionTools>, OpenAIError> {
+pub fn get_tools() -> Result<Vec<Tool>, OpenAIError> {
     let app_config = read_config();
     let mut tools = vec![];
 
     if app_config.ai.features.mpris_control {
-        tools.extend(vec![
-            ChatCompletionTools::Function(ChatCompletionTool {
-                function: FunctionObjectArgs::default()
-                    .name("control_mpris_player")
-                    .description("Performs an action on the default MPRIS player such as play, pause, stop, toggle play/pause, or skip tracks.")
-                    .strict(true)
-                    .parameters(json!({
-                        "type": "object",
-                        "properties": {
-                            "action": {
-                                "type": "string",
-                                "description": "The action to perform on the player",
-                                "enum": [
-                                    "toggle",
-                                    "play",
-                                    "pause",
-                                    "stop",
-                                    "next",
-                                    "previous"
-                                ]
-                            }
-                        },
-                        "required": [
-                            "action"
-                        ],
-                        "additionalProperties": false
-                    }))
-                    .build()?,
-            }),
-            ChatCompletionTools::Function(ChatCompletionTool {
-                function: FunctionObjectArgs::default()
-                    .name("set_mpris_loop_state")
-                    .description("Change or cycle the loop state for the default MPRIS player.")
-                    .strict(false)
-                    .parameters(json!({
-                        "type": "object",
-                        "properties": {
-                            "loop_state": {
-                                "type": "string",
-                                "description": "Requested loop state for the player. Must be one of 'off', 'playlist', or 'track'. If omitted, cycles to the next state.",
-                                "enum": [
-                                    "off",
-                                    "playlist",
-                                    "track"
-                                ]
-                            }
-                        },
-                        "required": [],
-                        "additionalProperties": false
-                    }))
-                    .build()?,
-            }),
-            ChatCompletionTools::Function(ChatCompletionTool {
-                function: FunctionObjectArgs::default()
-                    .name("set_mpris_shuffle_state")
-                    .description("Change or toggle the shuffle state for the default MPRIS player.")
-                    .strict(false)
-                    .parameters(json!({
-                        "type": "object",
-                        "properties": {
-                            "shuffle": {
-                                "type": "boolean",
-                                "description": "If provided, sets shuffle to this value; if omitted, the shuffle state will be toggled."
-                            }
-                        },
-                        "required": [],
-                        "additionalProperties": false
-                    }))
-                    .build()?,
-            }),
-        ]);
+        tools.push(Tool::Function(FunctionTool {
+            name: "control_mpris_player".to_owned(),
+            description: Some("Performs an action on the default MPRIS player such as play, pause, stop, toggle play/pause, or skip tracks.".to_owned()),
+            strict: Some(true),
+            parameters: Some(json!({
+                "type": "object",
+                "properties": {
+                    "action": {
+                    "type": "string",
+                    "description": "The action to perform on the player",
+                    "enum": [
+                        "toggle",
+                        "play",
+                        "pause",
+                        "stop",
+                        "next",
+                        "previous"
+                    ]
+                    }
+                },
+                "required": ["action"],
+                "additionalProperties": false
+            })),
+        }));
+
+        tools.push(Tool::Function(FunctionTool {
+            name: "set_mpris_loop_state".to_owned(),
+            description: Some("Change or cycle the loop state for the default MPRIS player.".to_owned()),
+            strict: Some(false),
+            parameters: Some(json!({
+                "type": "object",
+                "properties": {
+                    "loop_state": {
+                    "type": "string",
+                    "description": "Requested loop state for the player. Must be one of 'off', 'playlist', or 'track'. If omitted, cycles to the next state.",
+                    "enum": ["off", "playlist", "track"]
+                    }
+                },
+                "required": [],
+                "additionalProperties": false
+            })),
+        }));
+        
+        tools.push(Tool::Function(FunctionTool {
+            name: "set_mpris_shuffle_state".to_owned(),
+            description: Some("Change or toggle the shuffle state for the default MPRIS player.".to_owned()),
+            strict: Some(false),
+            parameters: Some(json!({
+                "type": "object",
+                "properties": {
+                    "shuffle": {
+                    "type": "boolean",
+                    "description": "If provided, sets shuffle to this value; if omitted, the shuffle state will be toggled."
+                    }
+                },
+                "required": [],
+                "additionalProperties": false
+            })),
+        }));
     }
 
     if app_config.ai.features.power_control {
-        tools.push(ChatCompletionTools::Function(ChatCompletionTool {
-            function: FunctionObjectArgs::default()
-                .name("perform_power_action")
-                .description("Performs a system power action.")
-                .strict(true)
-                .parameters(json!({
-                    "type": "object",
-                    "properties": {
-                        "action": {
-                            "type": "string",
-                            "description": "Power action to perform",
-                            "enum": [
-                                "lock",
-                                "logout",
-                                "suspend",
-                                "hibernate",
-                                "reboot",
-                                "shutdown"
-                            ]
-                        }
-                    },
-                    "required": [
-                        "action"
-                    ],
-                    "additionalProperties": false
-                }))
-                .build()?,
+        tools.push(Tool::Function(FunctionTool {
+            name: "perform_power_action".to_owned(),
+            description: Some("Performs a system power action.".to_owned()),
+            strict: Some(true),
+            parameters: Some(json!({
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "description": "Power action to perform",
+                        "enum": [
+                            "lock",
+                            "logout",
+                            "suspend",
+                            "hibernate",
+                            "reboot",
+                            "shutdown"
+                        ]
+                    }
+                },
+                "required": [
+                    "action"
+                ],
+                "additionalProperties": false
+            })),
         }));
     }
 

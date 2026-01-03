@@ -1,33 +1,32 @@
 mod tools;
 mod sql;
 mod variables;
-mod types;
 pub mod conversation;
 
+use std::collections::HashMap;
 use std::pin::Pin;
 use std::sync::{Arc, OnceLock, RwLock};
+use async_openai::types::evals::InputTextContent;
 use futures_lite::stream::StreamExt as _;
 use async_openai::Client;
 use async_openai::error::OpenAIError;
 use async_openai::config::OpenAIConfig;
-use async_openai::types::chat::{
-    ChatCompletionMessageToolCall,
-    ChatCompletionMessageToolCalls,
-    ChatCompletionRequestAssistantMessage,
-    ChatCompletionRequestAssistantMessageContent,
-    ChatCompletionRequestMessage,
-    ChatCompletionRequestSystemMessage,
-    ChatCompletionRequestToolMessage,
-    ChatCompletionRequestUserMessage,
-    ChatCompletionRequestUserMessageContent,
-    CreateChatCompletionRequestArgs,
+use async_openai::types::responses::{
+    AssistantRole,
+    CreateResponseArgs,
+    FunctionCallOutput, FunctionCallOutputItemParam, FunctionToolCall, 
+    InputContent, InputMessage, InputRole,
+    Item, MessageItem,
+    OutputContent, OutputItem, OutputMessage, OutputMessageContent, OutputStatus, OutputTextContent,
+    ReasoningItem,
+    ResponseStream, ResponseStreamEvent,
     ServiceTier,
+    Summary, SummaryPart
 };
 
 use crate::config::read_config;
 use crate::sql::wrappers::aichats::{self, SqlAiConversation};
 use crate::broadcast::BroadcastChannel;
-use self::types::ChatCompletionResponseStream;
 
 pub static CHANNEL: OnceLock<BroadcastChannel<AIChannelMessage>> = OnceLock::new();
 pub static SESSION: OnceLock<AISession> = OnceLock::new();
@@ -50,13 +49,13 @@ pub enum AIChannelMessage {
 }
 
 #[derive(Debug, Clone)]
-pub struct AISessionMessage {
+pub struct AISessionItem {
     pub id: i64,
     pub timestamp: Option<String>,
-    pub message: ChatCompletionRequestMessage,
+    pub item: Item,
 }
 
-impl AISessionMessage {
+impl AISessionItem {
     pub fn timestamp_or_now(&self) -> String {
         self.timestamp.clone().map_or_else(
             || chrono::Local::now().format(TIMESTAMP_FORMAT).to_string(), 
@@ -79,11 +78,12 @@ impl AISessionMessage {
 
     pub fn inject_timestamp_into_content(&mut self) {
         let timestamp = self.timestamp_or_now();
-        if let ChatCompletionRequestMessage::User(user_msg) = &mut self.message
-            && let ChatCompletionRequestUserMessageContent::Text(content) = &user_msg.content
+
+        if let Item::Message(MessageItem::Input(input_msg)) = &mut self.item
+            && let InputContent::InputText(text_content) = &mut input_msg.content.first_mut().unwrap()
         {
-            let new_content = Self::format_with_timestamp(&timestamp, content);
-            user_msg.content = ChatCompletionRequestUserMessageContent::Text(new_content);
+            let new_content = Self::format_with_timestamp(&timestamp, &text_content.text);
+            text_content.text = new_content;
         }
     }
 }
@@ -91,7 +91,7 @@ impl AISessionMessage {
 pub struct AISession {
     pub client: Client<OpenAIConfig>,
     pub conversation: Arc<RwLock<Option<SqlAiConversation>>>,
-    pub messages: Arc<RwLock<Vec<AISessionMessage>>>,
+    pub items: Arc<RwLock<Vec<AISessionItem>>>,
     pub currently_in_cycle: Arc<RwLock<bool>>,
     pub stop_cycle_flag: Arc<RwLock<bool>>,
 }
@@ -120,7 +120,7 @@ fn make_client() -> Client<OpenAIConfig> {
     Client::with_config(config)
 }
 
-fn write_message(msg: &ChatCompletionRequestMessage) -> i64 {
+fn write_item(item: &Item) -> i64 {
     let Some(session) = SESSION.get() else {
         eprintln!("AI session not initialized");
         return 0;
@@ -131,13 +131,17 @@ fn write_message(msg: &ChatCompletionRequestMessage) -> i64 {
         return 0;
     };
 
-    let sql_message = sql::chat_message_to_sql_message(msg, conversation.id);
-    match aichats::add_message(&sql_message) {
+    let Some(sql_item) = sql::item_to_sql_item(item, conversation.id) else {
+        eprintln!("Failed to convert AI item to SQL item");
+        return 0;
+    };
+
+    match aichats::add_item(&sql_item) {
         Ok(id) => {
-            session.messages.write().unwrap().push(AISessionMessage {
+            session.items.write().unwrap().push(AISessionItem {
                 id,
-                timestamp: sql_message.timestamp.clone(),
-                message: msg.clone(),
+                timestamp: sql_item.timestamp.clone(),
+                item: item.clone(),
             });
 
             id
@@ -150,7 +154,7 @@ fn write_message(msg: &ChatCompletionRequestMessage) -> i64 {
     }
 }
 
-pub fn trim_messages(down_to_message_id: i64) {
+pub fn trim_items(down_to_item_id: i64) {
     if let Some(session) = SESSION.get() {
         let conversation = session.conversation.read().unwrap();
         let Some(conversation) = &*conversation else {
@@ -158,19 +162,19 @@ pub fn trim_messages(down_to_message_id: i64) {
             return;
         };
 
-        if let Err(err) = aichats::trim_messages(conversation.id, down_to_message_id) {
-            eprintln!("Failed to trim AI chat messages in database: {}", err);
+        if let Err(err) = aichats::trim_items(conversation.id, down_to_item_id) {
+            eprintln!("Failed to trim AI chat items in database: {}", err);
             return;
         }
 
-        let mut write = session.messages.write().unwrap();
+        let mut write = session.items.write().unwrap();
         let indices = write.iter()
-            .filter_map(|msg| (msg.id >= down_to_message_id).then_some(msg.id))
+            .filter_map(|item| (item.id >= down_to_item_id).then_some(item.id))
             .collect::<Vec<i64>>();
-        write.retain(|msg| !indices.contains(&msg.id));
+        write.retain(|item| !indices.contains(&item.id));
 
         if let Some(channel) = CHANNEL.get() {
-            channel.spawn_send(AIChannelMessage::ConversationTrimmed(conversation.id, down_to_message_id));
+            channel.spawn_send(AIChannelMessage::ConversationTrimmed(conversation.id, down_to_item_id));
         }
     }
 }
@@ -188,7 +192,7 @@ pub fn activate() {
     let session = AISession {
         client: make_client(),
         conversation: Arc::new(RwLock::new(None)),
-        messages: Arc::new(RwLock::new(Vec::new())),
+        items: Arc::new(RwLock::new(Vec::new())),
         currently_in_cycle: Arc::new(RwLock::new(false)),
         stop_cycle_flag: Arc::new(RwLock::new(false)),
     };
@@ -199,47 +203,52 @@ pub fn activate() {
     conversation::load_first_conversation();
 }
 
-async fn create_stream(session: &AISession) -> Result<ChatCompletionResponseStream, OpenAIError> {
+async fn create_stream(session: &AISession) -> Result<ResponseStream, OpenAIError> {
     let app_config = read_config().clone();
-    let mut sorted_messages = session.messages.read().unwrap()
+    let mut sorted_items = session.items.read().unwrap()
         .clone()
         .iter_mut()
-        .map(|msg| {
+        .map(|item| {
             if app_config.ai.user_message_timestamps {
-                msg.inject_timestamp_into_content();
+                item.inject_timestamp_into_content();
             }
-            msg.message.clone()
+            item.item.clone()
         })
-        .collect::<Vec<ChatCompletionRequestMessage>>();
+        .collect::<Vec<Item>>();
 
-    sorted_messages.insert(0, ChatCompletionRequestSystemMessage::from(
-        variables::transform_variables(app_config.ai.prompt.as_str())).into()
-    );
+    sorted_items.insert(0, Item::Message(MessageItem::Input(InputMessage {
+        role: InputRole::Developer,
+        content: vec![InputContent::InputText(InputTextContent {
+            text: variables::transform_variables(&app_config.ai.prompt),
+        })],
+        status: None,
+    })));
 
+    // FIXME gemini is currently broken after switch to responses API
     let request = if app_config.ai.service == "gemini" {
-        CreateChatCompletionRequestArgs::default()
-            .max_completion_tokens(2048_u32)
+        CreateResponseArgs::default()
+            .max_output_tokens(2048_u32)
             .stream(true)
             .model(app_config.ai.gemini.model.as_str())
-            .messages(sorted_messages)
             .tools(tools::get_tools()?)
+            .input(sorted_items)
             .build()?
     } else {
-        CreateChatCompletionRequestArgs::default()
-            .max_completion_tokens(2048_u32)
+        CreateResponseArgs::default()
+            .max_output_tokens(2048_u32)
             .stream(true)
             .model(app_config.ai.openai.model.as_str())
-            .messages(sorted_messages)
             .service_tier(match app_config.ai.openai.service_tier.as_str() {
                 "flex" => ServiceTier::Flex,
                 "priority" => ServiceTier::Priority,
                 _ => ServiceTier::Default,
             })
             .tools(tools::get_tools()?)
+            .input(sorted_items)
             .build()?
     };
 
-    session.client.chat().create_stream_byot(request).await
+    session.client.responses().create_stream_byot(request).await
 }
 
 pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'static + Send>> {
@@ -253,86 +262,210 @@ pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'st
         };
 
         let mut should_request_again = true;
-        let mut tool_calls = Vec::new();
-        let mut content_chunks = Vec::new();
         let mut execution_handles = Vec::new();
+        let mut items: HashMap<String, Item> = HashMap::new();
         let mut stream = create_stream(session).await?;
 
         channel.send(AIChannelMessage::StreamStart).await;
 
-        while let Some(response) = stream.next().await {
+        while let Some(event) = stream.next().await {
             if *session.stop_cycle_flag.read().unwrap() {
                 break;
             }
-            
-            for choice in response?.choices {
-                if let Some(content) = &choice.delta.content {
-                    channel.send(AIChannelMessage::StreamChunk(content.clone())).await;
-                    content_chunks.push(content.clone());
-                }
 
-                if let Some(tool_call_chunks) = choice.delta.tool_calls {
-                    for (index, chunk) in tool_call_chunks.into_iter().enumerate() {
-                        while tool_calls.len() <= index {
-                            tool_calls.push(ChatCompletionMessageToolCall {
-                                id: String::new(),
-                                function: Default::default(),
-                            });
-                        }
+            match event? {
+                ResponseStreamEvent::ResponseOutputItemAdded(event) => {
+                    println!("Output item added: {:?}", event.item);
 
-                        let tool_call = &mut tool_calls[index];
-                        if let Some(id) = chunk.id {
-                            tool_call.id = id;
-                        }
+                    match event.item {
+                        OutputItem::Message(output_message) => {
+                            let id = output_message.id.clone();
+                            items.insert(id.clone(), Item::Message(MessageItem::Output(OutputMessage {
+                                id,
+                                role: AssistantRole::Assistant,
+                                content: vec![],
+                                status: OutputStatus::InProgress,
+                            })));
+                        },
 
-                        if let Some(function_chunk) = chunk.function {
-                            if let Some(name) = function_chunk.name {
-                                tool_call.function.name = name;
+                        OutputItem::Reasoning(output_reasoning) => {
+                            let id = output_reasoning.id.clone();
+                            items.insert(id.clone(), Item::Reasoning(ReasoningItem {
+                                id,
+                                summary: vec![],
+                                content: None,
+                                encrypted_content: None,
+                                status: Some(OutputStatus::InProgress),
+                            }));
+                        },
 
-                                if tool_call.function.name == "perform_power_action" {
-                                    // If a power action is being performed, we won't request again
+                        OutputItem::FunctionCall(output_function_call) => {
+                            let id = output_function_call.id.clone().unwrap_or_default();
+                            items.insert(id.clone(), Item::FunctionCall(FunctionToolCall {
+                                id: Some(id),
+                                name: output_function_call.name.clone(),
+                                arguments: output_function_call.arguments.clone(),
+                                call_id: output_function_call.call_id.clone(),
+                                status: Some(OutputStatus::InProgress),
+                            }));
+                        },
+
+                        _ => {},
+                    }
+                },
+
+                ResponseStreamEvent::ResponseContentPartAdded(event) => {
+                    println!("Content part added: {:?}", event.part);
+
+                    let id = event.item_id.clone();
+                    match event.part {
+                        OutputContent::OutputText(content) => {
+                            if let Some(Item::Message(MessageItem::Output(output_message))) = items.get_mut(&id) {
+                                output_message.content.push(OutputMessageContent::OutputText(OutputTextContent {
+                                    text: content.text.clone(),
+                                    annotations: vec![],
+                                    logprobs: None,
+                                }));
+                            }
+                        },
+
+                        OutputContent::ReasoningText(content) => {
+                            if let Some(Item::Reasoning(reasoning_item)) = items.get_mut(&id) {
+                                reasoning_item.summary.push(SummaryPart::SummaryText(Summary {
+                                    text: content.text.clone(),
+                                }));
+                            }
+                        },
+
+                        _ => {},
+                    }
+                },
+
+                ResponseStreamEvent::ResponseOutputTextDelta(event) => {
+                    println!("Output text delta: {}", event.delta);
+
+                    let id = event.item_id.clone();
+                    match items.get_mut(&id) {
+                        Some(Item::Message(MessageItem::Output(output_message))) => {
+                            if let Some(OutputMessageContent::OutputText(last_content)) = output_message.content.last_mut() {
+                                last_content.text.push_str(&event.delta);
+                            } else {
+                                output_message.content.push(OutputMessageContent::OutputText(OutputTextContent {
+                                    text: event.delta.clone(),
+                                    annotations: vec![],
+                                    logprobs: None,
+                                }));
+                            }
+
+                            channel.send(AIChannelMessage::StreamChunk(event.delta.clone())).await;
+                        },
+
+                        Some(Item::Reasoning(reasoning_item)) => {
+                            if let Some(SummaryPart::SummaryText(last_summary)) = reasoning_item.summary.last_mut() {
+                                last_summary.text.push_str(&event.delta);
+                            } else {
+                                reasoning_item.summary.push(SummaryPart::SummaryText(Summary {
+                                    text: event.delta.clone(),
+                                }));
+                            }
+                        },
+
+                        _ => {},
+                    }
+                },
+
+                ResponseStreamEvent::ResponseOutputTextDone(event) => {
+                    println!("Output text done for item ID: {}", event.item_id);
+                },
+
+                ResponseStreamEvent::ResponseContentPartDone(event) => {
+                    println!("Content part done: {:?}", event.part);
+                },
+
+                ResponseStreamEvent::ResponseOutputItemDone(event) => {
+                    println!("Output item done: {:?}", event.item);
+
+                    let id = match &event.item {
+                        OutputItem::Message(msg) => msg.id.clone(),
+                        OutputItem::Reasoning(reasoning) => reasoning.id.clone(),
+                        OutputItem::FunctionCall(func_call) => func_call.id.clone().unwrap_or_default(),
+                        _ => String::new(),
+                    };
+
+                    if let Some(item) = items.get_mut(&id) {
+                        match item {
+                            Item::Message(MessageItem::Output(output_message)) => {
+                                output_message.status = OutputStatus::Completed;
+
+                                output_message.content = match &event.item {
+                                    OutputItem::Message(msg) => msg.content.clone(),
+                                    _ => output_message.content.clone(),
+                                };
+                            },
+
+                            Item::Reasoning(reasoning_item) => {
+                                reasoning_item.status = Some(OutputStatus::Completed);
+
+                                reasoning_item.encrypted_content = match &event.item {
+                                    OutputItem::Reasoning(r) => r.encrypted_content.clone(),
+                                    _ => reasoning_item.encrypted_content.clone(),
+                                };
+
+                                reasoning_item.summary = match &event.item {
+                                    OutputItem::Reasoning(r) => r.summary.clone(),
+                                    _ => reasoning_item.summary.clone(),
+                                };
+                            },
+
+                            Item::FunctionCall(func_call) => {
+                                func_call.status = Some(OutputStatus::Completed);
+
+                                func_call.arguments = match &event.item {
+                                    OutputItem::FunctionCall(fc) => fc.arguments.clone(),
+                                    _ => func_call.arguments.clone(),
+                                };
+
+                                let handle = tokio::spawn({
+                                    let id = func_call.call_id.clone();
+                                    let name = func_call.name.clone();
+                                    let args = func_call.arguments.clone();
+                                    async move {
+                                        let result = tools::call_tool(&name, &args);
+                                        (id, result)
+                                    }
+                                });
+
+                                // Do not request again if a power action is being performed
+                                // Because users quite literally can not see AI responses if their
+                                // system is powered off
+                                if func_call.name == "perform_power_action" {
                                     should_request_again = false;
                                 }
-                            }
 
-                            if let Some(arguments) = function_chunk.arguments {
-                                tool_call.function.arguments.push_str(&arguments);
-                            }
+                                execution_handles.push(handle);
+                                channel.send(AIChannelMessage::ToolCall(
+                                    func_call.name.clone(),
+                                    func_call.arguments.clone()
+                                )).await;
+                            },
+
+                            _ => {},
                         }
                     }
-                }
+                },
 
-                if choice.finish_reason.is_some() {
-                    for tool_call in &tool_calls {
-                        let handle = tokio::spawn({
-                            let id = tool_call.id.clone();
-                            let name = tool_call.function.name.clone();
-                            let args = tool_call.function.arguments.clone();
-                            async move {
-                                let result = tools::call_tool(&name, &args);
-                                (id, result)
-                            }
-                        });
-
-                        execution_handles.push(handle);
-                        channel.send(AIChannelMessage::ToolCall(
-                            tool_call.function.name.clone(),
-                            tool_call.function.arguments.clone(),
-                        )).await;
-                    }
-                }
+                _ => {},
             }
-        };
+        }
 
-        let joined_content: String = content_chunks.join("");
-        let content = if joined_content.is_empty() {
-            None
-        } else {
-            Some(ChatCompletionRequestAssistantMessageContent::from(joined_content.clone()))
-        };
+        println!("Final items: {:#?}", items);
 
         if let Ok(mut stop_flag) = session.stop_cycle_flag.write() {
             *stop_flag = false;
+        }
+
+        for item in items.values() {
+            write_item(item);
         }
 
         if !execution_handles.is_empty() {
@@ -342,39 +475,21 @@ pub fn make_request() -> Pin<Box<dyn Future<Output = anyhow::Result<bool>> + 'st
                 tool_responses.push((tool_call_id, response));
             }
 
-            let assistant_tool_calls: Vec<ChatCompletionMessageToolCalls> = tool_calls
-                .iter()
-                .map(|tc| tc.clone().into())
-                .collect();
-
-            let message: ChatCompletionRequestMessage = ChatCompletionRequestAssistantMessage {
-                content,
-                tool_calls: Some(assistant_tool_calls),
-                ..Default::default()
-            }.into();
-            
-            let id = write_message(&message);
-            channel.send(AIChannelMessage::StreamComplete(id)).await;
-
             for (tool_call_id, response) in tool_responses {
-                write_message(&ChatCompletionRequestToolMessage {
-                    content: response.to_string().into(),
-                    tool_call_id,
-                }.into());
+                write_item(&Item::FunctionCallOutput(FunctionCallOutputItemParam {
+                    call_id: tool_call_id,
+                    output: FunctionCallOutput::Text(response.to_string()),
+                    id: None,
+                    status: None,
+                }));
             }
 
             // Go for another request after tool execution, in case the AI wants to say
             // something after tool execution or perform more tool calls
             Ok(should_request_again)
         } else {
-            let message: ChatCompletionRequestMessage = ChatCompletionRequestAssistantMessage {
-                content,
-                ..Default::default()
-            }.into();
-
             // We're done
-            let id = write_message(&message);
-            channel.send(AIChannelMessage::StreamComplete(id)).await;
+            channel.send(AIChannelMessage::StreamComplete(0)).await;
 
             Ok(false)
         }
@@ -425,5 +540,11 @@ pub fn send_user_message(message: &str) -> i64 {
         return 0;
     }
 
-    write_message(&ChatCompletionRequestUserMessage::from(message).into())
+    write_item(&Item::Message(MessageItem::Input(InputMessage {
+        role: InputRole::User,
+        content: vec![InputContent::InputText(InputTextContent {
+            text: message.to_owned(),
+        })],
+        status: None,
+    })))
 }

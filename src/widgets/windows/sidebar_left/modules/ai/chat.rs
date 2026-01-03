@@ -114,7 +114,7 @@ impl ChatMessage {
         delete_button.connect_clicked({
             let id = id.clone();
             move |_| if !openai::is_currently_in_cycle() && let Some(message_id) = *id.borrow() {
-                openai::trim_messages(message_id);
+                openai::trim_items(message_id);
             }
         });
         controls_box.append(&delete_button);
@@ -134,7 +134,7 @@ impl ChatMessage {
                     message_id
                 };
 
-                openai::trim_messages(message_id);
+                openai::trim_items(message_id);
                 tokio::spawn(openai::start_request_cycle());
             }
         });

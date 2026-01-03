@@ -1,26 +1,26 @@
 use std::error::Error;
 
 use crate::sql::wrappers::aichats;
-use super::{sql, CHANNEL, SESSION, AIChannelMessage, AISessionMessage};
+use super::{sql, CHANNEL, SESSION, AIChannelMessage, AISessionItem};
 
-fn read_conversation(id: i64) -> Result<Vec<AISessionMessage>, Box<dyn Error>> {
-    let sql_messages = aichats::get_messages(id)?;
+fn read_conversation(id: i64) -> Result<Vec<AISessionItem>, Box<dyn Error>> {
+    let sql_items = aichats::get_items(id)?;
 
-    let mut chat_messages = Vec::new();
-    for msg in &sql_messages {
-        let Some(chat_msg) = sql::sql_message_to_chat_message(msg) else {
+    let mut chat_items = Vec::new();
+    for item in &sql_items {
+        let Some(chat_item) = sql::sql_item_to_item(&item.payload) else {
             continue;
         };
 
-        chat_messages.push(AISessionMessage {
-            id: msg.id,
-            timestamp: msg.timestamp.clone(),
-            message: chat_msg,
+        chat_items.push(AISessionItem {
+            id: item.id,
+            timestamp: item.timestamp.clone(),
+            item: chat_item,
         });
     }
 
-    chat_messages.sort_by_key(|msg| msg.id);
-    Ok(chat_messages)
+    chat_items.sort_by_key(|item| item.id);
+    Ok(chat_items)
 }
 
 pub fn load_conversation(id: i64) {
@@ -29,8 +29,8 @@ pub fn load_conversation(id: i64) {
             Ok(conv) => {
                 let mut conversation = session.conversation.write().unwrap();
                 match read_conversation(id) {
-                    Ok(messages) => {
-                        *session.messages.write().unwrap() = messages;
+                    Ok(items) => {
+                        *session.items.write().unwrap() = items;
                         *conversation = Some(conv);
                         if let Some(channel) = CHANNEL.get() {
                             channel.spawn_send(AIChannelMessage::ConversationLoaded(conversation.as_ref().unwrap().clone()));
@@ -119,8 +119,8 @@ pub fn delete_conversation(conversation_id: i64) {
 
 pub fn clear_conversation(conversation_id: i64) {
     // trim to 0
-    if let Err(err) = aichats::trim_messages(conversation_id, 0) {
-        eprintln!("Failed to clear AI chat conversation messages from database: {}", err);
+    if let Err(err) = aichats::trim_items(conversation_id, 0) {
+        eprintln!("Failed to clear AI chat conversation items from database: {}", err);
         return;
     }
 

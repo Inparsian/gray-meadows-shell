@@ -3,11 +3,10 @@ mod conversations;
 
 use std::time::Duration;
 use gtk4::prelude::*;
-use async_openai::types::chat::{
-    ChatCompletionRequestMessage,
-    ChatCompletionRequestUserMessageContent,
-    ChatCompletionRequestAssistantMessageContent,
-    ChatCompletionMessageToolCalls,
+use async_openai::types::responses::{
+    InputContent,
+    Item, MessageItem,
+    OutputMessageContent
 };
 
 use crate::singletons::openai::{self, SESSION};
@@ -188,46 +187,33 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                         chat.clear_messages();
                         conversation_title.set_text(&conversation.title);
 
-                        for msg in session.messages.read().unwrap().iter() {
-                            match &msg.message {
-                                ChatCompletionRequestMessage::User(user_message) => {
-                                    let message = chat::ChatMessage::new(
-                                        &chat::ChatRole::User,
-                                        match &user_message.content {
-                                            ChatCompletionRequestUserMessageContent::Text(str) => Some(str.clone()),
-                                            _ => Some("[Unsupported content]".to_owned()),
-                                        },
-                                    );
-                                    message.set_id(msg.id);
-                                    chat.add_message(message);
-                                },
+                        for item in session.items.read().unwrap().iter() {
+                            if let Item::Message(msg) = &item.item {
+                                match msg {
+                                    MessageItem::Input(input_msg) => {
+                                        let message = chat::ChatMessage::new(
+                                            &chat::ChatRole::User,
+                                            match &input_msg.content.first() {
+                                                Some(InputContent::InputText(text_content)) => Some(text_content.text.clone()),
+                                                _ => Some("[Unsupported content]".to_owned()),
+                                            },
+                                        );
+                                        message.set_id(item.id);
+                                        chat.add_message(message);
+                                    },
 
-                                ChatCompletionRequestMessage::Assistant(assistant_message) => {
-                                    let message = chat::ChatMessage::new(
-                                        &chat::ChatRole::Assistant,
-                                        match &assistant_message.content {
-                                            Some(ChatCompletionRequestAssistantMessageContent::Text(str)) => Some(str.clone()),
-                                            _ => Some("[Unsupported content]".to_owned()),
-                                        },
-                                    );
-                                    message.set_id(msg.id);
-                                    chat.add_message(message);
-
-                                    // Append tool call info if present
-                                    if let Some(tool_calls) = &assistant_message.tool_calls {
-                                        for tool_call in tool_calls {
-                                            if let ChatCompletionMessageToolCalls::Function(tool) = tool_call {
-                                                chat.append_tool_call_to_latest_message(
-                                                    &tool.function.name,
-                                                    &tool.function.arguments,
-                                                );
-                                            }
-                                        }
-                                    }
-                                },
-
-                                // System, tool, etc. messages are disregarded for chat display
-                                _ => {},
+                                    MessageItem::Output(output_msg) => {
+                                        let message = chat::ChatMessage::new(
+                                            &chat::ChatRole::Assistant,
+                                            match &output_msg.content.first() {
+                                                Some(OutputMessageContent::OutputText(text_content)) => Some(text_content.text.clone()),
+                                                _ => Some("[Unsupported content]".to_owned()),
+                                            },
+                                        );
+                                        message.set_id(item.id);
+                                        chat.add_message(message);
+                                    },
+                                }
                             }
                         }
                     },

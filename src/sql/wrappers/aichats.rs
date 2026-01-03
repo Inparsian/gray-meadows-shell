@@ -1,3 +1,5 @@
+use serde::{Serialize, Deserialize};
+
 use crate::SQL_CONNECTION;
 use super::super::last_insert_rowid;
 
@@ -7,18 +9,38 @@ pub struct SqlAiConversation {
     pub title: String,
 }
 
-pub struct SqlAiConversationToolCall {
-    pub id: String,
-    pub function: String,
-    pub arguments: String,
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum SqlAiConversationItemPayload {
+    Message {
+        id: String,
+        role: String,
+        content: String,
+    },
+
+    Reasoning {
+        id: String,
+        summary: String,
+        encrypted_content: String,
+    },
+
+    FunctionCall {
+        id: String,
+        name: String,
+        arguments: String,
+        call_id: String,
+    },
+
+    FunctionCallOutput {
+        call_id: String,
+        output: String,
+    },
 }
 
-pub struct SqlAiConversationMessage {
+pub struct SqlAiConversationItem {
     pub id: i64,
     pub conversation_id: i64,
-    pub role: String,
-    pub content: String,
-    pub tool_calls: Vec<SqlAiConversationToolCall>,
+    pub payload: SqlAiConversationItemPayload,
     pub timestamp: Option<String>,
 }
 
@@ -39,46 +61,30 @@ pub fn ensure_default_conversation() -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
-/// Adds a message to the specified AI chat conversation and returns its new ID.
-pub fn add_message(message: &SqlAiConversationMessage) -> Result<i64, Box<dyn std::error::Error>> {
+/// Adds an item to the specified AI chat conversation and returns its new ID.
+pub fn add_item(item: &SqlAiConversationItem) -> Result<i64, Box<dyn std::error::Error>> {
     if let Some(connection) = SQL_CONNECTION.get() {
         let connection = connection.lock()?;
         let statement = format!(
-            "INSERT INTO aichat_messages (conversation_id, role, content) \
-             VALUES ({}, '{}', '{}')",
-            message.conversation_id,
-            message.role.replace('\'', "''"),
-            message.content.replace('\'', "''"),
+            "INSERT INTO aichat_items (conversation_id, payload) \
+             VALUES ({}, '{}')",
+            item.conversation_id,
+            serde_json::to_string(&item.payload)?.replace('\'', "''")
         );
         connection.execute(&statement)?;
-        let message_id = last_insert_rowid(&connection)?;
-
-        // Insert tool calls if any
-        for tool_call in &message.tool_calls {
-            let tool_statement = format!(
-                "INSERT INTO aichat_tool_calls (tool_id, message_id, function, arguments) \
-                 VALUES ('{}', {}, '{}', '{}')",
-                tool_call.id.replace('\'', "''"),
-                message_id,
-                tool_call.function.replace('\'', "''"),
-                tool_call.arguments.replace('\'', "''"),
-            );
-            connection.execute(&tool_statement)?;
-        }
-
-        Ok(message_id)
+        last_insert_rowid(&connection)
     } else {
         Err("No database connection available".into())
     }
 }
 
-/// Removes messages down to the specified message ID in a conversation.
-pub fn trim_messages(conversation_id: i64, down_to_message_id: i64) -> Result<(), Box<dyn std::error::Error>> {
+/// Removes items down to the specified item ID in a conversation.
+pub fn trim_items(conversation_id: i64, down_to_item_id: i64) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(connection) = SQL_CONNECTION.get() {
         let connection = connection.lock()?;
         let statement = format!(
-            "DELETE FROM aichat_messages WHERE conversation_id = {} AND id >= {}",
-            conversation_id, down_to_message_id
+            "DELETE FROM aichat_items WHERE conversation_id = {} AND id >= {}",
+            conversation_id, down_to_item_id
         );
         connection.execute(&statement)?;
         Ok(())
@@ -102,7 +108,7 @@ pub fn add_conversation(title: &str) -> Result<i64, Box<dyn std::error::Error>> 
     }
 }
 
-/// Deletes a conversation and all its associated messages.
+/// Deletes a conversation and all its associated items.
 pub fn delete_conversation(conversation_id: i64) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(connection) = SQL_CONNECTION.get() {
         let connection = connection.lock()?;
@@ -111,11 +117,11 @@ pub fn delete_conversation(conversation_id: i64) -> Result<(), Box<dyn std::erro
             conversation_id
         );
         connection.execute(&statement)?;
-        let message_statement = format!(
-            "DELETE FROM aichat_messages WHERE conversation_id = {}",
+        let item_statement = format!(
+            "DELETE FROM aichat_items WHERE conversation_id = {}",
             conversation_id
         );
-        connection.execute(&message_statement)?;
+        connection.execute(&item_statement)?;
         Ok(())
     } else {
         Err("No database connection available".into())
@@ -178,62 +184,39 @@ pub fn get_all_conversations() -> Result<Vec<SqlAiConversation>, Box<dyn std::er
     }
 }
 
-/// Gets all tool calls associated with a message.
-fn get_tool_calls_for_message(
-    message_id: i64,
-    connection: &sqlite::Connection,
-) -> Result<Vec<SqlAiConversationToolCall>, Box<dyn std::error::Error>> {
-    let mut tool_calls = Vec::new();
-    let statement = format!(
-        "SELECT tool_id, function, arguments FROM aichat_tool_calls WHERE message_id = {}",
-        message_id
-    );
-    let mut cursor = connection.prepare(&statement)?;
-    while cursor.next()? == sqlite::State::Row {
-        let tool_call = SqlAiConversationToolCall {
-            id: cursor.read::<String, _>(0)?,
-            function: cursor.read::<String, _>(1)?,
-            arguments: cursor.read::<String, _>(2)?,
-        };
-        tool_calls.push(tool_call);
-    }
-    Ok(tool_calls)
-}
-
-/// Retrieves messages for the specified AI chat conversation.
-pub fn get_messages(conversation_id: i64) -> Result<Vec<SqlAiConversationMessage>, Box<dyn std::error::Error>> {
-    let mut messages = Vec::new();
+/// Retrieves items for the specified AI chat conversation.
+pub fn get_items(conversation_id: i64) -> Result<Vec<SqlAiConversationItem>, Box<dyn std::error::Error>> {
+    let mut items = Vec::new();
     if let Some(connection) = SQL_CONNECTION.get() {
         let connection = connection.lock()?;
         let statement = format!(
-            "SELECT id, conversation_id, role, content, timestamp \
-             FROM aichat_messages WHERE conversation_id = {} ORDER BY timestamp ASC",
+            "SELECT id, conversation_id, timestamp, payload \
+             FROM aichat_items WHERE conversation_id = {} ORDER BY timestamp ASC",
             conversation_id
         );
         let mut cursor = connection.prepare(&statement)?;
         while cursor.next()? == sqlite::State::Row {
-            let id = cursor.read::<i64, _>(0)?;
-            let tool_calls = get_tool_calls_for_message(id, &connection)?;
-            let message = SqlAiConversationMessage {
-                id,
+            items.push(SqlAiConversationItem {
+                id: cursor.read::<i64, _>(0)?,
                 conversation_id: cursor.read::<i64, _>(1)?,
-                role: cursor.read::<String, _>(2)?,
-                content: cursor.read::<String, _>(3)?,
-                tool_calls,
-                timestamp: cursor.read::<Option<String>, _>(4)?,
-            };
-            messages.push(message);
+                timestamp: cursor.read::<Option<String>, _>(2)?,
+                payload: serde_json::from_str(&cursor.read::<String, _>(3)?)?,
+            });
         }
-        Ok(messages)
+        Ok(items)
     } else {
         Err("No database connection available".into())
     }
 }
 
-/// Gets the length of messages in a conversation.
+/// Gets the length of user & assistant messages in a conversation.
 pub fn get_messages_length(conversation_id: i64) -> Result<usize, Box<dyn std::error::Error>> {
-    Ok(get_messages(conversation_id)?
+    Ok(get_items(conversation_id)?
         .into_iter()
-        .filter(|msg| matches!(msg.role.as_str(), "user" | "assistant"))
+        //.filter(|msg| matches!(msg.role.as_str(), "user" | "assistant"))
+        .filter(|item| matches!(&item.payload,
+            SqlAiConversationItemPayload::Message { role, .. }
+            if role == "user" || role == "assistant"
+        ))
         .count())
 }

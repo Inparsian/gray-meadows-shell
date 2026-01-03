@@ -1,135 +1,133 @@
-use async_openai::types::chat::{
-    ChatCompletionMessageToolCall,
-    ChatCompletionMessageToolCalls,
-    ChatCompletionRequestAssistantMessage,
-    ChatCompletionRequestAssistantMessageContent,
-    ChatCompletionRequestMessage,
-    ChatCompletionRequestSystemMessageContent,
-    ChatCompletionRequestToolMessage,
-    ChatCompletionRequestToolMessageContent,
-    ChatCompletionRequestUserMessage,
-    ChatCompletionRequestUserMessageContent,
-    FunctionCall
+use async_openai::types::responses::{
+    AssistantRole,
+    FunctionCallOutput, FunctionCallOutputItemParam, FunctionToolCall,
+    InputContent, InputMessage, InputRole, InputTextContent,
+    Item, MessageItem,
+    OutputMessage, OutputMessageContent, OutputStatus, OutputTextContent,
+    ReasoningItem,
+    Summary, SummaryPart
 };
 
-use crate::sql::wrappers::aichats;
+use crate::sql::wrappers::aichats::{SqlAiConversationItem, SqlAiConversationItemPayload};
 
-pub fn sql_message_to_chat_message(msg: &aichats::SqlAiConversationMessage) -> Option<ChatCompletionRequestMessage> {
-    match msg.role.as_str() {
-        "user" => Some(ChatCompletionRequestUserMessage::from(msg.content.as_str()).into()),
-
-        "tool" => {
-            let tool_call_id = msg.tool_calls.first()
-                .map(|tc| tc.id.clone())
-                .unwrap_or_default();
-
-            Some(ChatCompletionRequestToolMessage {
-                content: ChatCompletionRequestToolMessageContent::Text(msg.content.clone()),
-                tool_call_id,
-            }.into())
+pub fn sql_item_to_item(item: &SqlAiConversationItemPayload) -> Option<Item> {
+    match item {
+        SqlAiConversationItemPayload::Message { id, role, content, .. } => {
+            if role == "assistant" {
+                Some(Item::Message(MessageItem::Output(OutputMessage {
+                    content: vec![OutputMessageContent::OutputText(OutputTextContent {
+                        text: content.clone(),
+                        annotations: vec![],
+                        logprobs: None,
+                    })],
+                    role: AssistantRole::Assistant,
+                    id: id.clone(),
+                    status: OutputStatus::Completed,
+                })))
+            } else {
+                Some(Item::Message(MessageItem::Input(InputMessage {
+                    content: vec![InputContent::InputText(InputTextContent {
+                        text: content.clone(),
+                    })],
+                    role: if role == "user" { InputRole::User } else { InputRole::Developer },
+                    status: None,
+                })))
+            }
         },
 
-        "assistant" => {
-            let tool_calls: Vec<ChatCompletionMessageToolCalls> = msg.tool_calls.iter().map(|tc| {
-                ChatCompletionMessageToolCalls::Function(
-                    ChatCompletionMessageToolCall {
-                        id: tc.id.clone(),
-                        function: FunctionCall {
-                            name: tc.function.clone(),
-                            arguments: tc.arguments.clone(),
-                        },
-                    }
-                )
-            }).collect();
-
-            Some(ChatCompletionRequestAssistantMessage {
-                content: Some(ChatCompletionRequestAssistantMessageContent::from(msg.content.as_str())),
-                tool_calls: if tool_calls.is_empty() { None } else { Some(tool_calls) },
-                ..Default::default()
-            }.into())
+        SqlAiConversationItemPayload::Reasoning { id, summary, encrypted_content } => {
+            Some(Item::Reasoning(ReasoningItem {
+                id: id.clone(),
+                summary: vec![SummaryPart::SummaryText(Summary {
+                    text: summary.clone(),
+                })],
+                content: None,
+                encrypted_content: Some(encrypted_content.clone()),
+                status: None,
+            }))
         },
-        
-        _ => {
-            eprintln!("Unknown message role: {}", msg.role);
-            None
+
+        SqlAiConversationItemPayload::FunctionCall { id, name, arguments, call_id } => {
+            Some(Item::FunctionCall(FunctionToolCall {
+                id: Some(id.clone()),
+                name: name.clone(),
+                arguments: arguments.clone(),
+                call_id: call_id.clone(),
+                status: None,
+            }))
+        },
+
+        SqlAiConversationItemPayload::FunctionCallOutput { call_id, output } => {
+            Some(Item::FunctionCallOutput(FunctionCallOutputItemParam {
+                call_id: call_id.clone(),
+                output: FunctionCallOutput::Text(output.clone()),
+                id: None,
+                status: None,
+            }))
         },
     }
 }
 
-pub fn chat_message_to_sql_message(msg: &ChatCompletionRequestMessage, conversation_id: i64) -> aichats::SqlAiConversationMessage {
+pub fn item_to_sql_item(item: &Item, conversation_id: i64) -> Option<SqlAiConversationItem> {
     let now = chrono::Utc::now().format(super::TIMESTAMP_FORMAT).to_string();
-    match msg {
-        ChatCompletionRequestMessage::System(system_msg) => aichats::SqlAiConversationMessage {
-            id: 0,
-            conversation_id,
-            role: "system".to_owned(),
-            content: match &system_msg.content {
-                ChatCompletionRequestSystemMessageContent::Text(str) => str.clone(),
-                _ => String::new(),
-            },
-            tool_calls: Vec::new(),
-            timestamp: Some(now),
-        },
 
-        ChatCompletionRequestMessage::User(user_msg) => aichats::SqlAiConversationMessage {
-            id: 0,
-            conversation_id,
-            role: "user".to_owned(),
-            content: match &user_msg.content {
-                ChatCompletionRequestUserMessageContent::Text(str) => str.clone(),
-                _ => String::new(),
-            },
-            tool_calls: Vec::new(),
-            timestamp: Some(now),
-        },
+    let payload = match item {
+        Item::Message(msg) => {
+            match msg {
+                MessageItem::Input(input_msg) => Some(SqlAiConversationItemPayload::Message {
+                    id: String::new(),
+                    role: match input_msg.role {
+                        InputRole::User => "user".to_owned(),
+                        _ => "developer".to_owned(),
+                    },
+                    content: match &input_msg.content.first() {
+                        Some(InputContent::InputText(text_content)) => text_content.text.clone(),
+                        _ => String::new(),
+                    },
+                }),
 
-        ChatCompletionRequestMessage::Tool(tool_msg) => aichats::SqlAiConversationMessage {
-            id: 0,
-            conversation_id,
-            role: "tool".to_owned(),
-            content: match &tool_msg.content {
-                ChatCompletionRequestToolMessageContent::Text(str) => str.clone(),
-                _ => String::new(),
-            },
-            tool_calls: vec![aichats::SqlAiConversationToolCall {
-                id: tool_msg.tool_call_id.clone(),
-                function: String::new(),
-                arguments: String::new(),
-            }],
-            timestamp: Some(now),
-        },
-
-        ChatCompletionRequestMessage::Assistant(assistant_msg) => {
-            let tool_calls = assistant_msg.tool_calls.as_ref()
-                .map_or_else(Vec::new, |calls| {
-                    calls.iter().filter_map(|call| {
-                        match call {
-                            ChatCompletionMessageToolCalls::Function(tool) => {
-                                aichats::SqlAiConversationToolCall {
-                                    id: tool.id.clone(),
-                                    function: tool.function.name.clone(),
-                                    arguments: tool.function.arguments.clone(),
-                                }.into()
-                            },
-
-                            _ => None,
-                        }
-                    }).collect()
-                });
-
-            aichats::SqlAiConversationMessage {
-                id: 0,
-                conversation_id,
-                role: "assistant".to_owned(),
-                content: match &assistant_msg.content {
-                    Some(ChatCompletionRequestAssistantMessageContent::Text(str)) => str.clone(),
-                    _ => String::new(),
-                },
-                tool_calls,
-                timestamp: Some(now),
+                MessageItem::Output(output_msg) => Some(SqlAiConversationItemPayload::Message {
+                    id: output_msg.id.clone(),
+                    role: "assistant".to_owned(),
+                    content: match &output_msg.content.first() {
+                        Some(OutputMessageContent::OutputText(text_content)) => text_content.text.clone(),
+                        _ => String::new(),
+                    },
+                }),
             }
         },
 
-        _ => panic!("Unknown ChatCompletionRequestMessage variant"),
-    }
+        Item::Reasoning(reasoning) => Some(SqlAiConversationItemPayload::Reasoning {
+            id: reasoning.id.clone(),
+            summary: reasoning.summary.first().map(|part| {
+                let SummaryPart::SummaryText(summary) = part;
+                summary.text.clone()
+            }).unwrap_or_default(),
+            encrypted_content: reasoning.encrypted_content.clone().unwrap_or_default(),
+        }),
+
+        Item::FunctionCall(func_call) => Some(SqlAiConversationItemPayload::FunctionCall {
+            id: func_call.id.clone().unwrap_or_default(),
+            name: func_call.name.clone(),
+            arguments: func_call.arguments.clone(),
+            call_id: func_call.call_id.clone(),
+        }),
+
+        Item::FunctionCallOutput(func_output) => Some(SqlAiConversationItemPayload::FunctionCallOutput {
+            call_id: func_output.call_id.clone(),
+            output: match &func_output.output {
+                FunctionCallOutput::Text(text) => text.clone(),
+                _ => String::new(),
+            },
+        }),
+
+        _ => None,
+    };
+
+    payload.map(|p| SqlAiConversationItem {
+        id: 0,
+        conversation_id,
+        payload: p,
+        timestamp: Some(now),
+    })
 }
