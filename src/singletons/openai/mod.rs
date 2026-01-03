@@ -24,8 +24,9 @@ use async_openai::types::chat::{
     ServiceTier,
 };
 
+use crate::config::read_config;
 use crate::sql::wrappers::aichats::{self, SqlAiConversation};
-use crate::{APP, broadcast::BroadcastChannel};
+use crate::broadcast::BroadcastChannel;
 use self::types::ChatCompletionResponseStream;
 
 pub static CHANNEL: OnceLock<BroadcastChannel<AIChannelMessage>> = OnceLock::new();
@@ -106,13 +107,14 @@ pub fn current_conversation_id() -> Option<i64> {
 }
 
 fn make_client() -> Client<OpenAIConfig> {
-    let config = if APP.config.ai.service == "gemini" {
+    let app_config = read_config();
+    let config = if app_config.ai.service == "gemini" {
         OpenAIConfig::new()
             .with_api_base("https://generativelanguage.googleapis.com/v1beta/openai")
-            .with_api_key(APP.config.ai.gemini.api_key.as_str())
+            .with_api_key(app_config.ai.gemini.api_key.as_str())
     } else {
         OpenAIConfig::new()
-            .with_api_key(APP.config.ai.openai.api_key.as_str())
+            .with_api_key(app_config.ai.openai.api_key.as_str())
     };
 
     Client::with_config(config)
@@ -174,7 +176,8 @@ pub fn trim_messages(down_to_message_id: i64) {
 }
 
 pub fn activate() {
-    if !APP.config.ai.enabled || APP.config.ai.openai.api_key.is_empty() {
+    let app_config = read_config();
+    if !app_config.ai.enabled || app_config.ai.openai.api_key.is_empty() {
         return;
     }
 
@@ -197,11 +200,12 @@ pub fn activate() {
 }
 
 async fn create_stream(session: &AISession) -> Result<ChatCompletionResponseStream, OpenAIError> {
+    let app_config = read_config().clone();
     let mut sorted_messages = session.messages.read().unwrap()
         .clone()
         .iter_mut()
         .map(|msg| {
-            if APP.config.ai.user_message_timestamps {
+            if app_config.ai.user_message_timestamps {
                 msg.inject_timestamp_into_content();
             }
             msg.message.clone()
@@ -209,14 +213,14 @@ async fn create_stream(session: &AISession) -> Result<ChatCompletionResponseStre
         .collect::<Vec<ChatCompletionRequestMessage>>();
 
     sorted_messages.insert(0, ChatCompletionRequestSystemMessage::from(
-        variables::transform_variables(APP.config.ai.prompt.as_str())).into()
+        variables::transform_variables(app_config.ai.prompt.as_str())).into()
     );
 
-    let request = if APP.config.ai.service == "gemini" {
+    let request = if app_config.ai.service == "gemini" {
         CreateChatCompletionRequestArgs::default()
             .max_completion_tokens(2048_u32)
             .stream(true)
-            .model(APP.config.ai.gemini.model.as_str())
+            .model(app_config.ai.gemini.model.as_str())
             .messages(sorted_messages)
             .tools(tools::get_tools()?)
             .build()?
@@ -224,9 +228,9 @@ async fn create_stream(session: &AISession) -> Result<ChatCompletionResponseStre
         CreateChatCompletionRequestArgs::default()
             .max_completion_tokens(2048_u32)
             .stream(true)
-            .model(APP.config.ai.openai.model.as_str())
+            .model(app_config.ai.openai.model.as_str())
             .messages(sorted_messages)
-            .service_tier(match APP.config.ai.openai.service_tier.as_str() {
+            .service_tier(match app_config.ai.openai.service_tier.as_str() {
                 "flex" => ServiceTier::Flex,
                 "priority" => ServiceTier::Priority,
                 _ => ServiceTier::Default,

@@ -4,8 +4,9 @@ use std::path::Path;
 use gtk4::prelude::*;
 use relm4::RelmIterChildrenExt as _;
 
-use crate::APP;
+
 use crate::USERNAME;
+use crate::config::read_config;
 use crate::filesystem;
 use crate::gesture;
 use crate::singletons::openai;
@@ -38,6 +39,7 @@ impl ChatMessage {
     }
 
     pub fn new(role: &ChatRole, content: Option<String>) -> Self {
+        let app_config = read_config();
         let id = Rc::new(RefCell::new(None));
         let root = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
         root.set_css_classes(&["ai-chat-message"]);
@@ -68,7 +70,7 @@ impl ChatMessage {
                 }
             },
             
-            ChatRole::Assistant => APP.config.ai.assistant_icon_path.as_ref().map_or_else(|| {
+            ChatRole::Assistant => app_config.ai.assistant_icon_path.as_ref().map_or_else(|| {
                 Self::default_assistant_icon()
             }, |icon_path| if Path::new(icon_path).exists() {
                 let assistant_icon = gtk4::Image::new();
@@ -84,7 +86,7 @@ impl ChatMessage {
 
         let sender_label = gtk4::Label::new(Some(match role {
             ChatRole::User => &USERNAME,
-            ChatRole::Assistant => APP.config.ai.assistant_name.as_ref().map_or("AI Assistant", |name| name.as_str()),
+            ChatRole::Assistant => app_config.ai.assistant_name.as_ref().map_or("AI Assistant", |name| name.as_str()),
         }));
         sender_label.set_css_classes(&["ai-chat-message-sender-label"]);
         sender_label.set_halign(gtk4::Align::Start);

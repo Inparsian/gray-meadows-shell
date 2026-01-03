@@ -1,8 +1,16 @@
-use std::path::Path;
+use std::sync::RwLock;
+use std::{path::Path, sync::LazyLock};
 use std::error::Error;
+use notify::Watcher as _;
+use notify::event::{AccessKind, AccessMode, EventKind};
 use serde::{Deserialize, Serialize};
 
 use crate::filesystem::get_config_directory;
+
+static CONFIG: LazyLock<RwLock<Config>> = LazyLock::new(|| {
+    let config = read().expect("Failed to read configuration");
+    RwLock::new(config)
+});
 
 const FILE_NAME: &str = "config.toml";
 
@@ -75,7 +83,7 @@ fn config_path() -> String {
     format!("{}/{}", get_config_directory(), FILE_NAME)
 }
 
-pub fn save(config: &Config) -> Result<(), Box<dyn Error>> {
+fn save(config: &Config) -> Result<(), Box<dyn Error>> {
     std::fs::create_dir_all(get_config_directory())?;
     std::fs::write(
         config_path(),
@@ -85,7 +93,7 @@ pub fn save(config: &Config) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-pub fn read() -> Result<Config, Box<dyn Error>> {
+fn read() -> Result<Config, Box<dyn Error>> {
     if !Path::new(&config_path()).exists() {
         let default = Config::default();
         save(&default)?;
@@ -95,5 +103,47 @@ pub fn read() -> Result<Config, Box<dyn Error>> {
         let config = toml::from_str(&toml)?;
         Ok(config)
     }
+}
+
+pub fn watch() {
+    tokio::spawn(async move {
+        let (tx, rx) = std::sync::mpsc::channel();
+
+        let mut watcher = notify::recommended_watcher(tx).unwrap();
+        let result = watcher.watch(
+            Path::new(&get_config_directory()),
+            notify::RecursiveMode::NonRecursive,
+        );
+
+        if result.is_ok() {
+            println!("Watching configuration file: {}", config_path());
+
+            for res in rx {
+                match res {
+                    Ok(event) => if event.paths.iter().any(|p| p.file_name() == Some("config.toml".as_ref()))
+                        && matches!(event.kind, EventKind::Access(AccessKind::Close(AccessMode::Write)))
+                    {
+                        if let Ok(new_config) = read() {
+                            let mut config_lock = CONFIG.write().unwrap();
+                            *config_lock = new_config;
+                            println!("Configuration reloaded from {}", config_path());
+                        } else {
+                            eprintln!("Failed to reload configuration from {}", config_path());
+                        }
+                    },
+
+                    Err(e) => {
+                        eprintln!("Error watching configuration file: {}", e);
+                    },
+                }
+            }
+        } else {
+            eprintln!("Failed to watch configuration file: {}", result.unwrap_err());
+        }
+    });
+}
+
+pub fn read_config() -> std::sync::RwLockReadGuard<'static, Config> {
+    CONFIG.read().unwrap()
 }
 

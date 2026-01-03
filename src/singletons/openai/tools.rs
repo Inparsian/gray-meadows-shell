@@ -2,14 +2,15 @@ use serde_json::json;
 use async_openai::error::OpenAIError;
 use async_openai::types::chat::{ChatCompletionTools, ChatCompletionTool, FunctionObjectArgs};
 
-use crate::APP;
+use crate::config::read_config;
 use crate::session::SessionAction;
 use crate::singletons::mpris::{self, mpris_player::LoopStatus};
 
 pub fn get_tools() -> Result<Vec<ChatCompletionTools>, OpenAIError> {
+    let app_config = read_config();
     let mut tools = vec![];
 
-    if APP.config.ai.features.mpris_control {
+    if app_config.ai.features.mpris_control {
         tools.extend(vec![
             ChatCompletionTools::Function(ChatCompletionTool {
                 function: FunctionObjectArgs::default()
@@ -83,7 +84,7 @@ pub fn get_tools() -> Result<Vec<ChatCompletionTools>, OpenAIError> {
         ]);
     }
 
-    if APP.config.ai.features.power_control {
+    if app_config.ai.features.power_control {
         tools.push(ChatCompletionTools::Function(ChatCompletionTool {
             function: FunctionObjectArgs::default()
                 .name("perform_power_action")

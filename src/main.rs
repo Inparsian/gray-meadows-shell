@@ -56,12 +56,10 @@ thread_local! {
 
 #[derive(Debug, Clone)]
 pub struct GrayMeadowsGlobal {
-    config: config::Config,
     game_mode: Mutable<bool>,
 }
 
 pub static APP: LazyLock<GrayMeadowsGlobal> = LazyLock::new(|| GrayMeadowsGlobal {
-    config: config::read().expect("Failed to read configuration"),
     game_mode: Mutable::new(false),
 });
 
@@ -164,6 +162,7 @@ async fn main() {
             singletons::activate_all();
             windows::listen_for_ipc_messages();
             bar::listen_for_ipc_messages();
+            config::watch();
 
             let application = Application::new(
                 Some("sn.inpr.gray_meadows_shell"),
