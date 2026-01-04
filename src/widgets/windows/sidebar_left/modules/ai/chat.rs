@@ -276,7 +276,6 @@ impl ChatMessage {
 
     pub fn set_content(&mut self, content: &str) {
         let was_none = self.content.is_none();
-        let remove_loading = self.content.is_none() && self.thinking.is_none();
 
         self.content = Some(content.to_owned());
         self.markdown.set_markdown(content);
@@ -289,25 +288,17 @@ impl ChatMessage {
                 self.root.insert_child_after(&self.markdown, Some(&self.header));
             }
 
-            if remove_loading {
-                self.root.remove(&self.loading);
-            }
+            self.root.remove(&self.loading);
         }
     }
 
     pub fn set_thinking(&mut self, content: &str) {
         let was_none = self.thinking.is_none();
-        let remove_loading = self.thinking.is_none() && self.content.is_none();
-        
         if was_none {
             let mut thinking_block = ChatThinkingBlock::new();
             thinking_block.set_summary(content);
             self.thinking = Some(thinking_block.clone());
             self.root.insert_child_after(&thinking_block.root, Some(&self.header));
-
-            if remove_loading {
-                self.root.remove(&self.loading);
-            }
         } else if let Some(thinking_block) = &mut self.thinking {
             thinking_block.set_summary(content);
         }
