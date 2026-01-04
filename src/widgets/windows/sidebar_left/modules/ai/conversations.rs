@@ -2,8 +2,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use gtk4::prelude::*;
 
-use crate::sql::wrappers::aichats::{self, SqlAiConversation};
-use crate::singletons::openai;
+use crate::sql::wrappers::aichats;
+use crate::singletons::ai::{self, AiChannelMessage, types::AiConversation};
 use crate::gesture;
 
 fn conversation_control_button(icon_name: &str, tooltip: &str) -> gtk4::Button {
@@ -25,14 +25,14 @@ fn message_count_str(count: usize) -> String {
 
 #[derive(Debug, Clone)]
 pub struct ConversationItem {
-    pub conversation: Rc<RefCell<SqlAiConversation>>,
+    pub conversation: Rc<RefCell<AiConversation>>,
     pub root: gtk4::Box,
     pub title_label: gtk4::Label,
     pub length_label: gtk4::Label,
 }
 
 impl ConversationItem {
-    pub fn new(conversation: SqlAiConversation) -> Self {
+    pub fn new(conversation: AiConversation) -> Self {
         let conversation = Rc::new(RefCell::new(conversation));
 
         let root = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
@@ -60,7 +60,7 @@ impl ConversationItem {
             move |_| {
                 let new_title = title_input.text().to_string();
                 if !new_title.is_empty() && new_title != conversation.borrow().title {
-                    openai::conversation::rename_conversation(conversation.borrow().id, &new_title);
+                    ai::conversation::rename_conversation(conversation.borrow().id, &new_title);
                     conversation.borrow_mut().title = new_title;
                     title_input.set_visible(false);
                     title_label.set_visible(true);
@@ -83,7 +83,7 @@ impl ConversationItem {
         load_button.connect_clicked({
             let conversation = conversation.clone();
             move |_| {
-                openai::conversation::load_conversation(conversation.borrow().id);
+                ai::conversation::load_conversation(conversation.borrow().id);
             }
         });
         controls_box.append(&load_button);
@@ -103,7 +103,7 @@ impl ConversationItem {
         delete_button.connect_clicked({
             let conversation = conversation.clone();
             move |_| {
-                openai::conversation::delete_conversation(conversation.borrow().id);
+                ai::conversation::delete_conversation(conversation.borrow().id);
             }
         });
         controls_box.append(&delete_button);
@@ -163,20 +163,20 @@ impl ConversationsList {
         };
 
         // Listen for events from the AI singleton channel
-        let receiver = openai::CHANNEL.get().map(|channel| channel.subscribe());
+        let receiver = ai::CHANNEL.get().map(|channel| channel.subscribe());
         if let Some(mut receiver) = receiver {
             gtk4::glib::spawn_future_local({
                 let me = me.clone();
                 async move {
                     while let Ok(message) = receiver.recv().await {
                         match message {
-                            openai::AIChannelMessage::ConversationAdded(conversation) => {
+                            AiChannelMessage::ConversationAdded(conversation) => {
                                 let item = ConversationItem::new(conversation);
                                 me.root.append(&item.root);
                                 me.conversations.borrow_mut().push(item);
                             },
 
-                            openai::AIChannelMessage::ConversationDeleted(conversation_id) => {
+                            AiChannelMessage::ConversationDeleted(conversation_id) => {
                                 let mut conversations = me.conversations.borrow_mut();
                                 if let Some(pos) = conversations.iter().position(|item| item.conversation.borrow().id == conversation_id) {
                                     let item = conversations.remove(pos);
@@ -184,7 +184,7 @@ impl ConversationsList {
                                 }
                             },
 
-                            openai::AIChannelMessage::ConversationRenamed(conversation_id, new_title) => {
+                            AiChannelMessage::ConversationRenamed(conversation_id, new_title) => {
                                 let conversations = me.conversations.borrow();
                                 for item in conversations.iter() {
                                     if item.conversation.borrow().id == conversation_id {
@@ -194,7 +194,7 @@ impl ConversationsList {
                                 }
                             },
 
-                            openai::AIChannelMessage::ConversationTrimmed(conversation_id, _) => {
+                            AiChannelMessage::ConversationTrimmed(conversation_id, _) => {
                                 let conversations = me.conversations.borrow();
                                 for item in conversations.iter() {
                                     if item.conversation.borrow().id == conversation_id {
@@ -205,7 +205,7 @@ impl ConversationsList {
                                 }
                             },
 
-                            openai::AIChannelMessage::ConversationLoaded(conversation) => {
+                            AiChannelMessage::ConversationLoaded(conversation) => {
                                 let conversations = me.conversations.borrow();
                                 for item in conversations.iter() {
                                     if item.conversation.borrow().id == conversation.id {
@@ -216,9 +216,9 @@ impl ConversationsList {
                                 }
                             },
 
-                            openai::AIChannelMessage::CycleStarted |
-                            openai::AIChannelMessage::CycleFinished => {
-                                let Some(current_conversation_id) = openai::current_conversation_id() else {
+                            AiChannelMessage::CycleStarted |
+                            AiChannelMessage::CycleFinished => {
+                                let Some(current_conversation_id) = ai::current_conversation_id() else {
                                     continue;
                                 };
 

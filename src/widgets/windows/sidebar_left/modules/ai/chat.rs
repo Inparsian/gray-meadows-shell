@@ -4,12 +4,11 @@ use std::path::Path;
 use gtk4::prelude::*;
 use relm4::RelmIterChildrenExt as _;
 
-
 use crate::USERNAME;
 use crate::config::read_config;
 use crate::filesystem;
 use crate::gesture;
-use crate::singletons::openai;
+use crate::singletons::ai;
 use crate::widgets::common::loading;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -113,8 +112,8 @@ impl ChatMessage {
         delete_button.set_label("delete");
         delete_button.connect_clicked({
             let id = id.clone();
-            move |_| if !openai::is_currently_in_cycle() && let Some(message_id) = *id.borrow() {
-                openai::trim_messages(message_id);
+            move |_| if !ai::is_currently_in_cycle() && let Some(message_id) = *id.borrow() {
+                ai::trim_items(message_id);
             }
         });
         controls_box.append(&delete_button);
@@ -125,7 +124,7 @@ impl ChatMessage {
         retry_button.connect_clicked({
             let id = id.clone();
             let role = role.clone();
-            move |_| if !openai::is_currently_in_cycle() && let Some(message_id) = *id.borrow() {
+            move |_| if !ai::is_currently_in_cycle() && let Some(message_id) = *id.borrow() {
                 // Increase message_id by 1 if this is a user message to trim down to the
                 // assistant response directly after it
                 let message_id = if role == ChatRole::User {
@@ -134,8 +133,8 @@ impl ChatMessage {
                     message_id
                 };
 
-                openai::trim_messages(message_id);
-                tokio::spawn(openai::start_request_cycle());
+                ai::trim_items(message_id);
+                tokio::spawn(ai::start_request_cycle());
             }
         });
         controls_box.append(&retry_button);
