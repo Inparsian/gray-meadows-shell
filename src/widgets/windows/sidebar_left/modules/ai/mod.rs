@@ -9,7 +9,7 @@ use async_openai::types::responses::{
     OutputMessageContent
 };
 
-use crate::singletons::openai::{self, SESSION};
+use crate::singletons::ai::{self, SESSION};
 
 pub fn conversation_control_button(icon: &str, label: &str) -> gtk4::Button {
     let button = gtk4::Button::new();
@@ -70,10 +70,10 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
 
     let clear_conversation_button = conversation_control_button("clear_all", "Clear");
     clear_conversation_button.connect_clicked(move |_| {
-        if !openai::is_currently_in_cycle()
-            && let Some(conversation_id) = openai::current_conversation_id()
+        if !ai::is_currently_in_cycle()
+            && let Some(conversation_id) = ai::current_conversation_id()
         {
-            openai::conversation::clear_conversation(conversation_id);
+            ai::conversation::clear_conversation(conversation_id);
         }
     });
     conversation_controls.append(&clear_conversation_button);
@@ -118,11 +118,11 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
         let scroll_to_bottom = scroll_to_bottom.clone();
         move |entry| {
             let text = entry.text().to_string();
-            if text.is_empty() || openai::is_currently_in_cycle() {
+            if text.is_empty() || ai::is_currently_in_cycle() {
                 return;
             }
 
-            let id = openai::send_user_message(&text);
+            let id = ai::send_user_message(&text);
             let message = chat::ChatMessage::new(
                 &chat::ChatRole::User,
                 Some(text),
@@ -131,7 +131,7 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
             chat.add_message(message);
             scroll_to_bottom();
 
-            tokio::spawn(openai::start_request_cycle());
+            tokio::spawn(ai::start_request_cycle());
 
             entry.set_text("");
         }
@@ -146,14 +146,14 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
         let scroll_to_bottom = scroll_to_bottom.clone();
         move |_| {
             let text = input.text().to_string();
-            if openai::is_currently_in_cycle() {
+            if ai::is_currently_in_cycle() {
                 if let Some(session) = SESSION.get() 
                     && let Ok(mut stop_flag) = session.stop_cycle_flag.write()
                 {
                     *stop_flag = true;
                 }
             } else if !text.is_empty() {
-                let id = openai::send_user_message(&text);
+                let id = ai::send_user_message(&text);
                 let message = chat::ChatMessage::new(
                     &chat::ChatRole::User,
                     Some(text),
@@ -162,7 +162,7 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                 chat.add_message(message);
                 scroll_to_bottom();
 
-                tokio::spawn(openai::start_request_cycle());
+                tokio::spawn(ai::start_request_cycle());
 
                 input.set_text("");
             }
@@ -170,7 +170,7 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
     });
     input_box.append(&input_send_button);
 
-    if let Some(channel) = openai::CHANNEL.get() {
+    if let Some(channel) = ai::CHANNEL.get() {
         let mut receiver = channel.subscribe();
 
         gtk4::glib::spawn_future_local(async move {
@@ -179,7 +179,7 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
             let conversation_title = conversation_title.clone();
             while let Ok(message) = receiver.recv().await {
                 match message {
-                    openai::AIChannelMessage::ConversationLoaded(conversation) => {
+                    ai::AIChannelMessage::ConversationLoaded(conversation) => {
                         let Some(session) = SESSION.get() else {
                             continue;
                         };
@@ -218,23 +218,23 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                         }
                     },
 
-                    openai::AIChannelMessage::ConversationTrimmed(conversation_id, down_to_message_id) => {
-                        if openai::current_conversation_id() == Some(conversation_id) {
+                    ai::AIChannelMessage::ConversationTrimmed(conversation_id, down_to_message_id) => {
+                        if ai::current_conversation_id() == Some(conversation_id) {
                             chat.trim_messages(down_to_message_id);
                         }
                     },
 
-                    openai::AIChannelMessage::ConversationRenamed(conversation_id, new_title) => {
-                        if openai::current_conversation_id() == Some(conversation_id) {
+                    ai::AIChannelMessage::ConversationRenamed(conversation_id, new_title) => {
+                        if ai::current_conversation_id() == Some(conversation_id) {
                             conversation_title.set_text(&new_title);
                         }
                     },
 
-                    openai::AIChannelMessage::CycleStarted => {
+                    ai::AIChannelMessage::CycleStarted => {
                         input_send_button.set_label("stop_circle");
                     },
 
-                    openai::AIChannelMessage::CycleFinished => {
+                    ai::AIChannelMessage::CycleFinished => {
                         input_send_button.set_label("send");
 
                         if let Some(latest_message) = chat.messages.borrow_mut().last_mut()
@@ -244,27 +244,27 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                         }
                     },
 
-                    openai::AIChannelMessage::StreamStart => {
+                    ai::AIChannelMessage::StreamStart => {
                         chat.add_message(chat::ChatMessage::new(
                             &chat::ChatRole::Assistant,
                             None,
                         ));
                     },
 
-                    openai::AIChannelMessage::StreamChunk(chunk) => {
+                    ai::AIChannelMessage::StreamChunk(chunk) => {
                         if let Some(latest_message) = chat.messages.borrow_mut().last_mut() {
                             let new_content = format!("{}{}", latest_message.content.as_deref().unwrap_or_default(), chunk);
                             latest_message.set_content(&new_content);
                         }
                     },
 
-                    openai::AIChannelMessage::StreamComplete(id) => {
+                    ai::AIChannelMessage::StreamComplete(id) => {
                         if let Some(latest_message) = chat.messages.borrow_mut().last_mut() {
                             latest_message.set_id(id);
                         }
                     },
 
-                    openai::AIChannelMessage::ToolCall(tool_name, arguments) => {
+                    ai::AIChannelMessage::ToolCall(tool_name, arguments) => {
                         chat.append_tool_call_to_latest_message(&tool_name, &arguments);
                     },
 
@@ -298,7 +298,7 @@ pub fn conversations_ui(stack: &gtk4::Stack) -> gtk4::Box {
 
     let new_conversation_button = conversation_ui_header_button("add", "New Conversation");
     new_conversation_button.connect_clicked(move |_| {
-        openai::conversation::add_conversation("Untitled");
+        ai::conversation::add_conversation("Untitled");
     });
     header.append(&new_conversation_button);
 
@@ -330,12 +330,12 @@ pub fn new() -> gtk4::Box {
     widget.append(&ui_stack);
 
     // Go back when a new conversation is loaded
-    if let Some(channel) = openai::CHANNEL.get() {
+    if let Some(channel) = ai::CHANNEL.get() {
         let mut receiver = channel.subscribe();
 
         gtk4::glib::spawn_future_local(async move {
             while let Ok(message) = receiver.recv().await {
-                if let openai::AIChannelMessage::ConversationLoaded(_) = message {
+                if let ai::AIChannelMessage::ConversationLoaded(_) = message {
                     ui_stack.set_visible_child_name("chat_ui");
                 }
             }
