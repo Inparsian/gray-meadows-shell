@@ -266,6 +266,11 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                         input_send_button.set_label("stop_circle");
                     },
 
+                    AiChannelMessage::CycleFailed => {
+                        input_send_button.set_label("send");
+                        chat.remove_latest_message();
+                    },
+
                     AiChannelMessage::CycleFinished => {
                         input_send_button.set_label("send");
 

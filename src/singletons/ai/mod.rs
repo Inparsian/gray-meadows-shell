@@ -30,6 +30,7 @@ pub enum AiChannelMessage {
     StreamComplete(i64), // message ID
     ToolCall(String, String), // (tool name, arguments)
     CycleStarted,
+    CycleFailed,
     CycleFinished,
     ConversationLoaded(AiConversation),
     ConversationTrimmed(i64, i64), // (conversation ID, down to message ID)
@@ -145,6 +146,7 @@ pub async fn start_request_cycle() {
         .find(|s| s.service_name() == config.ai.service)
         .unwrap_or(&SERVICES[0]);
     
+    let mut failed = false;
     loop {
         let items = session.items.read().unwrap().clone();
         let stop_cycle_flag = session.stop_cycle_flag.clone();
@@ -224,12 +226,17 @@ pub async fn start_request_cycle() {
 
             Err(e) => {
                 eprintln!("AI request failed: {:#?}", e);
+                failed = true;
                 break;
             },
         }
     }
 
-    channel.send(AiChannelMessage::CycleFinished).await;
+    if failed {
+        channel.send(AiChannelMessage::CycleFailed).await;
+    } else {
+        channel.send(AiChannelMessage::CycleFinished).await;
+    }
 
     let mut currently_in_cycle = session.currently_in_cycle.write().unwrap();
     *currently_in_cycle = false;

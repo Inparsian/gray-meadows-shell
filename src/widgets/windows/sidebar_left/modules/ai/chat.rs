@@ -365,6 +365,15 @@ impl Chat {
         self.messages.borrow_mut().push(message);
     }
 
+    pub fn remove_latest_message(&self) -> Option<ChatMessage> {
+        if let Some(message) = self.messages.borrow_mut().pop() {
+            self.root.remove(&message.root);
+            Some(message)
+        } else {
+            None
+        }
+    }
+
     pub fn append_tool_call_to_latest_message(&self, tool_name: &str, arguments: &str) {
         let mut messages = self.messages.borrow_mut();
         if let Some(latest_message) = messages.last_mut() {
