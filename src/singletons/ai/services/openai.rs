@@ -12,7 +12,7 @@ use async_openai::types::responses::{
     InputContent, InputMessage, InputRole, InputTextContent,
     Item, MessageItem,
     OutputContent, OutputItem, OutputMessage, OutputMessageContent, OutputStatus, OutputTextContent,
-    ReasoningItem,
+    Reasoning, ReasoningEffort, ReasoningItem, ReasoningSummary,
     ResponseStream, ResponseStreamEvent,
     ServiceTier,
     Summary, SummaryPart
@@ -77,6 +77,17 @@ impl OpenAiService {
                 "flex" => ServiceTier::Flex,
                 "priority" => ServiceTier::Priority,
                 _ => ServiceTier::Default,
+            })
+            .reasoning(Reasoning {
+                effort: Some(match app_config.ai.openai.reasoning_effort.as_str() {
+                    "minimal" => ReasoningEffort::Minimal,
+                    "low" => ReasoningEffort::Low,
+                    "medium" => ReasoningEffort::Medium,
+                    "high" => ReasoningEffort::High,
+                    "xhigh" => ReasoningEffort::Xhigh,
+                    _ => ReasoningEffort::None,
+                }),
+                summary: Some(ReasoningSummary::Auto),
             })
             .tools(tools::get_tools()?)
             .input(native_items)

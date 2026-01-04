@@ -32,6 +32,11 @@ model = "gpt-4.1"
 # "priority" gives significantly lower and more consistent latency, at a higher cost.
 service_tier = "default"
 
+# The model's reasoning effort.
+# Can be either "none", "minimal", "low", "medium", "high", or "xhigh".
+# Only works for reasoning-capable models such as GPT-5 & o-series models.
+reasoning_effort = "none"
+
 [ai.gemini]
 # Your Gemini API key. Required to access Gemini services.
 api_key = "your-api-key-here"
