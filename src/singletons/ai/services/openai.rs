@@ -452,22 +452,30 @@ impl super::AiService for OpenAiService {
                 *stop_flag = false;
             }
 
-            let transformed_items = new_items.values()
+            let mut transformed_items = new_items.values()
                 .cloned()
                 .filter_map(Self::transform_native_into_item)
                 .collect::<Vec<AiConversationItem>>();
+
+            // Ensure that this is properly sorted so the API does not yell at us later
+            transformed_items.sort_by_key(|item| {
+                match &item.payload {
+                    AiConversationItemPayload::Reasoning { .. } => 0,
+                    AiConversationItemPayload::Message { role, .. } if role == "assistant" => 1,
+                    AiConversationItemPayload::FunctionCall { .. } => 2,
+                    _ => 3,
+                }
+            });
 
             let has_tool_calls = transformed_items.iter().any(|item| {
                 matches!(item.payload, AiConversationItemPayload::FunctionCall { .. })
             });
 
-            should_request_more = should_request_more && has_tool_calls;
-
             // Go for another request after tool execution, in case the AI wants to say
             // something after tool execution or perform more tool calls
             Ok(super::AiServiceResult {
                 items: transformed_items,
-                should_request_more,
+                should_request_more: has_tool_calls && should_request_more,
             })
         })
     }
