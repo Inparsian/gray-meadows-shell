@@ -1,83 +1,83 @@
 use serde_json::json;
 use async_openai::error::OpenAIError;
-use async_openai::types::responses::{Tool, FunctionTool};
 
 use crate::config::read_config;
 use crate::session::SessionAction;
 use crate::singletons::mpris::{self, mpris_player::LoopStatus};
+use super::types::AiFunction;
 
-pub fn get_tools() -> Result<Vec<Tool>, OpenAIError> {
+pub fn get_tools() -> Result<Vec<AiFunction>, OpenAIError> {
     let app_config = read_config();
     let mut tools = vec![];
 
     if app_config.ai.features.mpris_control {
-        tools.push(Tool::Function(FunctionTool {
+        tools.push(AiFunction {
             name: "control_mpris_player".to_owned(),
-            description: Some("Performs an action on the default MPRIS player such as play, pause, stop, toggle play/pause, or skip tracks.".to_owned()),
-            strict: Some(true),
-            parameters: Some(json!({
+            description: "Performs an action on the default MPRIS player such as play, pause, stop, toggle play/pause, or skip tracks.".to_owned(),
+            strict: true,
+            schema: json!({
                 "type": "object",
                 "properties": {
                     "action": {
-                    "type": "string",
-                    "description": "The action to perform on the player",
-                    "enum": [
-                        "toggle",
-                        "play",
-                        "pause",
-                        "stop",
-                        "next",
-                        "previous"
-                    ]
+                        "type": "string",
+                        "description": "The action to perform on the player",
+                        "enum": [
+                            "toggle",
+                            "play",
+                            "pause",
+                            "stop",
+                            "next",
+                            "previous"
+                        ]
                     }
                 },
                 "required": ["action"],
                 "additionalProperties": false
-            })),
-        }));
+            }),
+        });
 
-        tools.push(Tool::Function(FunctionTool {
+        tools.push(AiFunction {
             name: "set_mpris_loop_state".to_owned(),
-            description: Some("Change or cycle the loop state for the default MPRIS player.".to_owned()),
-            strict: Some(false),
-            parameters: Some(json!({
+            description: "Change or cycle the loop state for the default MPRIS player.".to_owned(),
+            strict: false,
+            schema: json!({
                 "type": "object",
                 "properties": {
                     "loop_state": {
-                    "type": "string",
-                    "description": "Requested loop state for the player. Must be one of 'off', 'playlist', or 'track'. If omitted, cycles to the next state.",
-                    "enum": ["off", "playlist", "track"]
+                        "type": "string",
+                        "description": "Requested loop state for the player. Must be one of 'off', 'playlist', or 'track'. If omitted, cycles to the next state.",
+                        "enum": ["off", "playlist", "track"]
                     }
                 },
                 "required": [],
                 "additionalProperties": false
-            })),
-        }));
+            }),
+        });
         
-        tools.push(Tool::Function(FunctionTool {
+        tools.push(AiFunction {
             name: "set_mpris_shuffle_state".to_owned(),
-            description: Some("Change or toggle the shuffle state for the default MPRIS player.".to_owned()),
-            strict: Some(false),
-            parameters: Some(json!({
+            description: "Change or toggle the shuffle state for the default MPRIS player.".to_owned(),
+            strict: false,
+            schema: json!({
                 "type": "object",
                 "properties": {
                     "shuffle": {
-                    "type": "boolean",
-                    "description": "If provided, sets shuffle to this value; if omitted, the shuffle state will be toggled."
+                        "type": "boolean",
+                        "description": "If provided, sets shuffle to this value; if omitted, the shuffle state will be toggled."
                     }
                 },
                 "required": [],
                 "additionalProperties": false
-            })),
-        }));
+            }),
+        });
     }
 
     if app_config.ai.features.power_control {
-        tools.push(Tool::Function(FunctionTool {
+        tools.push(AiFunction {
             name: "perform_power_action".to_owned(),
-            description: Some("Performs a system power action.".to_owned()),
-            strict: Some(true),
-            parameters: Some(json!({
+            description: "Performs a system power action.".to_owned(),
+            strict: true,
+            schema: json!({
                 "type": "object",
                 "properties": {
                     "action": {
@@ -97,8 +97,8 @@ pub fn get_tools() -> Result<Vec<Tool>, OpenAIError> {
                     "action"
                 ],
                 "additionalProperties": false
-            })),
-        }));
+            }),
+        });
     }
 
     Ok(tools)

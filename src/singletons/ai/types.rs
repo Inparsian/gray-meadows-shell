@@ -11,6 +11,14 @@ pub struct AiSession {
 }
 
 #[derive(Debug, Clone)]
+pub struct AiFunction {
+    pub name: String,
+    pub description: String,
+    pub strict: bool,
+    pub schema: serde_json::Value,
+}
+
+#[derive(Debug, Clone)]
 pub struct AiConversation {
     pub id: i64,
     pub title: String,

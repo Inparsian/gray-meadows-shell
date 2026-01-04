@@ -6,22 +6,14 @@ use async_openai::Client;
 use async_openai::config::OpenAIConfig;
 use async_openai::error::OpenAIError;
 use async_openai::types::responses::{
-    AssistantRole,
-    CreateResponseArgs,
-    FunctionCallOutput, FunctionCallOutputItemParam, FunctionToolCall,
-    InputContent, InputMessage, InputRole, InputTextContent,
-    Item, MessageItem,
-    OutputContent, OutputItem, OutputMessage, OutputMessageContent, OutputStatus, OutputTextContent,
-    Reasoning, ReasoningEffort, ReasoningItem, ReasoningSummary,
-    ResponseStream, ResponseStreamEvent,
-    ServiceTier,
-    Summary, SummaryPart
+    AssistantRole, CreateResponseArgs, FunctionCallOutput, FunctionCallOutputItemParam, FunctionTool, FunctionToolCall, InputContent, InputMessage, InputRole, InputTextContent, Item, MessageItem, OutputContent, OutputItem, OutputMessage, OutputMessageContent, OutputStatus, OutputTextContent, Reasoning, ReasoningEffort, ReasoningItem, ReasoningSummary, ResponseStream, ResponseStreamEvent, ServiceTier, Summary, SummaryPart, Tool
 };
 
 use crate::broadcast::BroadcastChannel;
 use crate::config::read_config;
 use super::super::variables::transform_variables;
 use super::super::{AiChannelMessage, AiConversationItem, AiConversationItemPayload, AiConversationDelta};
+use super::super::types::AiFunction;
 use super::super::tools;
 
 #[derive(Debug, Default, Clone)]
@@ -30,7 +22,7 @@ pub struct OpenAiService {
 }
 
 impl OpenAiService {
-    pub fn make_client(&self) {
+    fn make_client(&self) {
         let app_config = read_config();
         let config = OpenAIConfig::new()
             .with_api_key(app_config.ai.openai.api_key.as_str());
@@ -69,6 +61,11 @@ impl OpenAiService {
             status: None,
         })));
 
+        let tools = tools::get_tools()?
+            .into_iter()
+            .map(Self::transform_function_into_tool)
+            .collect::<Vec<Tool>>();
+
         let request = if matches!(app_config.ai.openai.reasoning_effort.as_str(), "minimal" | "low" | "medium" | "high" | "xhigh") {
             CreateResponseArgs::default()
                 .max_output_tokens(2048_u32)
@@ -90,7 +87,7 @@ impl OpenAiService {
                     }),
                     summary: Some(ReasoningSummary::Auto),
                 })
-                .tools(tools::get_tools()?)
+                .tools(tools)
                 .input(native_items)
                 .build()?
         } else {
@@ -103,7 +100,7 @@ impl OpenAiService {
                     "priority" => ServiceTier::Priority,
                     _ => ServiceTier::Default,
                 })
-                .tools(tools::get_tools()?)
+                .tools(tools)
                 .input(native_items)
                 .build()?
         };
@@ -230,6 +227,15 @@ impl OpenAiService {
             conversation_id: 0,
             payload: p,
             timestamp: Some(now),
+        })
+    }
+
+    fn transform_function_into_tool(func: AiFunction) -> Tool {
+        Tool::Function(FunctionTool {
+            name: func.name,
+            description: Some(func.description),
+            strict: Some(func.strict),
+            parameters: Some(func.schema),
         })
     }
 }
