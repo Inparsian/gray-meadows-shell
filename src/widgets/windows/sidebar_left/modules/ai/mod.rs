@@ -312,6 +312,20 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                         }
                     },
 
+                    AiChannelMessage::StreamReasoningSummaryPartAdded => {
+                        if let Some(latest_message) = chat.messages.borrow_mut().last_mut()
+                            && let Some(thinking) = &mut latest_message.thinking
+                        {
+                            let current_summary = thinking.summary.as_deref().unwrap_or_default();
+                            let new_content = if current_summary.is_empty() {
+                                String::new()
+                            } else {
+                                format!("{}\n\n", current_summary)
+                            };
+                            thinking.set_summary(&new_content);
+                        }
+                    },
+
                     AiChannelMessage::StreamComplete(id) => {
                         if let Some(latest_message) = chat.messages.borrow_mut().last_mut() {
                             latest_message.set_id(id);

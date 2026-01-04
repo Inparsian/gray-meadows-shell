@@ -200,10 +200,10 @@ impl OpenAiService {
 
             Item::Reasoning(reasoning) => Some(AiConversationItemPayload::Reasoning {
                 id: reasoning.id.clone(),
-                summary: reasoning.summary.first().map(|part| {
+                summary: reasoning.summary.iter().map(|part| {
                     let SummaryPart::SummaryText(summary) = part;
                     summary.text.clone()
-                }).unwrap_or_default(),
+                }).collect::<Vec<String>>().join("\n\n"),
                 encrypted_content: reasoning.encrypted_content.clone().unwrap_or_default(),
             }),
 
@@ -358,6 +358,17 @@ impl super::AiService for OpenAiService {
                             _ => {},
                         }
                     },
+
+                    ResponseStreamEvent::ResponseReasoningSummaryPartAdded(event) => {
+                        let id = event.item_id.clone();
+                        if let Some(Item::Reasoning(reasoning_item)) = new_items.get_mut(&id) {
+                            let SummaryPart::SummaryText(summary) = &event.part;
+
+                            reasoning_item.summary.push(SummaryPart::SummaryText(summary.clone()));
+                        }
+
+                        channel.send(AiChannelMessage::StreamReasoningSummaryPartAdded).await;
+                    }
 
                     ResponseStreamEvent::ResponseReasoningSummaryTextDelta(event) => {
                         let id = event.item_id.clone();

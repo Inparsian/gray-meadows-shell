@@ -28,6 +28,7 @@ pub enum AiChannelMessage {
     StreamStart,
     StreamChunk(AiConversationDelta),
     StreamComplete(i64), // message ID
+    StreamReasoningSummaryPartAdded,
     ToolCall(String, String), // (tool name, arguments)
     CycleStarted,
     CycleFailed,
