@@ -69,29 +69,44 @@ impl OpenAiService {
             status: None,
         })));
 
-        let request = CreateResponseArgs::default()
-            .max_output_tokens(2048_u32)
-            .stream(true)
-            .model(app_config.ai.openai.model.as_str())
-            .service_tier(match app_config.ai.openai.service_tier.as_str() {
-                "flex" => ServiceTier::Flex,
-                "priority" => ServiceTier::Priority,
-                _ => ServiceTier::Default,
-            })
-            .reasoning(Reasoning {
-                effort: Some(match app_config.ai.openai.reasoning_effort.as_str() {
-                    "minimal" => ReasoningEffort::Minimal,
-                    "low" => ReasoningEffort::Low,
-                    "medium" => ReasoningEffort::Medium,
-                    "high" => ReasoningEffort::High,
-                    "xhigh" => ReasoningEffort::Xhigh,
-                    _ => ReasoningEffort::None,
-                }),
-                summary: Some(ReasoningSummary::Auto),
-            })
-            .tools(tools::get_tools()?)
-            .input(native_items)
-            .build()?;
+        let request = if matches!(app_config.ai.openai.reasoning_effort.as_str(), "minimal" | "low" | "medium" | "high" | "xhigh") {
+            CreateResponseArgs::default()
+                .max_output_tokens(2048_u32)
+                .stream(true)
+                .model(app_config.ai.openai.model.as_str())
+                .service_tier(match app_config.ai.openai.service_tier.as_str() {
+                    "flex" => ServiceTier::Flex,
+                    "priority" => ServiceTier::Priority,
+                    _ => ServiceTier::Default,
+                })
+                .reasoning(Reasoning {
+                    effort: Some(match app_config.ai.openai.reasoning_effort.as_str() {
+                        "minimal" => ReasoningEffort::Minimal,
+                        "low" => ReasoningEffort::Low,
+                        "medium" => ReasoningEffort::Medium,
+                        "high" => ReasoningEffort::High,
+                        "xhigh" => ReasoningEffort::Xhigh,
+                        _ => ReasoningEffort::None,
+                    }),
+                    summary: Some(ReasoningSummary::Auto),
+                })
+                .tools(tools::get_tools()?)
+                .input(native_items)
+                .build()?
+        } else {
+            CreateResponseArgs::default()
+                .max_output_tokens(2048_u32)
+                .stream(true)
+                .model(app_config.ai.openai.model.as_str())
+                .service_tier(match app_config.ai.openai.service_tier.as_str() {
+                    "flex" => ServiceTier::Flex,
+                    "priority" => ServiceTier::Priority,
+                    _ => ServiceTier::Default,
+                })
+                .tools(tools::get_tools()?)
+                .input(native_items)
+                .build()?
+        };
 
         client.responses().create_stream(request).await
     }
