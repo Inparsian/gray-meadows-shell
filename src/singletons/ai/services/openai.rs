@@ -21,7 +21,7 @@ use async_openai::types::responses::{
 use crate::broadcast::BroadcastChannel;
 use crate::config::read_config;
 use super::super::variables::transform_variables;
-use super::super::{AiChannelMessage, AiConversationItem, AiConversationItemPayload};
+use super::super::{AiChannelMessage, AiConversationItem, AiConversationItemPayload, AiConversationDelta};
 use super::super::tools;
 
 #[derive(Debug, Default, Clone)]
@@ -327,7 +327,7 @@ impl super::AiService for OpenAiService {
                                     }));
                                 }
 
-                                channel.send(AiChannelMessage::StreamChunk(event.delta.clone())).await;
+                                channel.send(AiChannelMessage::StreamChunk(AiConversationDelta::Message(event.delta.clone()))).await;
                             },
 
                             Some(Item::Reasoning(reasoning_item)) => {
@@ -341,6 +341,21 @@ impl super::AiService for OpenAiService {
                             },
 
                             _ => {},
+                        }
+                    },
+
+                    ResponseStreamEvent::ResponseReasoningSummaryTextDelta(event) => {
+                        let id = event.item_id.clone();
+                        if let Some(Item::Reasoning(reasoning_item)) = new_items.get_mut(&id) {
+                            if let Some(SummaryPart::SummaryText(last_summary)) = reasoning_item.summary.last_mut() {
+                                last_summary.text.push_str(&event.delta);
+                            } else {
+                                reasoning_item.summary.push(SummaryPart::SummaryText(Summary {
+                                    text: event.delta.clone(),
+                                }));
+                            }
+
+                            channel.send(AiChannelMessage::StreamChunk(AiConversationDelta::Reasoning(event.delta.clone()))).await;
                         }
                     },
 

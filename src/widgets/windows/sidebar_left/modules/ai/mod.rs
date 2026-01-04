@@ -5,7 +5,7 @@ use std::time::Duration;
 use gtk4::prelude::*;
 
 use crate::singletons::ai::{self, SESSION, AiChannelMessage};
-use crate::singletons::ai::types::AiConversationItemPayload;
+use crate::singletons::ai::types::{AiConversationDelta, AiConversationItem, AiConversationItemPayload};
 
 pub fn conversation_control_button(icon: &str, label: &str) -> gtk4::Button {
     let button = gtk4::Button::new();
@@ -183,42 +183,65 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                         chat.clear_messages();
                         conversation_title.set_text(&conversation.title);
 
+                        let mut processed_reasoning = false;
                         for (index, item) in session.items.read().unwrap().iter().enumerate() {
+                            let assert_assistant_last_message = |chat: &chat::Chat, item: &AiConversationItem| {
+                                if index == 0 || !matches!(
+                                    session.items.read().unwrap().get(index - 1)
+                                        .map(|it| match &it.payload {
+                                            AiConversationItemPayload::Message { role, .. } => role.as_str(),
+                                            _ => "",
+                                        }),
+                                    Some("assistant"),
+                                ) {
+                                    let message = chat::ChatMessage::new(
+                                        &chat::ChatRole::Assistant,
+                                        None,
+                                    );
+                                    message.set_id(item.id);
+                                    chat.add_message(message);
+                                }
+                            };
+
                             match &item.payload {
                                 AiConversationItemPayload::Message { role, content, .. } 
                                 if matches!(role.as_str(), "user" | "assistant") => {
-                                    let message = chat::ChatMessage::new(
-                                        match role.as_str() {
-                                            "user" => &chat::ChatRole::User,
-                                            "assistant" => &chat::ChatRole::Assistant,
-                                            _ => unreachable!(),
-                                        },
-                                        Some(content.clone()),
-                                    );
-
-                                    message.set_id(item.id);
-                                    chat.add_message(message);
-                                },
-
-                                AiConversationItemPayload::FunctionCall { name, arguments, .. } => {
-                                    // If index - 1 is not an assistant message, create an empty one and add it to
-                                    // the chat
-                                    if index == 0 || !matches!(
-                                        session.items.read().unwrap().get(index - 1)
-                                            .map(|it| match &it.payload {
-                                                AiConversationItemPayload::Message { role, .. } => role.as_str(),
-                                                _ => "",
-                                            }),
-                                        Some("assistant"),
-                                    ) {
+                                    // If we processed a reasoning payload before this one, modify the existing
+                                    // assistant message instead of adding a new one
+                                    if processed_reasoning {
+                                        if let Some(latest_message) = chat.messages.borrow_mut().last_mut()
+                                            && matches!(role.as_str(), "assistant")
+                                        {
+                                            latest_message.set_content(content);
+                                        }
+                                        processed_reasoning = false;
+                                    } else {
                                         let message = chat::ChatMessage::new(
-                                            &chat::ChatRole::Assistant,
-                                            None,
+                                            match role.as_str() {
+                                                "user" => &chat::ChatRole::User,
+                                                "assistant" => &chat::ChatRole::Assistant,
+                                                _ => unreachable!(),
+                                            },
+                                            Some(content.clone()),
                                         );
+
                                         message.set_id(item.id);
                                         chat.add_message(message);
                                     }
+                                },
 
+                                AiConversationItemPayload::Reasoning { summary, .. } => {
+                                    assert_assistant_last_message(&chat, item);
+                                    chat.append_thinking_block_to_latest_message(summary);
+
+                                    // This DOES have to come before assistant messages, so we use this to
+                                    // indicate that a new one should not be added if we encounter an assistant
+                                    // message next.
+                                    processed_reasoning = true;
+                                },
+
+                                AiConversationItemPayload::FunctionCall { name, arguments, .. } => {
+                                    assert_assistant_last_message(&chat, item);
                                     chat.append_tool_call_to_latest_message(name, arguments);
                                 },
 
@@ -261,9 +284,26 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                     },
 
                     AiChannelMessage::StreamChunk(chunk) => {
-                        if let Some(latest_message) = chat.messages.borrow_mut().last_mut() {
-                            let new_content = format!("{}{}", latest_message.content.as_deref().unwrap_or_default(), chunk);
-                            latest_message.set_content(&new_content);
+                        match chunk {
+                            AiConversationDelta::Message(delta) => {
+                                if let Some(latest_message) = chat.messages.borrow_mut().last_mut() {
+                                    let new_content = format!("{}{}", latest_message.content.as_deref().unwrap_or_default(), delta);
+                                    latest_message.set_content(&new_content);
+                                }
+                            },
+
+                            AiConversationDelta::Reasoning(delta) => {
+                                if let Some(latest_message) = chat.messages.borrow_mut().last_mut() {
+                                    let new_content = if let Some(thinking) = &mut latest_message.thinking {
+                                        let current_summary = thinking.summary.as_deref().unwrap_or_default();
+                                        format!("{}{}", current_summary, delta)
+                                    } else {
+                                        delta
+                                    };
+
+                                    latest_message.set_thinking(&new_content);
+                                }
+                            },
                         }
                     },
 

@@ -18,9 +18,90 @@ pub enum ChatRole {
 }
 
 #[derive(Debug, Clone)]
+pub struct ChatThinkingBlock {
+    pub root: gtk4::Box,
+    pub summary_root: gtk4cmark::view::MarkdownView,
+    pub summary: Option<String>,
+}
+
+impl ChatThinkingBlock {
+    pub fn new() -> Self {
+        let root = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        root.set_css_classes(&["ai-chat-thinking-block"]);
+
+        let thinking_dropdown_button = gtk4::Button::new();
+        thinking_dropdown_button.set_css_classes(&["ai-chat-thinking-dropdown-button"]);
+        thinking_dropdown_button.set_valign(gtk4::Align::Start);
+        thinking_dropdown_button.set_hexpand(true);
+        root.append(&thinking_dropdown_button);
+
+        let thinking_dropdown_header = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        thinking_dropdown_header.set_css_classes(&["ai-chat-thinking-dropdown-header"]);
+        thinking_dropdown_header.set_hexpand(true);
+        thinking_dropdown_button.set_child(Some(&thinking_dropdown_header));
+
+        let thinking_dropdown_indicator = gtk4::Label::new(Some("lightbulb_2"));
+        thinking_dropdown_indicator.set_css_classes(&["ai-chat-thinking-dropdown-indicator"]);
+        thinking_dropdown_indicator.set_halign(gtk4::Align::Start);
+        thinking_dropdown_indicator.set_xalign(0.0);
+        thinking_dropdown_header.append(&thinking_dropdown_indicator);
+
+        let thinking_dropdown_label = gtk4::Label::new(Some("Thoughts"));
+        thinking_dropdown_label.set_css_classes(&["ai-chat-thinking-dropdown-label"]);
+        thinking_dropdown_label.set_halign(gtk4::Align::Start);
+        thinking_dropdown_label.set_xalign(0.0);
+        thinking_dropdown_header.append(&thinking_dropdown_label);
+
+        let thinking_dropdown_arrow = gtk4::Label::new(Some("stat_minus_1"));
+        thinking_dropdown_arrow.set_css_classes(&["ai-chat-thinking-dropdown-arrow"]);
+        thinking_dropdown_arrow.set_halign(gtk4::Align::End);
+        thinking_dropdown_arrow.set_hexpand(true);
+        thinking_dropdown_arrow.set_xalign(1.0);
+        thinking_dropdown_header.append(&thinking_dropdown_arrow);
+
+        let thinking_dropdown_revealer = gtk4::Revealer::new();
+        thinking_dropdown_revealer.set_css_classes(&["ai-chat-thinking-dropdown-revealer"]);
+        thinking_dropdown_revealer.set_transition_type(gtk4::RevealerTransitionType::SlideDown);
+        thinking_dropdown_revealer.set_transition_duration(150);
+        thinking_dropdown_revealer.set_reveal_child(false);
+        root.append(&thinking_dropdown_revealer);
+
+        let summary = gtk4cmark::view::MarkdownView::default();
+        summary.set_css_classes(&["ai-chat-thinking-summary"]);
+        summary.set_overflow(gtk4::Overflow::Hidden);
+        summary.set_vexpand(true);
+        summary.set_hexpand(true);
+        thinking_dropdown_revealer.set_child(Some(&summary));
+
+        thinking_dropdown_button.connect_clicked(move |_| {
+            let currently_revealed = thinking_dropdown_revealer.reveals_child();
+            thinking_dropdown_revealer.set_reveal_child(!currently_revealed);
+
+            if currently_revealed {
+                thinking_dropdown_arrow.remove_css_class("expanded");
+            } else {
+                thinking_dropdown_arrow.add_css_class("expanded");
+            }
+        });
+
+        Self {
+            root,
+            summary_root: summary,
+            summary: None,
+        }
+    }
+
+    pub fn set_summary(&mut self, content: &str) {
+        self.summary_root.set_markdown(content);
+        self.summary = Some(content.to_owned());
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct ChatMessage {
     pub id: Rc<RefCell<Option<i64>>>,
     pub content: Option<String>,
+    pub thinking: Option<ChatThinkingBlock>,
     pub root: gtk4::Box,
     pub markdown: gtk4cmark::view::MarkdownView,
     pub loading: gtk4::DrawingArea,
@@ -180,6 +261,7 @@ impl ChatMessage {
         Self {
             id,
             content,
+            thinking: None,
             root,
             markdown,
             loading,
@@ -188,20 +270,47 @@ impl ChatMessage {
         }
     }
 
+    pub fn set_id(&self, id: i64) {
+        *self.id.borrow_mut() = Some(id);
+    }
+
     pub fn set_content(&mut self, content: &str) {
         let was_none = self.content.is_none();
+        let remove_loading = self.content.is_none() && self.thinking.is_none();
 
         self.content = Some(content.to_owned());
         self.markdown.set_markdown(content);
 
         if was_none {
-            self.root.remove(&self.loading);
-            self.root.insert_child_after(&self.markdown, Some(&self.header));
+            // If thinking is present, insert after that instead
+            if let Some(thinking_block) = &self.thinking {
+                self.root.insert_child_after(&self.markdown, Some(&thinking_block.root));
+            } else {
+                self.root.insert_child_after(&self.markdown, Some(&self.header));
+            }
+
+            if remove_loading {
+                self.root.remove(&self.loading);
+            }
         }
     }
 
-    pub fn set_id(&self, id: i64) {
-        *self.id.borrow_mut() = Some(id);
+    pub fn set_thinking(&mut self, content: &str) {
+        let was_none = self.thinking.is_none();
+        let remove_loading = self.thinking.is_none() && self.content.is_none();
+        
+        if was_none {
+            let mut thinking_block = ChatThinkingBlock::new();
+            thinking_block.set_summary(content);
+            self.thinking = Some(thinking_block.clone());
+            self.root.insert_child_after(&thinking_block.root, Some(&self.header));
+
+            if remove_loading {
+                self.root.remove(&self.loading);
+            }
+        } else if let Some(thinking_block) = &mut self.thinking {
+            thinking_block.set_summary(content);
+        }
     }
 }
 
@@ -280,6 +389,13 @@ impl Chat {
             if latest_message.content.is_none() {
                 latest_message.set_content("");
             }
+        }
+    }
+
+    pub fn append_thinking_block_to_latest_message(&self, summary: &str) {
+        let mut messages = self.messages.borrow_mut();
+        if let Some(latest_message) = messages.last_mut() {
+            latest_message.set_thinking(summary);
         }
     }
 }

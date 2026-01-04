@@ -45,6 +45,12 @@ pub enum AiConversationItemPayload {
 }
 
 #[derive(Debug, Clone)]
+pub enum AiConversationDelta {
+    Message(String),
+    Reasoning(String),
+}
+
+#[derive(Debug, Clone)]
 pub struct AiConversationItem {
     pub id: i64,
     pub conversation_id: i64,

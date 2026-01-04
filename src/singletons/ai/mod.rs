@@ -9,7 +9,10 @@ use std::sync::{Arc, LazyLock, OnceLock, RwLock};
 use crate::config::read_config;
 use crate::sql::wrappers::aichats;
 use crate::broadcast::BroadcastChannel;
-use self::types::{AiSession, AiConversation, AiConversationItem, AiConversationItemPayload};
+use self::types::{
+    AiSession,
+    AiConversation, AiConversationItem, AiConversationItemPayload, AiConversationDelta,
+};
 
 pub static CHANNEL: OnceLock<BroadcastChannel<AiChannelMessage>> = OnceLock::new();
 pub static SESSION: OnceLock<AiSession> = OnceLock::new();
@@ -23,7 +26,7 @@ pub const TIMESTAMP_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
 #[derive(Debug, Clone)]
 pub enum AiChannelMessage {
     StreamStart,
-    StreamChunk(String),
+    StreamChunk(AiConversationDelta),
     StreamComplete(i64), // message ID
     ToolCall(String, String), // (tool name, arguments)
     CycleStarted,
