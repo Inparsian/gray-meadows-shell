@@ -2,8 +2,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use gtk4::prelude::*;
 
-use crate::sql::wrappers::aichats::{self, SqlAiConversation};
-use crate::singletons::ai;
+use crate::sql::wrappers::aichats;
+use crate::singletons::ai::{self, AiChannelMessage, types::AiConversation};
 use crate::gesture;
 
 fn conversation_control_button(icon_name: &str, tooltip: &str) -> gtk4::Button {
@@ -25,14 +25,14 @@ fn message_count_str(count: usize) -> String {
 
 #[derive(Debug, Clone)]
 pub struct ConversationItem {
-    pub conversation: Rc<RefCell<SqlAiConversation>>,
+    pub conversation: Rc<RefCell<AiConversation>>,
     pub root: gtk4::Box,
     pub title_label: gtk4::Label,
     pub length_label: gtk4::Label,
 }
 
 impl ConversationItem {
-    pub fn new(conversation: SqlAiConversation) -> Self {
+    pub fn new(conversation: AiConversation) -> Self {
         let conversation = Rc::new(RefCell::new(conversation));
 
         let root = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
@@ -170,13 +170,13 @@ impl ConversationsList {
                 async move {
                     while let Ok(message) = receiver.recv().await {
                         match message {
-                            ai::AIChannelMessage::ConversationAdded(conversation) => {
+                            AiChannelMessage::ConversationAdded(conversation) => {
                                 let item = ConversationItem::new(conversation);
                                 me.root.append(&item.root);
                                 me.conversations.borrow_mut().push(item);
                             },
 
-                            ai::AIChannelMessage::ConversationDeleted(conversation_id) => {
+                            AiChannelMessage::ConversationDeleted(conversation_id) => {
                                 let mut conversations = me.conversations.borrow_mut();
                                 if let Some(pos) = conversations.iter().position(|item| item.conversation.borrow().id == conversation_id) {
                                     let item = conversations.remove(pos);
@@ -184,7 +184,7 @@ impl ConversationsList {
                                 }
                             },
 
-                            ai::AIChannelMessage::ConversationRenamed(conversation_id, new_title) => {
+                            AiChannelMessage::ConversationRenamed(conversation_id, new_title) => {
                                 let conversations = me.conversations.borrow();
                                 for item in conversations.iter() {
                                     if item.conversation.borrow().id == conversation_id {
@@ -194,7 +194,7 @@ impl ConversationsList {
                                 }
                             },
 
-                            ai::AIChannelMessage::ConversationTrimmed(conversation_id, _) => {
+                            AiChannelMessage::ConversationTrimmed(conversation_id, _) => {
                                 let conversations = me.conversations.borrow();
                                 for item in conversations.iter() {
                                     if item.conversation.borrow().id == conversation_id {
@@ -205,7 +205,7 @@ impl ConversationsList {
                                 }
                             },
 
-                            ai::AIChannelMessage::ConversationLoaded(conversation) => {
+                            AiChannelMessage::ConversationLoaded(conversation) => {
                                 let conversations = me.conversations.borrow();
                                 for item in conversations.iter() {
                                     if item.conversation.borrow().id == conversation.id {
@@ -216,8 +216,8 @@ impl ConversationsList {
                                 }
                             },
 
-                            ai::AIChannelMessage::CycleStarted |
-                            ai::AIChannelMessage::CycleFinished => {
+                            AiChannelMessage::CycleStarted |
+                            AiChannelMessage::CycleFinished => {
                                 let Some(current_conversation_id) = ai::current_conversation_id() else {
                                     continue;
                                 };

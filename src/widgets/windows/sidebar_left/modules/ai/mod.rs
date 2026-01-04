@@ -3,13 +3,9 @@ mod conversations;
 
 use std::time::Duration;
 use gtk4::prelude::*;
-use async_openai::types::responses::{
-    InputContent,
-    Item, MessageItem,
-    OutputMessageContent
-};
 
-use crate::singletons::ai::{self, SESSION};
+use crate::singletons::ai::{self, SESSION, AiChannelMessage};
+use crate::singletons::ai::types::AiConversationItemPayload;
 
 pub fn conversation_control_button(icon: &str, label: &str) -> gtk4::Button {
     let button = gtk4::Button::new();
@@ -179,7 +175,7 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
             let conversation_title = conversation_title.clone();
             while let Ok(message) = receiver.recv().await {
                 match message {
-                    ai::AIChannelMessage::ConversationLoaded(conversation) => {
+                    AiChannelMessage::ConversationLoaded(conversation) => {
                         let Some(session) = SESSION.get() else {
                             continue;
                         };
@@ -187,54 +183,67 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                         chat.clear_messages();
                         conversation_title.set_text(&conversation.title);
 
-                        for item in session.items.read().unwrap().iter() {
-                            if let Item::Message(msg) = &item.item {
-                                match msg {
-                                    MessageItem::Input(input_msg) => {
-                                        let message = chat::ChatMessage::new(
-                                            &chat::ChatRole::User,
-                                            match &input_msg.content.first() {
-                                                Some(InputContent::InputText(text_content)) => Some(text_content.text.clone()),
-                                                _ => Some("[Unsupported content]".to_owned()),
-                                            },
-                                        );
-                                        message.set_id(item.id);
-                                        chat.add_message(message);
-                                    },
+                        for (index, item) in session.items.read().unwrap().iter().enumerate() {
+                            match &item.payload {
+                                AiConversationItemPayload::Message { role, content, .. } 
+                                if matches!(role.as_str(), "user" | "assistant") => {
+                                    let message = chat::ChatMessage::new(
+                                        match role.as_str() {
+                                            "user" => &chat::ChatRole::User,
+                                            "assistant" => &chat::ChatRole::Assistant,
+                                            _ => unreachable!(),
+                                        },
+                                        Some(content.clone()),
+                                    );
 
-                                    MessageItem::Output(output_msg) => {
+                                    message.set_id(item.id);
+                                    chat.add_message(message);
+                                },
+
+                                AiConversationItemPayload::FunctionCall { name, arguments, .. } => {
+                                    // If index - 1 is not an assistant message, create an empty one and add it to
+                                    // the chat
+                                    if index == 0 || !matches!(
+                                        session.items.read().unwrap().get(index - 1)
+                                            .map(|it| match &it.payload {
+                                                AiConversationItemPayload::Message { role, .. } => role.as_str(),
+                                                _ => "",
+                                            }),
+                                        Some("assistant"),
+                                    ) {
                                         let message = chat::ChatMessage::new(
                                             &chat::ChatRole::Assistant,
-                                            match &output_msg.content.first() {
-                                                Some(OutputMessageContent::OutputText(text_content)) => Some(text_content.text.clone()),
-                                                _ => Some("[Unsupported content]".to_owned()),
-                                            },
+                                            None,
                                         );
                                         message.set_id(item.id);
                                         chat.add_message(message);
-                                    },
-                                }
+                                    }
+
+                                    chat.append_tool_call_to_latest_message(name, arguments);
+                                },
+
+                                _ => {},
                             }
                         }
                     },
 
-                    ai::AIChannelMessage::ConversationTrimmed(conversation_id, down_to_message_id) => {
+                    AiChannelMessage::ConversationTrimmed(conversation_id, down_to_message_id) => {
                         if ai::current_conversation_id() == Some(conversation_id) {
                             chat.trim_messages(down_to_message_id);
                         }
                     },
 
-                    ai::AIChannelMessage::ConversationRenamed(conversation_id, new_title) => {
+                    AiChannelMessage::ConversationRenamed(conversation_id, new_title) => {
                         if ai::current_conversation_id() == Some(conversation_id) {
                             conversation_title.set_text(&new_title);
                         }
                     },
 
-                    ai::AIChannelMessage::CycleStarted => {
+                    AiChannelMessage::CycleStarted => {
                         input_send_button.set_label("stop_circle");
                     },
 
-                    ai::AIChannelMessage::CycleFinished => {
+                    AiChannelMessage::CycleFinished => {
                         input_send_button.set_label("send");
 
                         if let Some(latest_message) = chat.messages.borrow_mut().last_mut()
@@ -244,27 +253,27 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                         }
                     },
 
-                    ai::AIChannelMessage::StreamStart => {
+                    AiChannelMessage::StreamStart => {
                         chat.add_message(chat::ChatMessage::new(
                             &chat::ChatRole::Assistant,
                             None,
                         ));
                     },
 
-                    ai::AIChannelMessage::StreamChunk(chunk) => {
+                    AiChannelMessage::StreamChunk(chunk) => {
                         if let Some(latest_message) = chat.messages.borrow_mut().last_mut() {
                             let new_content = format!("{}{}", latest_message.content.as_deref().unwrap_or_default(), chunk);
                             latest_message.set_content(&new_content);
                         }
                     },
 
-                    ai::AIChannelMessage::StreamComplete(id) => {
+                    AiChannelMessage::StreamComplete(id) => {
                         if let Some(latest_message) = chat.messages.borrow_mut().last_mut() {
                             latest_message.set_id(id);
                         }
                     },
 
-                    ai::AIChannelMessage::ToolCall(tool_name, arguments) => {
+                    AiChannelMessage::ToolCall(tool_name, arguments) => {
                         chat.append_tool_call_to_latest_message(&tool_name, &arguments);
                     },
 
@@ -335,7 +344,7 @@ pub fn new() -> gtk4::Box {
 
         gtk4::glib::spawn_future_local(async move {
             while let Ok(message) = receiver.recv().await {
-                if let ai::AIChannelMessage::ConversationLoaded(_) = message {
+                if let AiChannelMessage::ConversationLoaded(_) = message {
                     ui_stack.set_visible_child_name("chat_ui");
                 }
             }

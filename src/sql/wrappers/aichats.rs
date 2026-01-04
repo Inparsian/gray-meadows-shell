@@ -1,48 +1,6 @@
-use serde::{Serialize, Deserialize};
-
 use crate::SQL_CONNECTION;
+use crate::singletons::ai::types::{AiConversation, AiConversationItem, AiConversationItemPayload};
 use super::super::last_insert_rowid;
-
-#[derive(Debug, Clone)]
-pub struct SqlAiConversation {
-    pub id: i64,
-    pub title: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "snake_case")]
-pub enum SqlAiConversationItemPayload {
-    Message {
-        id: String,
-        role: String,
-        content: String,
-    },
-
-    Reasoning {
-        id: String,
-        summary: String,
-        encrypted_content: String,
-    },
-
-    FunctionCall {
-        id: String,
-        name: String,
-        arguments: String,
-        call_id: String,
-    },
-
-    FunctionCallOutput {
-        call_id: String,
-        output: String,
-    },
-}
-
-pub struct SqlAiConversationItem {
-    pub id: i64,
-    pub conversation_id: i64,
-    pub payload: SqlAiConversationItemPayload,
-    pub timestamp: Option<String>,
-}
 
 /// Ensures there is at least one AI chat conversation in the database.
 pub fn ensure_default_conversation() -> Result<(), Box<dyn std::error::Error>> {
@@ -62,7 +20,7 @@ pub fn ensure_default_conversation() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 /// Adds an item to the specified AI chat conversation and returns its new ID.
-pub fn add_item(item: &SqlAiConversationItem) -> Result<i64, Box<dyn std::error::Error>> {
+pub fn add_item(item: &AiConversationItem) -> Result<i64, Box<dyn std::error::Error>> {
     if let Some(connection) = SQL_CONNECTION.get() {
         let connection = connection.lock()?;
         let statement = format!(
@@ -145,7 +103,7 @@ pub fn rename_conversation(conversation_id: i64, new_title: &str) -> Result<(), 
 }
 
 /// Retrieves information about an AI chat conversation by its ID.
-pub fn get_conversation(conversation_id: i64) -> Result<SqlAiConversation, Box<dyn std::error::Error>> {
+pub fn get_conversation(conversation_id: i64) -> Result<AiConversation, Box<dyn std::error::Error>> {
     if let Some(connection) = SQL_CONNECTION.get() {
         let connection = connection.lock()?;
         let statement = format!(
@@ -154,7 +112,7 @@ pub fn get_conversation(conversation_id: i64) -> Result<SqlAiConversation, Box<d
         );
         let mut cursor = connection.prepare(&statement)?;
         if cursor.next()? == sqlite::State::Row {
-            let conversation = SqlAiConversation {
+            let conversation = AiConversation {
                 id: cursor.read::<i64, _>(0)?,
                 title: cursor.read::<String, _>(1)?,
             };
@@ -166,13 +124,13 @@ pub fn get_conversation(conversation_id: i64) -> Result<SqlAiConversation, Box<d
 }
 
 /// Retrieves all AI chat conversations.
-pub fn get_all_conversations() -> Result<Vec<SqlAiConversation>, Box<dyn std::error::Error>> {
+pub fn get_all_conversations() -> Result<Vec<AiConversation>, Box<dyn std::error::Error>> {
     let mut conversations = Vec::new();
     if let Some(connection) = SQL_CONNECTION.get() {
         let connection = connection.lock()?;
         let mut cursor = connection.prepare("SELECT id, title FROM aichat_conversations ORDER BY created_at ASC")?;
         while cursor.next()? == sqlite::State::Row {
-            let conversation = SqlAiConversation {
+            let conversation = AiConversation {
                 id: cursor.read::<i64, _>(0)?,
                 title: cursor.read::<String, _>(1)?,
             };
@@ -185,7 +143,7 @@ pub fn get_all_conversations() -> Result<Vec<SqlAiConversation>, Box<dyn std::er
 }
 
 /// Retrieves items for the specified AI chat conversation.
-pub fn get_items(conversation_id: i64) -> Result<Vec<SqlAiConversationItem>, Box<dyn std::error::Error>> {
+pub fn get_items(conversation_id: i64) -> Result<Vec<AiConversationItem>, Box<dyn std::error::Error>> {
     let mut items = Vec::new();
     if let Some(connection) = SQL_CONNECTION.get() {
         let connection = connection.lock()?;
@@ -196,7 +154,7 @@ pub fn get_items(conversation_id: i64) -> Result<Vec<SqlAiConversationItem>, Box
         );
         let mut cursor = connection.prepare(&statement)?;
         while cursor.next()? == sqlite::State::Row {
-            items.push(SqlAiConversationItem {
+            items.push(AiConversationItem {
                 id: cursor.read::<i64, _>(0)?,
                 conversation_id: cursor.read::<i64, _>(1)?,
                 timestamp: cursor.read::<Option<String>, _>(2)?,
@@ -213,9 +171,8 @@ pub fn get_items(conversation_id: i64) -> Result<Vec<SqlAiConversationItem>, Box
 pub fn get_messages_length(conversation_id: i64) -> Result<usize, Box<dyn std::error::Error>> {
     Ok(get_items(conversation_id)?
         .into_iter()
-        //.filter(|msg| matches!(msg.role.as_str(), "user" | "assistant"))
         .filter(|item| matches!(&item.payload,
-            SqlAiConversationItemPayload::Message { role, .. }
+            AiConversationItemPayload::Message { role, .. }
             if role == "user" || role == "assistant"
         ))
         .count())

@@ -4,7 +4,6 @@ use std::path::Path;
 use gtk4::prelude::*;
 use relm4::RelmIterChildrenExt as _;
 
-
 use crate::USERNAME;
 use crate::config::read_config;
 use crate::filesystem;

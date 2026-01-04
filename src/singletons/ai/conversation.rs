@@ -1,26 +1,13 @@
 use std::error::Error;
 
 use crate::sql::wrappers::aichats;
-use super::{sql, CHANNEL, SESSION, AIChannelMessage, AISessionItem};
+use super::{CHANNEL, SESSION, AiChannelMessage};
+use super::types::AiConversationItem;
 
-fn read_conversation(id: i64) -> Result<Vec<AISessionItem>, Box<dyn Error>> {
-    let sql_items = aichats::get_items(id)?;
-
-    let mut chat_items = Vec::new();
-    for item in &sql_items {
-        let Some(chat_item) = sql::sql_item_to_item(&item.payload) else {
-            continue;
-        };
-
-        chat_items.push(AISessionItem {
-            id: item.id,
-            timestamp: item.timestamp.clone(),
-            item: chat_item,
-        });
-    }
-
-    chat_items.sort_by_key(|item| item.id);
-    Ok(chat_items)
+fn read_conversation(id: i64) -> Result<Vec<AiConversationItem>, Box<dyn Error>> {
+    let mut sql_items = aichats::get_items(id)?;
+    sql_items.sort_by_key(|item| item.id);
+    Ok(sql_items)
 }
 
 pub fn load_conversation(id: i64) {
@@ -33,7 +20,7 @@ pub fn load_conversation(id: i64) {
                         *session.items.write().unwrap() = items;
                         *conversation = Some(conv);
                         if let Some(channel) = CHANNEL.get() {
-                            channel.spawn_send(AIChannelMessage::ConversationLoaded(conversation.as_ref().unwrap().clone()));
+                            channel.spawn_send(AiChannelMessage::ConversationLoaded(conversation.as_ref().unwrap().clone()));
                         }
                     },
                 
@@ -65,7 +52,7 @@ pub fn add_conversation(title: &str) {
             match aichats::get_conversation(conversation_id) {
                 Ok(conversation) => {
                     if let Some(channel) = CHANNEL.get() {
-                        channel.spawn_send(AIChannelMessage::ConversationAdded(conversation));
+                        channel.spawn_send(AiChannelMessage::ConversationAdded(conversation));
                     }
                 },
 
@@ -94,7 +81,7 @@ pub fn rename_conversation(conversation_id: i64, new_title: &str) {
         }
 
         if let Some(channel) = CHANNEL.get() {
-            channel.spawn_send(AIChannelMessage::ConversationRenamed(conversation_id, new_title.to_owned()));
+            channel.spawn_send(AiChannelMessage::ConversationRenamed(conversation_id, new_title.to_owned()));
         }
     }
 }
@@ -112,7 +99,7 @@ pub fn delete_conversation(conversation_id: i64) {
         }
 
         if let Some(channel) = CHANNEL.get() {
-            channel.spawn_send(AIChannelMessage::ConversationDeleted(conversation_id));
+            channel.spawn_send(AiChannelMessage::ConversationDeleted(conversation_id));
         }
     }
 }
