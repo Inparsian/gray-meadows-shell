@@ -2,8 +2,8 @@ use crate::USERNAME;
 use crate::singletons::hyprland::HYPRLAND;
 use crate::singletons::mpris;
 
-fn ms_to_readable_duration(ms: u64) -> String {
-    let total_seconds = ms / 1000;
+fn us_to_readable_duration(us: u64) -> String {
+    let total_seconds = us / 1_000_000;
     let hours = total_seconds / 3600;
     let minutes = (total_seconds % 3600) / 60;
     let seconds = total_seconds % 60;
@@ -28,9 +28,9 @@ pub fn transform_variables(input: &str) -> String {
                     .replace("{MPRIS_ARTIST}", &player.metadata.artist.unwrap_or(vec!["Unknown".into()]).join(", "))
                     .replace("{MPRIS_ALBUM}", &player.metadata.album.unwrap_or("Unknown".to_owned()))
                     .replace("{MPRIS_LENGTH_MS}", &(player.metadata.length.unwrap_or(0) / 1000).to_string())
-                    .replace("{MPRIS_LENGTH_READABLE}", &ms_to_readable_duration(player.metadata.length.unwrap_or(0) as u64))
+                    .replace("{MPRIS_LENGTH_READABLE}", &us_to_readable_duration(player.metadata.length.unwrap_or(0) as u64))
                     .replace("{MPRIS_POSITION_MS}", &(player.position / 1000).to_string())
-                    .replace("{MPRIS_POSITION_READABLE}", &ms_to_readable_duration(player.position as u64))
+                    .replace("{MPRIS_POSITION_READABLE}", &us_to_readable_duration(player.position as u64))
                     .replace("{MPRIS_PLAYBACK_STATUS}", &player.playback_status.as_string())
                     .replace("{MPRIS_LOOP_STATUS}", &player.loop_status.as_string())
                     .replace("{MPRIS_SHUFFLE}", &player.shuffle.to_string());
