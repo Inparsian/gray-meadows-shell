@@ -32,6 +32,8 @@ pub struct OpenAiConfig {
 pub struct GeminiConfig {
     pub api_key: String,
     pub model: String,
+    pub thinking_budget: i64,
+    pub thinking_level: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -71,6 +73,8 @@ impl Default for Config {
                 gemini: GeminiConfig {
                     api_key: "your-api-key-here".to_owned(),
                     model: "gemini-2.0-flash".to_owned(),
+                    thinking_budget: -1,
+                    thinking_level: "budget".to_owned(),
                 },
                 features: AiFeatures {
                     power_control: true,

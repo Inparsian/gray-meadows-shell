@@ -44,6 +44,17 @@ api_key = "your-api-key-here"
 # The model to use for AI tasks.
 model = "gemini-2.0-flash"
 
+# The thinking budget for the model in tokens.
+# Setting this to 0 disables thinking.
+# Setting this to -1 makes the model decide how much thinking to do on its own.
+thinking_budget = -1
+
+# The thinking level for the model.
+# Can be either "budget", "low" or "high".
+# Because this is mutually exclusive with thinking_budget, setting this to "budget" makes the model
+# use the thinking_budget setting.
+thinking_level = "budget"
+
 [ai.features]
 # Whether the AI can perform system power control actions (shutdown, restart, etc.).
 power_control = true

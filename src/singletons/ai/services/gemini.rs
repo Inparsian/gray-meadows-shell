@@ -1,7 +1,7 @@
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
 use futures_lite::StreamExt as _;
-use gemini_rust::{Content, ContentBuilder, FunctionCall, FunctionDeclaration, Gemini, Part, Role, Tool};
+use gemini_rust::{Content, ContentBuilder, FunctionCall, FunctionDeclaration, Gemini, Part, Role, ThinkingConfig, ThinkingLevel, Tool};
 
 use crate::broadcast::BroadcastChannel;
 use crate::config::read_config;
@@ -142,9 +142,13 @@ impl super::AiService for GeminiService {
         stop_cycle_flag: Arc<RwLock<bool>>,
     ) -> Pin<Box<dyn Future<Output = anyhow::Result<super::AiServiceResult>> + 'static + Send>> {
         let channel = channel.clone();
-        let api_key = read_config().ai.gemini.api_key.clone();
-        let model = read_config().ai.gemini.model.clone();
-        let system_prompt = read_config().ai.prompt.clone();
+        let config = read_config();
+
+        let api_key = config.ai.gemini.api_key.clone();
+        let model = config.ai.gemini.model.clone();
+        let system_prompt = config.ai.prompt.clone();
+        let thinking_budget = config.ai.gemini.thinking_budget as i32;
+        let thinking_level = config.ai.gemini.thinking_level.clone();
 
         Box::pin(async move {
             let client = Gemini::with_model(api_key, format!("models/{}", model))
@@ -155,8 +159,20 @@ impl super::AiService for GeminiService {
                 &client,
             );
 
+            let thinking_level = match thinking_level.as_str() {
+                "low" => Some(ThinkingLevel::Low),
+                "high" => Some(ThinkingLevel::High),
+                _ => None,
+            };
+
+            let thinking_budget = thinking_level.is_none().then_some(thinking_budget);
+
             builder = builder.with_system_prompt(transform_variables(system_prompt.as_str()));
-            builder = builder.with_thoughts_included(true);
+            builder = builder.with_thinking_config(ThinkingConfig {
+                thinking_budget,
+                include_thoughts: Some(true),
+                thinking_level,
+            });
             
             if let Ok(tools) = tools::get_tools() {
                 for tool in tools {
