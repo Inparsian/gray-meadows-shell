@@ -73,14 +73,17 @@ impl ChatThinkingBlock {
         summary.set_hexpand(true);
         thinking_dropdown_revealer.set_child(Some(&summary));
 
-        thinking_dropdown_button.connect_clicked(move |_| {
-            let currently_revealed = thinking_dropdown_revealer.reveals_child();
-            thinking_dropdown_revealer.set_reveal_child(!currently_revealed);
-
-            if currently_revealed {
-                thinking_dropdown_arrow.remove_css_class("expanded");
-            } else {
-                thinking_dropdown_arrow.add_css_class("expanded");
+        thinking_dropdown_button.connect_clicked({
+            let root = root.clone();
+            move |_| {
+                let currently_revealed = thinking_dropdown_revealer.reveals_child();
+                thinking_dropdown_revealer.set_reveal_child(!currently_revealed);
+                
+                if currently_revealed {
+                    root.remove_css_class("expanded");
+                } else {
+                    root.add_css_class("expanded");
+                }
             }
         });
 

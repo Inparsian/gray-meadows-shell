@@ -94,15 +94,6 @@
                     border-radius: 0px;
                     padding: 6px 12px;
 
-                    &:hover, &:focus {
-                        background: #ffffff04;
-                        outline: none;
-                    }
-
-                    &:active {
-                        background: #ffffff08;
-                    }
-
                     .ai-chat-thinking-dropdown-indicator {
                         @include material-icons;
                         color: $foreground-color-secondary;
@@ -120,11 +111,24 @@
                         padding-top: 3px;
                         margin-top: -3px;
                         transition: transform 0.25s cubic-bezier(0.5, 0, 0.25, 1);
+                    }
+                }
 
-                        &.expanded {
-                            transform: rotate(180deg);
+                &:not(.expanded) {
+                    .ai-chat-thinking-dropdown-button {
+                        &:hover, &:focus {
+                            background: #ffffff04;
+                            outline: none;
+                        }
+
+                        &:active {
+                            background: #ffffff08;
                         }
                     }
+                }
+
+                &.expanded .ai-chat-thinking-dropdown-button .ai-chat-thinking-dropdown-arrow {
+                    transform: rotate(180deg);
                 }
 
                 .ai-chat-thinking-summary {
