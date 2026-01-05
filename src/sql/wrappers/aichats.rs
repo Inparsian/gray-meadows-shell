@@ -20,10 +20,13 @@ pub fn get_state_conversation_id() -> Result<Option<i64>, Box<dyn std::error::Er
 pub fn set_state_conversation_id(conversation_id: Option<i64>) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(connection) = SQL_CONNECTION.get() {
         let connection = connection.lock()?;
-        let statement = conversation_id.map_or_else(|| "UPDATE aichat_state SET current_conversation_id = NULL WHERE id = 1".to_owned(), |id| format!(
-            "UPDATE aichat_state SET current_conversation_id = {} WHERE id = 1",
-            id
-        ));
+        let statement = conversation_id.map_or_else(
+            || "UPDATE aichat_state SET current_conversation_id = NULL WHERE id = 1".to_owned(), 
+            |id| format!(
+                "UPDATE aichat_state SET current_conversation_id = {} WHERE id = 1",
+                id
+            )
+        );
         connection.execute(&statement)?;
         Ok(())
     } else {

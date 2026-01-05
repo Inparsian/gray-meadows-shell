@@ -113,7 +113,11 @@ pub fn minimal() -> gtk4::Box {
                     // Make pixbuf from album art
                     match gtk4::gdk_pixbuf::Pixbuf::from_file(&*art_url) {
                         Ok(pixbuf) => {
-                            if let Some(scaled_pixbuf) = pixbuf.scale_simple(ALBUM_ART_WIDTH, ALBUM_ART_HEIGHT, gtk4::gdk_pixbuf::InterpType::Tiles) {
+                            if let Some(scaled_pixbuf) = pixbuf.scale_simple(
+                                ALBUM_ART_WIDTH, 
+                                ALBUM_ART_HEIGHT, 
+                                gtk4::gdk_pixbuf::InterpType::Tiles
+                            ) {
                                 scaled_pixbuf.saturate_and_pixelate(
                                     &scaled_pixbuf,
                                     0.0,

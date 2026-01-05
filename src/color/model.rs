@@ -418,9 +418,17 @@ impl Oklch {
         let linear_rgba = rgba.as_linear();
 
         // Linear RGB -> Cube-rooted LMS
-        let lms_l = 0.051_457_565_3_f64.mul_add(linear_rgba.blue, 0.412_165_612_0_f64.mul_add(linear_rgba.red, 0.536_275_208_0 * linear_rgba.green)).cbrt();
-        let lms_m = 0.107_406_579_0_f64.mul_add(linear_rgba.blue, 0.211_859_107_0_f64.mul_add(linear_rgba.red, 0.680_718_958_4 * linear_rgba.green)).cbrt();
-        let lms_s = 0.629_323_455_7_f64.mul_add(linear_rgba.blue, 0.088_309_794_7_f64.mul_add(linear_rgba.red, 0.281_847_417_4 * linear_rgba.green)).cbrt();
+        let lms_l = 0.051_457_565_3_f64
+            .mul_add(linear_rgba.blue, 0.412_165_612_0_f64.mul_add(linear_rgba.red, 0.536_275_208_0 * linear_rgba.green))
+            .cbrt();
+
+        let lms_m = 0.107_406_579_0_f64
+            .mul_add(linear_rgba.blue, 0.211_859_107_0_f64.mul_add(linear_rgba.red, 0.680_718_958_4 * linear_rgba.green))
+            .cbrt();
+
+        let lms_s = 0.629_323_455_7_f64
+            .mul_add(linear_rgba.blue, 0.088_309_794_7_f64.mul_add(linear_rgba.red, 0.281_847_417_4 * linear_rgba.green))
+            .cbrt();
 
         // LMS -> Oklab
         let lightness = 0.004_072_046_8_f64.mul_add(-lms_s, 0.210_454_255_3_f64.mul_add(lms_l, 0.793_617_785_0 * lms_m));

@@ -6,7 +6,17 @@ use async_openai::Client;
 use async_openai::config::OpenAIConfig;
 use async_openai::error::OpenAIError;
 use async_openai::types::responses::{
-    AssistantRole, CreateResponseArgs, FunctionCallOutput, FunctionCallOutputItemParam, FunctionTool, FunctionToolCall, InputContent, InputMessage, InputRole, InputTextContent, Item, MessageItem, OutputContent, OutputItem, OutputMessage, OutputMessageContent, OutputStatus, OutputTextContent, Reasoning, ReasoningEffort, ReasoningItem, ReasoningSummary, ResponseStream, ResponseStreamEvent, ServiceTier, Summary, SummaryPart, Tool
+    AssistantRole,
+    CreateResponseArgs, 
+    FunctionCallOutput, FunctionCallOutputItemParam, FunctionTool, FunctionToolCall,
+    InputContent, InputMessage, InputRole, InputTextContent,
+    Item, MessageItem,
+    OutputContent, OutputItem, OutputMessage, OutputMessageContent, OutputStatus, OutputTextContent,
+    Reasoning, ReasoningEffort, ReasoningItem, ReasoningSummary,
+    ResponseStream, ResponseStreamEvent,
+    ServiceTier,
+    Summary, SummaryPart,
+    Tool
 };
 
 use crate::broadcast::BroadcastChannel;
