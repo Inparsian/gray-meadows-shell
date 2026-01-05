@@ -48,6 +48,21 @@ pub fn establish_connection() -> Result<Connection, Box<dyn std::error::Error>> 
         )
     ")?;
 
+    // AI chat state
+    connection.execute("
+        CREATE TABLE IF NOT EXISTS aichat_state (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            current_conversation_id INTEGER,
+            last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(current_conversation_id) REFERENCES aichat_conversations(id) ON DELETE SET NULL
+        )
+    ")?;
+
+    connection.execute("
+        INSERT OR IGNORE INTO aichat_state (id, current_conversation_id) 
+        VALUES (1, NULL)
+    ")?;
+
     // Tables for AI chat conversations
     connection.execute("
         CREATE TABLE IF NOT EXISTS aichat_conversations (

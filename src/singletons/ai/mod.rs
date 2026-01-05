@@ -118,7 +118,11 @@ pub fn activate() {
     let _ = SESSION.set(session);
     let _ = CHANNEL.set(BroadcastChannel::new(100));
 
-    conversation::load_first_conversation();
+    if let Ok(Some(id)) = aichats::get_state_conversation_id() {
+        conversation::load_conversation(id);
+    } else {
+        conversation::load_first_conversation();
+    }
 }
 
 pub async fn start_request_cycle() {

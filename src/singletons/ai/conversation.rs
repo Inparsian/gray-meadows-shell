@@ -22,6 +22,10 @@ pub fn load_conversation(id: i64) {
                         if let Some(channel) = CHANNEL.get() {
                             channel.spawn_send(AiChannelMessage::ConversationLoaded(conversation.as_ref().unwrap().clone()));
                         }
+
+                        if let Err(err) = aichats::set_state_conversation_id(Some(id)) {
+                            eprintln!("Failed to update current AI chat conversation in database: {}", err);
+                        }
                     },
                 
                     Err(err) => {

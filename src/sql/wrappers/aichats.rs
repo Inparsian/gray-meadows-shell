@@ -2,6 +2,35 @@ use crate::SQL_CONNECTION;
 use crate::singletons::ai::types::{AiConversation, AiConversationItem, AiConversationItemPayload};
 use super::super::last_insert_rowid;
 
+/// Gets the current conversation ID stored in the AI chat state.
+pub fn get_state_conversation_id() -> Result<Option<i64>, Box<dyn std::error::Error>> {
+    if let Some(connection) = SQL_CONNECTION.get() {
+        let connection = connection.lock()?;
+        let mut cursor = connection.prepare("SELECT current_conversation_id FROM aichat_state WHERE id = 1")?;
+        if cursor.next()? == sqlite::State::Row {
+            let conversation_id = cursor.read::<Option<i64>, _>(0)?;
+            return Ok(conversation_id);
+        }
+    }
+
+    Err("No database connection available".into())
+}
+
+/// Sets the current conversation ID in the AI chat state.
+pub fn set_state_conversation_id(conversation_id: Option<i64>) -> Result<(), Box<dyn std::error::Error>> {
+    if let Some(connection) = SQL_CONNECTION.get() {
+        let connection = connection.lock()?;
+        let statement = conversation_id.map_or_else(|| "UPDATE aichat_state SET current_conversation_id = NULL WHERE id = 1".to_owned(), |id| format!(
+            "UPDATE aichat_state SET current_conversation_id = {} WHERE id = 1",
+            id
+        ));
+        connection.execute(&statement)?;
+        Ok(())
+    } else {
+        Err("No database connection available".into())
+    }
+}
+
 /// Ensures there is at least one AI chat conversation in the database.
 pub fn ensure_default_conversation() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(connection) = SQL_CONNECTION.get() {
