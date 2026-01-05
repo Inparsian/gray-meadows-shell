@@ -58,9 +58,9 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
     widget.append(&conversation_controls);
 
     let conversation_title = gtk4::Label::new(Some("Untitled"));
-    conversation_title.set_halign(gtk4::Align::Start);
     conversation_title.set_xalign(0.0);
     conversation_title.set_hexpand(true);
+    conversation_title.set_ellipsize(gtk4::pango::EllipsizeMode::End);
     conversation_title.set_css_classes(&["ai-chat-conversation-title"]);
     conversation_controls.append(&conversation_title);
 

@@ -261,6 +261,10 @@
                 color: $foreground-color-secondary;
             }
 
+            .ai-chat-conversation-item-controls-box {
+                margin-left: 16px;
+            }
+
             .ai-chat-conversation-item-control-button {
                 @include material-icons;
                 font-size: 16px;

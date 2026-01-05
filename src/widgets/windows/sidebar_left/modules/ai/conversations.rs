@@ -40,18 +40,20 @@ impl ConversationItem {
 
         let info_box = gtk4::Box::new(gtk4::Orientation::Vertical, 4);
         info_box.set_css_classes(&["ai-chat-conversation-item-info-box"]);
+        info_box.set_hexpand(true);
         root.append(&info_box);
         
         let title_label = gtk4::Label::new(Some(&conversation.borrow().title));
         title_label.set_css_classes(&["ai-chat-conversation-item-title-label"]);
-        title_label.set_halign(gtk4::Align::Start);
+        title_label.set_hexpand(true);
         title_label.set_xalign(0.0);
+        title_label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
         info_box.append(&title_label);
 
         let title_input = gtk4::Entry::new();
         title_input.set_text(&conversation.borrow().title);
         title_input.set_css_classes(&["ai-chat-conversation-item-title-input"]);
-        title_input.set_halign(gtk4::Align::Start);
+        title_input.set_hexpand(true);
         title_input.set_visible(false);
         title_input.connect_activate({
             let conversation = conversation.clone();
@@ -79,22 +81,21 @@ impl ConversationItem {
         let controls_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 8);
         controls_box.set_css_classes(&["ai-chat-conversation-item-controls-box"]);
 
-        let load_button = conversation_control_button("download", "Load Conversation");
-        load_button.connect_clicked({
-            let conversation = conversation.clone();
-            move |_| {
-                ai::conversation::load_conversation(conversation.borrow().id);
-            }
-        });
-        controls_box.append(&load_button);
-
         let rename_button = conversation_control_button("edit", "Rename Conversation");
         rename_button.connect_clicked({
             let title_label = title_label.clone();
+            let title_input = title_input.clone();
+            let conversation = conversation.clone();
             move |_| {
-                title_label.set_visible(false);
-                title_input.set_visible(true);
-                title_input.grab_focus();
+                if WidgetExt::is_visible(&title_input) {
+                    title_label.set_visible(true);
+                    title_input.set_visible(false);
+                } else {
+                    title_label.set_visible(false);
+                    title_input.set_visible(true);
+                    title_input.set_text(&conversation.borrow().title);
+                    title_input.grab_focus();
+                }
             }
         });
         controls_box.append(&rename_button);
@@ -110,10 +111,8 @@ impl ConversationItem {
 
         let controls_revealer = gtk4::Revealer::new();
         controls_revealer.set_css_classes(&["ai-chat-conversation-item-controls-revealer"]);
-        controls_revealer.set_halign(gtk4::Align::End);
         controls_revealer.set_valign(gtk4::Align::Start);
-        controls_revealer.set_hexpand(true);
-        controls_revealer.set_transition_type(gtk4::RevealerTransitionType::SlideLeft);
+        controls_revealer.set_transition_type(gtk4::RevealerTransitionType::Crossfade);
         controls_revealer.set_transition_duration(200);
         controls_revealer.set_child(Some(&controls_box));
         root.append(&controls_revealer);
@@ -127,6 +126,13 @@ impl ConversationItem {
 
         root.add_controller(gesture::on_leave(move || {
             controls_revealer.set_reveal_child(false);
+        }));
+
+        info_box.add_controller(gesture::on_primary_up({
+            let conversation = conversation.clone();
+            move |_, _, _| if !WidgetExt::is_visible(&title_input) {
+                ai::conversation::load_conversation(conversation.borrow().id);
+            }
         }));
 
         Self {
