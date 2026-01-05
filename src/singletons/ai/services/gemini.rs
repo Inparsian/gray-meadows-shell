@@ -1,5 +1,3 @@
-#![allow(dead_code, unused_imports)]
-use std::collections::HashMap;
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
 use futures_lite::StreamExt as _;
