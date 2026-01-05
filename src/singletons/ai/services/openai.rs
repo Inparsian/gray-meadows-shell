@@ -145,7 +145,7 @@ impl OpenAiService {
                 }))
             },
 
-            AiConversationItemPayload::FunctionCall { id, name, arguments, call_id } => {
+            AiConversationItemPayload::FunctionCall { id, name, arguments, call_id, .. } => {
                 Some(Item::FunctionCall(FunctionToolCall {
                     id: Some(id),
                     name,
@@ -155,7 +155,7 @@ impl OpenAiService {
                 }))
             },
 
-            AiConversationItemPayload::FunctionCallOutput { call_id, output } => {
+            AiConversationItemPayload::FunctionCallOutput { call_id, output, .. } => {
                 Some(Item::FunctionCallOutput(FunctionCallOutputItemParam {
                     call_id,
                     output: FunctionCallOutput::Text(output),
@@ -182,6 +182,7 @@ impl OpenAiService {
                             Some(InputContent::InputText(text_content)) => text_content.text.clone(),
                             _ => String::new(),
                         },
+                        thought_signature: None,
                     }),
 
                     MessageItem::Output(output_msg) => Some(AiConversationItemPayload::Message {
@@ -191,6 +192,7 @@ impl OpenAiService {
                             Some(OutputMessageContent::OutputText(text_content)) => text_content.text.clone(),
                             _ => String::new(),
                         },
+                        thought_signature: None,
                     }),
                 }
             },
@@ -209,6 +211,7 @@ impl OpenAiService {
                 name: func_call.name.clone(),
                 arguments: func_call.arguments.clone(),
                 call_id: func_call.call_id,
+                thought_signature: None,
             }),
 
             Item::FunctionCallOutput(func_output) => Some(AiConversationItemPayload::FunctionCallOutput {
@@ -217,6 +220,7 @@ impl OpenAiService {
                     FunctionCallOutput::Text(text) => text.clone(),
                     _ => String::new(),
                 },
+                name: None,
             }),
 
             _ => None,

@@ -31,6 +31,8 @@ pub enum AiConversationItemPayload {
         id: String,
         role: String,
         content: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        thought_signature: Option<String>,
     },
 
     Reasoning {
@@ -44,11 +46,17 @@ pub enum AiConversationItemPayload {
         name: String,
         arguments: String,
         call_id: String,
+
+        // This is a Gemini-specific field, Gemini 3 requires that we return this
+        #[serde(skip_serializing_if = "Option::is_none")]
+        thought_signature: Option<String>,
     },
 
     FunctionCallOutput {
         call_id: String,
         output: String,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        name: Option<String>,
     },
 }
 

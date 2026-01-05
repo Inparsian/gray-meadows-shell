@@ -19,6 +19,7 @@ pub static SESSION: OnceLock<AiSession> = OnceLock::new();
 
 static SERVICES: LazyLock<Vec<Box<dyn services::AiService>>> = LazyLock::new(|| vec![
     Box::new(services::openai::OpenAiService::default()),
+    Box::new(services::gemini::GeminiService {}),
 ]);
 
 pub const TIMESTAMP_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
@@ -185,7 +186,7 @@ pub async fn start_request_cycle() {
                         let args = arguments.clone();
                         async move {
                             let result = tools::call_tool(&name, &args);
-                            (id, result)
+                            (id, name, result)
                         }
                     });
 
@@ -195,8 +196,8 @@ pub async fn start_request_cycle() {
                 let mut function_call_outputs = Vec::new();
                 for handle in handles {
                     match handle.await {
-                        Ok((call_id, output)) => {
-                            function_call_outputs.push((call_id, output));
+                        Ok((call_id, function_name, output)) => {
+                            function_call_outputs.push((call_id, function_name, output));
                         },
 
                         Err(e) => {
@@ -205,13 +206,14 @@ pub async fn start_request_cycle() {
                     }
                 }
 
-                for (call_id, output) in function_call_outputs {
+                for (call_id, function_name, output) in function_call_outputs {
                     let item = AiConversationItem {
                         id: 0,
                         conversation_id: current_conversation_id().unwrap_or(0),
                         payload: AiConversationItemPayload::FunctionCallOutput {
                             call_id: call_id.clone(),
                             output: output.to_string(),
+                            name: Some(function_name.clone()),
                         },
                         timestamp: Some(chrono::Local::now().naive_local().to_string()),
                     };
@@ -256,6 +258,7 @@ pub fn send_user_message(message: &str) -> i64 {
             id: String::new(),
             role: "user".to_owned(),
             content: message.to_owned(),
+            thought_signature: None,
         },
         timestamp: Some(chrono::Local::now().naive_local().to_string()),
     })

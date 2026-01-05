@@ -1,4 +1,5 @@
 pub mod openai;
+pub mod gemini;
 
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
