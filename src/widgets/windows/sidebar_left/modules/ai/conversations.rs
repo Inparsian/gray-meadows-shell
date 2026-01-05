@@ -2,8 +2,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use gtk4::prelude::*;
 
-use crate::sql::wrappers::aichats::{self, SqlAiConversation};
-use crate::singletons::openai;
+use crate::sql::wrappers::aichats;
+use crate::singletons::ai::{self, AiChannelMessage, types::AiConversation};
 use crate::gesture;
 
 fn conversation_control_button(icon_name: &str, tooltip: &str) -> gtk4::Button {
@@ -25,14 +25,14 @@ fn message_count_str(count: usize) -> String {
 
 #[derive(Debug, Clone)]
 pub struct ConversationItem {
-    pub conversation: Rc<RefCell<SqlAiConversation>>,
+    pub conversation: Rc<RefCell<AiConversation>>,
     pub root: gtk4::Box,
     pub title_label: gtk4::Label,
     pub length_label: gtk4::Label,
 }
 
 impl ConversationItem {
-    pub fn new(conversation: SqlAiConversation) -> Self {
+    pub fn new(conversation: AiConversation) -> Self {
         let conversation = Rc::new(RefCell::new(conversation));
 
         let root = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
@@ -40,18 +40,20 @@ impl ConversationItem {
 
         let info_box = gtk4::Box::new(gtk4::Orientation::Vertical, 4);
         info_box.set_css_classes(&["ai-chat-conversation-item-info-box"]);
+        info_box.set_hexpand(true);
         root.append(&info_box);
         
         let title_label = gtk4::Label::new(Some(&conversation.borrow().title));
         title_label.set_css_classes(&["ai-chat-conversation-item-title-label"]);
-        title_label.set_halign(gtk4::Align::Start);
+        title_label.set_hexpand(true);
         title_label.set_xalign(0.0);
+        title_label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
         info_box.append(&title_label);
 
         let title_input = gtk4::Entry::new();
         title_input.set_text(&conversation.borrow().title);
         title_input.set_css_classes(&["ai-chat-conversation-item-title-input"]);
-        title_input.set_halign(gtk4::Align::Start);
+        title_input.set_hexpand(true);
         title_input.set_visible(false);
         title_input.connect_activate({
             let conversation = conversation.clone();
@@ -60,7 +62,7 @@ impl ConversationItem {
             move |_| {
                 let new_title = title_input.text().to_string();
                 if !new_title.is_empty() && new_title != conversation.borrow().title {
-                    openai::conversation::rename_conversation(conversation.borrow().id, &new_title);
+                    ai::conversation::rename_conversation(conversation.borrow().id, &new_title);
                     conversation.borrow_mut().title = new_title;
                     title_input.set_visible(false);
                     title_label.set_visible(true);
@@ -79,22 +81,21 @@ impl ConversationItem {
         let controls_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 8);
         controls_box.set_css_classes(&["ai-chat-conversation-item-controls-box"]);
 
-        let load_button = conversation_control_button("download", "Load Conversation");
-        load_button.connect_clicked({
-            let conversation = conversation.clone();
-            move |_| {
-                openai::conversation::load_conversation(conversation.borrow().id);
-            }
-        });
-        controls_box.append(&load_button);
-
         let rename_button = conversation_control_button("edit", "Rename Conversation");
         rename_button.connect_clicked({
             let title_label = title_label.clone();
+            let title_input = title_input.clone();
+            let conversation = conversation.clone();
             move |_| {
-                title_label.set_visible(false);
-                title_input.set_visible(true);
-                title_input.grab_focus();
+                if WidgetExt::is_visible(&title_input) {
+                    title_label.set_visible(true);
+                    title_input.set_visible(false);
+                } else {
+                    title_label.set_visible(false);
+                    title_input.set_visible(true);
+                    title_input.set_text(&conversation.borrow().title);
+                    title_input.grab_focus();
+                }
             }
         });
         controls_box.append(&rename_button);
@@ -103,17 +104,15 @@ impl ConversationItem {
         delete_button.connect_clicked({
             let conversation = conversation.clone();
             move |_| {
-                openai::conversation::delete_conversation(conversation.borrow().id);
+                ai::conversation::delete_conversation(conversation.borrow().id);
             }
         });
         controls_box.append(&delete_button);
 
         let controls_revealer = gtk4::Revealer::new();
         controls_revealer.set_css_classes(&["ai-chat-conversation-item-controls-revealer"]);
-        controls_revealer.set_halign(gtk4::Align::End);
         controls_revealer.set_valign(gtk4::Align::Start);
-        controls_revealer.set_hexpand(true);
-        controls_revealer.set_transition_type(gtk4::RevealerTransitionType::SlideLeft);
+        controls_revealer.set_transition_type(gtk4::RevealerTransitionType::Crossfade);
         controls_revealer.set_transition_duration(200);
         controls_revealer.set_child(Some(&controls_box));
         root.append(&controls_revealer);
@@ -127,6 +126,13 @@ impl ConversationItem {
 
         root.add_controller(gesture::on_leave(move || {
             controls_revealer.set_reveal_child(false);
+        }));
+
+        info_box.add_controller(gesture::on_primary_up({
+            let conversation = conversation.clone();
+            move |_, _, _| if !WidgetExt::is_visible(&title_input) {
+                ai::conversation::load_conversation(conversation.borrow().id);
+            }
         }));
 
         Self {
@@ -163,20 +169,20 @@ impl ConversationsList {
         };
 
         // Listen for events from the AI singleton channel
-        let receiver = openai::CHANNEL.get().map(|channel| channel.subscribe());
+        let receiver = ai::CHANNEL.get().map(|channel| channel.subscribe());
         if let Some(mut receiver) = receiver {
             gtk4::glib::spawn_future_local({
                 let me = me.clone();
                 async move {
                     while let Ok(message) = receiver.recv().await {
                         match message {
-                            openai::AIChannelMessage::ConversationAdded(conversation) => {
+                            AiChannelMessage::ConversationAdded(conversation) => {
                                 let item = ConversationItem::new(conversation);
                                 me.root.append(&item.root);
                                 me.conversations.borrow_mut().push(item);
                             },
 
-                            openai::AIChannelMessage::ConversationDeleted(conversation_id) => {
+                            AiChannelMessage::ConversationDeleted(conversation_id) => {
                                 let mut conversations = me.conversations.borrow_mut();
                                 if let Some(pos) = conversations.iter().position(|item| item.conversation.borrow().id == conversation_id) {
                                     let item = conversations.remove(pos);
@@ -184,7 +190,7 @@ impl ConversationsList {
                                 }
                             },
 
-                            openai::AIChannelMessage::ConversationRenamed(conversation_id, new_title) => {
+                            AiChannelMessage::ConversationRenamed(conversation_id, new_title) => {
                                 let conversations = me.conversations.borrow();
                                 for item in conversations.iter() {
                                     if item.conversation.borrow().id == conversation_id {
@@ -194,7 +200,7 @@ impl ConversationsList {
                                 }
                             },
 
-                            openai::AIChannelMessage::ConversationTrimmed(conversation_id, _) => {
+                            AiChannelMessage::ConversationTrimmed(conversation_id, _) => {
                                 let conversations = me.conversations.borrow();
                                 for item in conversations.iter() {
                                     if item.conversation.borrow().id == conversation_id {
@@ -205,7 +211,7 @@ impl ConversationsList {
                                 }
                             },
 
-                            openai::AIChannelMessage::ConversationLoaded(conversation) => {
+                            AiChannelMessage::ConversationLoaded(conversation) => {
                                 let conversations = me.conversations.borrow();
                                 for item in conversations.iter() {
                                     if item.conversation.borrow().id == conversation.id {
@@ -216,9 +222,9 @@ impl ConversationsList {
                                 }
                             },
 
-                            openai::AIChannelMessage::CycleStarted |
-                            openai::AIChannelMessage::CycleFinished => {
-                                let Some(current_conversation_id) = openai::current_conversation_id() else {
+                            AiChannelMessage::CycleStarted |
+                            AiChannelMessage::CycleFinished => {
+                                let Some(current_conversation_id) = ai::current_conversation_id() else {
                                     continue;
                                 };
 

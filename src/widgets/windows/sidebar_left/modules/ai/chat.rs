@@ -4,12 +4,11 @@ use std::path::Path;
 use gtk4::prelude::*;
 use relm4::RelmIterChildrenExt as _;
 
-
 use crate::USERNAME;
 use crate::config::read_config;
 use crate::filesystem;
 use crate::gesture;
-use crate::singletons::openai;
+use crate::singletons::ai;
 use crate::widgets::common::loading;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -19,9 +18,93 @@ pub enum ChatRole {
 }
 
 #[derive(Debug, Clone)]
+pub struct ChatThinkingBlock {
+    pub root: gtk4::Box,
+    pub summary_root: gtk4cmark::view::MarkdownView,
+    pub summary: Option<String>,
+}
+
+impl ChatThinkingBlock {
+    pub fn new() -> Self {
+        let root = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        root.set_css_classes(&["ai-chat-thinking-block"]);
+
+        let thinking_dropdown_button = gtk4::Button::new();
+        thinking_dropdown_button.set_css_classes(&["ai-chat-thinking-dropdown-button"]);
+        thinking_dropdown_button.set_valign(gtk4::Align::Start);
+        thinking_dropdown_button.set_hexpand(true);
+        root.append(&thinking_dropdown_button);
+
+        let thinking_dropdown_header = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        thinking_dropdown_header.set_css_classes(&["ai-chat-thinking-dropdown-header"]);
+        thinking_dropdown_header.set_hexpand(true);
+        thinking_dropdown_button.set_child(Some(&thinking_dropdown_header));
+
+        let thinking_dropdown_indicator = gtk4::Label::new(Some("lightbulb_2"));
+        thinking_dropdown_indicator.set_css_classes(&["ai-chat-thinking-dropdown-indicator"]);
+        thinking_dropdown_indicator.set_halign(gtk4::Align::Start);
+        thinking_dropdown_indicator.set_xalign(0.0);
+        thinking_dropdown_header.append(&thinking_dropdown_indicator);
+
+        let thinking_dropdown_label = gtk4::Label::new(Some("Thoughts"));
+        thinking_dropdown_label.set_css_classes(&["ai-chat-thinking-dropdown-label"]);
+        thinking_dropdown_label.set_halign(gtk4::Align::Start);
+        thinking_dropdown_label.set_xalign(0.0);
+        thinking_dropdown_header.append(&thinking_dropdown_label);
+
+        let thinking_dropdown_arrow = gtk4::Label::new(Some("stat_minus_1"));
+        thinking_dropdown_arrow.set_css_classes(&["ai-chat-thinking-dropdown-arrow"]);
+        thinking_dropdown_arrow.set_halign(gtk4::Align::End);
+        thinking_dropdown_arrow.set_hexpand(true);
+        thinking_dropdown_arrow.set_xalign(1.0);
+        thinking_dropdown_header.append(&thinking_dropdown_arrow);
+
+        let thinking_dropdown_revealer = gtk4::Revealer::new();
+        thinking_dropdown_revealer.set_css_classes(&["ai-chat-thinking-dropdown-revealer"]);
+        thinking_dropdown_revealer.set_transition_type(gtk4::RevealerTransitionType::SlideDown);
+        thinking_dropdown_revealer.set_transition_duration(150);
+        thinking_dropdown_revealer.set_reveal_child(false);
+        root.append(&thinking_dropdown_revealer);
+
+        let summary = gtk4cmark::view::MarkdownView::default();
+        summary.set_css_classes(&["ai-chat-thinking-summary"]);
+        summary.set_overflow(gtk4::Overflow::Hidden);
+        summary.set_vexpand(true);
+        summary.set_hexpand(true);
+        thinking_dropdown_revealer.set_child(Some(&summary));
+
+        thinking_dropdown_button.connect_clicked({
+            let root = root.clone();
+            move |_| {
+                let currently_revealed = thinking_dropdown_revealer.reveals_child();
+                thinking_dropdown_revealer.set_reveal_child(!currently_revealed);
+                
+                if currently_revealed {
+                    root.remove_css_class("expanded");
+                } else {
+                    root.add_css_class("expanded");
+                }
+            }
+        });
+
+        Self {
+            root,
+            summary_root: summary,
+            summary: None,
+        }
+    }
+
+    pub fn set_summary(&mut self, content: &str) {
+        self.summary_root.set_markdown(content);
+        self.summary = Some(content.to_owned());
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct ChatMessage {
     pub id: Rc<RefCell<Option<i64>>>,
     pub content: Option<String>,
+    pub thinking: Option<ChatThinkingBlock>,
     pub root: gtk4::Box,
     pub markdown: gtk4cmark::view::MarkdownView,
     pub loading: gtk4::DrawingArea,
@@ -113,8 +196,8 @@ impl ChatMessage {
         delete_button.set_label("delete");
         delete_button.connect_clicked({
             let id = id.clone();
-            move |_| if !openai::is_currently_in_cycle() && let Some(message_id) = *id.borrow() {
-                openai::trim_messages(message_id);
+            move |_| if !ai::is_currently_in_cycle() && let Some(message_id) = *id.borrow() {
+                ai::trim_items(message_id);
             }
         });
         controls_box.append(&delete_button);
@@ -125,7 +208,7 @@ impl ChatMessage {
         retry_button.connect_clicked({
             let id = id.clone();
             let role = role.clone();
-            move |_| if !openai::is_currently_in_cycle() && let Some(message_id) = *id.borrow() {
+            move |_| if !ai::is_currently_in_cycle() && let Some(message_id) = *id.borrow() {
                 // Increase message_id by 1 if this is a user message to trim down to the
                 // assistant response directly after it
                 let message_id = if role == ChatRole::User {
@@ -134,8 +217,8 @@ impl ChatMessage {
                     message_id
                 };
 
-                openai::trim_messages(message_id);
-                tokio::spawn(openai::start_request_cycle());
+                ai::trim_items(message_id);
+                tokio::spawn(ai::start_request_cycle());
             }
         });
         controls_box.append(&retry_button);
@@ -181,12 +264,17 @@ impl ChatMessage {
         Self {
             id,
             content,
+            thinking: None,
             root,
             markdown,
             loading,
             header,
             footer,
         }
+    }
+
+    pub fn set_id(&self, id: i64) {
+        *self.id.borrow_mut() = Some(id);
     }
 
     pub fn set_content(&mut self, content: &str) {
@@ -196,13 +284,27 @@ impl ChatMessage {
         self.markdown.set_markdown(content);
 
         if was_none {
+            // If thinking is present, insert after that instead
+            if let Some(thinking_block) = &self.thinking {
+                self.root.insert_child_after(&self.markdown, Some(&thinking_block.root));
+            } else {
+                self.root.insert_child_after(&self.markdown, Some(&self.header));
+            }
+
             self.root.remove(&self.loading);
-            self.root.insert_child_after(&self.markdown, Some(&self.header));
         }
     }
 
-    pub fn set_id(&self, id: i64) {
-        *self.id.borrow_mut() = Some(id);
+    pub fn set_thinking(&mut self, content: &str) {
+        let was_none = self.thinking.is_none();
+        if was_none {
+            let mut thinking_block = ChatThinkingBlock::new();
+            thinking_block.set_summary(content);
+            self.thinking = Some(thinking_block.clone());
+            self.root.insert_child_after(&thinking_block.root, Some(&self.header));
+        } else if let Some(thinking_block) = &mut self.thinking {
+            thinking_block.set_summary(content);
+        }
     }
 }
 
@@ -257,6 +359,15 @@ impl Chat {
         self.messages.borrow_mut().push(message);
     }
 
+    pub fn remove_latest_message(&self) -> Option<ChatMessage> {
+        if let Some(message) = self.messages.borrow_mut().pop() {
+            self.root.remove(&message.root);
+            Some(message)
+        } else {
+            None
+        }
+    }
+
     pub fn append_tool_call_to_latest_message(&self, tool_name: &str, arguments: &str) {
         let mut messages = self.messages.borrow_mut();
         if let Some(latest_message) = messages.last_mut() {
@@ -281,6 +392,13 @@ impl Chat {
             if latest_message.content.is_none() {
                 latest_message.set_content("");
             }
+        }
+    }
+
+    pub fn append_thinking_block_to_latest_message(&self, summary: &str) {
+        let mut messages = self.messages.borrow_mut();
+        if let Some(latest_message) = messages.last_mut() {
+            latest_message.set_thinking(summary);
         }
     }
 }

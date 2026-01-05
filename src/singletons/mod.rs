@@ -10,7 +10,7 @@ pub mod g_translate;
 pub mod notifications;
 pub mod networkmanager;
 pub mod clipboard;
-pub mod openai;
+pub mod ai;
 
 pub fn activate_all() {
     date_time::activate();
@@ -25,5 +25,5 @@ pub fn activate_all() {
     notifications::activate();
     networkmanager::activate();
     clipboard::activate();
-    openai::activate();
+    ai::activate();
 }

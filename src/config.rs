@@ -25,12 +25,15 @@ pub struct OpenAiConfig {
     pub api_key: String,
     pub model: String,
     pub service_tier: String,
+    pub reasoning_effort: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GeminiConfig {
     pub api_key: String,
     pub model: String,
+    pub thinking_budget: i64,
+    pub thinking_level: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -65,10 +68,13 @@ impl Default for Config {
                     api_key: "your-api-key-here".to_owned(),
                     model: "gpt-4.1".to_owned(),
                     service_tier: "default".to_owned(),
+                    reasoning_effort: "none".to_owned(),
                 },
                 gemini: GeminiConfig {
                     api_key: "your-api-key-here".to_owned(),
                     model: "gemini-2.0-flash".to_owned(),
+                    thinking_budget: -1,
+                    thinking_level: "budget".to_owned(),
                 },
                 features: AiFeatures {
                     power_control: true,

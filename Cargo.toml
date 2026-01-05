@@ -17,6 +17,7 @@ freedesktop-desktop-entry = "0.8.0"
 futures-lite = "2.6.1"
 futures-signals = "0.3.34"
 gdk4 = "0.10.3"
+gemini-rust = "1.6.1"
 gtk4 = "0.10.3"
 gtk4-layer-shell = "0.7.1"
 gtk4cmark = { git = "https://github.com/Inparsian/gtk4cmark-rs.git", branch = "main" }

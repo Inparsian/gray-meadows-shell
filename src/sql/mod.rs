@@ -57,24 +57,17 @@ pub fn establish_connection() -> Result<Connection, Box<dyn std::error::Error>> 
         )
     ")?;
 
+    // Items will be a catch-all for messages, reasoning, function calls, etc.
+    // The Responses API is very different from the Chat Completions API and introduces
+    // a bajillion item types, so JSON payloads are stored inside which will be
+    // serialized and deserialized as needed.
     connection.execute("
-        CREATE TABLE IF NOT EXISTS aichat_messages (
+        CREATE TABLE IF NOT EXISTS aichat_items (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             conversation_id INTEGER NOT NULL,
-            role TEXT NOT NULL,
-            content TEXT NOT NULL,
             timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            payload TEXT NOT NULL,
             FOREIGN KEY(conversation_id) REFERENCES aichat_conversations(id) ON DELETE CASCADE
-        )
-    ")?;
-
-    connection.execute("
-        CREATE TABLE IF NOT EXISTS aichat_tool_calls (
-            tool_id TEXT NOT NULL,
-            message_id INTEGER NOT NULL,
-            function TEXT NOT NULL,
-            arguments TEXT NOT NULL,
-            FOREIGN KEY(message_id) REFERENCES aichat_messages(id) ON DELETE CASCADE
         )
     ")?;
 
