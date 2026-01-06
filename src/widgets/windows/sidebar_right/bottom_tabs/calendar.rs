@@ -1,9 +1,12 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use gtk4::prelude::*;
+use futures_signals::signal::SignalExt as _;
 use chrono::Datelike as _;
 use relm4::RelmRemoveAllExt as _;
 use num_traits::cast::FromPrimitive as _;
+
+use crate::singletons::date_time::DATE_TIME;
 
 pub enum CalendarMarker {
     OutsideMonth,
@@ -296,5 +299,16 @@ pub fn new() -> gtk4::Box {
     let calendar_widget = calendar.make_widget();
 
     root.append(&calendar_widget);
+
+    // When the date changes, re-render the calendar
+    let current_date = Rc::new(RefCell::new(DATE_TIME.get_cloned().date));
+    gtk4::glib::spawn_future_local(signal_cloned!(DATE_TIME, (date_time) {
+        let mut lock = current_date.borrow_mut();
+        if date_time.date != *lock {
+            *lock = date_time.date;
+            calendar.render();
+        }
+    }));
+
     root
 }
