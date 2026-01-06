@@ -1,7 +1,74 @@
 .sidebar-right-bottom-tabs .calendar-tab-root {
-    .calendar-tab-coming-soon {
-        @include large-text;
-        color: $foreground-color-secondary;
-        padding: 16px;
+    .calendar-tab-calendar {
+        .calendar-header {
+            .calendar-header-current-date {
+                @include large-text;
+                padding-left: 10px;
+                padding-right: 10px;
+                padding-top: 6px;
+                padding-bottom: 6px;
+                margin-top: 4px;
+                margin-bottom: 4px;
+                background: $background-color-tertiary;
+            }
+
+            .calendar-header-button {
+                @include material-icons;
+
+                background: transparent;
+                color: $foreground-color-primary;
+                font-weight: 300;
+                font-size: 16px;
+                padding: 4px;
+                margin-top: 4px;
+                margin-bottom: 4px;
+                min-width: 20px;
+                min-height: 20px;
+                border-radius: 0px;
+
+                &:hover, &:focus {
+                    background: #ffffff09;
+                    outline: none;
+                }
+
+                &:active {
+                    background: #ffffff16;
+                }
+            }
+        }
+
+        .calendar-body {
+            .calendar-body-weekdays-box {
+                background: $background-color-tertiary;
+                padding-top: 6px;
+                padding-bottom: 6px;
+
+                .calendar-body-weekday-label {
+                    color: $foreground-color-secondary;
+                    font-weight: 500;
+                }
+            }
+
+            .calendar-grid-day-label {
+                color: $foreground-color-primary;
+                padding-top: 8px;
+                padding-bottom: 8px;
+                font-weight: 400;
+
+                &.outside-month {
+                    color: $foreground-color-quaternary;
+                    border: 1px solid transparent;
+                }
+
+                &.inside-month {
+                    color: $foreground-color-primary;
+                    border: 1px solid transparent;
+                }
+
+                &.today {
+                    border: 1px solid $foreground-color-primary-focus;
+                }
+            }
+        }
     }
 }
