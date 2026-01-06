@@ -1,5 +1,6 @@
 mod header;
 mod quicktoggle;
+mod top_tabs;
 
 use gtk4::prelude::*;
 
@@ -7,6 +8,7 @@ use super::popup::{PopupWindow, PopupMargin, PopupOptions};
 
 pub fn new(application: &libadwaita::Application) -> PopupWindow {
     let header = header::new();
+    let (top_tabs, top_tabs_stack) = top_tabs::new();
 
     view! {
         quick_toggles = gtk4::Box {
@@ -29,6 +31,16 @@ pub fn new(application: &libadwaita::Application) -> PopupWindow {
 
             append: &header,
             append: &quick_toggles,
+
+            gtk4::Box {
+                set_orientation: gtk4::Orientation::Vertical,
+                set_css_classes: &["sidebar-right-top-tabs"],
+                set_spacing: 0,
+                set_hexpand: true,
+                set_vexpand: true,
+                append: &top_tabs.widget,
+                append: &top_tabs_stack.widget,
+            }
         },
     };
 

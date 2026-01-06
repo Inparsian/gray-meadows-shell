@@ -1,0 +1,7 @@
+.sidebar-right-top-tabs .audio-tab-root {
+    .audio-tab-coming-soon {
+        @include large-text;
+        color: $foreground-color-secondary;
+        padding: 16px;
+    }
+}
