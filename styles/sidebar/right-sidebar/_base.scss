@@ -1,5 +1,6 @@
 @import "notifications";
 @import "audio";
+@import "calendar";
 
 .right-sidebar-window {
     margin-right: 5px;
@@ -100,6 +101,15 @@
             background: $background-color-primary;
 
             .sidebar-right-top-tabs-content {
+                padding: 8px;
+                background: $background-color-secondary;
+            }
+        }
+
+        .sidebar-right-bottom-tabs {
+            background: $background-color-primary;
+
+            .sidebar-right-bottom-tabs-content {
                 padding: 8px;
                 background: $background-color-secondary;
             }
