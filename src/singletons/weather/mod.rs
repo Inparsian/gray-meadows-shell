@@ -7,6 +7,7 @@ use futures_signals::signal::Mutable;
 use reqwest::Client;
 
 use crate::config::read_config;
+use crate::sql::wrappers::weather::{get_weather_forecast, set_weather_forecast};
 use self::schemas::openmeteo::OpenMeteoResponse;
 
 pub static WEATHER: LazyLock<Weather> = LazyLock::new(Weather::default);
@@ -44,6 +45,7 @@ pub const WMO_CODES: &[WmoCode] = &[
 
 const OPENMETEO_API_URL: &str = "https://api.open-meteo.com/v1/forecast";
 
+#[allow(dead_code)]
 pub struct WmoCode {
     pub code: i64,
     pub text: &'static str,
@@ -71,7 +73,8 @@ impl Default for Weather {
 }
 
 impl Weather {
-    pub async fn update(&self) {
+    /// Fetches the latest weather data from the OpenMeteo API and updates the cache.
+    pub async fn fetch(&self) {
         let weather_config = read_config().weather.clone();
 
         let current = [
@@ -117,6 +120,7 @@ impl Weather {
         {
             Ok(response) => match response.json::<OpenMeteoResponse>().await {
                 Ok(weather_data) => {
+                    let _ = set_weather_forecast(&weather_data);
                     self.last_response.set(Some(weather_data));
                 }
 
@@ -130,8 +134,22 @@ impl Weather {
             }
         }
     }
+
+    /// Returns the last cached forecast's age in seconds, if there was a hit.
+    pub fn cache_check(&self) -> Option<i64> {
+        if let Ok(Some((fetched_at, forecast))) = get_weather_forecast() {
+            let now = chrono::Utc::now().naive_utc();
+            let elapsed = now.signed_duration_since(fetched_at).num_seconds();
+            println!("[weather] Got a cache hit! Forecast fetched {} seconds ago.", elapsed);
+            self.last_response.set(Some(forecast));
+            Some(elapsed)
+        } else {
+            None
+        }
+    }
 }
 
+#[allow(dead_code)]
 pub fn get_wmo_code(code: i64) -> Option<&'static WmoCode> {
     WMO_CODES.iter().find(|wmo_code| wmo_code.code == code)
 }
@@ -149,7 +167,14 @@ pub fn activate() {
 
         let clamped_interval = weather_config.refresh_interval.max(600);
         loop {
-            WEATHER.update().await;
+            if let Some(elapsed) = WEATHER.cache_check() && elapsed < clamped_interval as i64 {
+                let sleep_duration = clamped_interval as i64 - elapsed;
+                println!("[weather] Sleeping for {sleep_duration} seconds...");
+                tokio::time::sleep(std::time::Duration::from_secs(sleep_duration as u64)).await;
+            }
+
+            WEATHER.fetch().await;
+
             tokio::time::sleep(std::time::Duration::from_secs(clamped_interval)).await;
         }
     });
