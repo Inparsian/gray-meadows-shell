@@ -11,6 +11,7 @@ pub mod notifications;
 pub mod networkmanager;
 pub mod clipboard;
 pub mod ai;
+pub mod weather;
 
 pub fn activate_all() {
     date_time::activate();
@@ -26,4 +27,5 @@ pub fn activate_all() {
     networkmanager::activate();
     clipboard::activate();
     ai::activate();
+    weather::activate();
 }

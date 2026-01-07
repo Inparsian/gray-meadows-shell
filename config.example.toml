@@ -61,3 +61,31 @@ power_control = true
 
 # Whether the AI can control MPRIS-compatible media players.
 mpris_control = true
+
+[weather]
+# Whether the weather service is enabled.
+# Toggling this requires a restart to take effect.
+enabled = true
+
+# Your latitude and longitude for weather data.
+# You can find your latitude and longitude using services like https://www.latlong.net/
+latitude = 0.0
+longitude = 0.0
+
+# Your IANA timezone name for weather data. Set this to "auto" to infer this from the
+# latitude and longitude.
+timezone = "auto"
+
+# Your temperature unit. Can be either "celsius" or "fahrenheit".
+temperature_unit = "fahrenheit"
+
+# Your speed unit (e.g. for wind). Can be either "kmh", "ms", "mph", or "kn".
+speed_unit = "mph"
+
+# Your precipitation unit. Can be either "mm" or "inch".
+precipitation_unit = "inch"
+
+# How often to refresh the weather data, in seconds.
+# There is a minimum of 10 minutes (600 seconds) to avoid excessive API usage,
+# any lower than this is polling noise.
+refresh_interval = 1800

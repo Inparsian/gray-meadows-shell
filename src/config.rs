@@ -50,8 +50,21 @@ pub struct AiConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WeatherConfig {
+    pub enabled: bool,
+    pub latitude: f64,
+    pub longitude: f64,
+    pub timezone: String,
+    pub temperature_unit: String,
+    pub speed_unit: String,
+    pub precipitation_unit: String,
+    pub refresh_interval: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub ai: AiConfig,
+    pub weather: WeatherConfig,
 }
 
 impl Default for Config {
@@ -80,6 +93,16 @@ impl Default for Config {
                     power_control: true,
                     mpris_control: true,
                 },
+            },
+            weather: WeatherConfig {
+                enabled: true,
+                latitude: 0.0,
+                longitude: 0.0,
+                timezone: "auto".to_owned(),
+                temperature_unit: "fahrenheit".to_owned(),
+                speed_unit: "mph".to_owned(),
+                precipitation_unit: "inch".to_owned(),
+                refresh_interval: 1800,
             },
         }
     }
