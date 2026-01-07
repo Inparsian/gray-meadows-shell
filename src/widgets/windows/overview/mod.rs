@@ -112,6 +112,7 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
         },
 
         search_results_revealer = gtk4::Revealer {
+            set_css_classes: &["overview-search-results-revealer"],
             set_transition_type: gtk4::RevealerTransitionType::SlideDown,
             set_transition_duration: 250,
             set_reveal_child: false,
@@ -135,6 +136,7 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
         },
 
         windows_revealer = gtk4::Revealer {
+            set_css_classes: &["overview-windows-revealer", "revealed"],
             set_transition_type: gtk4::RevealerTransitionType::SlideDown,
             set_transition_duration: 250,
             set_reveal_child: true,
@@ -173,13 +175,17 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
                 move |entry| {
                     if entry.text().is_empty() {
                         entry_prompt_revealer.set_reveal_child(true);
+                        windows_revealer.add_css_class("revealed");
                         windows_revealer.set_reveal_child(true);
+                        search_results_revealer.remove_css_class("revealed");
                         search_results_revealer.set_reveal_child(false);
                         entry_box.style_context().remove_class("entry-extended");
                         entry_box_icon.set_visible_child_name("search");
                     } else {
                         entry_prompt_revealer.set_reveal_child(false);
+                        windows_revealer.remove_css_class("revealed");
                         windows_revealer.set_reveal_child(false);
+                        search_results_revealer.add_css_class("revealed");
                         search_results_revealer.set_reveal_child(true);
                         entry_box.style_context().add_class("entry-extended");
 

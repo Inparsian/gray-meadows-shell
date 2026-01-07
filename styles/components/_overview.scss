@@ -3,6 +3,24 @@
     background-color: transparent;
     color: $foreground-color-primary;
 
+    .overview-windows-revealer, .overview-search-results-revealer {
+        transition: opacity 0.15s cubic-bezier(0.5, 0, 0.25, 1),
+                    filter 0.33s cubic-bezier(0.5, 0, 0.25, 1),
+                    transform 0.33s cubic-bezier(0.5, 0, 0.25, 1);
+
+        &.revealed {
+            opacity: 1;
+            filter: blur(0px);
+            transform: scale(1);
+        }
+
+        &:not(.revealed) {
+            opacity: 0;
+            filter: blur(16px);
+            transform: scale(0.33);
+        }
+    }
+
     .entry-prompt-label {
         color: $foreground-color-secondary;
         padding-left: 12px;
