@@ -100,7 +100,7 @@ pub fn trim_items(down_to_item_id: i64) {
 
 pub fn activate() {
     let app_config = read_config();
-    if !app_config.ai.enabled || app_config.ai.openai.api_key.is_empty() {
+    if !app_config.ai.enabled || (app_config.ai.openai.api_key.is_empty() && app_config.ai.gemini.api_key.is_empty()) {
         return;
     }
 
@@ -167,62 +167,41 @@ pub async fn start_request_cycle() {
                 }
 
                 // If this yielded any function calls, they must be processed
-                let function_calls = result.items.iter()
-                    .filter_map(|item| {
-                        if let AiConversationItemPayload::FunctionCall {
-                            call_id,
-                            name,
-                            arguments,
-                            ..
-                        } = &item.payload {
-                            Some((call_id.clone(), name.clone(), arguments.clone()))
-                        } else {
-                            None
-                        }
-                    })
-                    .collect::<Vec<(String, String, String)>>();
-
-                let mut handles = Vec::new();
-                for (call_id, name, arguments) in function_calls {
-                    let handle = tokio::spawn({
+                let handles = result.items.iter().filter_map(|item| {
+                    if let AiConversationItemPayload::FunctionCall { call_id, name, arguments, .. } = &item.payload {
                         let id = call_id.clone();
                         let name = name.clone();
                         let args = arguments.clone();
-                        async move {
+                        Some(tokio::spawn(async move {
                             let result = tools::call_tool(&name, &args);
                             (id, name, result)
-                        }
-                    });
+                        }))
+                    } else {
+                        None
+                    }
+                }).collect::<Vec<_>>();
 
-                    handles.push(handle);
-                }
-
-                let mut function_call_outputs = Vec::new();
-                for handle in handles {
-                    match handle.await {
-                        Ok((call_id, function_name, output)) => {
-                            function_call_outputs.push((call_id, function_name, output));
-                        },
-
+                let function_call_outputs = futures::future::join_all(handles).await.into_iter()
+                    .filter_map(|res| match res {
+                        Ok((call_id, name, output)) => Some(AiConversationItemPayload::FunctionCallOutput {
+                            call_id,
+                            output: output.to_string(),
+                            name: Some(name),
+                        }),
                         Err(e) => {
                             eprintln!("Failed to join tool call task: {:#?}", e);
+                            None
                         }
-                    }
-                }
+                    })
+                    .collect::<Vec<_>>();
 
-                for (call_id, function_name, output) in function_call_outputs {
-                    let item = AiConversationItem {
+                for payload in function_call_outputs {
+                    write_item(&AiConversationItem {
                         id: 0,
                         conversation_id: current_conversation_id().unwrap_or(0),
-                        payload: AiConversationItemPayload::FunctionCallOutput {
-                            call_id: call_id.clone(),
-                            output: output.to_string(),
-                            name: Some(function_name.clone()),
-                        },
+                        payload,
                         timestamp: Some(chrono::Local::now().naive_local().to_string()),
-                    };
-
-                    write_item(&item);
+                    });
                 }
 
                 // If more data should not be requested, break the cycle

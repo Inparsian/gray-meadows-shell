@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
-use futures_lite::StreamExt as _;
+use futures::StreamExt as _;
 use async_openai::Client;
 use async_openai::config::OpenAIConfig;
 use async_openai::error::OpenAIError;

@@ -1,6 +1,6 @@
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
-use futures_lite::StreamExt as _;
+use futures::StreamExt as _;
 use gemini_rust::{Content, ContentBuilder, FunctionCall, FunctionDeclaration, Gemini, Part, Role, ThinkingConfig, ThinkingLevel, Tool};
 
 use crate::broadcast::BroadcastChannel;
