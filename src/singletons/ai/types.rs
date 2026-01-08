@@ -98,7 +98,9 @@ impl AiConversationItem {
     pub fn inject_timestamp_into_content(&mut self) {
         let timestamp = self.timestamp_or_now();
 
-        if let AiConversationItemPayload::Message { content, .. } = &mut self.payload {
+        if let AiConversationItemPayload::Message { content, role, .. } = &mut self.payload
+            && role == "user"
+        {
             let new_content = Self::format_with_timestamp(&timestamp, content);
             *content = new_content;
         }
