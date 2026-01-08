@@ -1574,6 +1574,7 @@ dependencies = [
  "relm4",
  "relm4-macros",
  "reqwest",
+ "schemars",
  "serde",
  "serde_json",
  "sha",

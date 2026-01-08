@@ -3,18 +3,16 @@ use std::sync::{Arc, RwLock};
 use futures::StreamExt as _;
 use gemini_rust::{
     Content, ContentBuilder,
-    FunctionCall, FunctionDeclaration,
+    FunctionCall,
     Gemini, Part, Role,
     ThinkingConfig, ThinkingLevel,
-    Tool
 };
 
 use crate::broadcast::BroadcastChannel;
 use crate::config::read_config;
+use crate::singletons::ai::tools::gemini::add_gemini_tools;
 use super::super::variables::transform_variables;
 use super::super::{AiChannelMessage, AiConversationItem, AiConversationItemPayload, AiConversationDelta};
-use super::super::types::AiFunction;
-use super::super::tools;
 
 #[derive(Default, Debug, Clone)]
 pub struct GeminiContext {
@@ -27,16 +25,6 @@ pub struct GeminiContext {
 pub struct GeminiService;
 
 impl GeminiService {
-    fn transform_function_into_native(function: &AiFunction) -> Tool {
-        let declaration = FunctionDeclaration::new(
-            function.name.clone(),
-            function.description.clone(),
-            None,
-        );
-
-        Tool::new(declaration)
-    }
-
     fn transform_items_into_builder(items: Vec<AiConversationItem>, client: &Gemini) -> ContentBuilder {
         let mut assistant_parts: Vec<Part> = vec![];
         let mut builder = client.generate_content();
@@ -169,9 +157,7 @@ impl super::AiService for GeminiService {
                     },
                 });
             
-            for tool in tools::get_tools() {
-                builder = builder.with_tool(Self::transform_function_into_native(&tool));
-            }
+            builder = add_gemini_tools(builder);
 
             let mut should_request_more = true;
             let mut context = GeminiContext::default();

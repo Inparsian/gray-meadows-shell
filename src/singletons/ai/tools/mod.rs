@@ -1,3 +1,5 @@
+pub mod gemini;
+
 use serde_json::json;
 
 use crate::config::read_config;
@@ -20,7 +22,7 @@ pub fn get_tools() -> Vec<AiFunction> {
                 "properties": {
                     "action": {
                         "type": "string",
-                        "description": "The action to perform on the player",
+                        "description": "The action to perform on the MPRIS player",
                         "enum": [
                             "toggle",
                             "play",
