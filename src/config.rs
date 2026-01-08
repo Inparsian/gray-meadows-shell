@@ -18,6 +18,7 @@ const FILE_NAME: &str = "config.toml";
 pub struct AiFeatures {
     pub power_control: bool,
     pub mpris_control: bool,
+    pub weather_info: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -92,6 +93,7 @@ impl Default for Config {
                 features: AiFeatures {
                     power_control: true,
                     mpris_control: true,
+                    weather_info: true,
                 },
             },
             weather: WeatherConfig {

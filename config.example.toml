@@ -62,6 +62,9 @@ power_control = true
 # Whether the AI can control MPRIS-compatible media players.
 mpris_control = true
 
+# Whether the AI can get information from the weather service.
+weather_info = true
+
 [weather]
 # Whether the weather service is enabled.
 # Toggling this requires a restart to take effect.

@@ -4,6 +4,7 @@ use async_openai::error::OpenAIError;
 use crate::config::read_config;
 use crate::session::SessionAction;
 use crate::singletons::mpris::{self, mpris_player::LoopStatus};
+use crate::singletons::weather::WEATHER;
 use super::types::AiFunction;
 
 pub fn get_tools() -> Result<Vec<AiFunction>, OpenAIError> {
@@ -96,6 +97,20 @@ pub fn get_tools() -> Result<Vec<AiFunction>, OpenAIError> {
                 "required": [
                     "action"
                 ],
+                "additionalProperties": false
+            }),
+        });
+    }
+
+    if app_config.weather.enabled && app_config.ai.features.weather_info {
+        tools.push(AiFunction {
+            name: "get_current_weather".to_owned(),
+            description: "Fetches the current weather information from the weather service.".to_owned(),
+            strict: false,
+            schema: json!({
+                "type": "object",
+                "properties": {},
+                "required": [],
                 "additionalProperties": false
             }),
         });
@@ -239,6 +254,16 @@ pub fn call_tool(name: &str, args: &str) -> serde_json::Value {
                     "error": format!("Failed to parse arguments: {}", e)
                 }),
             }
+        },
+
+        "get_current_weather" => {
+            WEATHER.last_response.get_cloned().map_or_else(|| json!({
+                "success": false,
+                "error": "Weather information is missing, either the weather service is disabled or the information was not fetched yet."
+            }), |weather| json!({
+                "success": true,
+                "weather": weather
+            }))
         },
 
         _ => json!({
