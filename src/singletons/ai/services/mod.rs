@@ -5,10 +5,10 @@ use std::pin::Pin;
 use std::sync::{Arc, RwLock};
 
 use crate::broadcast::BroadcastChannel;
-use super::{AiChannelMessage, AiConversationItem};
+use super::{AiChannelMessage, AiConversationItem, AiConversationItemPayload};
 
 pub struct AiServiceResult {
-    pub items: Vec<AiConversationItem>,
+    pub items: Vec<AiConversationItemPayload>,
     pub should_request_more: bool,
 }
 

@@ -52,15 +52,8 @@ impl OpenAiService {
 
         let app_config = read_config().clone();
         let mut native_items = items
-            .clone()
-            .iter_mut()
-            .map(|item| {
-                if app_config.ai.user_message_timestamps {
-                    item.inject_timestamp_into_content();
-                }
-                
-                Self::transform_item_into_native(item.clone()).unwrap()
-            })
+            .into_iter()
+            .filter_map(Self::transform_item_into_native)
             .collect::<Vec<Item>>();
 
         native_items.insert(0, Item::Message(MessageItem::Input(InputMessage {
@@ -71,7 +64,7 @@ impl OpenAiService {
             status: None,
         })));
 
-        let tools = tools::get_tools()?
+        let tools = tools::get_tools()
             .into_iter()
             .map(Self::transform_function_into_tool)
             .collect::<Vec<Tool>>();
@@ -176,10 +169,8 @@ impl OpenAiService {
         }
     }
 
-    fn transform_native_into_item(native_item: Item) -> Option<AiConversationItem> {
-        let now = chrono::Utc::now().format(super::super::TIMESTAMP_FORMAT).to_string();
-
-        let payload = match native_item {
+    fn transform_native_into_item(native_item: Item) -> Option<AiConversationItemPayload> {
+        match native_item {
             Item::Message(msg) => {
                 match msg {
                     MessageItem::Input(input_msg) => Some(AiConversationItemPayload::Message {
@@ -234,14 +225,7 @@ impl OpenAiService {
             }),
 
             _ => None,
-        };
-
-        payload.map(|p| AiConversationItem {
-            id: 0,
-            conversation_id: 0,
-            payload: p,
-            timestamp: Some(now),
-        })
+        }
     }
 
     fn transform_function_into_tool(func: AiFunction) -> Tool {
@@ -475,11 +459,11 @@ impl super::AiService for OpenAiService {
             let mut transformed_items = new_items.values()
                 .cloned()
                 .filter_map(Self::transform_native_into_item)
-                .collect::<Vec<AiConversationItem>>();
+                .collect::<Vec<AiConversationItemPayload>>();
 
             // Ensure that this is properly sorted so the API does not yell at us later
-            transformed_items.sort_by_key(|item| {
-                match &item.payload {
+            transformed_items.sort_by_key(|payload| {
+                match payload {
                     AiConversationItemPayload::Reasoning { .. } => 0,
                     AiConversationItemPayload::Message { role, .. } if role == "assistant" => 1,
                     AiConversationItemPayload::FunctionCall { .. } => 2,
@@ -487,8 +471,8 @@ impl super::AiService for OpenAiService {
                 }
             });
 
-            let has_tool_calls = transformed_items.iter().any(|item| {
-                matches!(item.payload, AiConversationItemPayload::FunctionCall { .. })
+            let has_tool_calls = transformed_items.iter().any(|payload| {
+                matches!(payload, AiConversationItemPayload::FunctionCall { .. })
             });
 
             // Go for another request after tool execution, in case the AI wants to say

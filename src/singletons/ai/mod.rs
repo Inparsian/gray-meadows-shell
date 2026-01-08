@@ -51,14 +51,19 @@ pub fn current_conversation_id() -> Option<i64> {
     conversation.as_ref().map(|conv| conv.id)
 }
 
-fn write_item(item: &AiConversationItem) -> i64 {
+fn write_item_payload(payload: AiConversationItemPayload) -> i64 {
     let Some(session) = SESSION.get() else {
         eprintln!("AI session not initialized");
         return 0;
     };
 
-    let mut item = item.clone();
-    item.conversation_id = current_conversation_id().unwrap_or(0);
+    let mut item = AiConversationItem {
+        id: 0,
+        conversation_id: current_conversation_id().unwrap_or(0),
+        payload,
+        timestamp: Some(chrono::Local::now().naive_local().to_string()),
+    };
+
     match aichats::add_item(&item) {
         Ok(id) => {
             item.id = id;
@@ -154,21 +159,30 @@ pub async fn start_request_cycle() {
     
     let mut failed = false;
     loop {
-        let items = session.items.read().unwrap().clone();
-        let stop_cycle_flag = session.stop_cycle_flag.clone();
+        let items = session.items.read().unwrap()
+            .clone()
+            .iter_mut()
+            .map(|item| {
+                if config.ai.user_message_timestamps {
+                    item.inject_timestamp_into_content();
+                }
+                item.clone()
+            })
+            .collect::<Vec<AiConversationItem>>();
 
+        let stop_cycle_flag = session.stop_cycle_flag.clone();
         match service.make_stream_request(items, channel, stop_cycle_flag).await {
             Ok(result) => {
                 for (index, item) in result.items.iter().enumerate() {
-                    let id = write_item(item);
+                    let id = write_item_payload(item.clone());
                     if index == 0 {
                         channel.send(AiChannelMessage::StreamComplete(id)).await;
                     }
                 }
 
                 // If this yielded any function calls, they must be processed
-                let handles = result.items.iter().filter_map(|item| {
-                    if let AiConversationItemPayload::FunctionCall { call_id, name, arguments, .. } = &item.payload {
+                let handles = result.items.iter().filter_map(|payload| {
+                    if let AiConversationItemPayload::FunctionCall { call_id, name, arguments, .. } = &payload {
                         let id = call_id.clone();
                         let name = name.clone();
                         let args = arguments.clone();
@@ -196,12 +210,7 @@ pub async fn start_request_cycle() {
                     .collect::<Vec<_>>();
 
                 for payload in function_call_outputs {
-                    write_item(&AiConversationItem {
-                        id: 0,
-                        conversation_id: current_conversation_id().unwrap_or(0),
-                        payload,
-                        timestamp: Some(chrono::Local::now().naive_local().to_string()),
-                    });
+                    write_item_payload(payload);
                 }
 
                 // If more data should not be requested, break the cycle
@@ -234,15 +243,10 @@ pub fn send_user_message(message: &str) -> i64 {
         return 0;
     }
 
-    write_item(&AiConversationItem {
-        id: 0,
-        conversation_id: current_conversation_id().unwrap_or(0),
-        payload: AiConversationItemPayload::Message {
-            id: String::new(),
-            role: "user".to_owned(),
-            content: message.to_owned(),
-            thought_signature: None,
-        },
-        timestamp: Some(chrono::Local::now().naive_local().to_string()),
+    write_item_payload(AiConversationItemPayload::Message {
+        id: String::new(),
+        role: "user".to_owned(),
+        content: message.to_owned(),
+        thought_signature: None,
     })
 }

@@ -1,5 +1,4 @@
 use serde_json::json;
-use async_openai::error::OpenAIError;
 
 use crate::config::read_config;
 use crate::session::SessionAction;
@@ -7,7 +6,7 @@ use crate::singletons::mpris::{self, mpris_player::LoopStatus};
 use crate::singletons::weather::WEATHER;
 use super::types::AiFunction;
 
-pub fn get_tools() -> Result<Vec<AiFunction>, OpenAIError> {
+pub fn get_tools() -> Vec<AiFunction> {
     let app_config = read_config();
     let mut tools = vec![];
 
@@ -116,7 +115,7 @@ pub fn get_tools() -> Result<Vec<AiFunction>, OpenAIError> {
         });
     }
 
-    Ok(tools)
+    tools
 }
 
 pub fn call_tool(name: &str, args: &str) -> serde_json::Value {

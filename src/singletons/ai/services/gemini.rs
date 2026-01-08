@@ -1,7 +1,13 @@
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
 use futures::StreamExt as _;
-use gemini_rust::{Content, ContentBuilder, FunctionCall, FunctionDeclaration, Gemini, Part, Role, ThinkingConfig, ThinkingLevel, Tool};
+use gemini_rust::{
+    Content, ContentBuilder,
+    FunctionCall, FunctionDeclaration,
+    Gemini, Part, Role,
+    ThinkingConfig, ThinkingLevel,
+    Tool
+};
 
 use crate::broadcast::BroadcastChannel;
 use crate::config::read_config;
@@ -31,10 +37,7 @@ impl GeminiService {
         Tool::new(declaration)
     }
 
-    fn transform_items_into_builder(
-        items: &[&AiConversationItem],
-        client: &Gemini,
-    ) -> ContentBuilder {
+    fn transform_items_into_builder(items: Vec<AiConversationItem>, client: &Gemini) -> ContentBuilder {
         let mut assistant_parts: Vec<Part> = vec![];
         let mut builder = client.generate_content();
 
@@ -154,31 +157,20 @@ impl super::AiService for GeminiService {
             let client = Gemini::with_model(api_key, format!("models/{}", model))
                 .expect("Failed to create Gemini client");
 
-            let mut builder = Self::transform_items_into_builder(
-                &items.iter().collect::<Vec<&AiConversationItem>>(),
-                &client,
-            );
-
-            let thinking_level = match thinking_level.as_str() {
-                "low" => Some(ThinkingLevel::Low),
-                "high" => Some(ThinkingLevel::High),
-                _ => None,
-            };
-
-            let thinking_budget = thinking_level.is_none().then_some(thinking_budget);
-
-            builder = builder.with_system_prompt(transform_variables(system_prompt.as_str()));
-            builder = builder.with_thinking_config(ThinkingConfig {
-                thinking_budget,
-                include_thoughts: Some(true),
-                thinking_level,
-            });
+            let mut builder = Self::transform_items_into_builder(items, &client)
+                .with_system_prompt(transform_variables(system_prompt.as_str()))
+                .with_thinking_config(ThinkingConfig {
+                    thinking_budget: matches!(thinking_level.as_str(), "low" | "high").then_some(thinking_budget),
+                    include_thoughts: Some(true),
+                    thinking_level: match thinking_level.as_str() {
+                        "low" => Some(ThinkingLevel::Low),
+                        "high" => Some(ThinkingLevel::High),
+                        _ => None,
+                    },
+                });
             
-            if let Ok(tools) = tools::get_tools() {
-                for tool in tools {
-                    let native_tool = Self::transform_function_into_native(&tool);
-                    builder = builder.with_tool(native_tool);
-                }
+            for tool in tools::get_tools() {
+                builder = builder.with_tool(Self::transform_function_into_native(&tool));
             }
 
             let mut should_request_more = true;
@@ -275,32 +267,17 @@ impl super::AiService for GeminiService {
             }
 
             // Flatten context into result items
-            let mut items: Vec<AiConversationItem> = vec![];
+            let mut items: Vec<AiConversationItemPayload> = vec![];
             if let Some(reasoning) = context.reasoning {
-                items.push(AiConversationItem {
-                    id: 0,
-                    conversation_id: 0,
-                    payload: reasoning,
-                    timestamp: Some(chrono::Local::now().naive_local().to_string()),
-                });
+                items.push(reasoning);
             }
 
             if let Some(response) = context.response {
-                items.push(AiConversationItem {
-                    id: 0,
-                    conversation_id: 0,
-                    payload: response,
-                    timestamp: Some(chrono::Local::now().naive_local().to_string()),
-                });
+                items.push(response);
             }
 
             for tool_call in &context.tool_calls {
-                items.push(AiConversationItem {
-                    id: 0,
-                    conversation_id: 0,
-                    payload: tool_call.clone(),
-                    timestamp: Some(chrono::Local::now().naive_local().to_string()),
-                });
+                items.push(tool_call.clone());
             }
 
             // Go for another request after tool execution, in case the AI wants to say
