@@ -166,15 +166,14 @@ pub fn activate() {
         }
 
         let clamped_interval = weather_config.refresh_interval.max(600);
+        if let Some(elapsed) = WEATHER.cache_check() && elapsed < clamped_interval as i64 {
+            let sleep_duration = clamped_interval as i64 - elapsed;
+            println!("[weather] Sleeping for {sleep_duration} seconds...");
+            tokio::time::sleep(std::time::Duration::from_secs(sleep_duration as u64)).await;
+        }
+
         loop {
-            if let Some(elapsed) = WEATHER.cache_check() && elapsed < clamped_interval as i64 {
-                let sleep_duration = clamped_interval as i64 - elapsed;
-                println!("[weather] Sleeping for {sleep_duration} seconds...");
-                tokio::time::sleep(std::time::Duration::from_secs(sleep_duration as u64)).await;
-            }
-
             WEATHER.fetch().await;
-
             tokio::time::sleep(std::time::Duration::from_secs(clamped_interval)).await;
         }
     });
