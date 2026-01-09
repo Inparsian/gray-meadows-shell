@@ -1,3 +1,12 @@
+@keyframes running-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .left-sidebar-window .left-sidebar-box .AiChat {
     .ai-chat-ui {
         .ai-chat-conversation-controls {
@@ -203,12 +212,23 @@
             }
 
             .ai-chat-input-send-button {
-                @include material-icons;
-                font-size: 16px;
+                .ai-chat-input-send-button-icon {
+                    @include material-icons;
+                    font-size: 18px;
+                    margin-left: 6px;
+                    margin-top: -1px;
+                    margin-bottom: -1px;
+
+                    &.running {
+                        animation: running-spin 1s cubic-bezier(0.0, 0.0, 0.6, 0.8) infinite;
+                    }
+                }
+
                 background: transparent;
                 min-height: 0px;
                 margin-left: 4px;
                 padding: 0px;
+                font-weight: normal;
                 color: $foreground-color-quaternary;
                 
                 &:hover, &:focus {
