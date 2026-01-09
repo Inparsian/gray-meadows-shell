@@ -7,7 +7,7 @@ use gtk4::prelude::*;
 use crate::singletons::ai::{self, SESSION};
 use crate::singletons::ai::images::cache_image_data;
 use super::chat::{Chat, ChatMessage, ChatRole};
-use self::attachments::{ImageAttachment, ImageAttachments};
+use self::attachments::ImageAttachments;
 
 const MIN_INPUT_HEIGHT: i32 = 50;
 const MAX_INPUT_HEIGHT: i32 = 250;
@@ -79,7 +79,7 @@ impl ChatInput {
                         id
                     });
 
-                    let attachments_sent = if !input_attachments.get_attachments().is_empty() {
+                    let attachments_sent = if input_attachments.all_ready() {
                         let mut any_sent = false;
                         for attachment in &input_attachments.get_attachments() {
                             if let Ok(path) = cache_image_data(&attachment.base64) {
@@ -207,9 +207,7 @@ impl ChatInput {
                         move |result| {
                             match result {
                                 Ok(Some(texture)) => {
-                                    if let Ok(image) = ImageAttachment::from_texture(&texture) {
-                                        input_attachments.push(image);
-                                    }
+                                    input_attachments.push_texture(&texture);
                                 },
 
                                 Ok(None) => {

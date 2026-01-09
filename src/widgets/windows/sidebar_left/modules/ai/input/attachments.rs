@@ -1,6 +1,8 @@
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
 use gtk4::prelude::*;
+use gtk4::{glib, gio};
 use uuid::Uuid;
 use base64::Engine as _;
 use image::{ImageBuffer, Rgba};
@@ -10,6 +12,12 @@ pub struct RawImage {
     pub width: i32,
     pub height: i32,
     pub data: Vec<u8>,
+}
+
+struct ProcessedImage {
+    thumbnail_bytes: Vec<u8>,
+    base64: String,
+    mime: String,
 }
 
 impl RawImage {
@@ -33,7 +41,7 @@ impl RawImage {
         })
     }
 
-    pub fn into_image_attachment(self) -> Result<ImageAttachment, anyhow::Error> {
+    fn process_blocking(self) -> Result<ProcessedImage, anyhow::Error> {
         let buffer: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::from_raw(
             self.width as u32,
             self.height as u32,
@@ -44,7 +52,8 @@ impl RawImage {
         buffer.write_to(&mut cursor, image::ImageFormat::Png)?;
 
         let base64 = base64::engine::general_purpose::STANDARD.encode(cursor.get_ref());
-        let thumbnail = {
+        
+        let thumbnail_bytes = {
             let aspect_ratio = self.width as f32 / self.height as f32;
             let (new_width, new_height) = if aspect_ratio > 1.0 {
                 (100, (100.0 / aspect_ratio) as u32)
@@ -61,37 +70,30 @@ impl RawImage {
         
             let mut thumb_cursor = std::io::Cursor::new(Vec::new());
             thumbnail_buffer.write_to(&mut thumb_cursor, image::ImageFormat::Png)?;
-            let thumb_bytes = gtk4::glib::Bytes::from_owned(thumb_cursor.into_inner());
-            gdk4::Texture::from_bytes(&thumb_bytes).ok()
+            thumb_cursor.into_inner()
         };
-        let uuid = Uuid::new_v4().to_string();
-
-        Ok(ImageAttachment {
-            thumbnail,
-            uuid,
-            mime: "image/png".to_owned(),
+        
+        Ok(ProcessedImage {
+            thumbnail_bytes,
             base64,
+            mime: "image/png".to_owned(),
         })
     }
 }
 
 #[derive(Clone)]
 pub struct ImageAttachment {
-    pub thumbnail: Option<gdk4::Texture>,
-    pub uuid: String,
     pub mime: String,
     pub base64: String,
 }
 
-impl ImageAttachment {
-    pub fn from_texture(
-        texture: &gdk4::Texture,
-    ) -> Result<Self, anyhow::Error> {
-        let raw_image = RawImage::from_texture(texture)
-            .ok_or_else(|| anyhow::anyhow!("Failed to get raw image from texture"))?;
-        raw_image.into_image_attachment()
-    }
+#[derive(Clone)]
+enum AttachmentState {
+    Loading,
+    Ready(ImageAttachment),
+}
 
+impl ImageAttachment {
     #[allow(dead_code)]
     pub fn to_data_url(&self) -> String {
         format!("data:{};base64,{}", self.mime, self.base64)
@@ -100,13 +102,24 @@ impl ImageAttachment {
 
 #[derive(Clone)]
 pub struct ImageAttachmentWidget {
-    pub attachment: ImageAttachment,
+    state: Rc<RefCell<AttachmentState>>,
+    cancelled: Arc<AtomicBool>,
+    uuid: String,
     pub widget: gtk4::Box,
 }
 
 impl ImageAttachmentWidget {
-    pub fn new(attachments_ref: ImageAttachments, attachment: ImageAttachment) -> Self {
+    pub fn new_async(
+        attachments_ref: ImageAttachments,
+        raw_image: RawImage,
+    ) -> Self {
+        let uuid = Uuid::new_v4().to_string();
+        let cancelled = Arc::new(AtomicBool::new(false));
+        let state = Rc::new(RefCell::new(AttachmentState::Loading));
+        
         let widget = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        widget.set_size_request(100, 100);
+        
         let overlay = gtk4::Overlay::new();
         widget.append(&overlay);
 
@@ -118,10 +131,10 @@ impl ImageAttachmentWidget {
         w_clamp.set_child(Some(&h_clamp));
         overlay.set_child(Some(&w_clamp));
 
-        let picture = gtk4::Picture::new();
-        picture.set_paintable(attachment.thumbnail.as_ref());
-        picture.set_width_request(100);
-        h_clamp.set_child(Some(&picture));
+        let spinner = gtk4::Label::new(Some("progress_activity"));
+        spinner.set_css_classes(&["ai-chat-input-attachment-spinner"]);
+        spinner.set_size_request(100, 100);
+        h_clamp.set_child(Some(&spinner));
 
         let remove_button = gtk4::Button::new();
         remove_button.set_css_classes(&["ai-chat-input-attachment-remove-button"]);
@@ -129,11 +142,11 @@ impl ImageAttachmentWidget {
         remove_button.set_valign(gtk4::Align::Start);
         remove_button.set_label("close");
         remove_button.connect_clicked({
-            let uuid = attachment.uuid.clone();
+            let uuid = uuid.clone();
             move |_| {
                 let index = {
                     let attachments = attachments_ref.attachments.borrow();
-                    attachments.iter().position(|a| a.attachment.uuid == uuid)
+                    attachments.iter().position(|a| a.uuid == uuid)
                 };
 
                 if let Some(index) = index {
@@ -143,10 +156,71 @@ impl ImageAttachmentWidget {
         });
         overlay.add_overlay(&remove_button);
 
-        Self {
-            attachment,
+        let attachment_widget = Self {
+            state: state.clone(),
+            cancelled: cancelled.clone(),
+            uuid,
             widget,
+        };
+
+        glib::spawn_future_local(async move {
+            let result = gio::spawn_blocking(move || {
+                raw_image.process_blocking()
+            }).await;
+
+            if cancelled.load(Ordering::SeqCst) {
+                return;
+            }
+
+            match result {
+                Ok(Ok(processed)) => {
+                    let thumb_bytes = glib::Bytes::from_owned(processed.thumbnail_bytes);
+                    let thumbnail = gdk4::Texture::from_bytes(&thumb_bytes).ok();
+
+                    let attachment = ImageAttachment {
+                        mime: processed.mime,
+                        base64: processed.base64,
+                    };
+
+                    *state.borrow_mut() = AttachmentState::Ready(attachment);
+
+                    spinner.set_visible(false);
+                    let picture = gtk4::Picture::new();
+                    picture.set_paintable(thumbnail.as_ref());
+                    picture.set_width_request(100);
+                    h_clamp.set_child(Some(&picture));
+                }
+                Ok(Err(e)) => {
+                    eprintln!("Failed to process image: {e}");
+                    spinner.set_visible(false);
+                    let label = gtk4::Label::new(Some("Error"));
+                    h_clamp.set_child(Some(&label));
+                }
+                Err(e) => {
+                    eprintln!("Background task failed: {e:?}");
+                    spinner.set_visible(false);
+                    let label = gtk4::Label::new(Some("Error"));
+                    h_clamp.set_child(Some(&label));
+                }
+            }
+        });
+
+        attachment_widget
+    }
+
+    pub fn get_attachment(&self) -> Option<ImageAttachment> {
+        match &*self.state.borrow() {
+            AttachmentState::Loading => None,
+            AttachmentState::Ready(attachment) => Some(attachment.clone()),
         }
+    }
+
+    pub fn is_ready(&self) -> bool {
+        matches!(&*self.state.borrow(), AttachmentState::Ready(_))
+    }
+
+    pub fn cancel(&self) {
+        self.cancelled.store(true, Ordering::SeqCst);
     }
 }
 
@@ -180,28 +254,33 @@ impl ImageAttachments {
         self.attachments
             .borrow()
             .iter()
-            .map(|widget| widget.attachment.clone())
+            .filter_map(|widget| widget.get_attachment())
             .collect()
     }
 
-    pub fn push(&self, attachment: ImageAttachment) {
-        let widget = ImageAttachmentWidget::new(
-            self.clone(),
-            attachment,
-        );
+    pub fn all_ready(&self) -> bool {
+        self.attachments.borrow().iter().all(|w| w.is_ready())
+    }
 
-        self.bx.append(&widget.widget);
-        self.attachments.borrow_mut().push(widget);
-        self.container.set_reveal_child(!self.attachments.borrow().is_empty());
+    pub fn push_texture(&self, texture: &gdk4::Texture) {
+        if let Some(raw_image) = RawImage::from_texture(texture) {
+            let widget = ImageAttachmentWidget::new_async(self.clone(), raw_image);
+            self.bx.append(&widget.widget);
+            self.attachments.borrow_mut().push(widget);
+            self.container.set_reveal_child(true);
+        }
     }
 
     pub fn remove(&self, index: usize) {
-        self.bx.remove(&self.attachments.borrow_mut().remove(index).widget);
+        let widget = self.attachments.borrow_mut().remove(index);
+        widget.cancel();
+        self.bx.remove(&widget.widget);
         self.container.set_reveal_child(!self.attachments.borrow().is_empty());
     }
 
     pub fn clear(&self) {
         for widget in self.attachments.borrow_mut().drain(..) {
+            widget.cancel();
             self.bx.remove(&widget.widget);
         }
         self.container.set_reveal_child(false);
