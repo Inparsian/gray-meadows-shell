@@ -1,15 +1,19 @@
+mod attachments;
+
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use gtk4::prelude::*;
 
 use crate::singletons::ai::{self, SESSION};
 use super::chat::{Chat, ChatMessage, ChatRole};
+use self::attachments::{ImageAttachment, ImageAttachments};
 
 const MIN_INPUT_HEIGHT: i32 = 50;
 const MAX_INPUT_HEIGHT: i32 = 250;
 
 pub struct ChatInput {
     pub widget: gtk4::Box,
+    pub attachments: ImageAttachments,
     pub input_send_icon: gtk4::Label,
     pub input_send_label: gtk4::Label,
 }
@@ -19,8 +23,11 @@ impl ChatInput {
         chat: &Chat,
         scroll_to_bottom: &Rc<dyn Fn()>,
     ) -> Self {
-        let input_box = gtk4::Box::new(gtk4::Orientation::Vertical, 4);
+        let input_box = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
         input_box.set_css_classes(&["ai-chat-input-box"]);
+
+        let input_attachments = ImageAttachments::default();
+        input_box.append(&input_attachments.container);
 
         let input_scrolled_window = gtk4::ScrolledWindow::new();
         input_scrolled_window.set_policy(gtk4::PolicyType::Never, gtk4::PolicyType::Never);
@@ -166,6 +173,36 @@ impl ChatInput {
             }
         });
         input.add_controller(key_controller);
+        input.connect_paste_clipboard({
+            move |input| {
+                let clipboard = input.clipboard();
+                let formats = clipboard.formats();
+                
+                if formats.contains_type(gdk4::Texture::static_type()) {
+                    clipboard.read_texture_async(None::<&gtk4::gio::Cancellable>, {
+                        let input_attachments = input_attachments.clone();
+                        move |result| {
+                            match result {
+                                Ok(Some(texture)) => {
+                                    if let Ok(image) = ImageAttachment::from_texture(&texture) {
+                                        input_attachments.push(image);
+                                    }
+                                },
+
+                                Ok(None) => {
+                                    eprintln!("No texture found in clipboard");
+                                },
+
+                                Err(err) => {
+                                    eprintln!("Error reading texture from clipboard: {:#?}", err);
+                                },
+                            }
+                        }
+                    });
+                }
+            }
+        });
+
         input_overlay.set_child(Some(&input));
 
         let input_send_button = gtk4::Button::new();
@@ -187,6 +224,7 @@ impl ChatInput {
 
         Self {
             widget: input_box,
+            attachments: ImageAttachments::default(),
             input_send_icon,
             input_send_label,
         }
