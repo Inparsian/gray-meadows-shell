@@ -148,7 +148,7 @@ impl super::AiService for GeminiService {
             let mut builder = Self::transform_items_into_builder(items, &client)
                 .with_system_prompt(transform_variables(system_prompt.as_str()))
                 .with_thinking_config(ThinkingConfig {
-                    thinking_budget: matches!(thinking_level.as_str(), "low" | "high").then_some(thinking_budget),
+                    thinking_budget: (!matches!(thinking_level.as_str(), "low" | "high")).then_some(thinking_budget),
                     include_thoughts: Some(true),
                     thinking_level: match thinking_level.as_str() {
                         "low" => Some(ThinkingLevel::Low),
