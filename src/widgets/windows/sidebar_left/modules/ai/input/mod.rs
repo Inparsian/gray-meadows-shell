@@ -5,6 +5,7 @@ use std::rc::Rc;
 use gtk4::prelude::*;
 
 use crate::singletons::ai::{self, SESSION};
+use crate::singletons::ai::images::cache_image_data;
 use super::chat::{Chat, ChatMessage, ChatRole};
 use self::attachments::{ImageAttachment, ImageAttachments};
 
@@ -13,7 +14,6 @@ const MAX_INPUT_HEIGHT: i32 = 250;
 
 pub struct ChatInput {
     pub widget: gtk4::Box,
-    pub attachments: ImageAttachments,
     pub input_send_icon: gtk4::Label,
     pub input_send_label: gtk4::Label,
 }
@@ -51,6 +51,7 @@ impl ChatInput {
             let chat = chat.clone();
             let scroll_to_bottom = scroll_to_bottom.clone();
             let input = input.clone();
+            let input_attachments = input_attachments.clone();
             move || {
                 let buffer = input.buffer();
                 let text = buffer.text(
@@ -65,19 +66,41 @@ impl ChatInput {
                     {
                         *stop_flag = true;
                     }
-                } else if !text.is_empty() {
-                    let id = ai::send_user_message(&text);
-                    let message = ChatMessage::new(
-                        &ChatRole::User,
-                        Some(text),
-                    );
-                    message.set_id(id);
-                    chat.add_message(message);
-                    scroll_to_bottom();
+                } else {
+                    let text_sent = (!text.is_empty()).then(|| { let id = ai::send_user_message(&text);
+                        let message = ChatMessage::new(
+                            ChatRole::User,
+                            Some(text),
+                        );
+                        message.set_id(id);
+                        chat.add_message(message);
 
-                    tokio::spawn(ai::start_request_cycle());
+                        input.buffer().set_text("");
+                        id
+                    });
 
-                    input.buffer().set_text("");
+                    let attachments_sent = if !input_attachments.get_attachments().is_empty() {
+                        let mut any_sent = false;
+                        for attachment in &input_attachments.get_attachments() {
+                            if let Ok(path) = cache_image_data(&attachment.base64) {
+                                let id = ai::send_user_image(&path);
+                                chat.assert_last_message_is_role(ChatRole::User, text_sent.or(Some(id)));
+                                chat.append_image_to_latest_message(&path);
+                                any_sent = true;
+                            }
+                        }
+
+                        input_attachments.clear();
+                        any_sent
+                    } else {
+                        false
+                    };
+
+                    if text_sent.is_some() || attachments_sent {
+                        scroll_to_bottom();
+
+                        tokio::spawn(ai::start_request_cycle());
+                    }
                 }
             }
         });
@@ -224,7 +247,6 @@ impl ChatInput {
 
         Self {
             widget: input_box,
-            attachments: ImageAttachments::default(),
             input_send_icon,
             input_send_label,
         }

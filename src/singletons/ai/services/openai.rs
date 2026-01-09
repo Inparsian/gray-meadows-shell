@@ -166,6 +166,9 @@ impl OpenAiService {
                     status: None,
                 }))
             },
+
+            // TODO: add user images here
+            _ => None,
         }
     }
 

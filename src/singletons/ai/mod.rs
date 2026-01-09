@@ -1,6 +1,7 @@
 mod tools;
 mod variables;
 mod services;
+pub mod images;
 pub mod types;
 pub mod conversation;
 
@@ -248,5 +249,16 @@ pub fn send_user_message(message: &str) -> i64 {
         role: "user".to_owned(),
         content: message.to_owned(),
         thought_signature: None,
+    })
+}
+
+pub fn send_user_image(path: &str) -> i64 {
+    if SESSION.get().is_none() {
+        eprintln!("AI session not initialized");
+        return 0;
+    }
+
+    write_item_payload(AiConversationItemPayload::Image {
+        path: path.to_owned(),
     })
 }

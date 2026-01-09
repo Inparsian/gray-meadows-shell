@@ -2,6 +2,7 @@ use std::pin::Pin;
 use std::sync::{Arc, RwLock};
 use futures::StreamExt as _;
 use gemini_rust::{
+    Blob,
     Content, ContentBuilder,
     FunctionCall,
     Gemini, Part, Role,
@@ -10,6 +11,7 @@ use gemini_rust::{
 
 use crate::broadcast::BroadcastChannel;
 use crate::config::read_config;
+use crate::singletons::ai::images::load_image_data;
 use crate::singletons::ai::tools::gemini::add_gemini_tools;
 use super::super::variables::transform_variables;
 use super::super::{AiChannelMessage, AiConversationItem, AiConversationItemPayload, AiConversationDelta};
@@ -27,6 +29,7 @@ pub struct GeminiService;
 impl GeminiService {
     fn transform_items_into_builder(items: Vec<AiConversationItem>, client: &Gemini) -> ContentBuilder {
         let mut assistant_parts: Vec<Part> = vec![];
+        let mut user_parts: Vec<Part> = vec![];
         let mut builder = client.generate_content();
 
         let flush_assistant_parts = |assistant_parts: &mut Vec<Part>, builder: &mut ContentBuilder| {
@@ -34,6 +37,15 @@ impl GeminiService {
                 builder.contents.push(Content {
                     parts: Some(std::mem::take(assistant_parts)),
                     role: Some(Role::Model)
+                });
+            }
+        };
+
+        let flush_user_parts = |user_parts: &mut Vec<Part>, builder: &mut ContentBuilder| {
+            if !user_parts.is_empty() {
+                builder.contents.push(Content {
+                    parts: Some(std::mem::take(user_parts)),
+                    role: Some(Role::User)
                 });
             }
         };
@@ -49,6 +61,7 @@ impl GeminiService {
 
                     match role {
                         "assistant" => {
+                            flush_user_parts(&mut user_parts, &mut builder);
                             assistant_parts.push(Part::Text {
                                 text: content.clone(),
                                 thought: Some(false),
@@ -58,11 +71,16 @@ impl GeminiService {
 
                         "user" => {
                             flush_assistant_parts(&mut assistant_parts, &mut builder);
-                            builder = builder.with_user_message(content);
+                            user_parts.push(Part::Text {
+                                text: content.clone(),
+                                thought: Some(false),
+                                thought_signature: None,
+                            });
                         },
 
                         "system" => {
                             flush_assistant_parts(&mut assistant_parts, &mut builder);
+                            flush_user_parts(&mut user_parts, &mut builder);
                             builder = builder.with_system_prompt(content);
                         },
 
@@ -70,7 +88,20 @@ impl GeminiService {
                     }
                 },
 
+                AiConversationItemPayload::Image { path, .. } => if let Ok(data) = load_image_data(path) {
+                    flush_assistant_parts(&mut assistant_parts, &mut builder);
+                    
+                    user_parts.push(Part::InlineData {
+                        inline_data: Blob {
+                            mime_type: "image/png".to_owned(),
+                            data,
+                        },
+                        media_resolution: None,
+                    });
+                },
+
                 AiConversationItemPayload::Reasoning { summary, encrypted_content, .. } => {
+                    flush_user_parts(&mut user_parts, &mut builder);
                     let thought_signature = if encrypted_content.is_empty() {
                         None
                     } else {
@@ -85,6 +116,7 @@ impl GeminiService {
                 },
 
                 AiConversationItemPayload::FunctionCall { name, arguments, thought_signature, .. } => {
+                    flush_user_parts(&mut user_parts, &mut builder);
                     let json_arguments = serde_json::from_str::<serde_json::Value>(arguments)
                         .unwrap_or(serde_json::Value::Null);
 
@@ -102,6 +134,7 @@ impl GeminiService {
                 },
 
                 AiConversationItemPayload::FunctionCallOutput { name, output, .. } => {
+                    flush_user_parts(&mut user_parts, &mut builder);
                     flush_assistant_parts(&mut assistant_parts, &mut builder);
 
                     let json_output = serde_json::from_str::<serde_json::Value>(output)
@@ -116,6 +149,8 @@ impl GeminiService {
                 },
             }
         }
+
+        flush_user_parts(&mut user_parts, &mut builder);
 
         builder
     }

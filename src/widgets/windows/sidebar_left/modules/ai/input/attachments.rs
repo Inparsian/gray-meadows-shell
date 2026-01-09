@@ -176,6 +176,14 @@ impl Default for ImageAttachments {
 }
 
 impl ImageAttachments {
+    pub fn get_attachments(&self) -> Vec<ImageAttachment> {
+        self.attachments
+            .borrow()
+            .iter()
+            .map(|widget| widget.attachment.clone())
+            .collect()
+    }
+
     pub fn push(&self, attachment: ImageAttachment) {
         let widget = ImageAttachmentWidget::new(
             self.clone(),
@@ -190,5 +198,12 @@ impl ImageAttachments {
     pub fn remove(&self, index: usize) {
         self.bx.remove(&self.attachments.borrow_mut().remove(index).widget);
         self.container.set_reveal_child(!self.attachments.borrow().is_empty());
+    }
+
+    pub fn clear(&self) {
+        for widget in self.attachments.borrow_mut().drain(..) {
+            self.bx.remove(&widget.widget);
+        }
+        self.container.set_reveal_child(false);
     }
 }

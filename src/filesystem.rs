@@ -31,6 +31,11 @@ pub fn get_config_directory() -> String {
     format!("{}/.config/gray-meadows", home)
 }
 
+pub fn get_local_data_directory() -> String {
+    let home = get_home_directory();
+    format!("{}/.local/share/gray-meadows", home)
+}
+
 pub fn get_xdg_runtime_directory() -> String {
     std::env::var("XDG_RUNTIME_DIR").unwrap_or_else(|_| {
         let home = get_home_directory();

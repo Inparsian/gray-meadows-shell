@@ -187,6 +187,11 @@
                     color: $foreground-color-secondary;
                 }
             }
+
+            .ai-chat-message-image {
+                margin-top: 12px;
+                border: 1px solid $border-color-primary;
+            }
         }
 
         .ai-chat-input-box {
