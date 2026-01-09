@@ -216,10 +216,10 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                     AiChannelMessage::CycleFinished => {
                         input.set_send_button_running(false);
 
-                        if let Some(latest_message) = chat.messages.borrow_mut().last_mut()
-                            && latest_message.content.is_none()
-                        {
-                            latest_message.set_content("");
+                        if chat.messages.borrow().last().is_some_and(
+                            |latest| latest.content.is_none() && latest.thinking.is_none()
+                        ) {
+                            chat.remove_latest_message();
                         }
                     },
 
