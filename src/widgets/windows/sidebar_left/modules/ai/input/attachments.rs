@@ -21,6 +21,11 @@ impl RawImage {
         let mut bytes = vec![0_u8; buffer_size];
         texture.download(&mut bytes, stride as usize);
 
+        // GDK4 downloads as BGRA, convert to RGBA
+        for pixel in bytes.chunks_exact_mut(4) {
+            pixel.swap(0, 2);
+        }
+
         Some(Self {
             width,
             height,
@@ -28,7 +33,7 @@ impl RawImage {
         })
     }
 
-    pub fn into_image_attachment(self, texture: Option<&gdk4::Texture>) -> Result<ImageAttachment, anyhow::Error> {
+    pub fn into_image_attachment(self) -> Result<ImageAttachment, anyhow::Error> {
         let buffer: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::from_raw(
             self.width as u32,
             self.height as u32,
@@ -39,8 +44,26 @@ impl RawImage {
         buffer.write_to(&mut cursor, image::ImageFormat::Png)?;
 
         let base64 = base64::engine::general_purpose::STANDARD.encode(cursor.get_ref());
-        let glib_bytes = gtk4::glib::Bytes::from_owned(cursor.into_inner());
-        let thumbnail = texture.cloned().or_else(|| gdk4::Texture::from_bytes(&glib_bytes).ok());
+        let thumbnail = {
+            let aspect_ratio = self.width as f32 / self.height as f32;
+            let (new_width, new_height) = if aspect_ratio > 1.0 {
+                (100, (100.0 / aspect_ratio) as u32)
+            } else {
+                ((100.0 * aspect_ratio) as u32, 100)
+            };
+        
+            let thumbnail_buffer = image::imageops::resize(
+                &buffer,
+                new_width,
+                new_height,
+                image::imageops::FilterType::Lanczos3,
+            );
+        
+            let mut thumb_cursor = std::io::Cursor::new(Vec::new());
+            thumbnail_buffer.write_to(&mut thumb_cursor, image::ImageFormat::Png)?;
+            let thumb_bytes = gtk4::glib::Bytes::from_owned(thumb_cursor.into_inner());
+            gdk4::Texture::from_bytes(&thumb_bytes).ok()
+        };
         let uuid = Uuid::new_v4().to_string();
 
         Ok(ImageAttachment {
@@ -66,7 +89,7 @@ impl ImageAttachment {
     ) -> Result<Self, anyhow::Error> {
         let raw_image = RawImage::from_texture(texture)
             .ok_or_else(|| anyhow::anyhow!("Failed to get raw image from texture"))?;
-        raw_image.into_image_attachment(Some(texture))
+        raw_image.into_image_attachment()
     }
 
     #[allow(dead_code)]
