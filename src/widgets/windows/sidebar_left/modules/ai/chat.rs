@@ -311,17 +311,23 @@ impl ChatMessage {
 #[derive(Debug, Clone)]
 pub struct Chat {
     pub messages: Rc<RefCell<Vec<ChatMessage>>>,
-    pub root: gtk4::Box,
+    pub bx: gtk4::Box,
+    pub root: gtk4::Viewport,
 }
 
 impl Default for Chat {
     fn default() -> Self {
-        let root = gtk4::Box::new(gtk4::Orientation::Vertical, 8);
-        root.set_css_classes(&["ai-chat-messages"]);
-        root.set_valign(gtk4::Align::Start);
+        let bx = gtk4::Box::new(gtk4::Orientation::Vertical, 8);
+        bx.set_css_classes(&["ai-chat-messages"]);
+        bx.set_valign(gtk4::Align::Start);
+
+        let root = gtk4::Viewport::default();
+        root.set_vscroll_policy(gtk4::ScrollablePolicy::Natural);
+        root.set_child(Some(&bx));
 
         Self {
             messages: Rc::new(RefCell::new(Vec::new())),
+            bx,
             root,
         }
     }
@@ -330,8 +336,8 @@ impl Default for Chat {
 impl Chat {
     pub fn clear_messages(&self) {
         self.messages.borrow_mut().clear();
-        self.root.iter_children().for_each(|child| {
-            self.root.remove(&child);
+        self.bx.iter_children().for_each(|child| {
+            self.bx.remove(&child);
         });
     }
 
@@ -347,7 +353,7 @@ impl Chat {
 
         messages.retain(|message| {
             if let Some(id) = *message.id.borrow() && ids_to_remove.contains(&id) {
-                self.root.remove(&message.root);
+                self.bx.remove(&message.root);
                 return false;
             }
             true
@@ -355,13 +361,13 @@ impl Chat {
     }
 
     pub fn add_message(&self, message: ChatMessage) {
-        self.root.append(&message.root);
+        self.bx.append(&message.root);
         self.messages.borrow_mut().push(message);
     }
 
     pub fn remove_latest_message(&self) -> Option<ChatMessage> {
         if let Some(message) = self.messages.borrow_mut().pop() {
-            self.root.remove(&message.root);
+            self.bx.remove(&message.root);
             Some(message)
         } else {
             None
