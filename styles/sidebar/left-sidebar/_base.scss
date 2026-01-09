@@ -9,10 +9,41 @@
 
     .left-sidebar-box {
         @include normal-text;
+        transition: min-width 1s cubic-bezier(0.33, 0, 0, 1);
         background-color: $background-color-primary;
         border: 1px solid $border-color-primary;
         color: $foreground-color-primary;
         padding: 8px;
         min-width: 400px;
+
+        &.expanded {
+            min-width: 1000px;
+
+            .left-sidebar-expand-button .left-sidebar-expand-button-icon {
+                transform: rotate(-180deg);
+            }
+        }
+
+        .left-sidebar-expand-button {
+            background: transparent;
+            padding: 0px;
+            font-weight: normal;
+            color: $foreground-color-quaternary;
+            
+            &:hover, &:focus {
+                color: $foreground-color-tertiary;
+                outline: none;
+            }
+        
+            &:active {
+                color: $foreground-color-secondary;
+            }
+
+            .left-sidebar-expand-button-icon {
+                @include material-icons;
+                transition: transform 1s cubic-bezier(0.33, 0, 0, 1);
+                font-size: 24px;
+            }
+        }
     }
 }
