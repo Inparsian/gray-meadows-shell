@@ -29,6 +29,16 @@ impl ChatInput {
         input_scrolled_window.set_max_content_height(MAX_INPUT_HEIGHT);
         input_box.append(&input_scrolled_window);
 
+        let input_overlay = gtk4::Overlay::new();
+        input_scrolled_window.set_child(Some(&input_overlay));
+
+        let input_placeholder = gtk4::Label::new(Some("Type your message here"));
+        input_placeholder.set_css_classes(&["ai-chat-input-placeholder"]);
+        input_placeholder.set_halign(gtk4::Align::Start);
+        input_placeholder.set_valign(gtk4::Align::Start);
+        input_placeholder.set_can_target(false);
+        input_overlay.add_overlay(&input_placeholder);
+
         let input = gtk4::TextView::new();
         let send_current_input = Rc::new({
             let chat = chat.clone();
@@ -72,8 +82,17 @@ impl ChatInput {
         input.set_valign(gtk4::Align::Start);
         input.buffer().connect_changed({
             let input = input.clone();
-            let input_scrolled_window = input_scrolled_window.clone();
-            move |_| {
+            move |buffer| {
+                if buffer.text(
+                    &buffer.start_iter(),
+                    &buffer.end_iter(),
+                    false
+                ).is_empty() {
+                    input_placeholder.set_visible(true);
+                } else {
+                    input_placeholder.set_visible(false);
+                }
+
                 if measuring.get() {
                     return;
                 }
@@ -147,7 +166,7 @@ impl ChatInput {
             }
         });
         input.add_controller(key_controller);
-        input_scrolled_window.set_child(Some(&input));
+        input_overlay.set_child(Some(&input));
 
         let input_send_button = gtk4::Button::new();
         input_send_button.set_css_classes(&["ai-chat-input-send-button"]);

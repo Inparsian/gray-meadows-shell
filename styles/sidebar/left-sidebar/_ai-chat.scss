@@ -195,6 +195,11 @@
             padding: 8px;
             margin-top: 8px;
 
+            .ai-chat-input-placeholder {
+                padding: 4px;
+                color: $foreground-color-secondary;
+            }
+
             .ai-chat-input {
                 background: transparent;
                 color: $foreground-color-primary;
