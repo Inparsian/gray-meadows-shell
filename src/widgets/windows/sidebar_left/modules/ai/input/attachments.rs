@@ -17,7 +17,6 @@ pub struct RawImage {
 struct ProcessedImage {
     thumbnail_bytes: Vec<u8>,
     base64: String,
-    mime: String,
 }
 
 impl RawImage {
@@ -76,14 +75,12 @@ impl RawImage {
         Ok(ProcessedImage {
             thumbnail_bytes,
             base64,
-            mime: "image/png".to_owned(),
         })
     }
 }
 
 #[derive(Clone)]
 pub struct ImageAttachment {
-    pub mime: String,
     pub base64: String,
 }
 
@@ -91,13 +88,6 @@ pub struct ImageAttachment {
 enum AttachmentState {
     Loading,
     Ready(ImageAttachment),
-}
-
-impl ImageAttachment {
-    #[allow(dead_code)]
-    pub fn to_data_url(&self) -> String {
-        format!("data:{};base64,{}", self.mime, self.base64)
-    }
 }
 
 #[derive(Clone)]
@@ -178,7 +168,6 @@ impl ImageAttachmentWidget {
                     let thumbnail = gdk4::Texture::from_bytes(&thumb_bytes).ok();
 
                     let attachment = ImageAttachment {
-                        mime: processed.mime,
                         base64: processed.base64,
                     };
 
