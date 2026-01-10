@@ -199,9 +199,9 @@ pub fn get_items(conversation_id: i64) -> Result<Vec<AiConversationItem>, Box<dy
     }
 }
 
-/// Gets every single image item path that's stored in AI chat conversations.
-pub fn get_all_image_item_paths() -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    let mut paths = Vec::new();
+/// Gets every single image item UUID that's stored in AI chat conversations.
+pub fn get_all_image_item_uuids() -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    let mut uuids = Vec::new();
     if let Some(connection) = SQL_CONNECTION.get() {
         let connection = connection.lock()?;
         let mut cursor = connection.prepare(
@@ -211,11 +211,11 @@ pub fn get_all_image_item_paths() -> Result<Vec<String>, Box<dyn std::error::Err
         while cursor.next()? == sqlite::State::Row {
             let payload_str = cursor.read::<String, _>(0)?;
             let payload: AiConversationItemPayload = serde_json::from_str(&payload_str)?;
-            if let AiConversationItemPayload::Image { path } = payload {
-                paths.push(path);
+            if let AiConversationItemPayload::Image { uuid } = payload {
+                uuids.push(uuid);
             }
         }
-        Ok(paths)
+        Ok(uuids)
     } else {
         Err("No database connection available".into())
     }

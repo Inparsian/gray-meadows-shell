@@ -37,7 +37,7 @@ pub enum AiConversationItemPayload {
 
     // Only users can provide images.
     Image {
-        path: String,
+        uuid: String,
     },
 
     Reasoning {

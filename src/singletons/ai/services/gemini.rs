@@ -88,7 +88,7 @@ impl GeminiService {
                     }
                 },
 
-                AiConversationItemPayload::Image { path, .. } => if let Ok(data) = load_image_data(path) {
+                AiConversationItemPayload::Image { uuid, .. } => if let Ok(data) = load_image_data(uuid) {
                     flush_assistant_parts(&mut assistant_parts, &mut builder);
                     
                     user_parts.push(Part::InlineData {

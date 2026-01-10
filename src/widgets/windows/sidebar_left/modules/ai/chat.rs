@@ -9,6 +9,7 @@ use crate::config::read_config;
 use crate::filesystem;
 use crate::gesture;
 use crate::singletons::ai;
+use crate::singletons::ai::images::uuid_to_file_path;
 use crate::widgets::common::loading;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -427,10 +428,10 @@ impl Chat {
         }
     }
 
-    pub fn append_image_to_latest_message(&self, path: &str) {
+    pub fn append_image_to_latest_message(&self, uuid: &str) {
         let mut messages = self.messages.borrow_mut();
         if let Some(latest_message) = messages.last_mut() {
-            match gtk4::gdk::Texture::from_filename(path) {
+            match gtk4::gdk::Texture::from_filename(uuid_to_file_path(uuid)) {
                 Ok(texture) => {
                     let w_clamp = libadwaita::Clamp::new();
                     w_clamp.set_maximum_size(300);
@@ -457,7 +458,7 @@ impl Chat {
                 },
 
                 Err(err) => {
-                    eprintln!("Failed to load image from path {}: {:#?}", path, err);
+                    eprintln!("Failed to load image with UUID {}: {:#?}", uuid, err);
                 }
             }
         }

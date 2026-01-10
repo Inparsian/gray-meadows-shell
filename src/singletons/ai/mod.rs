@@ -254,13 +254,13 @@ pub fn send_user_message(message: &str) -> i64 {
     })
 }
 
-pub fn send_user_image(path: &str) -> i64 {
+pub fn send_user_image(uuid: &str) -> i64 {
     if SESSION.get().is_none() {
         eprintln!("AI session not initialized");
         return 0;
     }
 
     write_item_payload(AiConversationItemPayload::Image {
-        path: path.to_owned(),
+        uuid: uuid.to_owned(),
     })
 }

@@ -180,11 +180,7 @@ impl OpenAiService {
                     }));
                 },
 
-                AiConversationItemPayload::Image { path } => {
-                    let Ok(base64_data) = load_image_data(&path) else {
-                        continue;
-                    };
-
+                AiConversationItemPayload::Image { uuid } => if let Ok(base64_data) = load_image_data(&uuid) {
                     user_parts.push(InputContent::InputImage(InputImageContent {
                         detail: ImageDetail::Auto,
                         file_id: None,

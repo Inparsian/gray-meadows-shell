@@ -155,9 +155,9 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                                     }
                                 },
 
-                                AiConversationItemPayload::Image { path, .. } => {
+                                AiConversationItemPayload::Image { uuid, .. } => {
                                     chat.assert_last_message_is_role(ChatRole::User, Some(item.id));
-                                    chat.append_image_to_latest_message(path);
+                                    chat.append_image_to_latest_message(uuid);
                                 },
 
                                 AiConversationItemPayload::Reasoning { summary, .. } => {
