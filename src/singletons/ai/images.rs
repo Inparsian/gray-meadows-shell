@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use base64::Engine as _;
 use uuid::Uuid;
 
@@ -35,10 +36,13 @@ pub fn load_image_data(uuid: &str) -> Result<String, anyhow::Error> {
 pub fn collect_garbage() {
     let images_dir = get_ai_images_directory();
     let used_uuids = aichats::get_all_image_item_uuids().unwrap_or_default();
+    let used_set: HashSet<String> = used_uuids.into_iter()
+        .map(|uuid| format!("{}.png", uuid))
+        .collect();
 
     if let Ok(entries) = std::fs::read_dir(&images_dir) {
         for entry in entries.flatten() {
-            if used_uuids.iter().all(|uuid| format!("{}.png", uuid) != entry.file_name().to_string_lossy()) {
+            if !used_set.contains(&entry.file_name().to_string_lossy().to_string()) {
                 let _ = std::fs::remove_file(entry.path());
             }
         }
