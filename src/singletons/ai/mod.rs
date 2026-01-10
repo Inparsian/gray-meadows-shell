@@ -129,6 +129,8 @@ pub fn activate() {
     } else {
         conversation::load_first_conversation();
     }
+
+    images::collect_garbage();
 }
 
 pub async fn start_request_cycle() {
