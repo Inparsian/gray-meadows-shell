@@ -430,22 +430,35 @@ impl Chat {
     pub fn append_image_to_latest_message(&self, path: &str) {
         let mut messages = self.messages.borrow_mut();
         if let Some(latest_message) = messages.last_mut() {
-            let texture = gtk4::gdk::Texture::from_filename(path);
-            if texture.is_err() {
-                eprintln!("Failed to load image from path: {}", path);
-                return;
-            }
+            match gtk4::gdk::Texture::from_filename(path) {
+                Ok(texture) => {
+                    let w_clamp = libadwaita::Clamp::new();
+                    w_clamp.set_maximum_size(300);
+                    w_clamp.set_unit(libadwaita::LengthUnit::Px);
+                    w_clamp.set_halign(gtk4::Align::Start);
+                    w_clamp.set_valign(gtk4::Align::Start);
+                    
+                    let h_clamp = libadwaita::Clamp::new();
+                    h_clamp.set_maximum_size(300);
+                    h_clamp.set_unit(libadwaita::LengthUnit::Px);
+                    h_clamp.set_orientation(gtk4::Orientation::Vertical);
+                    w_clamp.set_child(Some(&h_clamp));
 
-            let picture = gtk4::Picture::new();
-            picture.set_css_classes(&["ai-chat-message-image"]);
-            picture.set_halign(gtk4::Align::Start);
-            picture.set_valign(gtk4::Align::Start);
-            picture.set_paintable(texture.as_ref().ok());
-            picture.set_content_fit(gtk4::ContentFit::ScaleDown);
-            latest_message.footer.append(&picture);
+                    let picture = gtk4::Picture::new();
+                    picture.set_css_classes(&["ai-chat-message-image"]);
+                    picture.set_paintable(Some(&texture));
+                    picture.set_content_fit(gtk4::ContentFit::ScaleDown);
+                    h_clamp.set_child(Some(&picture));
+                    latest_message.footer.append(&w_clamp);
 
-            if latest_message.content.is_none() {
-                latest_message.set_content("");
+                    if latest_message.content.is_none() {
+                        latest_message.set_content("");
+                    }
+                },
+
+                Err(err) => {
+                    eprintln!("Failed to load image from path {}: {:#?}", path, err);
+                }
             }
         }
     }

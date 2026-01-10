@@ -133,6 +133,7 @@ impl PopupWindow {
         } else {
             height
         });
+        clamp.set_unit(libadwaita::LengthUnit::Px);
         clamp.set_margin_top(margin.top);
         clamp.set_margin_end(margin.right);
         clamp.set_margin_bottom(margin.bottom);

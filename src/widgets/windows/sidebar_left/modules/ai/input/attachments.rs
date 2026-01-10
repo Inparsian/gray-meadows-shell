@@ -115,8 +115,10 @@ impl ImageAttachmentWidget {
 
         let w_clamp = libadwaita::Clamp::new();
         w_clamp.set_maximum_size(100);
+        w_clamp.set_unit(libadwaita::LengthUnit::Px);
         let h_clamp = libadwaita::Clamp::new();
         h_clamp.set_maximum_size(100);
+        h_clamp.set_unit(libadwaita::LengthUnit::Px);
         h_clamp.set_orientation(gtk4::Orientation::Vertical);
         w_clamp.set_child(Some(&h_clamp));
         overlay.set_child(Some(&w_clamp));
