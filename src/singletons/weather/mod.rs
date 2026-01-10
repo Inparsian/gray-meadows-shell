@@ -12,46 +12,39 @@ use self::schemas::openmeteo::OpenMeteoResponse;
 
 pub static WEATHER: LazyLock<Weather> = LazyLock::new(Weather::default);
 
-pub const WMO_CODES: &[WmoCode] = &[
-    WmoCode { code: 0, text: "Clear sky", short_text: "clear", day_icon: "clear_day", night_icon: "moon_stars" },
-    WmoCode { code: 1, text: "Mainly clear", short_text: "clearish", day_icon: "partly_cloudy_day", night_icon: "partly_cloudy_night" },
-    WmoCode { code: 2, text: "Partly cloudy", short_text: "cloudyish", day_icon: "partly_cloudy_day", night_icon: "partly_cloudy_night" },
-    WmoCode { code: 3, text: "Mostly cloudy", short_text: "cloudy", day_icon: "cloud", night_icon: "cloud" },
-    WmoCode { code: 45, text: "Fog", short_text: "fog", day_icon: "foggy", night_icon: "foggy" },
-    WmoCode { code: 48, text: "Fog", short_text: "fog", day_icon: "foggy", night_icon: "foggy" },
-    WmoCode { code: 51, text: "Light drizzle", short_text: "drizzle (l)", day_icon: "rainy_light", night_icon: "rainy_light" },
-    WmoCode { code: 53, text: "Drizzle", short_text: "drizzle", day_icon: "rainy", night_icon: "rainy" },
-    WmoCode { code: 55, text: "Dense drizzle", short_text: "drizzle (h)", day_icon: "rainy_heavy", night_icon: "rainy_heavy" },
-    WmoCode { code: 56, text: "Light freezing drizzle", short_text: "drizzle (fl)", day_icon: "rainy_light", night_icon: "rainy_light" },
-    WmoCode { code: 57, text: "Dense freezing drizzle", short_text: "drizzle (fh)", day_icon: "rainy_heavy", night_icon: "rainy_heavy" },
-    WmoCode { code: 61, text: "Slight rain", short_text: "rain (l)", day_icon: "rainy_light", night_icon: "rainy_light" },
-    WmoCode { code: 63, text: "Rain", short_text: "rain", day_icon: "rainy", night_icon: "rainy" },
-    WmoCode { code: 65, text: "Heavy rain", short_text: "rain (h)", day_icon: "rainy_heavy", night_icon: "rainy_heavy" },
-    WmoCode { code: 66, text: "Light freezing rain", short_text: "rain (fl)", day_icon: "rainy_light", night_icon: "rainy_light" },
-    WmoCode { code: 67, text: "Heavy freezing rain", short_text: "rain (fh)", day_icon: "rainy_heavy", night_icon: "rainy_heavy" },
-    WmoCode { code: 71, text: "Slight snow", short_text: "snow (l)", day_icon: "weather_snowy", night_icon: "weather_snowy" },
-    WmoCode { code: 73, text: "Snow", short_text: "snow", day_icon: "weather_snowy", night_icon: "weather_snowy" },
-    WmoCode { code: 75, text: "Heavy snow", short_text: "snow (h)", day_icon: "weather_snowy", night_icon: "weather_snowy" },
-    WmoCode { code: 77, text: "Snow grains", short_text: "snow grains", day_icon: "weather_snowy", night_icon: "weather_snowy" },
-    WmoCode { code: 80, text: "Light rain showers", short_text: "showers (l)", day_icon: "rainy_light", night_icon: "rainy_light" },
-    WmoCode { code: 81, text: "Rain showers", short_text: "showers", day_icon: "rainy", night_icon: "rainy" },
-    WmoCode { code: 82, text: "Heavy rain showers", short_text: "showers (h)", day_icon: "rainy_heavy", night_icon: "rainy_heavy" },
-    WmoCode { code: 85, text: "Light snow showers", short_text: "snow showers (l)", day_icon: "weather_snowy", night_icon: "weather_snowy" },
-    WmoCode { code: 86, text: "Heavy snow showers", short_text: "snow showers (h)", day_icon: "weather_snowy", night_icon: "weather_snowy" },
-    WmoCode { code: 95, text: "Thunderstorm", short_text: "storm", day_icon: "thunderstorm", night_icon: "thunderstorm" },
-    WmoCode { code: 96, text: "Thunderstorm, slight hail", short_text: "storm (lH)", day_icon: "thunderstorm", night_icon: "thunderstorm" },
-    WmoCode { code: 99, text: "Thunderstorm, heavy hail", short_text: "storm (hH)", day_icon: "thunderstorm", night_icon: "thunderstorm" },
-];
-
 const OPENMETEO_API_URL: &str = "https://api.open-meteo.com/v1/forecast";
 
 #[allow(dead_code)]
 pub struct WmoCode {
-    pub code: i64,
     pub text: &'static str,
     pub short_text: &'static str,
     pub day_icon: &'static str,
     pub night_icon: &'static str,
+}
+
+impl WmoCode {
+    pub fn new(
+        text: &'static str,
+        short_text: &'static str,
+        day_icon: &'static str,
+        night_icon: &'static str,
+    ) -> Self {
+        Self {
+            text,
+            short_text,
+            day_icon,
+            night_icon,
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn get_icon(&self, is_day: bool) -> &'static str {
+        if is_day {
+            self.day_icon
+        } else {
+            self.night_icon
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -150,8 +143,39 @@ impl Weather {
 }
 
 #[allow(dead_code)]
-pub fn get_wmo_code(code: i64) -> Option<&'static WmoCode> {
-    WMO_CODES.iter().find(|wmo_code| wmo_code.code == code)
+pub fn get_wmo_code(code: u32) -> Option<WmoCode> {
+    let wmo = match code {
+        0 => WmoCode::new("Clear sky", "clear", "clear_day", "moon_stars"),
+        1 => WmoCode::new("Mainly clear", "clearish", "partly_cloudy_day", "partly_cloudy_night"),
+        2 => WmoCode::new("Partly cloudy", "cloudyish", "partly_cloudy_day", "partly_cloudy_night"),
+        3 => WmoCode::new("Mostly cloudy", "cloudy", "cloud", "cloud"),
+        45 | 48 => WmoCode::new("Fog", "fog", "foggy", "foggy"),
+        51 => WmoCode::new("Light drizzle", "drizzle (l)", "rainy_light", "rainy_light"),
+        53 => WmoCode::new("Drizzle", "drizzle", "rainy", "rainy"),
+        55 => WmoCode::new("Dense drizzle", "drizzle (h)", "rainy_heavy", "rainy_heavy"),
+        56 => WmoCode::new("Light freezing drizzle", "drizzle (fl)", "rainy_light", "rainy_light"),
+        57 => WmoCode::new("Dense freezing drizzle", "drizzle (fh)", "rainy_heavy", "rainy_heavy"),
+        61 => WmoCode::new("Slight rain", "rain (l)", "rainy_light", "rainy_light"),
+        63 => WmoCode::new("Rain", "rain", "rainy", "rainy"),
+        65 => WmoCode::new("Heavy rain", "rain (h)", "rainy_heavy", "rainy_heavy"),
+        66 => WmoCode::new("Light freezing rain", "rain (fl)", "rainy_light", "rainy_light"),
+        67 => WmoCode::new("Heavy freezing rain", "rain (fh)", "rainy_heavy", "rainy_heavy"),
+        71 => WmoCode::new("Slight snow", "snow (l)", "weather_snowy", "weather_snowy"),
+        73 => WmoCode::new("Snow", "snow", "weather_snowy", "weather_snowy"),
+        75 => WmoCode::new("Heavy snow", "snow (h)", "weather_snowy", "weather_snowy"),
+        77 => WmoCode::new("Snow grains", "snow grains", "weather_snowy", "weather_snowy"),
+        80 => WmoCode::new("Light rain showers", "showers (l)", "rainy_light", "rainy_light"),
+        81 => WmoCode::new("Rain showers", "showers", "rainy", "rainy"),
+        82 => WmoCode::new("Heavy rain showers", "showers (h)", "rainy_heavy", "rainy_heavy"),
+        85 => WmoCode::new("Light snow showers", "snow showers (l)", "weather_snowy", "weather_snowy"),
+        86 => WmoCode::new("Heavy snow showers", "snow showers (h)", "weather_snowy", "weather_snowy"),
+        95 => WmoCode::new("Thunderstorm", "storm", "thunderstorm", "thunderstorm"),
+        96 => WmoCode::new("Thunderstorm, slight hail", "storm (lH)", "thunderstorm", "thunderstorm"),
+        99 => WmoCode::new("Thunderstorm, heavy hail", "storm (hH)", "thunderstorm", "thunderstorm"),
+        _ => return None,
+    };
+    
+    Some(wmo)
 }
 
 pub fn activate() {
