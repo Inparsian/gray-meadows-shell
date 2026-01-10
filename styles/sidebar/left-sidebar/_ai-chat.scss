@@ -257,6 +257,32 @@
                 }
             }
 
+            .ai-chat-input-controls-box {
+                margin-top: 8px;
+            }
+
+            .ai-chat-input-attach-image-button {
+                @include material-icons;
+                font-size: 18px;
+                margin-left: 6px;
+                margin-top: -1px;
+                margin-bottom: -1px;
+                background: transparent;
+                min-height: 0px;
+                padding: 0px;
+                font-weight: normal;
+                color: $foreground-color-quaternary;
+                
+                &:hover, &:focus {
+                    color: $foreground-color-tertiary;
+                    outline: none;
+                }
+            
+                &:active {
+                    color: $foreground-color-secondary;
+                }
+            }
+
             .ai-chat-input-send-button {
                 margin-top: 4px;
 

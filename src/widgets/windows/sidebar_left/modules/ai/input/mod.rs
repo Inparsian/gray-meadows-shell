@@ -6,6 +6,7 @@ use gtk4::prelude::*;
 
 use crate::singletons::ai::{self, SESSION};
 use crate::singletons::ai::images::cache_image_data;
+use crate::widgets::windows;
 use super::chat::{Chat, ChatMessage, ChatRole};
 use self::attachments::ImageAttachments;
 
@@ -197,6 +198,7 @@ impl ChatInput {
         });
         input.add_controller(key_controller);
         input.connect_paste_clipboard({
+            let input_attachments = input_attachments.clone();
             move |input| {
                 let clipboard = input.clipboard();
                 let formats = clipboard.formats();
@@ -226,12 +228,56 @@ impl ChatInput {
 
         input_overlay.set_child(Some(&input));
 
+        let input_controls_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        input_controls_box.set_css_classes(&["ai-chat-input-controls-box"]);
+        input_box.append(&input_controls_box);
+
+        let input_attach_image_button = gtk4::Button::new();
+        input_attach_image_button.set_css_classes(&["ai-chat-input-attach-image-button"]);
+        input_attach_image_button.set_halign(gtk4::Align::Start);
+        input_attach_image_button.set_valign(gtk4::Align::Start);
+        input_attach_image_button.set_label("image");
+        input_attach_image_button.connect_clicked(move |_| {
+            let file_chooser = gtk4::FileChooserNative::new(
+                Some("Select Image"),
+                None::<&gtk4::Window>,
+                gtk4::FileChooserAction::Open,
+                Some("Open"),
+                Some("Cancel"),
+            );
+
+            let filter = gtk4::FileFilter::new();
+            filter.add_mime_type("image/png");
+            filter.add_mime_type("image/jpeg");
+            filter.set_name(Some("Image Files"));
+            file_chooser.add_filter(&filter);
+
+            file_chooser.connect_response({
+                let input_attachments = input_attachments.clone();
+                move |file_chooser, response| {
+                    if response == gtk4::ResponseType::Accept
+                        && let Some(file) = file_chooser.file()
+                        && let Ok(texture) = gdk4::Texture::from_file(&file)
+                    {
+                        input_attachments.push_texture(&texture);
+                    }
+
+                    windows::show("left_sidebar");
+                }
+            });
+
+            windows::hide("left_sidebar");
+            file_chooser.show();
+        });
+        input_controls_box.append(&input_attach_image_button);
+
         let input_send_button = gtk4::Button::new();
         input_send_button.set_css_classes(&["ai-chat-input-send-button"]);
         input_send_button.set_halign(gtk4::Align::End);
+        input_send_button.set_hexpand(true);
         input_send_button.set_valign(gtk4::Align::Start);
         input_send_button.connect_clicked(move |_| send_current_input());
-        input_box.append(&input_send_button);
+        input_controls_box.append(&input_send_button);
 
         let input_send_button_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
         input_send_button.set_child(Some(&input_send_button_box));
