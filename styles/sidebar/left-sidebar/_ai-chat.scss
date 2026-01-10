@@ -187,6 +187,11 @@
                     color: $foreground-color-secondary;
                 }
             }
+
+            .ai-chat-message-image {
+                margin-top: 12px;
+                border: 1px solid $border-color-primary;
+            }
         }
 
         .ai-chat-input-box {
@@ -194,6 +199,42 @@
             border: 1px solid $background-color-tertiary;
             padding: 8px;
             margin-top: 8px;
+
+            .ai-chat-input-attachments-box {
+                background: transparent;
+                border: 0px;
+                padding: 4px;
+                margin-bottom: 8px;
+
+                .ai-chat-input-attachment-spinner {
+                    @include material-icons;
+                    animation: running-spin 1s cubic-bezier(0.0, 0.0, 0.6, 0.8) infinite;
+                    font-size: 32px;
+                    color: $foreground-color-secondary;
+                }
+
+                .ai-chat-input-attachment-remove-button {
+                    @include material-icons;
+                    font-size: 16px;
+                    font-weight: normal;
+                    background: transparent;
+                    border: 0px;
+                    color: $foreground-color-quaternary;
+                    padding: 0px;
+                    margin: 0px;
+                    min-width: 0px;
+                    min-height: 0px;
+
+                    &:hover, &:focus {
+                        color: $foreground-color-tertiary;
+                        outline: none;
+                    }
+
+                    &:active {
+                        color: $foreground-color-secondary;
+                    }
+                }
+            }
 
             .ai-chat-input-placeholder {
                 padding: 4px;
@@ -216,7 +257,35 @@
                 }
             }
 
+            .ai-chat-input-controls-box {
+                margin-top: 8px;
+            }
+
+            .ai-chat-input-attach-image-button {
+                @include material-icons;
+                font-size: 18px;
+                margin-left: 6px;
+                margin-top: -1px;
+                margin-bottom: -1px;
+                background: transparent;
+                min-height: 0px;
+                padding: 0px;
+                font-weight: normal;
+                color: $foreground-color-quaternary;
+                
+                &:hover, &:focus {
+                    color: $foreground-color-tertiary;
+                    outline: none;
+                }
+            
+                &:active {
+                    color: $foreground-color-secondary;
+                }
+            }
+
             .ai-chat-input-send-button {
+                margin-top: 4px;
+
                 .ai-chat-input-send-button-icon {
                     @include material-icons;
                     font-size: 18px;

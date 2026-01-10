@@ -1546,6 +1546,7 @@ dependencies = [
  "async-broadcast",
  "async-channel",
  "async-openai",
+ "base64",
  "chrono",
  "cxx",
  "cxx-build",
@@ -1584,6 +1585,7 @@ dependencies = [
  "tokio",
  "toml",
  "urlencoding",
+ "uuid",
  "whirlpool",
 ]
 

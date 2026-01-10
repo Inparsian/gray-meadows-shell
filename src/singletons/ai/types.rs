@@ -35,6 +35,11 @@ pub enum AiConversationItemPayload {
         thought_signature: Option<String>,
     },
 
+    // Only users can provide images.
+    Image {
+        uuid: String,
+    },
+
     Reasoning {
         id: String,
         summary: String,

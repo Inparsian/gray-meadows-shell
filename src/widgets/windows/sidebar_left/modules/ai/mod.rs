@@ -7,7 +7,8 @@ use std::time::Duration;
 use gtk4::prelude::*;
 
 use crate::singletons::ai::{self, SESSION, AiChannelMessage};
-use crate::singletons::ai::types::{AiConversationDelta, AiConversationItem, AiConversationItemPayload};
+use crate::singletons::ai::types::{AiConversationDelta, AiConversationItemPayload};
+use self::chat::{Chat, ChatMessage, ChatRole};
 
 pub fn conversation_control_button(icon: &str, label: &str) -> gtk4::Button {
     let button = gtk4::Button::new();
@@ -85,7 +86,7 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
     });
     conversation_controls.append(&conversation_switch_button);
 
-    let chat = chat::Chat::default();
+    let chat = Chat::default();
     let chat_window = gtk4::ScrolledWindow::new();
     chat_window.set_policy(gtk4::PolicyType::Automatic, gtk4::PolicyType::Automatic);
     chat_window.set_vexpand(true);
@@ -126,25 +127,7 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                         conversation_title.set_text(&conversation.title);
 
                         let mut processed_reasoning = false;
-                        for (index, item) in session.items.read().unwrap().iter().enumerate() {
-                            let assert_assistant_last_message = |chat: &chat::Chat, item: &AiConversationItem| {
-                                if index == 0 || !matches!(
-                                    session.items.read().unwrap().get(index - 1)
-                                        .map(|it| match &it.payload {
-                                            AiConversationItemPayload::Message { role, .. } => role.as_str(),
-                                            _ => "",
-                                        }),
-                                    Some("assistant"),
-                                ) {
-                                    let message = chat::ChatMessage::new(
-                                        &chat::ChatRole::Assistant,
-                                        None,
-                                    );
-                                    message.set_id(item.id);
-                                    chat.add_message(message);
-                                }
-                            };
-
+                        for item in session.items.read().unwrap().iter() {
                             match &item.payload {
                                 AiConversationItemPayload::Message { role, content, .. } 
                                 if matches!(role.as_str(), "user" | "assistant") => {
@@ -158,10 +141,10 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                                         }
                                         processed_reasoning = false;
                                     } else {
-                                        let message = chat::ChatMessage::new(
+                                        let message = ChatMessage::new(
                                             match role.as_str() {
-                                                "user" => &chat::ChatRole::User,
-                                                "assistant" => &chat::ChatRole::Assistant,
+                                                "user" => ChatRole::User,
+                                                "assistant" => ChatRole::Assistant,
                                                 _ => unreachable!(),
                                             },
                                             Some(content.clone()),
@@ -172,8 +155,13 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                                     }
                                 },
 
+                                AiConversationItemPayload::Image { uuid, .. } => {
+                                    chat.assert_last_message_is_role(ChatRole::User, Some(item.id));
+                                    chat.append_image_to_latest_message(uuid);
+                                },
+
                                 AiConversationItemPayload::Reasoning { summary, .. } => {
-                                    assert_assistant_last_message(&chat, item);
+                                    chat.assert_last_message_is_role(ChatRole::Assistant, Some(item.id));
                                     chat.append_thinking_block_to_latest_message(summary);
 
                                     // This DOES have to come before assistant messages, so we use this to
@@ -183,7 +171,7 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                                 },
 
                                 AiConversationItemPayload::FunctionCall { name, arguments, .. } => {
-                                    assert_assistant_last_message(&chat, item);
+                                    chat.assert_last_message_is_role(ChatRole::Assistant, Some(item.id));
                                     chat.append_tool_call_to_latest_message(name, arguments);
                                 },
 
@@ -224,8 +212,8 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
                     },
 
                     AiChannelMessage::StreamStart => {
-                        chat.add_message(chat::ChatMessage::new(
-                            &chat::ChatRole::Assistant,
+                        chat.add_message(ChatMessage::new(
+                            ChatRole::Assistant,
                             None,
                         ));
                     },

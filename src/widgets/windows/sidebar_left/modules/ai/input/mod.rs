@@ -1,9 +1,14 @@
+mod attachments;
+
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use gtk4::prelude::*;
 
 use crate::singletons::ai::{self, SESSION};
+use crate::singletons::ai::images::cache_image_data;
+use crate::widgets::windows;
 use super::chat::{Chat, ChatMessage, ChatRole};
+use self::attachments::ImageAttachments;
 
 const MIN_INPUT_HEIGHT: i32 = 50;
 const MAX_INPUT_HEIGHT: i32 = 250;
@@ -19,8 +24,11 @@ impl ChatInput {
         chat: &Chat,
         scroll_to_bottom: &Rc<dyn Fn()>,
     ) -> Self {
-        let input_box = gtk4::Box::new(gtk4::Orientation::Vertical, 4);
+        let input_box = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
         input_box.set_css_classes(&["ai-chat-input-box"]);
+
+        let input_attachments = ImageAttachments::default();
+        input_box.append(&input_attachments.container);
 
         let input_scrolled_window = gtk4::ScrolledWindow::new();
         input_scrolled_window.set_policy(gtk4::PolicyType::Never, gtk4::PolicyType::Never);
@@ -44,6 +52,7 @@ impl ChatInput {
             let chat = chat.clone();
             let scroll_to_bottom = scroll_to_bottom.clone();
             let input = input.clone();
+            let input_attachments = input_attachments.clone();
             move || {
                 let buffer = input.buffer();
                 let text = buffer.text(
@@ -58,19 +67,39 @@ impl ChatInput {
                     {
                         *stop_flag = true;
                     }
-                } else if !text.is_empty() {
-                    let id = ai::send_user_message(&text);
-                    let message = ChatMessage::new(
-                        &ChatRole::User,
-                        Some(text),
-                    );
-                    message.set_id(id);
-                    chat.add_message(message);
-                    scroll_to_bottom();
+                } else if input_attachments.get_attachments().is_empty() || input_attachments.all_ready() {
+                    let text_sent = (!text.is_empty()).then(|| { let id = ai::send_user_message(&text);
+                        let message = ChatMessage::new(
+                            ChatRole::User,
+                            Some(text),
+                        );
+                        message.set_id(id);
+                        chat.add_message(message);
 
-                    tokio::spawn(ai::start_request_cycle());
+                        input.buffer().set_text("");
+                        id
+                    });
 
-                    input.buffer().set_text("");
+                    let ready_attachments = input_attachments.get_attachments()
+                        .into_iter()
+                        .flatten()
+                        .collect::<Vec<_>>();
+
+                    for attachment in &ready_attachments {
+                        if let Ok(path) = cache_image_data(&attachment.base64) {
+                            let id = ai::send_user_image(&path);
+                            chat.assert_last_message_is_role(ChatRole::User, text_sent.or(Some(id)));
+                            chat.append_image_to_latest_message(&path);
+                        }
+                    }
+
+                    input_attachments.clear();
+
+                    if (text_sent.is_some() && input_attachments.get_attachments().is_empty()) || !ready_attachments.is_empty() {
+                        scroll_to_bottom();
+
+                        tokio::spawn(ai::start_request_cycle());
+                    }
                 }
             }
         });
@@ -166,14 +195,87 @@ impl ChatInput {
             }
         });
         input.add_controller(key_controller);
+        input.connect_paste_clipboard({
+            let input_attachments = input_attachments.clone();
+            move |input| {
+                let clipboard = input.clipboard();
+                let formats = clipboard.formats();
+                
+                if formats.contains_type(gdk4::Texture::static_type()) {
+                    clipboard.read_texture_async(None::<&gtk4::gio::Cancellable>, {
+                        let input_attachments = input_attachments.clone();
+                        move |result| {
+                            match result {
+                                Ok(Some(texture)) => {
+                                    input_attachments.push_texture(&texture);
+                                },
+
+                                Ok(None) => {
+                                    eprintln!("No texture found in clipboard");
+                                },
+
+                                Err(err) => {
+                                    eprintln!("Error reading texture from clipboard: {:#?}", err);
+                                },
+                            }
+                        }
+                    });
+                }
+            }
+        });
+
         input_overlay.set_child(Some(&input));
+
+        let input_controls_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        input_controls_box.set_css_classes(&["ai-chat-input-controls-box"]);
+        input_box.append(&input_controls_box);
+
+        let input_attach_image_button = gtk4::Button::new();
+        input_attach_image_button.set_css_classes(&["ai-chat-input-attach-image-button"]);
+        input_attach_image_button.set_halign(gtk4::Align::Start);
+        input_attach_image_button.set_valign(gtk4::Align::Start);
+        input_attach_image_button.set_label("image");
+        input_attach_image_button.connect_clicked(move |_| {
+            let file_chooser = gtk4::FileChooserNative::new(
+                Some("Select Image"),
+                None::<&gtk4::Window>,
+                gtk4::FileChooserAction::Open,
+                Some("Open"),
+                Some("Cancel"),
+            );
+
+            let filter = gtk4::FileFilter::new();
+            filter.add_mime_type("image/png");
+            filter.add_mime_type("image/jpeg");
+            filter.set_name(Some("Image Files"));
+            file_chooser.add_filter(&filter);
+
+            file_chooser.connect_response({
+                let input_attachments = input_attachments.clone();
+                move |file_chooser, response| {
+                    if response == gtk4::ResponseType::Accept
+                        && let Some(file) = file_chooser.file()
+                        && let Ok(texture) = gdk4::Texture::from_file(&file)
+                    {
+                        input_attachments.push_texture(&texture);
+                    }
+
+                    windows::show("left_sidebar");
+                }
+            });
+
+            windows::hide("left_sidebar");
+            file_chooser.show();
+        });
+        input_controls_box.append(&input_attach_image_button);
 
         let input_send_button = gtk4::Button::new();
         input_send_button.set_css_classes(&["ai-chat-input-send-button"]);
         input_send_button.set_halign(gtk4::Align::End);
+        input_send_button.set_hexpand(true);
         input_send_button.set_valign(gtk4::Align::Start);
         input_send_button.connect_clicked(move |_| send_current_input());
-        input_box.append(&input_send_button);
+        input_controls_box.append(&input_send_button);
 
         let input_send_button_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
         input_send_button.set_child(Some(&input_send_button_box));

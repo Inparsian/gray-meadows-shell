@@ -7,9 +7,10 @@ use async_openai::config::OpenAIConfig;
 use async_openai::error::OpenAIError;
 use async_openai::types::responses::{
     AssistantRole,
-    CreateResponseArgs, 
+    CreateResponseArgs,
     FunctionCallOutput, FunctionCallOutputItemParam, FunctionTool, FunctionToolCall,
-    InputContent, InputMessage, InputRole, InputTextContent,
+    InputContent, InputImageContent, InputMessage, InputRole, InputTextContent,
+    ImageDetail,
     Item, MessageItem,
     OutputContent, OutputItem, OutputMessage, OutputMessageContent, OutputStatus, OutputTextContent,
     Reasoning, ReasoningEffort, ReasoningItem, ReasoningSummary,
@@ -23,6 +24,7 @@ use crate::broadcast::BroadcastChannel;
 use crate::config::read_config;
 use super::super::variables::transform_variables;
 use super::super::{AiChannelMessage, AiConversationItem, AiConversationItemPayload, AiConversationDelta};
+use super::super::images::load_image_data;
 use super::super::types::AiFunction;
 use super::super::tools;
 
@@ -51,10 +53,7 @@ impl OpenAiService {
         };
 
         let app_config = read_config().clone();
-        let mut native_items = items
-            .into_iter()
-            .filter_map(Self::transform_item_into_native)
-            .collect::<Vec<Item>>();
+        let mut native_items = Self::transform_items_into_native(items);
 
         native_items.insert(0, Item::Message(MessageItem::Input(InputMessage {
             role: InputRole::Developer,
@@ -111,62 +110,89 @@ impl OpenAiService {
         client.responses().create_stream(request).await
     }
 
-    fn transform_item_into_native(item: AiConversationItem) -> Option<Item> {
-        match item.payload {
-            AiConversationItemPayload::Message { id, role, content, .. } => {
-                if role == "assistant" {
-                    Some(Item::Message(MessageItem::Output(OutputMessage {
-                        content: vec![OutputMessageContent::OutputText(OutputTextContent {
+    fn transform_items_into_native(items: Vec<AiConversationItem>) -> Vec<Item> {
+        let mut native_items: Vec<Item> = Vec::new();
+        let mut user_parts: Vec<InputContent> = Vec::new();
+
+        let flush_user_parts = |user_parts: &mut Vec<InputContent>, native_items: &mut Vec<Item>| {
+            if !user_parts.is_empty() {
+                native_items.push(Item::Message(MessageItem::Input(InputMessage {
+                    content: std::mem::take(user_parts),
+                    role: InputRole::User,
+                    status: None,
+                })));
+            }
+        };
+
+        for item in items {
+            match item.payload {
+                AiConversationItemPayload::Message { id, role, content, .. } => {
+                    if role == "assistant" {
+                        flush_user_parts(&mut user_parts, &mut native_items);
+                        native_items.push(Item::Message(MessageItem::Output(OutputMessage {
+                            content: vec![OutputMessageContent::OutputText(OutputTextContent {
+                                text: content,
+                                annotations: vec![],
+                                logprobs: None,
+                            })],
+                            role: AssistantRole::Assistant,
+                            id,
+                            status: OutputStatus::Completed,
+                        })));
+                    } else {
+                        user_parts.push(InputContent::InputText(InputTextContent {
                             text: content,
-                            annotations: vec![],
-                            logprobs: None,
-                        })],
-                        role: AssistantRole::Assistant,
+                        }));
+                    }
+                },
+
+                AiConversationItemPayload::Reasoning { id, summary, encrypted_content } => {
+                    flush_user_parts(&mut user_parts, &mut native_items);
+                    native_items.push(Item::Reasoning(ReasoningItem {
                         id,
-                        status: OutputStatus::Completed,
-                    })))
-                } else {
-                    Some(Item::Message(MessageItem::Input(InputMessage {
-                        content: vec![InputContent::InputText(InputTextContent {
-                            text: content,
+                        summary: vec![SummaryPart::SummaryText(Summary {
+                            text: summary,
                         })],
-                        role: if role == "user" { InputRole::User } else { InputRole::Developer },
+                        content: None,
+                        encrypted_content: Some(encrypted_content),
                         status: None,
-                    })))
-                }
-            },
+                    }));
+                },
 
-            AiConversationItemPayload::Reasoning { id, summary, encrypted_content } => {
-                Some(Item::Reasoning(ReasoningItem {
-                    id,
-                    summary: vec![SummaryPart::SummaryText(Summary {
-                        text: summary,
-                    })],
-                    content: None,
-                    encrypted_content: Some(encrypted_content),
-                    status: None,
-                }))
-            },
+                AiConversationItemPayload::FunctionCall { id, name, arguments, call_id, .. } => {
+                    flush_user_parts(&mut user_parts, &mut native_items);
+                    native_items.push(Item::FunctionCall(FunctionToolCall {
+                        id: Some(id),
+                        name,
+                        arguments,
+                        call_id,
+                        status: None,
+                    }));
+                },
 
-            AiConversationItemPayload::FunctionCall { id, name, arguments, call_id, .. } => {
-                Some(Item::FunctionCall(FunctionToolCall {
-                    id: Some(id),
-                    name,
-                    arguments,
-                    call_id,
-                    status: None,
-                }))
-            },
+                AiConversationItemPayload::FunctionCallOutput { call_id, output, .. } => {
+                    flush_user_parts(&mut user_parts, &mut native_items);
+                    native_items.push(Item::FunctionCallOutput(FunctionCallOutputItemParam {
+                        call_id,
+                        output: FunctionCallOutput::Text(output),
+                        id: None,
+                        status: None,
+                    }));
+                },
 
-            AiConversationItemPayload::FunctionCallOutput { call_id, output, .. } => {
-                Some(Item::FunctionCallOutput(FunctionCallOutputItemParam {
-                    call_id,
-                    output: FunctionCallOutput::Text(output),
-                    id: None,
-                    status: None,
-                }))
-            },
+                AiConversationItemPayload::Image { uuid } => if let Ok(base64_data) = load_image_data(&uuid) {
+                    user_parts.push(InputContent::InputImage(InputImageContent {
+                        detail: ImageDetail::Auto,
+                        file_id: None,
+                        image_url: Some(format!("data:image/png;base64,{}", base64_data)),
+                    }));
+                },
+            }
         }
+
+        flush_user_parts(&mut user_parts, &mut native_items);
+
+        native_items
     }
 
     fn transform_native_into_item(native_item: Item) -> Option<AiConversationItemPayload> {

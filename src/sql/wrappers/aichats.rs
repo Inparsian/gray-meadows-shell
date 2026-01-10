@@ -199,6 +199,28 @@ pub fn get_items(conversation_id: i64) -> Result<Vec<AiConversationItem>, Box<dy
     }
 }
 
+/// Gets every single image item UUID that's stored in AI chat conversations.
+pub fn get_all_image_item_uuids() -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    let mut uuids = Vec::new();
+    if let Some(connection) = SQL_CONNECTION.get() {
+        let connection = connection.lock()?;
+        let mut cursor = connection.prepare(
+            "SELECT payload FROM aichat_items \
+             WHERE json_extract(payload, '$.type') = 'image'"
+        )?;
+        while cursor.next()? == sqlite::State::Row {
+            let payload_str = cursor.read::<String, _>(0)?;
+            let payload: AiConversationItemPayload = serde_json::from_str(&payload_str)?;
+            if let AiConversationItemPayload::Image { uuid } = payload {
+                uuids.push(uuid);
+            }
+        }
+        Ok(uuids)
+    } else {
+        Err("No database connection available".into())
+    }
+}
+
 /// Gets the length of user & assistant messages in a conversation.
 pub fn get_messages_length(conversation_id: i64) -> Result<usize, Box<dyn std::error::Error>> {
     Ok(get_items(conversation_id)?

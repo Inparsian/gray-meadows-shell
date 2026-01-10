@@ -1,6 +1,7 @@
 mod tools;
 mod variables;
 mod services;
+pub mod images;
 pub mod types;
 pub mod conversation;
 
@@ -128,6 +129,8 @@ pub fn activate() {
     } else {
         conversation::load_first_conversation();
     }
+
+    images::collect_garbage();
 }
 
 pub async fn start_request_cycle() {
@@ -248,5 +251,16 @@ pub fn send_user_message(message: &str) -> i64 {
         role: "user".to_owned(),
         content: message.to_owned(),
         thought_signature: None,
+    })
+}
+
+pub fn send_user_image(uuid: &str) -> i64 {
+    if SESSION.get().is_none() {
+        eprintln!("AI session not initialized");
+        return 0;
+    }
+
+    write_item_payload(AiConversationItemPayload::Image {
+        uuid: uuid.to_owned(),
     })
 }

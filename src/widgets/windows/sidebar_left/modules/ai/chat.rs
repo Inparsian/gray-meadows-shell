@@ -9,6 +9,7 @@ use crate::config::read_config;
 use crate::filesystem;
 use crate::gesture;
 use crate::singletons::ai;
+use crate::singletons::ai::images::uuid_to_file_path;
 use crate::widgets::common::loading;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -103,6 +104,7 @@ impl ChatThinkingBlock {
 #[derive(Debug, Clone)]
 pub struct ChatMessage {
     pub id: Rc<RefCell<Option<i64>>>,
+    pub role: ChatRole,
     pub content: Option<String>,
     pub thinking: Option<ChatThinkingBlock>,
     pub root: gtk4::Box,
@@ -121,7 +123,7 @@ impl ChatMessage {
         sender_mui_icon.upcast()
     }
 
-    pub fn new(role: &ChatRole, content: Option<String>) -> Self {
+    pub fn new(role: ChatRole, content: Option<String>) -> Self {
         let app_config = read_config();
         let id = Rc::new(RefCell::new(None));
         let root = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
@@ -263,6 +265,7 @@ impl ChatMessage {
 
         Self {
             id,
+            role,
             content,
             thinking: None,
             root,
@@ -374,6 +377,23 @@ impl Chat {
         }
     }
 
+    pub fn assert_last_message_is_role(&self, expected_role: ChatRole, id: Option<i64>) {
+        let messages = self.messages.borrow();
+        if let Some(latest_message) = messages.last() {
+            if latest_message.role != expected_role {
+                // Add a new message of the expected role
+                let new_message = ChatMessage::new(expected_role, None);
+                drop(messages);
+                self.add_message(new_message);
+                if let Some(id) = id {
+                    self.messages.borrow_mut().last().unwrap().set_id(id);
+                }
+            }
+        } else {
+            eprintln!("AI chat message role assertion failed: no messages present");
+        }
+    }
+
     pub fn append_tool_call_to_latest_message(&self, tool_name: &str, arguments: &str) {
         let mut messages = self.messages.borrow_mut();
         if let Some(latest_message) = messages.last_mut() {
@@ -405,6 +425,42 @@ impl Chat {
         let mut messages = self.messages.borrow_mut();
         if let Some(latest_message) = messages.last_mut() {
             latest_message.set_thinking(summary);
+        }
+    }
+
+    pub fn append_image_to_latest_message(&self, uuid: &str) {
+        let mut messages = self.messages.borrow_mut();
+        if let Some(latest_message) = messages.last_mut() {
+            match gtk4::gdk::Texture::from_filename(uuid_to_file_path(uuid)) {
+                Ok(texture) => {
+                    let w_clamp = libadwaita::Clamp::new();
+                    w_clamp.set_maximum_size(300);
+                    w_clamp.set_unit(libadwaita::LengthUnit::Px);
+                    w_clamp.set_halign(gtk4::Align::Start);
+                    w_clamp.set_valign(gtk4::Align::Start);
+                    
+                    let h_clamp = libadwaita::Clamp::new();
+                    h_clamp.set_maximum_size(300);
+                    h_clamp.set_unit(libadwaita::LengthUnit::Px);
+                    h_clamp.set_orientation(gtk4::Orientation::Vertical);
+                    w_clamp.set_child(Some(&h_clamp));
+
+                    let picture = gtk4::Picture::new();
+                    picture.set_css_classes(&["ai-chat-message-image"]);
+                    picture.set_paintable(Some(&texture));
+                    picture.set_content_fit(gtk4::ContentFit::ScaleDown);
+                    h_clamp.set_child(Some(&picture));
+                    latest_message.footer.append(&w_clamp);
+
+                    if latest_message.content.is_none() {
+                        latest_message.set_content("");
+                    }
+                },
+
+                Err(err) => {
+                    eprintln!("Failed to load image with UUID {}: {:#?}", uuid, err);
+                }
+            }
         }
     }
 }

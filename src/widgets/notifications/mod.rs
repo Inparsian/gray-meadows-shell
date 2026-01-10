@@ -82,6 +82,7 @@ impl NotificationsWindow {
         let clamp = libadwaita::Clamp::new();
         clamp.set_width_request(300);
         clamp.set_maximum_size(300);
+        clamp.set_unit(libadwaita::LengthUnit::Px);
         clamp.set_child(Some(&widget.root));
 
         self.container.prepend(&clamp);
