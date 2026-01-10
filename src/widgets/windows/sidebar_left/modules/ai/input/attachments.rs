@@ -226,9 +226,13 @@ impl Default for ImageAttachments {
         container.set_transition_type(gtk4::RevealerTransitionType::SlideUp);
         container.set_reveal_child(false);
 
+        let scrolled_window = gtk4::ScrolledWindow::new();
+        scrolled_window.set_policy(gtk4::PolicyType::Automatic, gtk4::PolicyType::Never);
+        container.set_child(Some(&scrolled_window));
+
         let bx = gtk4::Box::new(gtk4::Orientation::Horizontal, 8);
         bx.add_css_class("ai-chat-input-attachments-box");
-        container.set_child(Some(&bx));
+        scrolled_window.set_child(Some(&bx));
 
         Self {
             container,
