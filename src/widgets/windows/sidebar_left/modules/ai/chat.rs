@@ -107,6 +107,7 @@ pub struct ChatMessage {
     pub role: ChatRole,
     pub content: Option<String>,
     pub thinking: Option<ChatThinkingBlock>,
+    pub attachments: Rc<RefCell<i64>>,
     pub root: gtk4::Box,
     pub markdown: gtk4cmark::view::MarkdownView,
     pub loading: gtk4::DrawingArea,
@@ -126,6 +127,7 @@ impl ChatMessage {
     pub fn new(role: ChatRole, content: Option<String>) -> Self {
         let app_config = read_config();
         let id = Rc::new(RefCell::new(None));
+        let attachments = Rc::new(RefCell::new(0));
         let root = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
         root.set_css_classes(&["ai-chat-message"]);
         root.set_valign(gtk4::Align::Start);
@@ -209,12 +211,13 @@ impl ChatMessage {
         retry_button.set_label("refresh");
         retry_button.connect_clicked({
             let id = id.clone();
+            let attachments = attachments.clone();
             let role = role.clone();
             move |_| if !ai::is_currently_in_cycle() && let Some(message_id) = *id.borrow() {
                 // Increase message_id by 1 if this is a user message to trim down to the
                 // assistant response directly after it
                 let message_id = if role == ChatRole::User {
-                    message_id + 1
+                    message_id + 1 + *attachments.borrow()
                 } else {
                     message_id
                 };
@@ -268,6 +271,7 @@ impl ChatMessage {
             role,
             content,
             thinking: None,
+            attachments,
             root,
             markdown,
             loading,
@@ -451,6 +455,7 @@ impl Chat {
                     picture.set_content_fit(gtk4::ContentFit::ScaleDown);
                     h_clamp.set_child(Some(&picture));
                     latest_message.footer.append(&w_clamp);
+                    *latest_message.attachments.borrow_mut() += 1;
 
                     if latest_message.content.is_none() {
                         latest_message.set_content("");
