@@ -67,7 +67,7 @@ impl ChatInput {
                     {
                         *stop_flag = true;
                     }
-                } else {
+                } else if input_attachments.get_attachments().is_empty() || input_attachments.all_ready() {
                     let text_sent = (!text.is_empty()).then(|| { let id = ai::send_user_message(&text);
                         let message = ChatMessage::new(
                             ChatRole::User,
@@ -80,24 +80,22 @@ impl ChatInput {
                         id
                     });
 
-                    let attachments_sent = if input_attachments.all_ready() {
-                        let mut any_sent = false;
-                        for attachment in &input_attachments.get_attachments() {
-                            if let Ok(path) = cache_image_data(&attachment.base64) {
-                                let id = ai::send_user_image(&path);
-                                chat.assert_last_message_is_role(ChatRole::User, text_sent.or(Some(id)));
-                                chat.append_image_to_latest_message(&path);
-                                any_sent = true;
-                            }
+                    let ready_attachments = input_attachments.get_attachments()
+                        .into_iter()
+                        .flatten()
+                        .collect::<Vec<_>>();
+
+                    for attachment in &ready_attachments {
+                        if let Ok(path) = cache_image_data(&attachment.base64) {
+                            let id = ai::send_user_image(&path);
+                            chat.assert_last_message_is_role(ChatRole::User, text_sent.or(Some(id)));
+                            chat.append_image_to_latest_message(&path);
                         }
+                    }
 
-                        input_attachments.clear();
-                        any_sent
-                    } else {
-                        false
-                    };
+                    input_attachments.clear();
 
-                    if text_sent.is_some() || attachments_sent {
+                    if (text_sent.is_some() && input_attachments.get_attachments().is_empty()) || !ready_attachments.is_empty() {
                         scroll_to_bottom();
 
                         tokio::spawn(ai::start_request_cycle());

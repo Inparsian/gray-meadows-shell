@@ -245,11 +245,11 @@ impl Default for ImageAttachments {
 }
 
 impl ImageAttachments {
-    pub fn get_attachments(&self) -> Vec<ImageAttachment> {
+    pub fn get_attachments(&self) -> Vec<Option<ImageAttachment>> {
         self.attachments
             .borrow()
             .iter()
-            .filter_map(|widget| widget.get_attachment())
+            .map(|widget| widget.get_attachment())
             .collect()
     }
 
