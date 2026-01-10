@@ -439,7 +439,9 @@ impl Chat {
             let picture = gtk4::Picture::new();
             picture.set_css_classes(&["ai-chat-message-image"]);
             picture.set_halign(gtk4::Align::Start);
+            picture.set_valign(gtk4::Align::Start);
             picture.set_paintable(texture.as_ref().ok());
+            picture.set_content_fit(gtk4::ContentFit::ScaleDown);
             latest_message.footer.append(&picture);
 
             if latest_message.content.is_none() {

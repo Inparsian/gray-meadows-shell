@@ -17,7 +17,6 @@ pub fn clipboard_entry(id: usize, preview: &str) -> gtk4::Button {
         let picture = gtk4::Picture::new();
         picture.set_halign(gtk4::Align::Start);
         picture.set_valign(gtk4::Align::Center);
-        picture.set_keep_aspect_ratio(true);
 
         let (tx, rx) = async_channel::unbounded::<(u32, u32, Vec<u8>)>();
         tokio::spawn(async move {
