@@ -3,8 +3,8 @@ use gtk4::prelude::*;
 
 use crate::APP_LOCAL;
 use crate::utils::gesture;
-use crate::utils::broadcast::BroadcastChannel;
 use crate::utils::timeout::Timeout;
+use crate::utils::allocation_watcher::AllocationWatcher;
 
 static TRANSITION_DURATION: f64 = 0.4;
 static DOWNSCALE_FACTOR: f64 = 0.000_000_001;
@@ -12,7 +12,6 @@ static BLUR_FACTOR_PX: i32 = 8;
 
 #[derive(Clone)]
 pub struct BarModule {
-    channel: BroadcastChannel<(i32, i32)>,
     timeout: Timeout,
     pub minimal: gtk4::Widget,
     pub expanded: gtk4::Widget,
@@ -37,7 +36,6 @@ impl BarModule {
         expanded.set_halign(gtk4::Align::Center);
 
         let module = BarModule {
-            channel: BroadcastChannel::new(10),
             timeout: Timeout::default(),
             minimal: minimal.upcast(),
             expanded: expanded.upcast(),
@@ -46,31 +44,33 @@ impl BarModule {
             is_expanded: Rc::new(RefCell::new(false))
         };
 
-        // hide expanded after we get it's allocation and set the style for it
-        gtk4::glib::spawn_future_local({
+        let expanded_watcher = AllocationWatcher::new(&module.expanded);
+
+        // Hide expanded after we get it's allocation and set the style for it.
+        // We wait for two changes instead of one, this way, we ensure that
+        // any layout changes that happen right after creation are also captured.
+        // TODO: I should seriously subclass bar modules instead of using this quick hack
+        expanded_watcher.next_allocation_future(3000, 2, {
             let expanded = module.expanded.clone();
             let expanded_provider = module.expanded_provider.clone();
-            let mut rx = module.channel.subscribe();
+            let last_received_allocation = expanded_watcher.last_received_allocation.clone();
             async move {
-                if let Ok((width, height)) = rx.recv().await {
+                if let Some((h_middle, v_middle)) = last_received_allocation.get()
+                    .map(|alloc| (alloc.width() / 2, alloc.height() / 2))
+                {
                     expanded_provider.load_from_data(&format!(
                         ".bar-expanded-wrapper {{
                             opacity: 0;
                             transform: scale({DOWNSCALE_FACTOR});
                             filter: blur({BLUR_FACTOR_PX}px);
-                            margin: -{}px -{}px -{}px -{}px;
+                            margin: -{v_middle}px -{h_middle}px -{v_middle}px -{h_middle}px;
                         }}",
-                        (height as f64)/2.0,
-                        (width as f64)/2.0,
-                        (height as f64)/2.0,
-                        (width as f64)/2.0
                     ));
+
                     expanded.set_visible(false);
                 }
             }
         });
-
-        module.connect_expanded_map();
 
         module
     }
@@ -103,26 +103,6 @@ impl BarModule {
 
         *self.is_expanded.borrow_mut() = expanding;
         self.animate_fade_slide_down(expanding);
-    }
-
-    fn connect_expanded_map(&self) {
-        self.expanded.connect_map({
-            let expanded = self.expanded.clone();
-            let channel = self.channel.clone();
-            move |_| {
-                gtk4::glib::spawn_future_local({
-                    let expanded = expanded.clone();
-                    let channel = channel.clone();
-                    async move {
-                        while expanded.allocated_width() == 0 || expanded.allocated_height() == 0 {
-                            gtk4::glib::timeout_future(std::time::Duration::from_millis(1)).await;
-                        }
-
-                        channel.send((expanded.allocated_width(), expanded.allocated_height())).await;
-                    }
-                });
-            }
-        });
     }
 
     fn animate_fade_slide_down(&self, expanding: bool) {

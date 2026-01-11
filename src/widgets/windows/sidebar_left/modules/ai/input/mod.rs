@@ -1,12 +1,12 @@
 mod attachments;
 
-use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use gtk4::prelude::*;
 
 use crate::singletons::ai::{self, SESSION};
 use crate::singletons::ai::images::cache_image_data;
 use crate::widgets::windows;
+use crate::utils::allocation_watcher::AllocationWatcher;
 use super::chat::{Chat, ChatMessage, ChatRole};
 use self::attachments::ImageAttachments;
 
@@ -48,6 +48,7 @@ impl ChatInput {
         input_overlay.add_overlay(&input_placeholder);
 
         let input = gtk4::TextView::new();
+        let input_watcher = AllocationWatcher::new(&input);
         let send_current_input = Rc::new({
             let chat = chat.clone();
             let scroll_to_bottom = scroll_to_bottom.clone();
@@ -104,81 +105,39 @@ impl ChatInput {
             }
         });
 
-        let measuring = Rc::new(Cell::new(false));
         input.set_wrap_mode(gtk4::WrapMode::WordChar);
         input.set_css_classes(&["ai-chat-input"]);
         input.set_hexpand(true);
         input.set_valign(gtk4::Align::Start);
-        input.buffer().connect_changed({
-            let input = input.clone();
-            move |buffer| {
-                if buffer.text(
-                    &buffer.start_iter(),
-                    &buffer.end_iter(),
-                    false
-                ).is_empty() {
-                    input_placeholder.set_visible(true);
-                } else {
-                    input_placeholder.set_visible(false);
-                }
-
-                if measuring.get() {
-                    return;
-                }
-                measuring.set(true);
-
-                // we'll wait for the height to change, gtk4 is weird
-                // TODO: move this logic into a gtk4 utils module, perhaps
-                gtk4::glib::spawn_future_local({
-                    let input = input.clone();
-                    let input_scrolled_window = input_scrolled_window.clone();
-                    let measuring = measuring.clone();
-                    async move {
-                        let old_height = input.allocation().height();
-                        let (sender, receiver) = tokio::sync::oneshot::channel::<i32>();
-                        let sender = Rc::new(RefCell::new(Some(sender)));
-
-                        let tick_id = input.add_tick_callback({
-                            let sender = sender.clone();
-                            move |widget, _| {
-                                let new_height = widget.allocation().height();
-                                if new_height != old_height {
-                                    if let Some(s) = sender.borrow_mut().take() {
-                                        let _ = s.send(new_height);
-                                    }
-                                    gtk4::glib::ControlFlow::Break
-                                } else {
-                                    gtk4::glib::ControlFlow::Continue
-                                }
-                            }
-                        });
-                    
-                        gtk4::glib::timeout_add_local_once(std::time::Duration::from_millis(500), {
-                            let sender = sender.clone();
-                            move || {
-                                if let Some(s) = sender.borrow_mut().take() {
-                                    let _ = s.send(old_height);
-                                }
-                                tick_id.remove();
-                            }
-                        });
-
-                        let height = receiver.await.unwrap_or(old_height);
-                    
-                        input_scrolled_window.set_vscrollbar_policy(if height > MIN_INPUT_HEIGHT {
-                            gtk4::PolicyType::Automatic
-                        } else {
-                            gtk4::PolicyType::Never
-                        });
-                    
-                        if height <= MAX_INPUT_HEIGHT {
-                            input_scrolled_window.vadjustment().set_value(0.0);
-                        }
-
-                        measuring.set(false);
-                    }
-                });
+        input.buffer().connect_changed(move |buffer| {
+            if buffer.text(
+                &buffer.start_iter(),
+                &buffer.end_iter(),
+                false
+            ).is_empty() {
+                input_placeholder.set_visible(true);
+            } else {
+                input_placeholder.set_visible(false);
             }
+
+            input_watcher.next_allocation_future(250, 1, {
+                let last_received_allocation = input_watcher.last_received_allocation.clone();
+                let input_scrolled_window = input_scrolled_window.clone();
+                async move {
+                    let height = last_received_allocation.get()
+                        .map_or(MIN_INPUT_HEIGHT, |alloc| alloc.height());
+                
+                    input_scrolled_window.set_vscrollbar_policy(if height > MIN_INPUT_HEIGHT {
+                        gtk4::PolicyType::Automatic
+                    } else {
+                        gtk4::PolicyType::Never
+                    });
+                
+                    if height <= MAX_INPUT_HEIGHT {
+                        input_scrolled_window.vadjustment().set_value(0.0);
+                    }
+                }
+            });
         });
         let key_controller = gtk4::EventControllerKey::new();
         key_controller.connect_key_pressed({
