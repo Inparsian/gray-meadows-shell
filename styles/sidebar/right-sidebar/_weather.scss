@@ -32,7 +32,34 @@
 
             .material-icons {
                 color: $foreground-color-secondary;
-                font-weight: 900;
+                font-weight: normal;
+            }
+        }
+    }
+
+    .weather-daily-forecast {
+        padding-left: 6px;
+        padding-right: 6px;
+
+        .weather-forecast-day {
+            .weather-forecast-day-name {
+                @include tiny-text;
+                color: $foreground-color-tertiary;
+                padding-top: 3px;
+            }
+
+            .weather-forecast-day-icon {
+                @include material-icons;
+                font-size: 14px;
+            }
+
+            .weather-forecast-high, .weather-forecast-low {
+                @include tiny-text;
+
+                .material-icons {
+                    color: $foreground-color-tertiary;
+                    font-weight: normal;
+                }
             }
         }
     }

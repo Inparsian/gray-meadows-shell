@@ -44,11 +44,11 @@ impl WeatherOverview {
         };
         
         self.current_icon.set_label(wmo.get_icon(forecast.current.is_day == 1));
-        self.actual_temp_label.set_label(&format!("{}{}", forecast.current.temperature_2m, forecast.current_units.temperature_2m));
-        self.feels_like_label.set_label(&format!("{}{}", forecast.current.apparent_temperature, forecast.current_units.temperature_2m));
+        self.actual_temp_label.set_label(&format!("{:.1}{}", forecast.current.temperature_2m, forecast.current_units.temperature_2m));
+        self.feels_like_label.set_label(&format!("{:.1}{}", forecast.current.apparent_temperature, forecast.current_units.temperature_2m));
         self.condition_label.set_label(wmo.text);
-        self.daily_high_label.set_label(&format!("{}{}", forecast.daily.temperature_2m_max[0], forecast.daily_units.temperature_2m_max));
-        self.daily_low_label.set_label(&format!("{}{}", forecast.daily.temperature_2m_min[0], forecast.daily_units.temperature_2m_min));
+        self.daily_high_label.set_label(&format!("{:.1}{}", forecast.daily.temperature_2m_max[0], forecast.daily_units.temperature_2m_max));
+        self.daily_low_label.set_label(&format!("{:.1}{}", forecast.daily.temperature_2m_min[0], forecast.daily_units.temperature_2m_min));
     }
 
     pub fn build(&self) -> gtk4::Box {
