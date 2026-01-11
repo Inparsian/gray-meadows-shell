@@ -8,6 +8,7 @@ use crate::singletons::clipboard;
 use crate::widgets::windows;
 
 static IMAGE_SIZE: u32 = 192;
+static IMAGE_SEMAPHORE: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(3);
 
 pub fn clipboard_entry(id: usize, preview: &str) -> gtk4::Button {
     let button = gtk4::Button::new();
@@ -20,6 +21,7 @@ pub fn clipboard_entry(id: usize, preview: &str) -> gtk4::Button {
 
         let (tx, rx) = async_channel::unbounded::<(u32, u32, Vec<u8>)>();
         tokio::spawn(async move {
+            let _permit = IMAGE_SEMAPHORE.acquire().await.unwrap();
             if let Some(decoded) = clipboard::decode_clipboard_entry(&id.to_string()) {
                 let image = image::load_from_memory(&decoded).ok();
                 if let Some(img) = image {
@@ -35,7 +37,8 @@ pub fn clipboard_entry(id: usize, preview: &str) -> gtk4::Button {
                         } else {
                             IMAGE_SIZE
                         };
-                        img.resize(new_width, new_height, FilterType::Lanczos3)
+                        // TODO: add a way to cache image clipboard entry thumbnails
+                        img.resize(new_width, new_height, FilterType::Nearest)
                     } else {
                         img
                     };
