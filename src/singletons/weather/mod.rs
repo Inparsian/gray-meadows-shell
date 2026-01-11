@@ -14,7 +14,6 @@ pub static WEATHER: LazyLock<Weather> = LazyLock::new(Weather::default);
 
 const OPENMETEO_API_URL: &str = "https://api.open-meteo.com/v1/forecast";
 
-#[allow(dead_code)]
 pub struct WmoCode {
     pub text: &'static str,
     pub short_text: &'static str,
@@ -37,7 +36,6 @@ impl WmoCode {
         }
     }
 
-    #[allow(dead_code)]
     pub fn get_icon(&self, is_day: bool) -> &'static str {
         if is_day {
             self.day_icon
@@ -142,7 +140,6 @@ impl Weather {
     }
 }
 
-#[allow(dead_code)]
 pub fn get_wmo_code(code: i64) -> Option<WmoCode> {
     let wmo = match code {
         0 => WmoCode::new("Clear sky", "clear", "clear_day", "moon_stars"),
