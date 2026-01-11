@@ -4,7 +4,7 @@ use gtk4::prelude::*;
 use crate::APP_LOCAL;
 use crate::utils::gesture;
 use crate::utils::timeout::Timeout;
-use crate::utils::allocation_watcher::AllocationWatcher;
+use crate::utils::allocation_watcher::{AllocationWatcher, AllocationWatcherOptions};
 
 static TRANSITION_DURATION: f64 = 0.4;
 static DOWNSCALE_FACTOR: f64 = 0.000_000_001;
@@ -44,13 +44,17 @@ impl BarModule {
             is_expanded: Rc::new(RefCell::new(false))
         };
 
-        let expanded_watcher = AllocationWatcher::new(&module.expanded);
+        let expanded_watcher = AllocationWatcher::new(&module.expanded, AllocationWatcherOptions {
+            timeout_millis: 5000,
+            max_allocation_width: Some(600),
+            max_allocation_height: None,
+            min_allocation_width: 64,
+            min_allocation_height: 32,
+        });
 
-        // Hide expanded after we get it's allocation and set the style for it.
-        // We wait for two changes instead of one, this way, we ensure that
-        // any layout changes that happen right after creation are also captured.
+        // Hide expanded after we get it's allocation and set the style for it
         // TODO: I should seriously subclass bar modules instead of using this quick hack
-        expanded_watcher.next_allocation_future(3000, 2, {
+        expanded_watcher.one_shot_future({
             let expanded = module.expanded.clone();
             let expanded_provider = module.expanded_provider.clone();
             let last_received_allocation = expanded_watcher.last_received_allocation.clone();

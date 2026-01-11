@@ -6,7 +6,7 @@ use gtk4::prelude::*;
 use crate::singletons::ai::{self, SESSION};
 use crate::singletons::ai::images::cache_image_data;
 use crate::widgets::windows;
-use crate::utils::allocation_watcher::AllocationWatcher;
+use crate::utils::allocation_watcher::{AllocationWatcher, AllocationWatcherOptions};
 use super::chat::{Chat, ChatMessage, ChatRole};
 use self::attachments::ImageAttachments;
 
@@ -48,7 +48,14 @@ impl ChatInput {
         input_overlay.add_overlay(&input_placeholder);
 
         let input = gtk4::TextView::new();
-        let input_watcher = AllocationWatcher::new(&input);
+        let input_watcher = AllocationWatcher::new(&input, AllocationWatcherOptions {
+            timeout_millis: 250,
+            max_allocation_width: None,
+            max_allocation_height: None,
+            min_allocation_width: 0,
+            min_allocation_height: 0,
+        });
+        
         let send_current_input = Rc::new({
             let chat = chat.clone();
             let scroll_to_bottom = scroll_to_bottom.clone();
@@ -120,7 +127,7 @@ impl ChatInput {
                 input_placeholder.set_visible(false);
             }
 
-            input_watcher.next_allocation_future(250, 1, {
+            input_watcher.one_shot_future({
                 let last_received_allocation = input_watcher.last_received_allocation.clone();
                 let input_scrolled_window = input_scrolled_window.clone();
                 async move {
