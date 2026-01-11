@@ -83,9 +83,10 @@ There's no exhaustive list of dependencies at the moment, as this project is sti
 - `libadwaita`
 - `gtk4` (of course)
 - `gtk4-layer-shell`
+- `gtksourceview5`
 - `dart-sass` (for compiling SASS stylesheets)
 - `libastal-wireplumber` (for WirePlumber support)
-- `material-symbols` (for Material Symbols font)
+- `ttf-material-symbols-variable` (for Material Symbols font)
 
 #### Optional
 - `cozette-ttf` (recommended primary font)
