@@ -1,7 +1,6 @@
 use gtk4::prelude::*;
-use futures_signals::signal::SignalExt as _;
 
-use crate::singletons::weather::{WEATHER, get_wmo_code};
+use crate::singletons::weather::get_wmo_code;
 use crate::singletons::weather::schemas::openmeteo::OpenMeteoResponse;
 
 pub struct WeatherOverview {
@@ -51,18 +50,10 @@ impl WeatherOverview {
         self.daily_high_label.set_label(&format!("{}{}", forecast.daily.temperature_2m_max[0], forecast.daily_units.temperature_2m_max));
         self.daily_low_label.set_label(&format!("{}{}", forecast.daily.temperature_2m_min[0], forecast.daily_units.temperature_2m_min));
     }
-}
 
-pub fn new() -> gtk4::Box {
-    let overview = WeatherOverview::default();
-
-    view! {
-        root = gtk4::Box {
-            set_css_classes: &["weather-tab-root"],
-            set_orientation: gtk4::Orientation::Vertical,
-            set_spacing: 4,
-
-            gtk4::Box {
+    pub fn build(&self) -> gtk4::Box {
+        view! {
+            root = gtk4::Box {
                 set_css_classes: &["current-weather"],
                 set_orientation: gtk4::Orientation::Horizontal,
                 set_hexpand: true,
@@ -74,7 +65,7 @@ pub fn new() -> gtk4::Box {
                     set_hexpand: true,
                     set_spacing: 6,
 
-                    append: &overview.current_icon,
+                    append: &self.current_icon,
                     gtk4::Box {
                         set_css_classes: &["current-weather-outlook"],
                         set_orientation: gtk4::Orientation::Vertical,
@@ -86,10 +77,10 @@ pub fn new() -> gtk4::Box {
                             set_orientation: gtk4::Orientation::Horizontal,
                             set_spacing: 8,
 
-                            append: &overview.actual_temp_label,
-                            append: &overview.feels_like_label,
+                            append: &self.actual_temp_label,
+                            append: &self.feels_like_label,
                         },
-                        append: &overview.condition_label,
+                        append: &self.condition_label,
                     },
                 },
 
@@ -107,7 +98,7 @@ pub fn new() -> gtk4::Box {
                             set_css_classes: &["material-icons"],
                             set_label: "arrow_upward",
                         },
-                        append: &overview.daily_high_label,
+                        append: &self.daily_high_label,
                     },
 
                     gtk4::Box {
@@ -119,18 +110,12 @@ pub fn new() -> gtk4::Box {
                             set_css_classes: &["material-icons"],
                             set_label: "arrow_downward",
                         },
-                        append: &overview.daily_low_label,
+                        append: &self.daily_low_label,
                     },
                 },
             }
         }
+
+        root
     }
-
-    gtk4::glib::spawn_future_local(signal_cloned!(WEATHER.last_response, (forecast) {
-        if let Some(forecast) = &forecast {
-            overview.update(forecast);
-        }
-    }));
-
-    root
 }
