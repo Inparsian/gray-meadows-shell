@@ -143,7 +143,7 @@ impl Weather {
 }
 
 #[allow(dead_code)]
-pub fn get_wmo_code(code: u32) -> Option<WmoCode> {
+pub fn get_wmo_code(code: i64) -> Option<WmoCode> {
     let wmo = match code {
         0 => WmoCode::new("Clear sky", "clear", "clear_day", "moon_stars"),
         1 => WmoCode::new("Mainly clear", "clearish", "partly_cloudy_day", "partly_cloudy_night"),

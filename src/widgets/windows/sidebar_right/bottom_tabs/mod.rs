@@ -1,4 +1,5 @@
 pub mod calendar;
+pub mod weather;
 
 use crate::widgets::common::tabs::{Tabs, TabsStack, TabSize};
 
@@ -17,7 +18,18 @@ pub fn new() -> (Tabs, TabsStack) {
         &calendar::new(),
     );
 
-    tabs.current_tab.set(Some("calendar".to_owned()));
+    tabs.add_tab(
+        "weather",
+        "weather".to_owned(),
+        Some("partly_cloudy_day"),
+    );
+
+    tabs_stack.add_tab(
+        Some("weather"),
+        &weather::new(),
+    );
+
+    tabs.current_tab.set(Some("weather".to_owned()));
 
     (tabs, tabs_stack)
 }

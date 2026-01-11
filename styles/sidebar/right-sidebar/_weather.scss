@@ -1,0 +1,39 @@
+.sidebar-right-bottom-tabs .weather-tab-root {
+    .current-weather {
+        .current-weather-status {
+            .current-weather-icon {
+                @include material-icons;
+                color: $foreground-color-secondary;
+                font-size: 40px;
+                font-weight: 200;
+            }
+
+            .current-weather-outlook {
+                .current-weather-temp {
+                    .current-weather-actual-temp {
+                        @include large-text;
+                        font-weight: 700;
+                    }
+
+                    .current-weather-feels-like-temp {
+                        @include tiny-text;
+                        color: $foreground-color-tertiary;
+                    }
+                }
+
+                .current-weather-condition {
+                    @include tiny-text;
+                }
+            }
+        }
+
+        .current-weather-other-temps {
+            margin-right: 6px;
+
+            .material-icons {
+                color: $foreground-color-secondary;
+                font-weight: 900;
+            }
+        }
+    }
+}
