@@ -3,8 +3,8 @@ use async_broadcast::Receiver;
 use dbus::{blocking, message::MatchRule, MessageType};
 use dbus_crossroads::{Crossroads, IfaceToken};
 
-use crate::broadcast::BroadcastChannel;
 use crate::dbus::start_monitoring;
+use crate::utils::broadcast::BroadcastChannel;
 use super::sn_item::StatusNotifierItem;
 use super::super::bus::{self, BusEvent};
 use super::super::proxy::{self, watcher::OrgKdeStatusNotifierWatcher};

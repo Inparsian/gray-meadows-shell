@@ -1,7 +1,7 @@
 use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell as _};
 
-use crate::gesture;
+use crate::utils::gesture;
 use crate::singletons::hyprland;
 use super::{GmsWindow, hide_all_fullscreen_windows};
 

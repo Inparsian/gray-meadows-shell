@@ -3,11 +3,12 @@ use std::io::{Read as _, Write as _};
 use std::sync::{LazyLock, Mutex};
 use regex::Regex;
 
-use crate::process;
+use crate::utils::process;
 
 static IMAGE_BINARY_DATA_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"\[\[ binary data (\d+) ([KMGT]i)?B (\w+) (\d+)x(\d+) \]\]").expect("Failed to compile image binary data regex")
 });
+
 static DECODE_CACHE: LazyLock<Mutex<HashMap<usize, Vec<u8>>>> = LazyLock::new(|| {
     Mutex::new(HashMap::new())
 });

@@ -1,12 +1,14 @@
 pub mod client;
 pub mod server;
 
+use crate::utils::filesystem::get_xdg_runtime_directory;
+
 pub const SOCKET_FILE_NAME: &str = "gray-meadows-shell.sock";
 
 pub fn get_socket_path() -> String {
     format!(
         "{}/{}",
-        crate::filesystem::get_xdg_runtime_directory(),
+        get_xdg_runtime_directory(),
         SOCKET_FILE_NAME
     )
 }

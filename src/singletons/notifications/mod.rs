@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, LazyLock, OnceLock, RwLock};
 use async_broadcast::Receiver;
 
-use crate::broadcast::BroadcastChannel;
+use crate::utils::broadcast::BroadcastChannel;
 use self::bus::BusEvent;
 use self::wrapper::{Notification, NotificationCloseReason, NotificationManager};
 

@@ -4,8 +4,9 @@ use notify::{EventKind, Watcher as _};
 use notify::event::{AccessKind, AccessMode};
 use regex::Regex;
 
+use crate::APP_LOCAL;
+use crate::utils::filesystem;
 use crate::color::{is_valid_hex_color, model::Rgba};
-use crate::{APP_LOCAL, filesystem};
 
 const VAR_REGEX: &str = r#"^\$([a-zA-Z0-9_-]+):\s*(?:"?([^"]+)"?|([a-zA-Z0-9#() ,.-])+);$"#;
 

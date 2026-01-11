@@ -2,9 +2,9 @@ use std::{cell::RefCell, rc::Rc, time::Duration};
 use gtk4::prelude::*;
 
 use crate::APP_LOCAL;
-use crate::broadcast::BroadcastChannel;
-use crate::gesture;
-use crate::timeout::Timeout;
+use crate::utils::gesture;
+use crate::utils::broadcast::BroadcastChannel;
+use crate::utils::timeout::Timeout;
 
 static TRANSITION_DURATION: f64 = 0.4;
 static DOWNSCALE_FACTOR: f64 = 0.000_000_001;

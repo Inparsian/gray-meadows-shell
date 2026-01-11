@@ -1,8 +1,8 @@
 use gdk4::gio;
 use gtk4::prelude::*;
 
-use crate::gesture;
 use crate::pixbuf;
+use crate::utils::gesture;
 use crate::singletons::tray::{self, bus::BusEvent, icon, tray_menu, wrapper::{dbus_menu::Menu, sn_item::StatusNotifierItem}};
 use super::super::wrapper::SimpleBarModuleWrapper;
 

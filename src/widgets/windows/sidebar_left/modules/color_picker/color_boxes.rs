@@ -2,10 +2,10 @@ use std::{rc::Rc, cell::RefCell};
 use futures_signals::signal::{Mutable, SignalExt as _};
 use gtk4::prelude::*;
 
+use crate::ipc;
 use crate::color::{model::Hsv, LighterDarkerResult};
 use crate::singletons::clipboard;
-use crate::gesture;
-use crate::ipc;
+use crate::utils::gesture;
 use crate::widgets::common::{dynamic_grid::DynamicGrid, tabs::Tabs};
 
 #[derive(Debug, Clone)]

@@ -4,9 +4,9 @@ use std::rc::Rc;
 use gtk4::prelude::*;
 use relm4::RelmRemoveAllExt as _;
 
-use crate::gesture;
 use crate::singletons::notifications::close_notification_by_id;
 use crate::singletons::notifications::wrapper::{Notification, NotificationAction, NotificationCloseReason};
+use crate::utils::gesture;
 
 const NOTIF_TRANSITION_DURATION: u32 = 175; // ms
 #[allow(dead_code)]

@@ -9,8 +9,8 @@ use gemini_rust::{
     ThinkingConfig, ThinkingLevel,
 };
 
-use crate::broadcast::BroadcastChannel;
 use crate::config::read_config;
+use crate::utils::broadcast::BroadcastChannel;
 use crate::singletons::ai::images::load_image_data;
 use crate::singletons::ai::tools::gemini::add_gemini_tools;
 use super::super::variables::transform_variables;

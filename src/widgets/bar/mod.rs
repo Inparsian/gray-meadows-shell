@@ -15,9 +15,9 @@ use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell as _};
 
 use crate::APP_LOCAL;
-use crate::gesture;
 use crate::ipc;
 use crate::singletons::hyprland;
+use crate::utils::gesture;
 use self::module::{BarModuleWrapper, hide_all_expanded_modules};
 
 static BAR_HEIGHT: i32 = 33;

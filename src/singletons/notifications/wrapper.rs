@@ -8,7 +8,7 @@ use dbus::channel::{MatchingReceiver as _, Sender as _};
 use dbus_crossroads::{Crossroads, IfaceToken};
 use dbus_tokio::connection;
 
-use crate::broadcast::BroadcastChannel;
+use crate::utils::broadcast::BroadcastChannel;
 use super::bus::{self, BusEvent};
 use super::proxy::{self, OrgFreedesktopNotifications};
 

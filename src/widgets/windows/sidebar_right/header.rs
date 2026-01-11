@@ -3,9 +3,9 @@ use gtk4::prelude::*;
 use futures_signals::signal::SignalExt as _;
 
 use crate::USERNAME;
-use crate::widgets::windows;
-use crate::filesystem;
 use crate::singletons::sysstats::SYS_STATS;
+use crate::utils::filesystem;
+use crate::widgets::windows;
 
 fn parse_uptime_seconds(seconds: u64) -> String {
     let days = seconds / 86400;

@@ -3,8 +3,8 @@ use gtk4::cairo::{RectangleInt, Region};
 use gtk4_layer_shell::{Edge, Layer, KeyboardMode, LayerShell as _};
 use libadwaita::Clamp;
 
-use crate::gesture;
 use crate::singletons::hyprland;
+use crate::utils::gesture;
 use super::{GmsWindow, hide_all_popups};
 
 /// A popup window that displays content on top of other windows. It closes itself when it loses focus.

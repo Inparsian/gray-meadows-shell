@@ -3,7 +3,7 @@ use std::os::unix::net::{UnixListener, UnixStream};
 use std::sync::OnceLock;
 use async_broadcast::Receiver;
 
-use crate::broadcast::BroadcastChannel;
+use crate::utils::broadcast::BroadcastChannel;
 
 static CHANNEL: OnceLock<BroadcastChannel<String>> = OnceLock::new();
 

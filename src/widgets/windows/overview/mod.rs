@@ -9,9 +9,9 @@ use gtk4::prelude::*;
 use regex::Regex;
 use urlencoding::encode;
 
-use crate::gesture;
 use crate::ipc;
 use crate::singletons::apps;
+use crate::utils::gesture;
 use self::item::{OverviewSearchItem, OverviewSearchItemAction};
 use self::list::{OverviewSearchList, get_button_from_row};
 use self::modules::{OverviewSearchModule, input_without_extensions, validate_input};

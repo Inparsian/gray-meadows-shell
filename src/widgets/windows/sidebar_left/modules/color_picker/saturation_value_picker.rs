@@ -3,7 +3,7 @@ use futures_signals::signal::{Mutable, SignalExt as _};
 use gtk4::prelude::*;
 
 use crate::color::model::Hsv;
-use crate::gesture;
+use crate::utils::gesture;
 
 #[derive(Debug, Clone)]
 pub struct SaturationValuePicker {

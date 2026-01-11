@@ -1,8 +1,8 @@
 use std::{cell::RefCell, f64, rc::Rc};
 use gtk4::prelude::*;
 
-use crate::gesture;
 use crate::scss;
+use crate::utils::gesture;
 use crate::singletons::mpris;
 use super::extended::SEEK_STEP_MICROSECONDS;
 

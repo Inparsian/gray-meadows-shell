@@ -3,7 +3,7 @@ pub mod extended;
 
 use gtk4::prelude::*;
 
-use crate::gesture;
+use crate::utils::gesture;
 use super::super::module::{BarModule, BarModuleWrapper};
 
 /// Show swap usage only if it's above this threshold, 

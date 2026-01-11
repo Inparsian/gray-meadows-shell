@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use std::sync::{Arc, RwLock};
 
-use crate::broadcast::BroadcastChannel;
+use crate::utils::broadcast::BroadcastChannel;
 use super::device::NetworkManagerDevice;
 use super::super::bus::BusEvent;
 

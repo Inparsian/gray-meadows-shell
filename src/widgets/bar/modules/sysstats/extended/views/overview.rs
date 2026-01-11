@@ -3,7 +3,7 @@ use futures_signals::signal::SignalExt as _;
 
 use crate::singletons::sysstats::SYS_STATS;
 use crate::singletons::sysstats::sensors::SENSORS;
-use crate::unit::bytes_to_gib;
+use crate::utils::unit::bytes_to_gib;
 use super::super::CompactStatRow;
 use super::super::super::SWAP_SHOW_THRESHOLD;
 

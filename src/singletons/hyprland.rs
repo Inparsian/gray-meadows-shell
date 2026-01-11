@@ -5,7 +5,7 @@ use hyprland::data::{Client, Monitor, Workspace, Workspaces};
 use hyprland::event_listener::AsyncEventListener;
 use hyprland::shared::{HyprData as _, HyprDataActive as _, HyprDataActiveOptional as _};
 
-use crate::display;
+use crate::utils::display;
 
 // Wrapper structs to work with Hyprland data reactively
 #[derive(Default)]

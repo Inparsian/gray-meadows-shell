@@ -4,7 +4,7 @@ use gtk4::prelude::*;
 
 use crate::singletons::sysstats::{MemoryInfo, SYS_STATS};
 use crate::singletons::sysstats::sensors::SENSORS;
-use crate::unit::bytes_to_gib;
+use crate::utils::unit::bytes_to_gib;
 use super::SWAP_SHOW_THRESHOLD;
 
 pub static DETAILED: LazyLock<Mutable<bool>> = LazyLock::new(|| Mutable::new(false));

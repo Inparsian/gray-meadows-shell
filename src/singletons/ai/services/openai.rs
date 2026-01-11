@@ -20,8 +20,8 @@ use async_openai::types::responses::{
     Tool
 };
 
-use crate::broadcast::BroadcastChannel;
 use crate::config::read_config;
+use crate::utils::broadcast::BroadcastChannel;
 use super::super::variables::transform_variables;
 use super::super::{AiChannelMessage, AiConversationItem, AiConversationItemPayload, AiConversationDelta};
 use super::super::images::load_image_data;

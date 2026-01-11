@@ -2,7 +2,8 @@ use std::collections::HashSet;
 use base64::Engine as _;
 use uuid::Uuid;
 
-use crate::{filesystem, sql::wrappers::aichats};
+use crate::utils::filesystem;
+use crate::sql::wrappers::aichats;
 
 fn get_ai_images_directory() -> String {
     let local_data_dir = filesystem::get_local_data_directory();

@@ -1,6 +1,7 @@
 use std::sync::LazyLock;
 
-use crate::{broadcast::BroadcastChannel, singletons::wireplumber::intercept_event};
+use crate::utils::broadcast::BroadcastChannel;
+use crate::singletons::wireplumber::intercept_event;
 
 pub static CHANNEL: LazyLock<BroadcastChannel<WpEvent>> = LazyLock::new(|| BroadcastChannel::new(10));
 

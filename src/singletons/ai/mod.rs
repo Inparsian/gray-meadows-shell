@@ -9,7 +9,7 @@ use std::sync::{Arc, LazyLock, OnceLock, RwLock};
 
 use crate::config::read_config;
 use crate::sql::wrappers::aichats;
-use crate::broadcast::BroadcastChannel;
+use crate::utils::broadcast::BroadcastChannel;
 use self::types::{
     AiSession,
     AiConversation, AiConversationItem, AiConversationItemPayload, AiConversationDelta,

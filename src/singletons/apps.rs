@@ -2,8 +2,7 @@ use std::{path::{Path, PathBuf}, sync::{Mutex, LazyLock}};
 use freedesktop_desktop_entry::{default_paths, get_languages_from_env, Iter, DesktopEntry};
 use notify::{event::{AccessKind, AccessMode}, EventKind, Watcher as _};
 
-use crate::matching;
-use crate::process;
+use crate::utils::{matching, process};
 use crate::sql::wrappers::commands;
 
 pub struct WeightedDesktopEntry {

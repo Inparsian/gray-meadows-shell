@@ -7,7 +7,7 @@ pub mod tray_menu;
 use std::sync::{Arc, LazyLock, OnceLock, RwLock};
 use async_broadcast::Receiver;
 
-use crate::broadcast::BroadcastChannel;
+use crate::utils::broadcast::BroadcastChannel;
 use self::bus::BusEvent;
 use self::wrapper::sn_item::StatusNotifierItem;
 use self::wrapper::sn_watcher::StatusNotifierWatcher;

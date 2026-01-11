@@ -9,17 +9,10 @@ mod ffi;
 mod singletons;
 mod widgets;
 mod sql;
+mod utils;
 mod dbus;
-mod display;
-mod filesystem;
-mod gesture;
-mod matching;
-mod process;
 mod scss;
-mod unit;
 mod pixbuf;
-mod timeout;
-mod broadcast;
 mod config;
 mod session;
 
@@ -30,7 +23,8 @@ use gtk4::prelude::*;
 use libadwaita::Application;
 use sqlite::Connection;
 
-use crate::widgets::{bar, windows::{self, GmsWindow}, notifications::NotificationsWindow};
+use self::widgets::{bar, windows::{self, GmsWindow}, notifications::NotificationsWindow};
+use self::utils::{display, process, filesystem};
 
 const FLOAT_TOLERANCE: f64 = 0.0001;
 

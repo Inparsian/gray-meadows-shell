@@ -5,7 +5,7 @@ use notify::Watcher as _;
 use notify::event::{AccessKind, AccessMode, EventKind};
 use serde::{Deserialize, Serialize};
 
-use crate::filesystem::get_config_directory;
+use crate::utils::filesystem::get_config_directory;
 
 static CONFIG: LazyLock<RwLock<Config>> = LazyLock::new(|| {
     let config = read().expect("Failed to read configuration");

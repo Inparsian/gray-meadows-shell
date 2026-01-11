@@ -4,7 +4,7 @@ pub mod gemini;
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
 
-use crate::broadcast::BroadcastChannel;
+use crate::utils::broadcast::BroadcastChannel;
 use super::{AiChannelMessage, AiConversationItem, AiConversationItemPayload};
 
 pub struct AiServiceResult {

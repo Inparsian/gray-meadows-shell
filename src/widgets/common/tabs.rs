@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 use gtk4::prelude::*;
 use futures_signals::signal::{Mutable, SignalExt as _};
 
-use crate::gesture;
+use crate::utils::gesture;
 
 #[allow(dead_code)]
 pub enum TabSize {

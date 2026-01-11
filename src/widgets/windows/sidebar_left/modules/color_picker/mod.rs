@@ -12,7 +12,7 @@ use crate::color::parse_color_into_hex;
 use crate::color::model::{int_to_hex, Hsv};
 use crate::ipc;
 use crate::singletons::clipboard;
-use crate::timeout::Timeout;
+use crate::utils::timeout::Timeout;
 use crate::widgets::common::tabs::{TabSize, Tabs, TabsStack};
 use self::fields::Fields;
 use self::{saturation_value_picker::SaturationValuePicker, hue_picker::HuePicker};

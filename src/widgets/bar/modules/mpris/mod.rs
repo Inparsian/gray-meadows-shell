@@ -4,8 +4,8 @@ mod progress;
 
 use gtk4::prelude::*;
 
-use crate::gesture;
 use crate::singletons::mpris;
+use crate::utils::gesture;
 use super::super::module::{BarModule, BarModuleWrapper};
 
 const VOLUME_STEP: f64 = 0.05;

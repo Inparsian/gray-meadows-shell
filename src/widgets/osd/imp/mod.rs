@@ -4,7 +4,7 @@ pub mod keybinds;
 use std::time::Duration;
 use gtk4::prelude::*;
 
-use crate::timeout::Timeout;
+use crate::utils::timeout::Timeout;
 
 static TRANSITION_DURATION_MS: u32 = 200;
 static DISPLAY_DURATION: f64 = 2.0;
