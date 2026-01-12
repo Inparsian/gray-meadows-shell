@@ -10,7 +10,7 @@ pub fn handle_nm_signal_message(_msg: &dbus::Message) {
     todo!("Handle NetworkManager signal messages here");
 }
 
-#[allow(unused_variables)]
+#[allow(dead_code, unused_variables)]
 pub fn activate() {
     // DBus client proxy testing
     let connection = dbus::blocking::Connection::new_system()

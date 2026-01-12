@@ -14,14 +14,18 @@
 My personal stand-alone Hyprland desktop shell using gtk4 and gtk4-layer-shell, re-written from scratch in Rust and C++ (originally in TypeScript + JSX using AGSv2).
 
 - Bar with workspace management, music controls, system tray, system stats, volume, and more
-- OSD for notifications *(soon)*, volume and submaps
+- OSD for notifications, volume and submaps
 - Clipboard manager powered by `cliphist` and `wl-clipboard`
 - Overview:
   - Application launcher with intelligent searching
   - Tracking of most launched applications, most launched apps get a search weight boost
   - Run web searches, execute shell commands, calculator powered by Qalculate, text transformation tools, and more
 - Right sidebar:
-  - Currently barebones, but will eventually have things like calendar, weather, notes, timers, etc.
+  - Notifications *(W.I.P)*
+  - Audio controls *(W.I.P)*
+  - Calendar
+  - Weather
+  - Timers *(soon)*
 - Left sidebar:
   - Google Translate integration
   - Advanced color picker
