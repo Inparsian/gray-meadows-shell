@@ -63,4 +63,29 @@
             }
         }
     }
+
+    .weather-today {
+        padding: 4px;
+
+        .weather-today-icon {
+            @include material-icons;
+            font-size: 23px;
+            font-weight: 300;
+        }
+
+        .weather-today-value {
+            @include large-text;
+            font-weight: 500;
+        }
+
+        .weather-today-secondary-value {
+            @include tiny-text;
+            color: $foreground-color-tertiary;
+        }
+
+        .weather-today-wind-gust {
+            @include tiny-text;
+            margin-left: 1px;
+        }
+    }
 }

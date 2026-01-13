@@ -1,4 +1,5 @@
 mod overview;
+mod today;
 mod week;
 
 use gtk4::prelude::*;
@@ -9,10 +10,22 @@ use crate::widgets::common::tabs::{Tabs, TabsStack, TabSize};
 
 pub fn new() -> gtk4::Box {
     let overview = overview::WeatherOverview::default();
+    let today = today::WeatherToday::default();
     let week = week::WeatherWeek::default();
 
     let tabs = Tabs::new(TabSize::Tiny, false);
     let tabs_stack = TabsStack::new(&tabs, Some("weather-tab-tabs"));
+
+    tabs.add_tab(
+        "today",
+        "today".to_owned(),
+        None,
+    );
+
+    tabs_stack.add_tab(
+        Some("today"),
+        &today.build(),
+    );
 
     tabs.add_tab(
         "week",
@@ -25,7 +38,7 @@ pub fn new() -> gtk4::Box {
         &week.bx,
     );
 
-    tabs.current_tab.set(Some("week".to_owned()));
+    tabs.current_tab.set(Some("today".to_owned()));
 
     view! {
         root = gtk4::Box {
@@ -42,6 +55,7 @@ pub fn new() -> gtk4::Box {
     gtk4::glib::spawn_future_local(signal_cloned!(WEATHER.last_response, (forecast) {
         if let Some(forecast) = &forecast {
             overview.update(forecast);
+            today.update(forecast);
             week.update(forecast);
         }
     }));
