@@ -2,6 +2,7 @@ use std::{collections::HashMap, process::Stdio};
 use std::io::{Read as _, Write as _};
 use std::sync::{LazyLock, Mutex};
 use regex::Regex;
+use tokio::time::timeout;
 
 use crate::utils::process;
 
@@ -106,15 +107,25 @@ pub fn copy_text(text: &str) {
         .map_err(|e| error!(%e, "Failed to copy text to clipboard"));
 }
 
-pub fn fetch_text_clipboard() -> Option<String> {
-    let output = std::process::Command::new("wl-paste")
-        .arg("--no-newline")
-        .arg("--type")
-        .arg("text")
-        .output()
-        .ok()?;
-
-    output.status.success().then(|| String::from_utf8_lossy(&output.stdout).to_string())
+pub async fn fetch_text_clipboard() -> Option<String> {
+    let result = timeout(std::time::Duration::from_secs(1), async {
+        let output = tokio::process::Command::new("wl-paste")
+            .arg("--no-newline")
+            .arg("--type")
+            .arg("text")
+            .output()
+            .await
+            .ok()?;
+        
+        output.status.success().then(|| String::from_utf8_lossy(&output.stdout).to_string())
+    }).await;
+    
+    let text = result.ok().flatten();
+    if text.is_none() {
+        warn!("Timed out while fetching text clipboard");
+    }
+    
+    text
 }
 
 pub fn spawn_indefinite_watcher(type_arg: &'static str) {

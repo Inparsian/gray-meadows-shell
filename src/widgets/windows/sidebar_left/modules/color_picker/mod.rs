@@ -221,30 +221,37 @@ pub fn new() -> gtk4::Box {
     paste_from_clipboard_button.connect_clicked({
         let hsv = hsv.clone();
         move |button| {
-            let Some(clipboard_text) = clipboard::fetch_text_clipboard() else {
-                return;
-            };
+            gtk4::glib::spawn_future_local({
+                let hsv = hsv.clone();
+                let button = button.clone();
+                let button_label_change_timeout = button_label_change_timeout.clone();
+                async move {
+                    let Some(clipboard_text) = clipboard::fetch_text_clipboard().await else {
+                        return;
+                    };
+                    
+                    if let Some(hex) = parse_color_into_hex(&clipboard_text) {
+                        let hsv_value = Hsv::from_hex(&hex);
+                    
+                        hsv.set(hsv_value);
+                    } else {
+                        let Some(bx) = button.child().and_then(|child| child.downcast::<gtk4::Box>().ok()) else {
+                            return;
+                        };
         
-            if let Some(hex) = parse_color_into_hex(&clipboard_text) {
-                let hsv_value = Hsv::from_hex(&hex);
-            
-                hsv.set(hsv_value);
-            } else {
-                let Some(bx) = button.child().and_then(|child| child.downcast::<gtk4::Box>().ok()) else {
-                    return;
-                };
-
-                let Some(label) = bx
-                    .iter_children()
-                    .find_map(|child| child.downcast::<gtk4::Label>().ok().filter(|lbl| lbl.widget_name() == "paste-from-clipboard-label"))
-                else {
-                    return;
-                };
-
-                label.set_text("No valid color in clipboard!");
-
-                button_label_change_timeout.set(Duration::from_secs(2), move || label.set_text("Paste from Clipboard"));
-            }
+                        let Some(label) = bx
+                            .iter_children()
+                            .find_map(|child| child.downcast::<gtk4::Label>().ok().filter(|lbl| lbl.widget_name() == "paste-from-clipboard-label"))
+                        else {
+                            return;
+                        };
+        
+                        label.set_text("No valid color in clipboard!");
+        
+                        button_label_change_timeout.set(Duration::from_secs(2), move || label.set_text("Paste from Clipboard"));
+                    }
+                }
+            });
         }
     });
 
