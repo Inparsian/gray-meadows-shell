@@ -25,7 +25,7 @@ pub async fn start() -> io::Result<()> {
     }
 
     let listener = UnixListener::bind(&socket_path)?;
-    println!("IPC server started, listening on {}", socket_path);
+    info!(%socket_path, "IPC server started");
 
     for stream in listener.incoming() {
         match stream {
@@ -33,7 +33,7 @@ pub async fn start() -> io::Result<()> {
                 handle_client(stream).await;
             },
 
-            Err(e) => eprintln!("Error accepting connection: {}", e)
+            Err(e) => error!(%e, "Error accepting connection")
         }
     }
 
@@ -63,7 +63,7 @@ pub async fn handle_client(mut stream: UnixStream) {
             }
 
             Err(e) => {
-                eprintln!("Error reading from stream: {}", e);
+                error!(%e, "Error reading from stream");
                 break;
             }
         }

@@ -103,7 +103,7 @@ pub fn bundle_apply_scss() {
             .expect("Failed to run sass command");
         
         if !output.status.success() {
-            eprintln!("Error running sass: {}", String::from_utf8_lossy(&output.stderr));
+            error!(stderr = %String::from_utf8_lossy(&output.stderr), "Error running sass");
             return;
         }
     
@@ -129,7 +129,7 @@ pub fn watch_scss() {
         );
 
         if result.is_ok() {
-            println!("Watching styles directory: {}", styles_path);
+            info!(%styles_path, "Watching styles directory");
 
             for res in rx {
                 match res {
@@ -137,17 +137,17 @@ pub fn watch_scss() {
                     Ok(event) => if event.paths.iter().any(|p| p.extension() == Some("scss".as_ref())
                         && matches!(event.kind, EventKind::Access(AccessKind::Close(AccessMode::Write))))
                     {
-                        println!("Styles changed: {:?}", event.paths);
+                        debug!(paths = ?event.paths, "Styles changed");
                         bundle_apply_scss();
                     },
 
                     Err(e) => {
-                        eprintln!("Error watching styles directory: {}", e);
+                        error!(%e, "Error watching styles directory");
                     }
                 }
             }
         } else {
-            eprintln!("Failed to watch styles directory: {}", result.unwrap_err());
+            error!(error = %result.unwrap_err(), "Failed to watch styles directory");
         }
     });
 }

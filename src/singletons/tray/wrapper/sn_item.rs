@@ -78,7 +78,7 @@ impl StatusNotifierItem {
                 match self.try_get_prop::<$type>($prop) {
                     Ok(value) => self.$field = value,
                     Err(err) => {
-                        eprintln!("Failed to get {}: {}", $prop, err);
+                        warn!(property = $prop, %err, "Failed to get property");
                     }
                 }
             };
@@ -87,7 +87,7 @@ impl StatusNotifierItem {
                 match self.try_get_pixmap($prop) {
                     Ok(pixmap) => self.$field = pixmap,
                     Err(err) => {
-                        eprintln!("Failed to get {}: {}", $prop, err);
+                        warn!(property = $prop, %err, "Failed to get pixmap property");
                     }
                 }
             };
@@ -109,13 +109,13 @@ impl StatusNotifierItem {
         // tooltip
         match self.try_get_prop::<RawToolTip>("ToolTip") {
             Ok(tool_tip) => self.tool_tip = ToolTip::from_tuple(tool_tip),
-            Err(err) => eprintln!("Failed to get ToolTip property: {}", err),
+            Err(err) => warn!(%err, "Failed to get ToolTip property"),
         }
 
         // menu
         match self.try_get_prop::<Path>("Menu") {
             Ok(menu) => self.menu = super::dbus_menu::DbusMenu::new(self.service.clone(), menu.to_string()),
-            Err(err) => eprintln!("Failed to get Menu property: {}", err),
+            Err(err) => warn!(%err, "Failed to get Menu property"),
         }
 
         Ok(())

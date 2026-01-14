@@ -192,9 +192,9 @@ pub fn activate() {
     tokio::spawn(async {
         let refresh_session_result = refresh_session().await;
         if refresh_session_result.is_ok() {
-            println!("Google Translate session initialized successfully.");
+            info!("Google Translate session initialized");
         } else {
-            eprintln!("Failed to initialize Google Translate session: {:?}", refresh_session_result.unwrap_err());
+            error!(error = ?refresh_session_result.unwrap_err(), "Failed to initialize Google Translate session");
         }
     });
 }

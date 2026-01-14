@@ -72,12 +72,12 @@ impl SysStats {
         if let Ok(device) = gpu::nvidia::get_device_by_index(0) {
             match device.utilization_rates() {
                 Ok(util) => self.gpu_utilization.set(util.gpu as f64),
-                Err(err) => eprintln!("Failed to get GPU utilization: {:?}", err)
+                Err(err) => warn!(?err, "Failed to get GPU utilization")
             }
 
             match device.temperature(TemperatureSensor::Gpu) {
                 Ok(temp) => self.gpu_temperature.set(temp as f64),
-                Err(err) => eprintln!("Failed to get GPU temperature: {:?}", err)
+                Err(err) => warn!(?err, "Failed to get GPU temperature")
             }
 
             match device.memory_info() {
@@ -85,7 +85,7 @@ impl SysStats {
                     total,
                     used,
                 }),
-                Err(err) => eprintln!("Failed to get GPU memory info: {:?}", err)
+                Err(err) => warn!(?err, "Failed to get GPU memory info")
             }
         }
     }

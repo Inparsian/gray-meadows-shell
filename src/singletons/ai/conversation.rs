@@ -24,18 +24,18 @@ pub fn load_conversation(id: i64) {
                         }
 
                         if let Err(err) = aichats::set_state_conversation_id(Some(id)) {
-                            eprintln!("Failed to update current AI chat conversation in database: {}", err);
+                            error!(%err, "Failed to update current AI chat conversation in database");
                         }
                     },
                 
                     Err(err) => {
-                        eprintln!("Failed to load AI chat conversation from database: {}", err);
+                        error!(%err, "Failed to load AI chat conversation from database");
                     }
                 }
             },
 
             Err(err) => {
-                eprintln!("Failed to load AI chat conversation info from database: {}", err);
+                error!(%err, "Failed to load AI chat conversation info from database");
             }
         }
     }
@@ -61,13 +61,13 @@ pub fn add_conversation(title: &str) {
                 },
 
                 Err(err) => {
-                    eprintln!("Failed to load newly added AI chat conversation from database: {}", err);
+                    error!(%err, "Failed to load newly added AI chat conversation from database");
                 }
             }
         },
 
         Err(err) => {
-            eprintln!("Failed to add AI chat conversation to database: {}", err);
+            error!(%err, "Failed to add AI chat conversation to database");
         }
     }
 }
@@ -75,7 +75,7 @@ pub fn add_conversation(title: &str) {
 pub fn rename_conversation(conversation_id: i64, new_title: &str) {
     if let Some(session) = SESSION.get() {
         if let Err(err) = aichats::rename_conversation(conversation_id, new_title) {
-            eprintln!("Failed to rename AI chat conversation in database: {}", err);
+            error!(%err, "Failed to rename AI chat conversation in database");
             return;
         }
 
@@ -93,7 +93,7 @@ pub fn rename_conversation(conversation_id: i64, new_title: &str) {
 pub fn delete_conversation(conversation_id: i64) {
     if let Some(session) = SESSION.get() {
         if let Err(err) = aichats::delete_conversation(conversation_id) {
-            eprintln!("Failed to delete AI chat conversation from database: {}", err);
+            error!(%err, "Failed to delete AI chat conversation from database");
             return;
         }
 
@@ -111,7 +111,7 @@ pub fn delete_conversation(conversation_id: i64) {
 pub fn clear_conversation(conversation_id: i64) {
     // trim to 0
     if let Err(err) = aichats::trim_items(conversation_id, 0) {
-        eprintln!("Failed to clear AI chat conversation items from database: {}", err);
+        error!(%err, "Failed to clear AI chat conversation items from database");
         return;
     }
 

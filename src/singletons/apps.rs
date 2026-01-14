@@ -130,7 +130,7 @@ pub fn watch_desktops(path: &PathBuf) {
     );
 
     if result.is_ok() {
-        println!("Watching .desktop files in directory: {}", path.to_string_lossy());
+        info!(path = %path.to_string_lossy(), "Watching .desktop files");
 
         for res in rx {
             match res {
@@ -138,12 +138,12 @@ pub fn watch_desktops(path: &PathBuf) {
                     if event.paths.iter().any(|p| p.extension() == Some("desktop".as_ref())) {
                         match event.kind {
                             EventKind::Create(_) | EventKind::Remove(_) => {
-                                println!("Desktop file added/removed: {:?}", event.paths);
+                                debug!(paths = ?event.paths, "Desktop file added/removed");
                                 refresh_desktops();
                             },
 
                             EventKind::Access(AccessKind::Close(AccessMode::Write)) => {
-                                println!("Desktop file written to: {:?}", event.paths);
+                                debug!(paths = ?event.paths, "Desktop file written to");
                                 refresh_desktops();
                             },
 
@@ -153,11 +153,11 @@ pub fn watch_desktops(path: &PathBuf) {
                 },
 
                 Err(e) => {
-                    eprintln!("Error watching .desktop directory: {}", e);
+                    error!(%e, "Error watching .desktop directory");
                 }
             }
         }
     } else {
-        eprintln!("Failed to watch .desktop directory: {}", result.unwrap_err());
+        error!(error = %result.unwrap_err(), "Failed to watch .desktop directory");
     }
 }

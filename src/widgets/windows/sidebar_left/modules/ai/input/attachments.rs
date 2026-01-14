@@ -182,13 +182,13 @@ impl ImageAttachmentWidget {
                     h_clamp.set_child(Some(&picture));
                 }
                 Ok(Err(e)) => {
-                    eprintln!("Failed to process image: {e}");
+                    error!(%e, "Failed to process image");
                     spinner.set_visible(false);
                     let label = gtk4::Label::new(Some("Error"));
                     h_clamp.set_child(Some(&label));
                 }
                 Err(e) => {
-                    eprintln!("Background task failed: {e:?}");
+                    error!(?e, "Background task failed");
                     spinner.set_visible(false);
                     let label = gtk4::Label::new(Some("Error"));
                     h_clamp.set_child(Some(&label));

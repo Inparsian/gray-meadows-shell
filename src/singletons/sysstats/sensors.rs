@@ -36,16 +36,16 @@ pub fn init_sensors() {
                                 }
                             }
                         } else {
-                            eprintln!("Tctl feature not found in k10temp chip.");
+                            warn!("Tctl feature not found in k10temp chip");
                         }
                     } else {
-                        eprintln!("No k10temp chip found.");
+                        warn!("No k10temp chip found");
                     }
                 }
             },
 
             Err(err) => {
-                eprintln!("Failed to initialize LM sensors: {:?}", err);
+                error!(?err, "Failed to initialize LM sensors");
             }
         }
     });

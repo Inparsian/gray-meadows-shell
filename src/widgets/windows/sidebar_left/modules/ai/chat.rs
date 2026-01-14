@@ -393,7 +393,7 @@ impl Chat {
                 }
             }
         } else {
-            eprintln!("AI chat message role assertion failed: no messages present");
+            warn!("AI chat message role assertion failed: no messages present");
         }
     }
 
@@ -462,7 +462,7 @@ impl Chat {
                 },
 
                 Err(err) => {
-                    eprintln!("Failed to load image with UUID {}: {:#?}", uuid, err);
+                    error!(uuid, ?err, "Failed to load image");
                 }
             }
         }

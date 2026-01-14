@@ -152,7 +152,7 @@ impl MprisPlayer {
         for key in &mut booleans {
             let prop: bool = mpris_dbus::get_dbus_property::<bool>(self, key)
                 .unwrap_or_else(|_| {
-                    eprintln!("Failed to get {} property", key);
+                    warn!(property = key, "Failed to get boolean property");
                     false
                 });
 
@@ -171,7 +171,7 @@ impl MprisPlayer {
         for key in &mut f64s {
             let prop: f64 = mpris_dbus::get_dbus_property::<f64>(self, key)
                 .unwrap_or_else(|_| {
-                    eprintln!("Failed to get {} property", key);
+                    warn!(property = key, "Failed to get f64 property");
                     0.0
                 });
 
@@ -187,7 +187,7 @@ impl MprisPlayer {
         for key in &mut i64s {
             let prop: i64 = mpris_dbus::get_dbus_property::<i64>(self, key)
                 .unwrap_or_else(|_| {
-                    eprintln!("Failed to get {} property", key);
+                    warn!(property = key, "Failed to get i64 property");
                     0
                 });
 
@@ -197,7 +197,7 @@ impl MprisPlayer {
         for key in &mut strings {
             let prop: String = mpris_dbus::get_dbus_property::<String>(self, key)
                 .unwrap_or_else(|_| {
-                    eprintln!("Failed to get {} property", key);
+                    warn!(property = key, "Failed to get string property");
                     String::new()
                 });
 
@@ -251,7 +251,7 @@ impl MprisPlayer {
                 if let Some(pos) = position.0.as_i64() {
                     self.position = pos;
                 } else {
-                    eprintln!("Failed to parse Position property: {:?}", position);
+                    warn!(?position, "Failed to parse Position property");
                 }
             }
 
@@ -280,7 +280,7 @@ impl MprisPlayer {
                     if let Some(b) = value.0.as_i64() {
                         **flag = b != 0;
                     } else {
-                        eprintln!("Failed to parse {} property: {:?}", key, value);
+                        warn!(property = key, ?value, "Failed to parse boolean property");
                     }
                 }
             }
@@ -290,12 +290,12 @@ impl MprisPlayer {
                     if let Some(v) = prop.0.as_f64() {
                         **value = v;
                     } else {
-                        eprintln!("Failed to parse {} property: {:?}", key, prop);
+                        warn!(property = key, ?prop, "Failed to parse f64 property");
                     }
                 }
             }
         } else {
-            eprintln!("PropertiesChanged message did not contain properties: {:?}", msg);
+            warn!(?msg, "PropertiesChanged message did not contain properties");
         }
     }
 

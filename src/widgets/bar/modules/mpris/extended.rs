@@ -45,7 +45,7 @@ fn default_mpris_player() -> gtk4::Box {
             set_hexpand: false,
             connect_clicked => |_| {
                 mpris::with_default_player_mut(|player| if let Err(e) = player.previous() {
-                    eprintln!("Failed to skip to previous track: {}", e);
+                    error!(%e, "Failed to skip to previous track");
                 });
             }
         },
@@ -60,11 +60,11 @@ fn default_mpris_player() -> gtk4::Box {
             set_hexpand: false,
             connect_clicked => |_| {
                 let Some(player) = mpris::get_default_player() else {
-                    return eprintln!("No MPRIS player available to toggle play/pause.");
+                    return warn!("No MPRIS player available to toggle play/pause");
                 };
 
                 if let Err(e) = player.play_pause() {
-                    eprintln!("Failed to toggle play/pause: {}", e);
+                    error!(%e, "Failed to toggle play/pause");
                 }
             }
         },
@@ -75,7 +75,7 @@ fn default_mpris_player() -> gtk4::Box {
             set_hexpand: false,
             connect_clicked => |_| {
                 mpris::with_default_player_mut(|player| if let Err(e) = player.next() {
-                    eprintln!("Failed to skip to next track: {}", e);
+                    error!(%e, "Failed to skip to next track");
                 });
             }
         },
@@ -86,7 +86,7 @@ fn default_mpris_player() -> gtk4::Box {
             set_hexpand: false,
             connect_clicked => |_| {
                 let Some(player) = mpris::get_default_player() else {
-                    return eprintln!("No MPRIS player available to change loop status.");
+                    return warn!("No MPRIS player available to change loop status");
                 };
 
                 let new_status = match player.loop_status {
@@ -96,7 +96,7 @@ fn default_mpris_player() -> gtk4::Box {
                 };
                 
                 if let Err(e) = player.set_loop_status(new_status) {
-                    eprintln!("Failed to set loop status: {}", e);
+                    error!(%e, "Failed to set loop status");
                 }
             }
         },
@@ -107,13 +107,13 @@ fn default_mpris_player() -> gtk4::Box {
             set_hexpand: false,
             connect_clicked => |_| {
                 let Some(player) = mpris::get_default_player() else {
-                    return eprintln!("No MPRIS player available to toggle shuffle.");
+                    return warn!("No MPRIS player available to toggle shuffle");
                 };
 
                 let new_shuffle = !player.shuffle;
                 
                 if let Err(e) = player.set_shuffle(new_shuffle) {
-                    eprintln!("Failed to set shuffle: {}", e);
+                    error!(%e, "Failed to set shuffle");
                 }
             }
         },
@@ -221,7 +221,7 @@ fn default_mpris_player() -> gtk4::Box {
 
     progress.add_controller(gesture::on_vertical_scroll(|delta| {
         let Some(player) = mpris::get_default_player() else {
-            return eprintln!("No MPRIS player available to seek.");
+            return warn!("No MPRIS player available to seek");
         };
 
         let seek_amount = if delta < 0.0 {
@@ -231,7 +231,7 @@ fn default_mpris_player() -> gtk4::Box {
         };
 
         if let Err(e) = player.seek(seek_amount) {
-            eprintln!("Failed to seek: {}", e);
+            error!(%e, "Failed to seek");
         }
     }));
 

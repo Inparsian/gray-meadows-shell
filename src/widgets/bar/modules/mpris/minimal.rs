@@ -93,7 +93,7 @@ pub fn minimal() -> gtk4::Box {
                     blank_pixbuf.fill(0x0D0D_0DFF);
                     current_album_art.set_from_pixbuf(Some(&blank_pixbuf));
                 } else {
-                    eprintln!("Failed to create blank pixbuf for album art! :O");
+                    error!("Failed to create blank pixbuf for album art");
                 }
             };
 
@@ -105,7 +105,7 @@ pub fn minimal() -> gtk4::Box {
                     let art_url = match urlencoding::decode(&art_url.replace("file://", "")) {
                         Ok(decoded) => decoded.into_owned(),
                         Err(e) => {
-                            eprintln!("Failed to decode album art URL: {}", e);
+                            error!(%e, "Failed to decode album art URL");
                             return;
                         }
                     };
@@ -126,13 +126,13 @@ pub fn minimal() -> gtk4::Box {
 
                                 current_album_art.set_from_pixbuf(Some(&scaled_pixbuf));
                             } else {
-                                eprintln!("Failed to scale album art from file: {}", art_url);
+                                warn!(%art_url, "Failed to scale album art from file");
                                 make_blank_art();
                             }
                         },
 
                         Err(e) => {
-                            eprintln!("Failed to load album art from file: {}: {}", art_url, e);
+                            warn!(%art_url, %e, "Failed to load album art from file");
                             make_blank_art();
                         }
                     }

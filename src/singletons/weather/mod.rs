@@ -116,12 +116,12 @@ impl Weather {
                 }
 
                 Err(err) => {
-                    eprintln!("Failed to parse weather data: {:#?}", err);
+                    error!(?err, "Failed to parse weather data");
                 }
             },
 
             Err(err) => {
-                eprintln!("Failed to fetch weather data: {:#?}", err);
+                error!(?err, "Failed to fetch weather data");
             }
         }
     }
@@ -131,7 +131,7 @@ impl Weather {
         if let Ok(Some((fetched_at, forecast))) = get_weather_forecast() {
             let now = chrono::Utc::now().naive_utc();
             let elapsed = now.signed_duration_since(fetched_at).num_seconds();
-            println!("[weather] Got a cache hit! Forecast fetched {} seconds ago.", elapsed);
+            debug!(elapsed, "Weather cache hit");
             self.last_response.set(Some(forecast));
             Some(elapsed)
         } else {
@@ -189,7 +189,7 @@ pub fn activate() {
         let clamped_interval = weather_config.refresh_interval.max(600);
         if let Some(elapsed) = WEATHER.cache_check() && elapsed < clamped_interval as i64 {
             let sleep_duration = clamped_interval as i64 - elapsed;
-            println!("[weather] Sleeping for {sleep_duration} seconds...");
+            info!(sleep_duration, "Weather cache valid, sleeping until next refresh");
             tokio::time::sleep(std::time::Duration::from_secs(sleep_duration as u64)).await;
         }
 

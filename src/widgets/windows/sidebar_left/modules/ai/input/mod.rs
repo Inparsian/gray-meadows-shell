@@ -177,11 +177,11 @@ impl ChatInput {
                                 },
 
                                 Ok(None) => {
-                                    eprintln!("No texture found in clipboard");
+                                    warn!("No texture found in clipboard");
                                 },
 
                                 Err(err) => {
-                                    eprintln!("Error reading texture from clipboard: {:#?}", err);
+                                    warn!(?err, "Error reading texture from clipboard");
                                 },
                             }
                         }

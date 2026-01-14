@@ -10,7 +10,7 @@ fn detach_child() {
     unsafe {
         // Just setsid alone is enough to completely detach the child process
         if setsid() < 0 {
-            eprintln!("Failed to create a new session: {}", std::io::Error::last_os_error());
+            error!(error = %std::io::Error::last_os_error(), "Failed to create a new session");
         }
 
         // But we should also reopen stdin, stdout, and stderr to /dev/null, we won't
@@ -59,7 +59,7 @@ pub fn launch(input: &str) {
             .map(|s| FIELD_CODE_REGEX.replace_all(s, "").to_string())
             .collect()
     } else {
-        eprintln!("Failed to parse command: {}", input);
+        error!(input, "Failed to parse command");
         return;
     };
 
@@ -82,9 +82,9 @@ pub fn launch(input: &str) {
             gtk4::glib::SpawnFlags::SEARCH_PATH_FROM_ENVP | gtk4::glib::SpawnFlags::SEARCH_PATH,
             Some(Box::new(detach_child)),
         ) {
-            eprintln!("Failed to launch command: {}: {}", input, err);
+            error!(input, %err, "Failed to launch command");
         }
     } else {
-        eprintln!("No command to execute.");
+        warn!("No command to execute");
     }
 }

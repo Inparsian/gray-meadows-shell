@@ -24,7 +24,7 @@ pub fn handle_master_message(msg: &Message) {
                     }
                 }
             } else {
-                eprintln!("Failed to parse NameOwnerChanged message: {:?}", msg);
+                warn!(?msg, "Failed to parse NameOwnerChanged message");
             }
         }
 
@@ -43,12 +43,12 @@ pub fn handle_master_message(msg: &Message) {
                 match member {
                     "PropertiesChanged" => player.properties_changed(msg),
                     "Seeked" => player.seeked(msg),
-                    _ => eprintln!("Unknown MPRIS signal member: {}", member),
+                    _ => warn!(member, "Unknown MPRIS signal member"),
                 }
 
                 players_mut.set_cloned(player_index, player);
             } else {
-                eprintln!("Failed to find MPRIS player for owner: {}", sender);
+                warn!(%sender, "Failed to find MPRIS player for owner");
             }
         }
     }

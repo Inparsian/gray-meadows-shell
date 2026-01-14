@@ -25,7 +25,7 @@ where
 
             match become_monitor_result {
                 Ok(()) => {
-                    println!("Successfully became a {} monitor", if system { "system" } else { "session" });
+                    info!(bus = if system { "system" } else { "session" }, "Successfully became a D-Bus monitor");
 
                     connection.start_receive(rule, Box::new(move |msg, _| {
                         callback(&msg);
@@ -34,8 +34,7 @@ where
                 },
 
                 Err(err) => {
-                    eprintln!("Failed to become a {} monitor: {}", if system { "system" } else { "session" }, err);
-                    eprintln!("Falling back to eavesdropping...");
+                    warn!(bus = if system { "system" } else { "session" }, %err, "Failed to become a D-Bus monitor, falling back to eavesdropping");
 
                     let callback_arc = std::sync::Arc::new(std::sync::Mutex::new(callback));
 
@@ -55,10 +54,9 @@ where
                     });
 
                     match add_eavesdrop_rule_result {
-                        Ok(_) => println!("Now eavesdropping {} signals", if system { "system" } else { "session" }),
+                        Ok(_) => info!(bus = if system { "system" } else { "session" }, "Now eavesdropping D-Bus signals"),
                         Err(e) => {
-                            eprintln!("Failed to add eavesdropping match rule: {}", e);
-                            eprintln!("Trying without eavesdropping...");
+                            warn!(bus = if system { "system" } else { "session" }, %e, "Failed to add eavesdropping match rule, trying without eavesdropping");
                             
                             let add_rule_result = connection.add_match(rule, move |(), _, msg| {
                                 let callback_lock = callback_arc.lock().unwrap();
@@ -67,10 +65,9 @@ where
                             });
 
                             match add_rule_result {
-                                Ok(_) => println!("Now monitoring {} signals without eavesdropping", if system { "system" } else { "session" }),
+                                Ok(_) => info!(bus = if system { "system" } else { "session" }, "Now monitoring D-Bus signals without eavesdropping"),
                                 Err(e) => {
-                                    eprintln!("Failed to add match rule: {}", e);
-                                    eprintln!("Unable to monitor {} signals.", if system { "system" } else { "session" });
+                                    error!(bus = if system { "system" } else { "session" }, %e, "Failed to add match rule, unable to monitor D-Bus signals");
                                 }
                             }
                         }
@@ -82,7 +79,7 @@ where
                 connection.process(Duration::from_millis(1000)).unwrap();
             }
         } else {
-            eprintln!("Failed to connect to D-Bus");
+            error!("Failed to connect to D-Bus");
         }
     });
 }

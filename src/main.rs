@@ -1,5 +1,7 @@
 #[macro_use(view)]
 extern crate relm4_macros;
+#[macro_use(debug, info, warn, error)]
+extern crate tracing;
 #[macro_use]
 mod macros;
 
@@ -16,12 +18,15 @@ mod pixbuf;
 mod config;
 mod session;
 
-use std::{cell::RefCell, collections::HashMap};
+use std::cell::RefCell;
+use std::collections::HashMap;
 use std::sync::{LazyLock, Mutex, OnceLock};
 use futures_signals::signal::Mutable;
 use gtk4::prelude::*;
 use libadwaita::Application;
 use sqlite::Connection;
+use tracing_subscriber::EnvFilter;
+use tracing_subscriber::fmt::time::ChronoLocal;
 
 use self::widgets::{bar, windows::{self, GmsWindow}, notifications::NotificationsWindow};
 use self::utils::{display, process, filesystem};
@@ -99,7 +104,7 @@ fn activate(application: &Application) {
         if process::is_command_available("cliphist") && process::is_command_available("wl-copy") {
             windows.insert("clipboard".into(), Box::new(widgets::windows::clipboard::new(application)));
         } else {
-            println!("cliphist or wl-copy not found, clipboard window will not be available");
+            warn!("cliphist or wl-copy not found, clipboard window will not be available");
         }
     });
 }
@@ -111,14 +116,20 @@ async fn main() {
     // If no arguments are provided, assume that the user wants to run the shell.
     // Otherwise, interpret the arguments as an IPC command.
     if args.len() == 1 {
+        tracing_subscriber::fmt()
+            .with_line_number(true)
+            .with_env_filter(EnvFilter::from_default_env())
+            .with_timer(ChronoLocal::new("%H:%M:%S%.3f".to_owned()))
+            .init();
+
         // Ensure that another instance of gray-meadows-shell is not running.
         if ipc::client::get_stream().is_ok() {
-            eprintln!("Another instance of gray-meadows-shell is already running.");
+            error!("Another instance of gray-meadows-shell is already running.");
             std::process::exit(1);
         } else {
             tokio::spawn(async {
                 if let Err(e) = ipc::server::start().await {
-                    eprintln!("Failed to start IPC server: {}", e);
+                    error!(%e, "Failed to start IPC server");
                     std::process::exit(1);
                 }
             });
@@ -126,10 +137,10 @@ async fn main() {
             match sql::establish_connection() {
                 Ok(connection) => {
                     let _ = SQL_CONNECTION.set(Mutex::new(connection));
-                    println!("SQLite connection established successfully, storing data in {}/sqlite.db", filesystem::get_config_directory());
+                    info!(path = %format!("{}/sqlite.db", filesystem::get_config_directory()), "SQLite connection established");
                 }
                 Err(e) => {
-                    eprintln!("Failed to establish SQLite connection: {:?}", e);
+                    error!(?e, "Failed to establish SQLite connection");
                     std::process::exit(1);
                 }
             }
@@ -170,7 +181,7 @@ async fn main() {
 
         ipc::client::send_message(&command).map_or_else(
             |err| eprintln!("Failed to send IPC command: {}", err),
-            |response| println!("Response from IPC server: {}", response)
+            |response| println!("{}", response)
         );
     }
 }

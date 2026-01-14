@@ -33,7 +33,7 @@ fn build_gio_dbus_submenu_model(
                 let item = item.clone();
 
                 move |_: &gio::SimpleActionGroup, _, _| if dbus_menu.activate(item.id).is_err() {
-                    eprintln!("Failed to activate menu item: {}", item.label);
+                    error!(label = %item.label, "Failed to activate menu item");
                 }
             })
             .build();
@@ -76,7 +76,7 @@ pub fn build_gio_dbus_menu_model_with_layout(item: StatusNotifierItem, menu_layo
                     let item = item.clone();
 
                     move |_: &gio::SimpleActionGroup, _, _| if dbus_menu.activate(item.id).is_err() {
-                        eprintln!("Failed to activate menu item: {}", item.label);
+                        error!(label = %item.label, "Failed to activate menu item");
                     }
                 })
                 .build();

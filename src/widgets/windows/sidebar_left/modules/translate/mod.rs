@@ -85,10 +85,10 @@ async fn translate_future(text: String, autocorrect: bool) {
             tokio::time::sleep(Duration::from_millis(10)).await;
             let _ = WORKING.lock().map(|mut w| *w = false);
         } else {
-            eprintln!("Translation already in progress");
+            warn!("Translation already in progress");
         }
     } else {
-        eprintln!("Invalid language selection for translation");
+        warn!("Invalid language selection for translation");
     }
 }
 

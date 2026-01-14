@@ -53,11 +53,11 @@ impl Menu {
                             .collect::<Vec<u8>>()
                             .into();
                     } else {
-                        eprintln!("Icon data is not in the expected format.");
+                        warn!("Icon data is not in the expected format");
                     },
 
                     _ => {
-                        eprintln!("Unexpected property: {} with value: {:?}", key, value);
+                        warn!(key, ?value, "Unexpected property in dbus menu item");
                     }
                 }
             }
@@ -74,20 +74,20 @@ impl Menu {
                             if let Some(subitem) = subitem {
                                 item.submenus.push(subitem);
                             } else {
-                                eprintln!("Failed to unpack submenu item.");
+                                warn!("Failed to unpack submenu item");
                             }
                         } else {
-                            eprintln!("Unexpected variant type: {:?}", variant.arg_type());
+                            warn!(arg_type = ?variant.arg_type(), "Unexpected variant type");
                         }
                     } else {
-                        eprintln!("Unexpected submenu type: {:?}", submenu.arg_type());
+                        warn!(arg_type = ?submenu.arg_type(), "Unexpected submenu type");
                     }
                 }
             }
 
             Some(item)
         } else {
-            eprintln!("Failed to unpack struct variant: {:?}", struct_);
+            warn!(?struct_, "Failed to unpack struct variant");
 
             None
         }
@@ -165,7 +165,7 @@ impl DbusMenu {
         match proxy.method_call(bus::DBUSMENU_BUS, "GetLayout", (0, 10, Vec::<String>::new(),)) {
             Ok(layout) => Ok(Menu::from_raw(&layout)),
             Err(err) => {
-                eprintln!("Failed to get menu layout: {}", err);
+                error!(%err, "Failed to get menu layout");
                 Err(Error::new_failed("Failed to get menu layout"))
             }
         }

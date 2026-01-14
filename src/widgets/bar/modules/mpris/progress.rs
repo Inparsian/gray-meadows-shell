@@ -130,7 +130,7 @@ impl ProgressBar {
                     let new_pos = (rel_x / alloc.width() as f64) * (*duration.borrow());
                     let delta = new_pos - old_pos;
                     if let Err(e) = player.seek(delta as i64) {
-                        eprintln!("Error seeking MPRIS player: {}", e);
+                        error!(%e, "Error seeking MPRIS player");
                     }
 
                     *position.borrow_mut() = new_pos;
@@ -143,7 +143,7 @@ impl ProgressBar {
 
         drawing_area.add_controller(gesture::on_vertical_scroll(|delta| {
             let Some(player) = mpris::get_default_player() else {
-                return eprintln!("No MPRIS player available to seek.");
+                return warn!("No MPRIS player available to seek");
             };
 
             let seek_amount = if delta < 0.0 {
@@ -153,7 +153,7 @@ impl ProgressBar {
             };
 
             if let Err(e) = player.seek(seek_amount) {
-                eprintln!("Failed to seek: {}", e);
+                error!(%e, "Failed to seek");
             }
         }));
 

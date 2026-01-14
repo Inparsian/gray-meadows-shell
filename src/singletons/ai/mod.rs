@@ -54,7 +54,7 @@ pub fn current_conversation_id() -> Option<i64> {
 
 fn write_item_payload(payload: AiConversationItemPayload) -> i64 {
     let Some(session) = SESSION.get() else {
-        eprintln!("AI session not initialized");
+        warn!("AI session not initialized");
         return 0;
     };
 
@@ -73,7 +73,7 @@ fn write_item_payload(payload: AiConversationItemPayload) -> i64 {
         },
 
         Err(err) => {
-            eprintln!("Failed to save AI message to database: {}", err);
+            error!(%err, "Failed to save AI message to database");
             0
         },
     }
@@ -83,12 +83,12 @@ pub fn trim_items(down_to_item_id: i64) {
     if let Some(session) = SESSION.get() {
         let conversation = session.conversation.read().unwrap();
         let Some(conversation) = &*conversation else {
-            eprintln!("AI conversation not initialized");
+            warn!("AI conversation not initialized");
             return;
         };
 
         if let Err(err) = aichats::trim_items(conversation.id, down_to_item_id) {
-            eprintln!("Failed to trim AI chat items in database: {}", err);
+            error!(%err, "Failed to trim AI chat items in database");
             return;
         }
 
@@ -111,7 +111,7 @@ pub fn activate() {
     }
 
     aichats::ensure_default_conversation().unwrap_or_else(|err| {
-        eprintln!("Failed to ensure default AI chat conversation: {}", err);
+        error!(%err, "Failed to ensure default AI chat conversation");
     });
 
     let session = AiSession {
@@ -135,7 +135,7 @@ pub fn activate() {
 
 pub async fn start_request_cycle() {
     let Some(session) = SESSION.get() else {
-        eprintln!("AI session not initialized");
+        warn!("AI session not initialized");
         return;
     };
 
@@ -149,7 +149,7 @@ pub async fn start_request_cycle() {
     }
 
     let Some(channel) = CHANNEL.get() else {
-        eprintln!("AI channel not initialized");
+        warn!("AI channel not initialized");
         return;
     };
 
@@ -206,7 +206,7 @@ pub async fn start_request_cycle() {
                             name: Some(name),
                         }),
                         Err(e) => {
-                            eprintln!("Failed to join tool call task: {:#?}", e);
+                            error!(?e, "Failed to join tool call task");
                             None
                         }
                     })
@@ -223,7 +223,7 @@ pub async fn start_request_cycle() {
             },
 
             Err(e) => {
-                eprintln!("AI request failed: {:#?}", e);
+                error!(?e, "AI request failed");
                 failed = true;
                 break;
             },
@@ -242,7 +242,7 @@ pub async fn start_request_cycle() {
 
 pub fn send_user_message(message: &str) -> i64 {
     if SESSION.get().is_none() {
-        eprintln!("AI session not initialized");
+        warn!("AI session not initialized");
         return 0;
     }
 
@@ -256,7 +256,7 @@ pub fn send_user_message(message: &str) -> i64 {
 
 pub fn send_user_image(uuid: &str) -> i64 {
     if SESSION.get().is_none() {
-        eprintln!("AI session not initialized");
+        warn!("AI session not initialized");
         return 0;
     }
 

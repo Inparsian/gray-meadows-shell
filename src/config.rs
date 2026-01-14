@@ -147,7 +147,7 @@ pub fn watch() {
         );
 
         if result.is_ok() {
-            println!("Watching configuration file: {}", config_path());
+            info!(path = %config_path(), "Watching configuration file");
 
             for res in rx {
                 match res {
@@ -157,19 +157,19 @@ pub fn watch() {
                         if let Ok(new_config) = read() {
                             let mut config_lock = CONFIG.write().unwrap();
                             *config_lock = new_config;
-                            println!("Configuration reloaded from {}", config_path());
+                            info!(path = %config_path(), "Configuration reloaded");
                         } else {
-                            eprintln!("Failed to reload configuration from {}", config_path());
+                            warn!(path = %config_path(), "Failed to reload configuration");
                         }
                     },
 
                     Err(e) => {
-                        eprintln!("Error watching configuration file: {}", e);
+                        error!(%e, "Error watching configuration file");
                     },
                 }
             }
         } else {
-            eprintln!("Failed to watch configuration file: {}", result.unwrap_err());
+            error!(error = %result.unwrap_err(), "Failed to watch configuration file");
         }
     });
 }

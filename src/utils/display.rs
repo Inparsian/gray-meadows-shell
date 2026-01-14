@@ -9,7 +9,7 @@ pub fn get_all_monitors(display: &gdk4::Display) -> Vec<gdk4::Monitor> {
             match monitor {
                 Ok(m) => m.downcast::<gdk4::Monitor>().ok(),
                 Err(e) => {
-                    eprintln!("Error iterating monitors: {:?}", e);
+                    warn!(?e, "Error iterating monitors");
                     None
                 }
             }

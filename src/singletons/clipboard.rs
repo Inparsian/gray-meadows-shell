@@ -103,7 +103,7 @@ pub fn copy_text(text: &str) {
     let _ = std::process::Command::new("wl-copy")
         .arg(text)
         .output()
-        .map_err(|e| println!("Failed to copy text to clipboard: {}", e));
+        .map_err(|e| error!(%e, "Failed to copy text to clipboard"));
 }
 
 pub fn fetch_text_clipboard() -> Option<String> {
@@ -119,7 +119,7 @@ pub fn fetch_text_clipboard() -> Option<String> {
 
 pub fn spawn_indefinite_watcher(type_arg: &'static str) {
     if !process::is_command_available("wl-paste") || !process::is_command_available("cliphist") {
-        println!("wl-paste or cliphist not found, cannot spawn clipboard watcher");
+        warn!("wl-paste or cliphist not found, cannot spawn clipboard watcher");
         return;
     }
 
@@ -144,7 +144,7 @@ pub fn spawn_indefinite_watcher(type_arg: &'static str) {
 
 pub fn activate() {
     if !process::is_command_available("cliphist") || !process::is_command_available("wl-paste") {
-        println!("cliphist or wl-paste not found, clipboard singleton will not be activated");
+        warn!("cliphist or wl-paste not found, clipboard singleton will not be activated");
         return;
     }
 

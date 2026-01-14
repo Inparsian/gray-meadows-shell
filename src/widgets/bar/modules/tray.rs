@@ -225,7 +225,7 @@ pub fn new() -> gtk4::Box {
             }
         });
     } else {
-        eprintln!("Failed to fetch current tray items.");
+        warn!("Failed to fetch current tray items");
     }
 
     // Watch for tray events

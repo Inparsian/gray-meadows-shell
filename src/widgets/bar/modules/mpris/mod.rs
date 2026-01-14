@@ -18,11 +18,11 @@ pub fn new() -> BarModuleWrapper {
         let module = wrapper.module.clone();
         gesture::on_middle_down(move |_, _, _| if !module.is_expanded() {
             let Some(player) = mpris::get_default_player() else {
-                return eprintln!("No MPRIS player available to toggle play/pause.");
+                return warn!("No MPRIS player available to toggle play/pause");
             };
 
             if let Err(e) = player.play_pause() {
-                eprintln!("Failed to toggle play/pause: {}", e);
+                error!(%e, "Failed to toggle play/pause");
             }
         })
     });
@@ -31,7 +31,7 @@ pub fn new() -> BarModuleWrapper {
         let module = wrapper.module.clone();
         gesture::on_secondary_down(move |_, _, _| if !module.is_expanded() {
             mpris::with_default_player_mut(|player| if let Err(e) = player.next() {
-                eprintln!("Failed to skip to next track: {}", e);
+                error!(%e, "Failed to skip to next track");
             });
         })
     });
@@ -40,7 +40,7 @@ pub fn new() -> BarModuleWrapper {
         let module = wrapper.module.clone();
         gesture::on_vertical_scroll(move |delta_y| if !module.is_expanded() {
             let Some(player) = mpris::get_default_player() else {
-                return eprintln!("No MPRIS player available to adjust volume.");
+                return warn!("No MPRIS player available to adjust volume");
             };
 
             let step = if delta_y < 0.0 {
@@ -50,7 +50,7 @@ pub fn new() -> BarModuleWrapper {
             };
 
             player.adjust_volume(step)
-                .unwrap_or_else(|e| eprintln!("Failed to adjust volume: {}", e));
+                .unwrap_or_else(|e| error!(%e, "Failed to adjust volume"));
         })
     });
 

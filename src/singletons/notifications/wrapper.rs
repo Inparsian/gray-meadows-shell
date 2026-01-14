@@ -226,7 +226,7 @@ fn get_shared_connection() -> Option<Arc<SyncConnection>> {
 /// Emits a NotificationClosed signal for the given notification ID.
 fn emit_notification_closed(id: u32, reason: u32) {
     let Some(connection) = get_shared_connection() else {
-        eprintln!("Failed to emit NotificationClosed: shared connection not initialized");
+        warn!("Failed to emit NotificationClosed: shared connection not initialized");
         return;
     };
 
@@ -242,14 +242,14 @@ fn emit_notification_closed(id: u32, reason: u32) {
     });
 
     if connection.send(signal).is_err() {
-        eprintln!("Failed to send NotificationClosed signal");
+        error!("Failed to send NotificationClosed signal");
     }
 }
 
 /// Emits a NotificationActionInvoked signal for the given notification ID and action key.
 pub(super) fn emit_notification_action_invoked(id: u32, action_key: &str) {
     let Some(connection) = get_shared_connection() else {
-        eprintln!("Failed to emit ActionInvoked: shared connection not initialized");
+        warn!("Failed to emit ActionInvoked: shared connection not initialized");
         return;
     };
 
@@ -265,7 +265,7 @@ pub(super) fn emit_notification_action_invoked(id: u32, action_key: &str) {
     });
 
     if connection.send(signal).is_err() {
-        eprintln!("Failed to send ActionInvoked signal");
+        error!("Failed to send ActionInvoked signal");
     }
 }
 

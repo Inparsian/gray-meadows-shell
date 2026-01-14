@@ -34,11 +34,11 @@ pub fn activate() {
 
                 let device_type = <dyn proxy::device::OrgFreedesktopNetworkManagerDevice>::device_type(&device_proxy);
                 let driver = <dyn proxy::device::OrgFreedesktopNetworkManagerDevice>::driver(&device_proxy);
-                println!("Type: {:?}, Driver: {:?}", device_type, driver);
+                debug!(?device_type, ?driver, "NetworkManager device");
             }
         }
         Err(e) => {
-            eprintln!("Error retrieving devices: {}", e);
+            error!(%e, "Error retrieving devices");
         }
     }
 
