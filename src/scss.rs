@@ -98,7 +98,6 @@ pub fn bundle_apply_scss() {
         // Run sass
         let output = std::process::Command::new("sass")
             .arg(format!("-I {}", styles_path))
-            .arg(format!("{}/main.scss", styles_path))
             .arg(format!("{}/output.css", styles_path))
             .output()
             .expect("Failed to run sass command");
@@ -134,13 +133,12 @@ pub fn watch_scss() {
 
             for res in rx {
                 match res {
-                    Ok(event) => {
-                        // If the event kind is Access(Close(Write)), it means the file is done being written to
-                        if event.paths.iter().any(|p| p.extension() == Some("scss".as_ref())
-                            && matches!(event.kind, EventKind::Access(AccessKind::Close(AccessMode::Write)))) {
-                            println!("Styles changed: {:?}", event.paths);
-                            bundle_apply_scss();
-                        }
+                    // If the event kind is Access(Close(Write)), it means the file is done being written to
+                    Ok(event) => if event.paths.iter().any(|p| p.extension() == Some("scss".as_ref())
+                        && matches!(event.kind, EventKind::Access(AccessKind::Close(AccessMode::Write))))
+                    {
+                        println!("Styles changed: {:?}", event.paths);
+                        bundle_apply_scss();
                     },
 
                     Err(e) => {
