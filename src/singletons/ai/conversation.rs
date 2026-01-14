@@ -54,10 +54,8 @@ pub fn add_conversation(title: &str) {
     match aichats::add_conversation(title) {
         Ok(conversation_id) => {
             match aichats::get_conversation(conversation_id) {
-                Ok(conversation) => {
-                    if let Some(channel) = CHANNEL.get() {
-                        channel.spawn_send(AiChannelMessage::ConversationAdded(conversation));
-                    }
+                Ok(conversation) => if let Some(channel) = CHANNEL.get() {
+                    channel.spawn_send(AiChannelMessage::ConversationAdded(conversation));
                 },
 
                 Err(err) => {

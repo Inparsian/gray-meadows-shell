@@ -126,24 +126,22 @@ impl OpenAiService {
 
         for item in items {
             match item.payload {
-                AiConversationItemPayload::Message { id, role, content, .. } => {
-                    if role == "assistant" {
-                        flush_user_parts(&mut user_parts, &mut native_items);
-                        native_items.push(Item::Message(MessageItem::Output(OutputMessage {
-                            content: vec![OutputMessageContent::OutputText(OutputTextContent {
-                                text: content,
-                                annotations: vec![],
-                                logprobs: None,
-                            })],
-                            role: AssistantRole::Assistant,
-                            id,
-                            status: OutputStatus::Completed,
-                        })));
-                    } else {
-                        user_parts.push(InputContent::InputText(InputTextContent {
+                AiConversationItemPayload::Message { id, role, content, .. } => if role == "assistant" {
+                    flush_user_parts(&mut user_parts, &mut native_items);
+                    native_items.push(Item::Message(MessageItem::Output(OutputMessage {
+                        content: vec![OutputMessageContent::OutputText(OutputTextContent {
                             text: content,
-                        }));
-                    }
+                            annotations: vec![],
+                            logprobs: None,
+                        })],
+                        role: AssistantRole::Assistant,
+                        id,
+                        status: OutputStatus::Completed,
+                    })));
+                } else {
+                    user_parts.push(InputContent::InputText(InputTextContent {
+                        text: content,
+                    }));
                 },
 
                 AiConversationItemPayload::Reasoning { id, summary, encrypted_content } => {

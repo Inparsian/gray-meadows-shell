@@ -211,47 +211,45 @@ impl super::AiService for GeminiService {
 
                 for part in candidate_parts {
                     match part {
-                        Part::Text { text, thought, thought_signature } => {
-                            if let Some(is_thought) = thought && is_thought {
-                                let reasoning_payload = AiConversationItemPayload::Reasoning {
-                                    id: String::new(),
-                                    summary: text.clone(),
-                                    encrypted_content: thought_signature.clone().unwrap_or_default(),
-                                };
+                        Part::Text { text, thought, thought_signature } => if thought == Some(true) {
+                            let reasoning_payload = AiConversationItemPayload::Reasoning {
+                                id: String::new(),
+                                summary: text.clone(),
+                                encrypted_content: thought_signature.clone().unwrap_or_default(),
+                            };
 
-                                if let Some(reasoning) = &mut context.reasoning {
-                                    if let AiConversationItemPayload::Reasoning { summary, .. } = reasoning {
-                                        summary.push_str(&text);
-                                    }
-                                } else {
-                                    context.reasoning = Some(reasoning_payload.clone());
+                            if let Some(reasoning) = &mut context.reasoning {
+                                if let AiConversationItemPayload::Reasoning { summary, .. } = reasoning {
+                                    summary.push_str(&text);
                                 }
-
-                                channel.send(AiChannelMessage::StreamChunk(AiConversationDelta::Reasoning(text.clone()))).await;
                             } else {
-                                let message_payload = AiConversationItemPayload::Message {
-                                    id: String::new(),
-                                    role: "assistant".to_owned(),
-                                    content: text.clone(),
-                                    thought_signature: thought_signature.clone(),
-                                };
+                                context.reasoning = Some(reasoning_payload.clone());
+                            }
 
-                                if let Some(response) = &mut context.response {
-                                    if let AiConversationItemPayload::Message { content, .. } = response {
-                                        content.push_str(&text);
-                                    }
+                            channel.send(AiChannelMessage::StreamChunk(AiConversationDelta::Reasoning(text.clone()))).await;
+                        } else {
+                            let message_payload = AiConversationItemPayload::Message {
+                                id: String::new(),
+                                role: "assistant".to_owned(),
+                                content: text.clone(),
+                                thought_signature: thought_signature.clone(),
+                            };
 
-                                    if let Some(thought_signature) = thought_signature.clone()
-                                        && let AiConversationItemPayload::Message { thought_signature: resp_thought_sig, .. } = response
-                                    {
-                                        *resp_thought_sig = Some(thought_signature);
-                                    }
-                                } else {
-                                    context.response = Some(message_payload.clone());
+                            if let Some(response) = &mut context.response {
+                                if let AiConversationItemPayload::Message { content, .. } = response {
+                                    content.push_str(&text);
                                 }
 
-                                channel.send(AiChannelMessage::StreamChunk(AiConversationDelta::Message(text.clone()))).await;
+                                if let Some(thought_signature) = thought_signature.clone()
+                                    && let AiConversationItemPayload::Message { thought_signature: resp_thought_sig, .. } = response
+                                {
+                                    *resp_thought_sig = Some(thought_signature);
+                                }
+                            } else {
+                                context.response = Some(message_payload.clone());
                             }
+
+                            channel.send(AiChannelMessage::StreamChunk(AiConversationDelta::Message(text.clone()))).await;
                         },
 
                         Part::FunctionCall { function_call, thought_signature } => {

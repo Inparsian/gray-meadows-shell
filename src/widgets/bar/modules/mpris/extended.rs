@@ -349,23 +349,17 @@ fn players_list() -> gtk4::Box {
                     bx.append(&row);
                 }
                 
-                VecDiff::RemoveAt { index, .. } => {
-                    if let Some(child) = bx.iter_children().nth(index) {
-                        bx.remove(&child);
-                    }
+                VecDiff::RemoveAt { index, .. } => if let Some(child) = bx.iter_children().nth(index) {
+                    bx.remove(&child);
                 }
 
-                VecDiff::Pop {} => {
-                    if let Some(child) = bx.iter_children().last() {
-                        bx.remove(&child);
-                    }
+                VecDiff::Pop {} => if let Some(child) = bx.iter_children().last() {
+                    bx.remove(&child);
                 }
 
-                VecDiff::Clear {} => {
-                    bx.iter_children().for_each(|child| {
-                        bx.remove(&child);
-                    });
-                }
+                VecDiff::Clear {} => bx.iter_children().for_each(|child| {
+                    bx.remove(&child);
+                }),
 
                 _ => {}
             }

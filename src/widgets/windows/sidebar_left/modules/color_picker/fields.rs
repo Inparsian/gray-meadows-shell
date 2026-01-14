@@ -120,16 +120,12 @@ impl Fields {
                 field.lock();
                 
                 match update {
-                    FieldUpdate::Text(text) => {
-                        if let Some(entry) = field.widget.downcast_ref::<gtk4::Entry>() {
-                            entry.set_text(&text);
-                        }
+                    FieldUpdate::Text(text) => if let Some(entry) = field.widget.downcast_ref::<gtk4::Entry>() {
+                        entry.set_text(&text);
                     },
 
-                    FieldUpdate::Float(value) => {
-                        if let Some(spin_button) = field.widget.downcast_ref::<gtk4::SpinButton>() {
-                            spin_button.set_value(value);
-                        }
+                    FieldUpdate::Float(value) => if let Some(spin_button) = field.widget.downcast_ref::<gtk4::SpinButton>() {
+                        spin_button.set_value(value);
                     }
                 }
             }

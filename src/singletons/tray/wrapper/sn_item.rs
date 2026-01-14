@@ -145,10 +145,8 @@ impl StatusNotifierItem {
     /// Passes an update to the StatusNotifierItem, updating its properties.
     pub fn pass_update(&mut self, member: &str) {
         match member {
-            "NewTitle" => {
-                if let Ok(title) = self.try_get_prop::<String>("Title") {
-                    self.title = title;
-                }
+            "NewTitle" => if let Ok(title) = self.try_get_prop::<String>("Title") {
+                self.title = title;
             },
 
             "NewIcon" => {
@@ -181,16 +179,12 @@ impl StatusNotifierItem {
                 }
             },
 
-            "NewToolTip" => {
-                if let Ok(tool_tip) = self.try_get_prop::<RawToolTip>("ToolTip") {
-                    self.tool_tip = ToolTip::from_tuple(tool_tip);
-                }
+            "NewToolTip" => if let Ok(tool_tip) = self.try_get_prop::<RawToolTip>("ToolTip") {
+                self.tool_tip = ToolTip::from_tuple(tool_tip);
             },
 
-            "NewStatus" => {
-                if let Ok(status) = self.try_get_prop::<String>("Status") {
-                    self.status = status;
-                }
+            "NewStatus" => if let Ok(status) = self.try_get_prop::<String>("Status") {
+                self.status = status;
             },
 
             _ => {}

@@ -103,19 +103,15 @@ impl SystemTrayItem {
     pub fn update(&self, member: &str) {
         if let (Some(widget), Some(item)) = (&self.widget, crate::singletons::tray::try_read_item(&self.service)) {
             match member {
-                "NewToolTip" => {
-                    if !item.tool_tip.title.is_empty() {
-                        widget.set_tooltip_text(Some(&item.tool_tip.title));
-                    }
+                "NewToolTip" => if !item.tool_tip.title.is_empty() {
+                    widget.set_tooltip_text(Some(&item.tool_tip.title));
                 },
 
-                "NewIcon" => {
-                    if !item.icon_pixmap.is_empty() {
-                        widget.set_from_pixbuf(icon::make_icon_pixbuf(Some(&item.icon_pixmap)).as_ref());
-                    } else {
-                        let icon_pixbuf = pixbuf::get_pixbuf_or_fallback(&item.icon_name, "emote-love");
-                        widget.set_from_pixbuf(icon_pixbuf.as_ref());
-                    }
+                "NewIcon" => if !item.icon_pixmap.is_empty() {
+                    widget.set_from_pixbuf(icon::make_icon_pixbuf(Some(&item.icon_pixmap)).as_ref());
+                } else {
+                    let icon_pixbuf = pixbuf::get_pixbuf_or_fallback(&item.icon_name, "emote-love");
+                    widget.set_from_pixbuf(icon_pixbuf.as_ref());
                 },
 
                 _ => {}
@@ -233,10 +229,8 @@ pub fn new() -> gtk4::Box {
         let mut receiver = tray::subscribe();
         while let Ok(event) = receiver.recv().await {
             match event {
-                BusEvent::ItemRegistered(item) => {
-                    if tray.add_item(item.service.clone()) {
-                        tray.build_item(&item.service);
-                    }
+                BusEvent::ItemRegistered(item) => if tray.add_item(item.service.clone()) {
+                    tray.build_item(&item.service);
                 },
 
                 BusEvent::ItemUpdated(member, item) => {

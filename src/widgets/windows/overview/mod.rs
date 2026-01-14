@@ -331,12 +331,10 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
                         entry.select_region(pos as i32, pos as i32);
                     },
 
-                    Some("BackSpace") => {
-                        if !text.is_empty() {
-                            let new_text = text[..text.len().saturating_sub(1)].to_string();
-                            entry.set_text(&new_text);
-                            entry.select_region(new_text.len() as i32, new_text.len() as i32);
-                        }
+                    Some("BackSpace") => if !text.is_empty() {
+                        let new_text = text[..text.len().saturating_sub(1)].to_string();
+                        entry.set_text(&new_text);
+                        entry.select_region(new_text.len() as i32, new_text.len() as i32);
                     },
 
                     _ => {}
