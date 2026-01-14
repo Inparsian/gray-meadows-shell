@@ -113,7 +113,6 @@ pub fn listen_for_notifications() {
             match message {
                 BusEvent::NotificationAdded(_, notification) => {
                     APP_LOCAL.with(move |app| {
-                        let app = app.borrow();
                         for container in app.notification_containers.borrow().iter() {
                             let mut notif_widget = NotificationWidget::new(notification.clone());
                             notif_widget.set_parent(Rc::new(container.clone()));
@@ -124,7 +123,6 @@ pub fn listen_for_notifications() {
 
                 BusEvent::NotificationClosed(id) => {
                     APP_LOCAL.with(move |app| {
-                        let app = app.borrow();
                         for container in app.notification_containers.borrow().iter() {
                             let widgets = container.widgets.borrow().clone();
                             for widget in &widgets {
@@ -138,7 +136,6 @@ pub fn listen_for_notifications() {
 
                 BusEvent::NotificationUpdated(id, notification) => {
                     APP_LOCAL.with(move |app| {
-                        let app = app.borrow();
                         for container in app.notification_containers.borrow().iter() {
                             let widgets = container.widgets.borrow().clone();
                             for widget in &widgets {

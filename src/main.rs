@@ -38,14 +38,14 @@ pub struct GrayMeadowsLocal {
 }
 
 thread_local! {
-    pub static APP_LOCAL: RefCell<GrayMeadowsLocal> = RefCell::new(GrayMeadowsLocal {
+    pub static APP_LOCAL: GrayMeadowsLocal = GrayMeadowsLocal {
         provider: gtk4::CssProvider::new(),
         icon_theme: gtk4::IconTheme::default(),
         bars: RefCell::new(Vec::new()),
         osd_containers: RefCell::new(Vec::new()),
         notification_containers: RefCell::new(Vec::new()),
         windows: RefCell::new(HashMap::new()),
-    });
+    };
 }
 
 #[derive(Debug, Clone)]
@@ -80,7 +80,6 @@ fn activate(application: &Application) {
         notifications_window.window.show();
 
         APP_LOCAL.with(|app| {
-            let app = app.borrow();
             app.bars.borrow_mut().push(bar);
             app.osd_containers.borrow_mut().push(osd);
             app.notification_containers.borrow_mut().push(notifications_window);
@@ -90,14 +89,15 @@ fn activate(application: &Application) {
     widgets::notifications::listen_for_notifications();
 
     APP_LOCAL.with(|app| {
-        app.borrow().windows.borrow_mut().insert("overview".into(), Box::new(widgets::windows::overview::new(application)));
-        app.borrow().windows.borrow_mut().insert("session".into(), Box::new(widgets::windows::session::new(application)));
-        app.borrow().windows.borrow_mut().insert("left_sidebar".into(), Box::new(widgets::windows::sidebar_left::new(application)));
-        app.borrow().windows.borrow_mut().insert("right_sidebar".into(), Box::new(widgets::windows::sidebar_right::new(application)));
+        let mut windows = app.windows.borrow_mut();
+        windows.insert("overview".into(), Box::new(widgets::windows::overview::new(application)));
+        windows.insert("session".into(), Box::new(widgets::windows::session::new(application)));
+        windows.insert("left_sidebar".into(), Box::new(widgets::windows::sidebar_left::new(application)));
+        windows.insert("right_sidebar".into(), Box::new(widgets::windows::sidebar_right::new(application)));
 
         // optional features
         if process::is_command_available("cliphist") && process::is_command_available("wl-copy") {
-            app.borrow().windows.borrow_mut().insert("clipboard".into(), Box::new(widgets::windows::clipboard::new(application)));
+            windows.insert("clipboard".into(), Box::new(widgets::windows::clipboard::new(application)));
         } else {
             println!("cliphist or wl-copy not found, clipboard window will not be available");
         }
@@ -138,15 +138,14 @@ async fn main() {
 
             gtk4::style_context_add_provider_for_display(
                 &gdk4::Display::default().expect("Failed to get default display"),
-                &APP_LOCAL.with(|app| app.borrow().provider.clone()),
+                &APP_LOCAL.with(|app| app.provider.clone()),
                 gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
             );
 
             if let Some(settings) = gtk4::Settings::default() {
                 let current_icon_theme = settings.property::<String>("gtk-icon-theme-name");
                 APP_LOCAL.with(|app| {
-                    let icon_theme = &app.borrow().icon_theme;
-                    icon_theme.set_theme_name(Some(&current_icon_theme));
+                    app.icon_theme.set_theme_name(Some(&current_icon_theme));
                 });
             }
 

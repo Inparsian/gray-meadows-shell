@@ -238,7 +238,7 @@ impl BarModuleWrapper {
 
 pub fn hide_all_expanded_modules() {
     APP_LOCAL.with(|app| {
-        for bar in app.borrow().bars.borrow().iter() {
+        for bar in app.bars.borrow().iter() {
             bar.hide_all_expanded_modules();
         }
     });

@@ -111,7 +111,7 @@ pub fn bundle_apply_scss() {
         let css = std::fs::read_to_string(format!("{}/output.css", styles_path))
             .expect("Failed to read output.css");
 
-        APP_LOCAL.with(|app| app.borrow().provider.load_from_data(&css));
+        APP_LOCAL.with(|app| app.provider.load_from_data(&css));
         
         refresh_variables();
     });

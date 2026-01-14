@@ -36,7 +36,6 @@ where
     F: FnOnce(&dyn GmsWindow) -> R,
 {
     APP_LOCAL.with(|app| {
-        let app = app.borrow();
         let windows = app.windows.borrow();
         let borrow_attempt = windows.get(window);
 
@@ -58,7 +57,7 @@ pub fn toggle(window: &str) -> bool {
 
 pub fn hide_all_popups() {
     APP_LOCAL.with(|app| {
-        for window in app.borrow().windows.borrow().values() {
+        for window in app.windows.borrow().values() {
             if window.downcast_ref::<popup::PopupWindow>().is_some() {
                 window.hide();
             }
@@ -68,7 +67,7 @@ pub fn hide_all_popups() {
 
 pub fn hide_all_fullscreen_windows() {
     APP_LOCAL.with(|app| {
-        for window in app.borrow().windows.borrow().values() {
+        for window in app.windows.borrow().values() {
             if window.downcast_ref::<fullscreen::FullscreenWindow>().is_some() {
                 window.hide();
             }

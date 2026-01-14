@@ -41,15 +41,14 @@ pub fn get_pixbuf(icon_name: &str) -> Option<Pixbuf> {
         }
 
         // Otherwise, try to load it as an icon from the icon theme
-        let icon_theme = APP_LOCAL.with(|app| app.borrow().icon_theme.clone());
-        let icon_paintable = icon_theme.lookup_icon(
+        let icon_paintable = APP_LOCAL.with(|app| app.icon_theme.lookup_icon(
             icon_name,
             &[],
             0, 
             1,
             TextDirection::Ltr,
             gtk4::IconLookupFlags::empty()
-        );
+        ));
 
         if let Some(path) = icon_paintable.file().and_then(|f| f.path())
             && let Ok(pixbuf) = Pixbuf::from_file(path)

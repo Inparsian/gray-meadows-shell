@@ -198,9 +198,7 @@ pub fn toggle_module_by_name(name: &str) {
     };
 
     APP_LOCAL.with(|app| {
-        let app = app.borrow();
-        let bar_windows = app.bars.borrow();
-        for bar_window in &*bar_windows {
+        for bar_window in &*app.bars.borrow() {
             if bar_window.monitor == monitor && let Some(wrapper) = bar_window.modules.get(name) {
                 wrapper.module.set_expanded(!wrapper.module.is_expanded());
 
