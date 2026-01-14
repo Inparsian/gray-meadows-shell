@@ -173,7 +173,6 @@ pub fn new() -> gtk4::Box {
 
     view! {
         paste_from_clipboard_label = gtk4::Label {
-            set_widget_name: "paste-from-clipboard-label",
             set_label: "Paste from Clipboard",
         },
         

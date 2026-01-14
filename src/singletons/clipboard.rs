@@ -109,23 +109,31 @@ pub fn copy_text(text: &str) {
 
 pub async fn fetch_text_clipboard() -> Option<String> {
     let result = timeout(std::time::Duration::from_secs(1), async {
-        let output = tokio::process::Command::new("wl-paste")
+        tokio::process::Command::new("wl-paste")
             .arg("--no-newline")
             .arg("--type")
             .arg("text")
             .output()
             .await
-            .ok()?;
-        
-        output.status.success().then(|| String::from_utf8_lossy(&output.stdout).to_string())
     }).await;
     
-    let text = result.ok().flatten();
-    if text.is_none() {
+    result.map_or_else(|_| {
         warn!("Timed out while fetching text clipboard");
-    }
-    
-    text
+        None
+    }, |output| match output {
+        Ok(output) => if output.status.success() {
+            Some(String::from_utf8_lossy(&output.stdout).to_string())
+        } else {
+            let stderr = String::from_utf8_lossy(&output.stderr).to_string();
+            warn!(stderr, "wl-paste returned non-zero exit code");
+            None
+        },
+        
+        Err(e) => {
+            warn!(%e, "Failed to execute wl-paste");
+            None
+        },
+    })
 }
 
 pub fn spawn_indefinite_watcher(type_arg: &'static str) {
