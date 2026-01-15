@@ -6,6 +6,7 @@ use crate::scss;
 use crate::widgets::windows;
 use crate::singletons::{apps, clipboard};
 use crate::utils::matching;
+use crate::color::models::ColorModel as _;
 
 pub static ITEM_ANIMATION_DURATION: u32 = 175;
 
@@ -239,7 +240,7 @@ impl OverviewSearchItem {
                         scss::escape_html(c),
                         |color| format!(
                             "<span foreground=\"{}\">{}</span>",
-                            color.as_hex(),
+                            color.into_hex(),
                             scss::escape_html(c)
                         )
                     )

@@ -7,8 +7,8 @@ use std::time::Duration;
 use futures_signals::signal::{Mutable, SignalExt as _};
 use gtk4::{Adjustment, prelude::*};
 
-use crate::color::parse_color_into_hex;
-use crate::color::model::{int_to_hex, Hsv};
+use crate::color::{parse_color_into_hex, int_to_hex};
+use crate::color::models::{Rgba, Hsv, Hsl, Cmyk, Oklch, ColorModel as _};
 use crate::ipc;
 use crate::singletons::clipboard;
 use crate::utils::timeout::Timeout;
@@ -83,19 +83,19 @@ pub fn new() -> gtk4::Box {
 
     let mut rgb_fields = Fields::new();
     create_spin_field!(rgb_fields, 0, 1.0, Adjustment::new(0.0, 0.0, 255.0, 1.0, 1.0, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
-        let mut rgba = hsv.get().as_rgba();
+        let mut rgba = Rgba::from_model(hsv.get());
         rgba.red = value as u8;
-        Hsv::from_hex(&rgba.as_hex())
+        Hsv::from_model(rgba)
     });
     create_spin_field!(rgb_fields, 0, 1.0, Adjustment::new(0.0, 0.0, 255.0, 1.0, 1.0, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
-        let mut rgba = hsv.get().as_rgba();
+        let mut rgba = Rgba::from_model(hsv.get());
         rgba.green = value as u8;
-        Hsv::from_hex(&rgba.as_hex())
+        Hsv::from_model(rgba)
     });
     create_spin_field!(rgb_fields, 0, 1.0, Adjustment::new(0.0, 0.0, 255.0, 1.0, 1.0, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
-        let mut rgba = hsv.get().as_rgba();
+        let mut rgba = Rgba::from_model(hsv.get());
         rgba.blue = value as u8;
-        Hsv::from_hex(&rgba.as_hex())
+        Hsv::from_model(rgba)
     });
 
     let mut hsv_fields = Fields::new();
@@ -117,58 +117,58 @@ pub fn new() -> gtk4::Box {
 
     let mut hsl_fields = Fields::new();
     create_spin_field!(hsl_fields, 2, 0.33, Adjustment::new(0.0, 0.0, 360.0, 0.33, 0.33, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
-        let mut hsl_value = hsv.get().as_hsl();
+        let mut hsl_value = Hsl::from_model(hsv.get());
         hsl_value.hue = value;
-        Hsv::from_hex(&hsl_value.as_hex())
+        Hsv::from_model(hsl_value)
     });
     create_spin_field!(hsl_fields, 2, 0.33, Adjustment::new(0.0, 0.0, 100.0, 0.33, 0.33, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
-        let mut hsl_value = hsv.get().as_hsl();
+        let mut hsl_value = Hsl::from_model(hsv.get());
         hsl_value.saturation = value;
-        Hsv::from_hex(&hsl_value.as_hex())
+        Hsv::from_model(hsl_value)
     });
     create_spin_field!(hsl_fields, 2, 0.33, Adjustment::new(0.0, 0.0, 100.0, 0.33, 0.33, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
-        let mut hsl_value = hsv.get().as_hsl();
+        let mut hsl_value = Hsl::from_model(hsv.get());
         hsl_value.lightness = value;
-        Hsv::from_hex(&hsl_value.as_hex())
+        Hsv::from_model(hsl_value)
     });
 
     let mut cmyk_fields = Fields::new();
     create_spin_field!(cmyk_fields, 0, 1.0, Adjustment::new(0.0, 0.0, 100.0, 1.0, 1.0, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
-        let mut cmyk_value = hsv.get().as_cmyk();
+        let mut cmyk_value = Cmyk::from_model(hsv.get());
         cmyk_value.cyan = value as u8;
-        Hsv::from_hex(&cmyk_value.as_hex())
+        Hsv::from_model(cmyk_value)
     });
     create_spin_field!(cmyk_fields, 0, 1.0, Adjustment::new(0.0, 0.0, 100.0, 1.0, 1.0, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
-        let mut cmyk_value = hsv.get().as_cmyk();
+        let mut cmyk_value = Cmyk::from_model(hsv.get());
         cmyk_value.magenta = value as u8;
-        Hsv::from_hex(&cmyk_value.as_hex())
+        Hsv::from_model(cmyk_value)
     });
     create_spin_field!(cmyk_fields, 0, 1.0, Adjustment::new(0.0, 0.0, 100.0, 1.0, 1.0, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
-        let mut cmyk_value = hsv.get().as_cmyk();
+        let mut cmyk_value = Cmyk::from_model(hsv.get());
         cmyk_value.yellow = value as u8;
-        Hsv::from_hex(&cmyk_value.as_hex())
+        Hsv::from_model(cmyk_value)
     });
     create_spin_field!(cmyk_fields, 0, 1.0, Adjustment::new(0.0, 0.0, 100.0, 1.0, 1.0, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
-        let mut cmyk_value = hsv.get().as_cmyk();
+        let mut cmyk_value = Cmyk::from_model(hsv.get());
         cmyk_value.black = value as u8;
-        Hsv::from_hex(&cmyk_value.as_hex())
+        Hsv::from_model(cmyk_value)
     });
 
     let mut oklch_fields = Fields::new();
     create_spin_field!(oklch_fields, 4, 0.033, Adjustment::new(0.0, 0.0, 100.0, 0.033, 0.033, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
-        let mut oklch_value = hsv.get().as_oklch();
+        let mut oklch_value = Oklch::from_model(hsv.get());
         oklch_value.lightness = value;
-        Hsv::from_hex(&oklch_value.as_hex())
+        Hsv::from_model(oklch_value)
     });
     create_spin_field!(oklch_fields, 4, 0.033, Adjustment::new(0.0, 0.0, 100.0, 0.033, 0.033, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
-        let mut oklch_value = hsv.get().as_oklch();
+        let mut oklch_value = Oklch::from_model(hsv.get());
         oklch_value.chroma = value;
-        Hsv::from_hex(&oklch_value.as_hex())
+        Hsv::from_model(oklch_value)
     });
     create_spin_field!(oklch_fields, 2, 0.33, Adjustment::new(0.0, 0.0, 360.0, 0.33, 0.33, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
-        let mut oklch_value = hsv.get().as_oklch();
+        let mut oklch_value = Oklch::from_model(hsv.get());
         oklch_value.hue = value;
-        Hsv::from_hex(&oklch_value.as_hex())
+        Hsv::from_model(oklch_value)
     });
 
     view! {
@@ -256,13 +256,13 @@ pub fn new() -> gtk4::Box {
     gtk4::glib::spawn_future_local(signal!(hsv, (hsv) {
         use fields::FieldUpdate::*;
 
-        let rgba = hsv.as_rgba();
-        let hsl = hsv.as_hsl();
-        let cmyk = hsv.as_cmyk();
-        let oklch = hsv.as_oklch();
+        let rgba = Rgba::from_model(hsv);
+        let hsl = Hsl::from_model(hsv);
+        let cmyk = Cmyk::from_model(hsv);
+        let oklch = Oklch::from_model(hsv);
 
-        hex_fields.update(vec![Text(hsv.as_hex())]);
-        int_fields.update(vec![Text(hsv.as_int().to_string())]);
+        hex_fields.update(vec![Text(hsv.into_hex())]);
+        int_fields.update(vec![Text(hsv.into_int().to_string())]);
         rgb_fields.update(vec![Float(rgba.red as f64), Float(rgba.green as f64), Float(rgba.blue as f64)]);
         hsv_fields.update(vec![Float(hsv.hue), Float(hsv.saturation), Float(hsv.value)]);
         hsl_fields.update(vec![Float(hsl.hue), Float(hsl.saturation), Float(hsl.lightness)]);

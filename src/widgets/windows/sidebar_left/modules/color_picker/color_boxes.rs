@@ -3,7 +3,8 @@ use futures_signals::signal::{Mutable, SignalExt as _};
 use gtk4::prelude::*;
 
 use crate::ipc;
-use crate::color::{model::Hsv, LighterDarkerResult};
+use crate::color::LighterDarkerResult;
+use crate::color::models::{Rgba, Hsv, Hsl, Cmyk, Oklch, ColorModel as _};
 use crate::singletons::clipboard;
 use crate::utils::gesture;
 use crate::widgets::common::{dynamic_grid::DynamicGrid, tabs::Tabs};
@@ -33,13 +34,13 @@ pub fn get_color_box(hsv: Hsv, color_tabs: &Tabs) -> ColorBox {
                 move |_| {
                     let hsv = hsv.borrow();
                     let text = match current_tab.get_cloned().as_deref() {
-                        Some("int") => hsv.as_int().to_string(),
-                        Some("rgb") => hsv.as_rgba().as_string(),
-                        Some("hsv") => hsv.as_string(),
-                        Some("hsl") => hsv.as_hsl().as_string(),
-                        Some("cmyk") => hsv.as_cmyk().as_string(),
-                        Some("oklch") => hsv.as_oklch().as_string(),
-                        _ => hsv.as_hex()
+                        Some("int") => hsv.into_int().to_string(),
+                        Some("rgb") => Rgba::from_model(*hsv).into_string(),
+                        Some("hsv") => hsv.into_string(),
+                        Some("hsl") => Hsl::from_model(*hsv).into_string(),
+                        Some("cmyk") => Cmyk::from_model(*hsv).into_string(),
+                        Some("oklch") => Oklch::from_model(*hsv).into_string(),
+                        _ => hsv.into_hex()
                     };
 
                     std::thread::spawn(move || clipboard::copy_text(&text));
@@ -49,7 +50,7 @@ pub fn get_color_box(hsv: Hsv, color_tabs: &Tabs) -> ColorBox {
             add_controller: gesture::on_secondary_up({
                 let hsv = hsv.clone();
                 move |_, _, _| {
-                    let _ = ipc::client::send_message(&format!("color_picker_set_hex {}", hsv.borrow().as_hex()));
+                    let _ = ipc::client::send_message(&format!("color_picker_set_hex {}", hsv.borrow().into_hex()));
                 }
             }),
 
@@ -119,7 +120,7 @@ pub fn get_analogous_color_boxes(hsv: &Mutable<Hsv>, count: u32, color_tabs: &Ta
 
                 color_box.css_provider.load_from_data(&format!(
                     ".color-picker-transform-color {{ background-color: {}; }}",
-                    new_color.as_hex()
+                    new_color.into_hex()
                 ));
 
                 let _ = color_box.hsv.try_borrow_mut().map(|mut c| *c = *new_color);
@@ -161,7 +162,7 @@ pub fn get_lighter_darker_color_boxes(hsv: &Mutable<Hsv>, count: u32, color_tabs
 
                 color_box.css_provider.load_from_data(&format!(
                     ".color-picker-transform-color {{ background-color: {}; }}",
-                    new_color.hsv.as_hex()
+                    new_color.hsv.into_hex()
                 ));
 
                 label.set_label(&format!("{:<4}", format!("{:.0}%", new_color.lightness)));

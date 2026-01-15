@@ -6,7 +6,8 @@ use regex::Regex;
 
 use crate::APP_LOCAL;
 use crate::utils::filesystem;
-use crate::color::{is_valid_hex_color, model::Rgba};
+use crate::color::is_valid_hex_color;
+use crate::color::models::{Rgba, ColorModel as _};
 
 const VAR_REGEX: &str = r#"^\$([a-zA-Z0-9_-]+):\s*(?:"?([^"]+)"?|([a-zA-Z0-9#() ,.-])+);$"#;
 

@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 use futures_signals::signal::{Mutable, SignalExt as _};
 use gtk4::prelude::*;
 
-use crate::color::model::Hsv;
+use crate::color::models::{Hsv, ColorModel as _};
 use crate::utils::gesture;
 
 #[derive(Debug, Clone)]
@@ -100,7 +100,7 @@ impl SaturationValuePicker {
             hue: self.hsv.get().hue,
             saturation: 100.0,
             value: 100.0
-        }.as_hex();
+        }.into_hex();
 
         self.widget_css_provider.load_from_data(&format!("
             .color-picker-saturation-value {{
@@ -133,7 +133,7 @@ impl SaturationValuePicker {
             trough_pos_y,
             if trough_pos_y < 0 { trough_pos_y.abs() } else { -trough_pos_y },
             if value < 50.0 { "#ffffff" } else { "#000000" },
-            self.hsv.get().as_hex()
+            self.hsv.get().into_hex()
         ));
     }
 
