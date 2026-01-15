@@ -99,6 +99,7 @@ pub fn bundle_apply_scss() {
         // Run sass
         let output = std::process::Command::new("sass")
             .arg(format!("-I {}", styles_path))
+            .arg(format!("{}/main.scss", styles_path))
             .arg(format!("{}/output.css", styles_path))
             .output()
             .expect("Failed to run sass command");
