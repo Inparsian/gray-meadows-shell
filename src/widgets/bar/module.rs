@@ -118,7 +118,6 @@ impl BarModule {
 
         let minimal_bounds = self.minimal.compute_bounds(&self.minimal).unwrap();
         let expanded_bounds = self.expanded.compute_bounds(&self.expanded).unwrap();
-        let minimal_width = minimal_bounds.width() as f64;
         let minimal_height = minimal_bounds.height() as f64;
         let expanded_width = expanded_bounds.width() as f64;
         let expanded_height = expanded_bounds.height() as f64;
@@ -133,10 +132,10 @@ impl BarModule {
                     opacity: 0;
                     transform: scale({DOWNSCALE_FACTOR});
                     filter: blur({BLUR_FACTOR_PX}px);
-                    margin: -{}px -{}px -{}px -{}px;
+                    margin: -{}px 0px -{}px 0px;
                     transition-duration: {TRANSITION_DURATION}s;
                 }}",
-                minimal_height/2.0, minimal_width/2.0, minimal_height/2.0, minimal_width/2.0
+                minimal_height/2.0, minimal_height/2.0,
             ));
             self.expanded_provider.load_from_data(&format!(
                 ".bar-expanded-wrapper {{
