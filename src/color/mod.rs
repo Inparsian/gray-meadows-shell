@@ -8,7 +8,7 @@ use self::models::{Rgba, Hsv, Hsl, Cmyk, Oklch, ColorModel as _};
 pub struct LighterDarkerResult {
     pub hsv: Hsv,
     pub lightness: f64,
-    pub is_original: bool
+    pub is_original: bool,
 }
 
 pub fn is_valid_hex_color(hex: &str) -> bool {

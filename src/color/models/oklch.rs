@@ -5,10 +5,11 @@ pub static OKLCH_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^oklch\(\s*(\d{1,3}(?:\.\d+)?)\s+(\d{1,3}(?:\.\d+)?)\s+(\d{1,3}(?:\.\d+)?)\s*\)$").unwrap()
 });
 
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Oklch {
     pub lightness: f64,
     pub chroma: f64,
-    pub hue: f64
+    pub hue: f64,
 }
 
 impl super::ColorModel for Oklch {

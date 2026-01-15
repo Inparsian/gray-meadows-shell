@@ -11,7 +11,7 @@ pub static HSL_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
 pub struct Hsl {
     pub hue: f64,
     pub saturation: f64,
-    pub lightness: f64
+    pub lightness: f64,
 }
 
 impl super::ColorModel for Hsl {

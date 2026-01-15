@@ -10,7 +10,7 @@ pub struct Cmyk {
     pub cyan: u8,
     pub magenta: u8,
     pub yellow: u8,
-    pub black: u8
+    pub black: u8,
 }
 
 impl super::ColorModel for Cmyk {
