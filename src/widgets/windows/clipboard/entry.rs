@@ -90,7 +90,9 @@ pub fn clipboard_entry(id: usize, preview: &str) -> gtk4::Button {
         label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
         vec![color_box.upcast(), label.upcast()]
     } else {
-        let label = gtk4::Label::new(Some(preview));
+        // glib hates nul bytes where gstrings do not actually end :)
+        let preview_cleaned = preview.chars().filter(|c| c != &'\0').collect::<String>();
+        let label = gtk4::Label::new(Some(&preview_cleaned));
         label.set_hexpand(true);
         label.set_xalign(0.0);
         label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
