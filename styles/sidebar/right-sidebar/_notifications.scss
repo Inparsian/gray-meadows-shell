@@ -32,4 +32,17 @@
             }
         }
     }
+    
+    .notification-tab-empty-box {
+        color: $foreground-color-secondary;
+    
+        .notification-tab-empty-icon {
+            @include material-icons;
+            font-size: 64px;
+        }
+    
+        .notification-tab-empty-sub-label {
+            @include large-text;
+        }
+    }
 }

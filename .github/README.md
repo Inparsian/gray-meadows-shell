@@ -24,7 +24,7 @@ My personal stand-alone Hyprland desktop shell using gtk4 and gtk4-layer-shell, 
   - Tracking of most launched applications, most launched apps get a search weight boost
   - Run web searches, execute shell commands, calculator powered by Qalculate, text transformation tools, and more
 - Right sidebar:
-  - Notifications *(W.I.P)*
+  - Notifications
   - Audio controls *(W.I.P)*
   - Calendar
   - Weather
