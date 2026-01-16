@@ -41,6 +41,29 @@ pub fn subscribe() -> Receiver<bus::BusEvent> {
     CHANNEL.subscribe()
 }
 
+pub fn clear_notifications() {
+    let mut notification_ids = NOTIFICATIONS.get()
+        .expect("Notifications singleton is not initialized")
+        .read()
+        .unwrap()
+        .iter()
+        .map(|(&id, _)| id)
+        .collect::<Vec<_>>();
+    
+    notification_ids.sort();
+
+    for (i, notification_id) in notification_ids.iter().enumerate() {
+        let timeout_duration = 10 * i;
+        
+        gtk4::glib::timeout_add_local_once(std::time::Duration::from_millis(timeout_duration as u64), {
+            let id = *notification_id;
+            move || {
+                let _ = close_notification_by_id(id, NotificationCloseReason::Expired);
+            }
+        });
+    }
+}
+
 pub fn close_notification_by_id(
     id: u32,
     reason: NotificationCloseReason

@@ -5,5 +5,31 @@
         .notification-tab-header-counter {
             color: $foreground-color-secondary;
         }
+        
+        .notification-tab-clear-button {
+            @include tiny-text;
+            background: $background-color-tertiary;
+            color: $foreground-color-primary;
+            border-radius: 0px;
+            padding: 4px;
+            font-weight: 400;
+            min-height: 0px;
+        
+            &:hover, &:focus {
+                background: $background-color-quaternary;
+                outline: none;
+            }
+        
+            &:active {
+                background: $background-color-quinary;
+            }
+        
+            .notification-tab-clear-button-icon {
+                @include material-icons;
+                font-size: 13px;
+                margin-top: -4px;
+                margin-bottom: -4px;
+            }
+        }
     }
 }
