@@ -1,6 +1,6 @@
 use std::time::Duration;
 use std::cell::RefCell;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 use gtk4::prelude::*;
 use relm4::RelmRemoveAllExt as _;
 
@@ -41,7 +41,7 @@ impl NotificationDismissAnimation {
 
 #[derive(Clone)]
 pub struct NotificationWidget {
-    pub parent: Option<Rc<super::NotificationsWindow>>,
+    pub notifications_ref: Option<Weak<RefCell<Vec<NotificationWidget>>>>,
     pub notification: Rc<RefCell<Notification>>,
     pub expanded: Rc<RefCell<bool>>,
     pub destroying: Rc<RefCell<bool>>,
@@ -156,7 +156,7 @@ impl NotificationWidget {
         }
 
         let me = NotificationWidget {
-            parent: None,
+            notifications_ref: None,
             notification: Rc::new(RefCell::new(notification)),
             expanded: Rc::new(RefCell::new(false)),
             destroying: Rc::new(RefCell::new(false)),
@@ -239,8 +239,8 @@ impl NotificationWidget {
         me
     }
 
-    pub fn set_parent(&mut self, parent: Rc<super::NotificationsWindow>) {
-        self.parent = Some(parent);
+    pub fn set_notifications_ref(&mut self, notifications_ref: &Rc<RefCell<Vec<NotificationWidget>>>) {
+        self.notifications_ref = Some(Rc::downgrade(notifications_ref));
     }
 
     pub fn set_expand_state(&self, expanded: bool) {
@@ -318,8 +318,8 @@ impl NotificationWidget {
             self.style_provider.load_from_data(&anim.css(width));
         }
 
-        if let Some(parent) = &self.parent {
-            parent.widgets.borrow_mut().retain(|w| !w.root.eq(&self.root));
+        if let Some(notifications) = self.notifications_ref.as_ref().and_then(|r| r.upgrade()) {
+            notifications.borrow_mut().retain(|w| !w.root.eq(&self.root));
         }
 
         gtk4::glib::timeout_add_local_once(

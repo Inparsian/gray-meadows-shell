@@ -115,7 +115,7 @@ pub fn listen_for_notifications() {
                     APP_LOCAL.with(move |app| {
                         for container in app.notification_containers.borrow().iter() {
                             let mut notif_widget = NotificationWidget::new(notification.clone());
-                            notif_widget.set_parent(Rc::new(container.clone()));
+                            notif_widget.set_notifications_ref(&container.widgets);
                             container.add_widget(&notif_widget);
                         }
                     });
