@@ -60,6 +60,15 @@ pub struct OpenMeteoResponseDaily {
     pub temperature_2m_min: Vec<f64>,
 }
 
+// A helper struct, not part of the API response.
+#[derive(Debug, Clone)]
+pub struct OpenMeteoResponseDailyItem {
+    pub time: String,
+    pub weather_code: i64,
+    pub temperature_2m_max: f64,
+    pub temperature_2m_min: f64,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OpenMeteoResponse {
     pub latitude: f64,

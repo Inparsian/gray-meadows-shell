@@ -8,7 +8,7 @@ use reqwest::Client;
 
 use crate::config::read_config;
 use crate::sql::wrappers::weather::{get_weather_forecast, set_weather_forecast};
-use self::schemas::openmeteo::OpenMeteoResponse;
+use self::schemas::openmeteo::{OpenMeteoResponse, OpenMeteoResponseDailyItem};
 
 pub static WEATHER: LazyLock<Weather> = LazyLock::new(Weather::default);
 
@@ -138,6 +138,15 @@ impl Weather {
             None
         }
     }
+}
+
+pub fn get_daily_at(forecast: &OpenMeteoResponse, i: usize) -> Option<OpenMeteoResponseDailyItem> {
+    (i < forecast.daily.time.len()).then(|| OpenMeteoResponseDailyItem {
+        time: forecast.daily.time[i].clone(),
+        weather_code: forecast.daily.weather_code[i],
+        temperature_2m_max: forecast.daily.temperature_2m_max[i],
+        temperature_2m_min: forecast.daily.temperature_2m_min[i],
+    })
 }
 
 pub fn get_wmo_code(code: i64) -> Option<WmoCode> {

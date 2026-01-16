@@ -1,7 +1,7 @@
 use gtk4::prelude::*;
 use relm4::RelmRemoveAllExt as _;
 
-use crate::singletons::weather::get_wmo_code;
+use crate::singletons::weather::{get_daily_at, get_wmo_code};
 use crate::singletons::weather::schemas::openmeteo::OpenMeteoResponse;
 
 pub struct WeatherWeek {
@@ -23,17 +23,14 @@ impl WeatherWeek {
     pub fn update(&self, forecast: &OpenMeteoResponse) {
         self.bx.remove_all();
 
-        for (i, day) in forecast.daily.time.iter().enumerate() {
-            let wmo_code = *forecast.daily.weather_code.get(i).unwrap_or(&0);
-            let high = *forecast.daily.temperature_2m_max.get(i).unwrap_or(&0.0);
-            let low = *forecast.daily.temperature_2m_min.get(i).unwrap_or(&0.0);
-            let weekday = chrono::NaiveDate::parse_from_str(day, "%Y-%m-%d")
-                .map_or_else(|_| "nil".to_owned(), |d| d.format("%A").to_string())
-                [..3].to_lowercase();
-
-            let Some(wmo) = get_wmo_code(wmo_code) else {
+        for item in forecast.daily.time.iter().enumerate().filter_map(|(i, _)| get_daily_at(forecast, i)) {
+            let Some(wmo) = get_wmo_code(item.weather_code) else {
                 continue;
             };
+            
+            let weekday = chrono::NaiveDate::parse_from_str(&item.time, "%Y-%m-%d")
+                .map_or_else(|_| "nil".to_owned(), |d| d.format("%A").to_string())
+                [..3].to_lowercase();
 
             view! {
                 day_bx = gtk4::Box {
@@ -69,7 +66,7 @@ impl WeatherWeek {
                         },
 
                         gtk4::Label {
-                            set_label: &format!("{:.1}{}", high, forecast.daily_units.temperature_2m_max),
+                            set_label: &format!("{:.1}{}", item.temperature_2m_max, forecast.daily_units.temperature_2m_max),
                         },
                     },
 
@@ -83,7 +80,7 @@ impl WeatherWeek {
                         },
 
                         gtk4::Label {
-                            set_label: &format!("{:.1}{}", low, forecast.daily_units.temperature_2m_min),
+                            set_label: &format!("{:.1}{}", item.temperature_2m_min, forecast.daily_units.temperature_2m_min),
                         },
                     },
                 }
