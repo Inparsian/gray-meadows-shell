@@ -3,11 +3,11 @@ pub mod wrappers;
 use sqlite::Connection;
 
 pub fn establish_connection() -> Result<Connection, Box<dyn std::error::Error>> {
-    let config_dir = crate::utils::filesystem::get_config_directory();
-    let db_path = format!("{}/sqlite.db", config_dir);
+    let state_dir = crate::utils::filesystem::get_local_state_directory();
+    let db_path = format!("{}/sqlite.db", state_dir);
 
-    if !std::path::Path::new(&config_dir).exists() {
-        std::fs::create_dir_all(&config_dir)?;
+    if !std::path::Path::new(&state_dir).exists() {
+        std::fs::create_dir_all(&state_dir)?;
     }
 
     let connection = Connection::open(db_path)?;
