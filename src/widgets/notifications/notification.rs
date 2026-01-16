@@ -238,6 +238,29 @@ impl NotificationWidget {
 
         me
     }
+    
+    pub fn get_removal_operation_widgets(&self) -> (Option<gtk4::Widget>, Option<gtk4::Box>) {
+        let mut current_child = self.root.clone().upcast::<gtk4::Widget>();
+        
+        let mut recursion_depth = 0;
+        while let Some(parent) = current_child.parent() {
+            // We should ideally only go at most 2 levels up. If we go higher than this,
+            // flattening the widget structure should be considered.
+            if recursion_depth >= 2 {
+                break;
+            }
+            
+            if let Some(bx) = parent.downcast_ref::<gtk4::Box>() {
+                return (Some(current_child), Some(bx.clone()));
+            }
+            
+            current_child = parent;
+            recursion_depth += 1;
+        }
+        
+        warn!("Could not find widget to remove from notifications list");
+        (None, None)
+    }
 
     pub fn set_notifications_ref(&mut self, notifications_ref: &Rc<RefCell<Vec<NotificationWidget>>>) {
         self.notifications_ref = Some(Rc::downgrade(notifications_ref));
@@ -304,7 +327,7 @@ impl NotificationWidget {
     }
 
     pub fn destroy(&self, animation: Option<NotificationDismissAnimation>) {
-        if !self.root.reveals_child() {
+        if *self.destroying.borrow() {
             return;
         }
 
@@ -326,10 +349,8 @@ impl NotificationWidget {
             Duration::from_millis(NOTIF_TRANSITION_DURATION as u64),
             {
                 let me = self.clone();
-                move || if let Some(parent) = me.root.parent()
-                    && let Some(bx) = parent.downcast_ref::<gtk4::Box>()
-                {
-                    bx.remove(&me.root);
+                move || if let (Some(child), Some(parent)) = me.get_removal_operation_widgets() {
+                    parent.remove(&child);
                 }
             }
         );
