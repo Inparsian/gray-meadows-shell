@@ -1,4 +1,5 @@
-use std::{collections::HashMap, path::Path};
+use std::collections::HashMap;
+use std::path::Path;
 use std::sync::{LazyLock, Mutex};
 use notify::{EventKind, Watcher as _};
 use notify::event::{AccessKind, AccessMode};
@@ -8,6 +9,8 @@ use crate::APP_LOCAL;
 use crate::utils::filesystem;
 use crate::color::is_valid_hex_color;
 use crate::color::models::{Rgba, ColorModel as _};
+
+include!(concat!(env!("OUT_DIR"), "/default_styles.rs"));
 
 const VAR_REGEX: &str = r#"^\$([a-zA-Z0-9_-]+):\s*(?:"?([^"]+)"?|([a-zA-Z0-9#() ,.-])+);$"#;
 
@@ -92,31 +95,47 @@ pub fn get_string(name: &str) -> Option<String> {
     scss_vars.get_string(name).cloned()
 }
 
-pub fn bundle_apply_scss() {
-    gtk4::glib::MainContext::default().invoke(|| {
-        let styles_path = filesystem::get_styles_directory();
-        
-        // Run sass
-        let output = std::process::Command::new("sass")
-            .arg(format!("-I {}", styles_path))
-            .arg(format!("{}/main.scss", styles_path))
-            .arg(format!("{}/output.css", styles_path))
-            .output()
-            .expect("Failed to run sass command");
-        
-        if !output.status.success() {
-            error!(stderr = %String::from_utf8_lossy(&output.stderr), "Error running sass");
-            return;
-        }
+pub fn write_default_styles() {
+    let styles_dir = filesystem::get_styles_directory();
+    let styles_path = Path::new(&styles_dir);
+    let _ = std::fs::create_dir_all(styles_path);
     
-        // Load the generated CSS into the provider
-        let css = std::fs::read_to_string(format!("{}/output.css", styles_path))
-            .expect("Failed to read output.css");
+    for (rel_path, content) in DEFAULT_STYLES {
+        let abs_path = styles_path.join(rel_path);
+        
+        if !abs_path.exists() {
+            if let Some(parent) = abs_path.parent() {
+                let _ = std::fs::create_dir_all(parent);
+            }
+            
+            if let Err(error) = std::fs::write(&abs_path, content) {
+                error!(%error, path = %abs_path.display(), "Failed to write default style");
+            }
+        }
+    }
+}
 
-        APP_LOCAL.with(|app| app.provider.load_from_data(&css));
+pub fn bundle_apply_scss() {
+    write_default_styles();
+    
+    let styles_directory = filesystem::get_styles_directory();
+    let output = std::process::Command::new("sass")
+        .arg(format!("-I {}", styles_directory))
+        .arg(format!("{}/main.scss", styles_directory))
+        .output()
+        .expect("Failed to run sass command");
+    
+    if output.status.success() {
+        let css = String::from_utf8_lossy(&output.stdout).to_string();
+        
+        gtk4::glib::MainContext::default().invoke(move || {
+            APP_LOCAL.with(|app| app.provider.load_from_data(&css));
+        });
         
         refresh_variables();
-    });
+    } else {
+        error!(stderr = %String::from_utf8_lossy(&output.stderr), "Error running sass");
+    }
 }
 
 pub fn watch_scss() {
