@@ -51,13 +51,15 @@ pub fn clear_notifications() {
         .collect::<Vec<_>>();
     
     notification_ids.sort();
+    notification_ids.reverse();
 
     for (i, notification_id) in notification_ids.iter().enumerate() {
         let timeout_duration = 10 * i;
         
-        gtk4::glib::timeout_add_local_once(std::time::Duration::from_millis(timeout_duration as u64), {
+        tokio::spawn({
             let id = *notification_id;
-            move || {
+            async move {
+                tokio::time::sleep(std::time::Duration::from_millis(timeout_duration as u64)).await;
                 let _ = close_notification_by_id(id, NotificationCloseReason::Expired);
             }
         });
