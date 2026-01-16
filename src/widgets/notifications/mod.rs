@@ -26,7 +26,6 @@ impl NotificationsWindow {
     pub fn new(application: &libadwaita::Application, monitor: &gdk4::Monitor) -> Self {
         view! {
             container = gtk4::Box {
-                set_css_classes: &["notifications-container"],
                 set_orientation: gtk4::Orientation::Vertical,
                 set_spacing: 0,
                 set_halign: gtk4::Align::End,
