@@ -91,14 +91,14 @@ impl Weather {
             "temperature_2m_max",
             "temperature_2m_min",
         ];
-
+        
         let parameters = [
             ("latitude", weather_config.latitude.to_string()),
             ("longitude", weather_config.longitude.to_string()),
             ("timezone", weather_config.timezone.clone()),
-            ("temperature_unit", weather_config.temperature_unit.clone()),
-            ("wind_speed_unit", weather_config.speed_unit.clone()),
-            ("precipitation_unit", weather_config.precipitation_unit.clone()),
+            ("temperature_unit", weather_config.temperature_unit.to_string()),
+            ("wind_speed_unit", weather_config.speed_unit.to_string()),
+            ("precipitation_unit", weather_config.precipitation_unit.to_string()),
             ("forecast_days", "7".to_owned()),
             ("current", current.join(",")),
             ("daily", daily.join(",")),

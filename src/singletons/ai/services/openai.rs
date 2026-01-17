@@ -20,7 +20,7 @@ use async_openai::types::responses::{
     Tool
 };
 
-use crate::config::read_config;
+use crate::config::{AiService as AiConfigService, OpenAiReasoningEffort, OpenAiServiceTier, read_config};
 use crate::utils::broadcast::BroadcastChannel;
 use super::super::variables::transform_variables;
 use super::super::{AiChannelMessage, AiConversationItem, AiConversationItemPayload, AiConversationDelta};
@@ -68,23 +68,23 @@ impl OpenAiService {
             .map(Self::transform_function_into_tool)
             .collect::<Vec<Tool>>();
 
-        let request = if matches!(app_config.ai.openai.reasoning_effort.as_str(), "minimal" | "low" | "medium" | "high" | "xhigh") {
+        let request = if !matches!(app_config.ai.openai.reasoning_effort, OpenAiReasoningEffort::None) {
             CreateResponseArgs::default()
                 .max_output_tokens(2048_u32)
                 .stream(true)
                 .model(app_config.ai.openai.model.as_str())
-                .service_tier(match app_config.ai.openai.service_tier.as_str() {
-                    "flex" => ServiceTier::Flex,
-                    "priority" => ServiceTier::Priority,
+                .service_tier(match app_config.ai.openai.service_tier {
+                    OpenAiServiceTier::Flex => ServiceTier::Flex,
+                    OpenAiServiceTier::Priority => ServiceTier::Priority,
                     _ => ServiceTier::Default,
                 })
                 .reasoning(Reasoning {
-                    effort: Some(match app_config.ai.openai.reasoning_effort.as_str() {
-                        "minimal" => ReasoningEffort::Minimal,
-                        "low" => ReasoningEffort::Low,
-                        "medium" => ReasoningEffort::Medium,
-                        "high" => ReasoningEffort::High,
-                        "xhigh" => ReasoningEffort::Xhigh,
+                    effort: Some(match app_config.ai.openai.reasoning_effort {
+                        OpenAiReasoningEffort::Minimal => ReasoningEffort::Minimal,
+                        OpenAiReasoningEffort::Low => ReasoningEffort::Low,
+                        OpenAiReasoningEffort::Medium => ReasoningEffort::Medium,
+                        OpenAiReasoningEffort::High => ReasoningEffort::High,
+                        OpenAiReasoningEffort::Xhigh => ReasoningEffort::Xhigh,
                         _ => ReasoningEffort::None,
                     }),
                     summary: Some(ReasoningSummary::Auto),
@@ -97,9 +97,9 @@ impl OpenAiService {
                 .max_output_tokens(2048_u32)
                 .stream(true)
                 .model(app_config.ai.openai.model.as_str())
-                .service_tier(match app_config.ai.openai.service_tier.as_str() {
-                    "flex" => ServiceTier::Flex,
-                    "priority" => ServiceTier::Priority,
+                .service_tier(match app_config.ai.openai.service_tier {
+                    OpenAiServiceTier::Flex => ServiceTier::Flex,
+                    OpenAiServiceTier::Priority => ServiceTier::Priority,
                     _ => ServiceTier::Default,
                 })
                 .tools(tools)
@@ -263,8 +263,8 @@ impl OpenAiService {
 }
 
 impl super::AiService for OpenAiService {
-    fn service_name(&self) -> String {
-        "openai".to_owned()
+    fn service(&self) -> AiConfigService {
+        AiConfigService::OpenAi
     }
 
     fn make_stream_request(

@@ -4,6 +4,7 @@ pub mod gemini;
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
 
+use crate::config::AiService as AiConfigService;
 use crate::utils::broadcast::BroadcastChannel;
 use super::{AiChannelMessage, AiConversationItem, AiConversationItemPayload};
 
@@ -13,7 +14,7 @@ pub struct AiServiceResult {
 }
 
 pub trait AiService: Send + Sync {
-    fn service_name(&self) -> String;
+    fn service(&self) -> AiConfigService;
 
     fn make_stream_request(
         &self,

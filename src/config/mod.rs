@@ -1,9 +1,21 @@
+pub mod enums;
+
 use std::sync::RwLock;
 use std::{path::Path, sync::LazyLock};
 use std::error::Error;
 use notify::Watcher as _;
 use notify::event::{AccessKind, AccessMode, EventKind};
 use serde::{Deserialize, Serialize};
+
+pub use enums::{
+    OpenAiServiceTier,
+    OpenAiReasoningEffort,
+    GeminiThinkingLevel,
+    WeatherTemperatureUnit,
+    WeatherSpeedUnit,
+    WeatherPrecipitationUnit,
+    AiService,
+};
 
 use crate::utils::filesystem::get_config_directory;
 
@@ -25,8 +37,10 @@ pub struct AiFeatures {
 pub struct OpenAiConfig {
     pub api_key: String,
     pub model: String,
-    pub service_tier: String,
-    pub reasoning_effort: String,
+    #[serde(deserialize_with = "deserialize_insensitive")]
+    pub service_tier: OpenAiServiceTier,
+    #[serde(deserialize_with = "deserialize_insensitive")]
+    pub reasoning_effort: OpenAiReasoningEffort,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -34,13 +48,15 @@ pub struct GeminiConfig {
     pub api_key: String,
     pub model: String,
     pub thinking_budget: i64,
-    pub thinking_level: String,
+    #[serde(deserialize_with = "deserialize_insensitive")]
+    pub thinking_level: GeminiThinkingLevel,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AiConfig {
     pub enabled: bool,
-    pub service: String,
+    #[serde(deserialize_with = "deserialize_insensitive")]
+    pub service: AiService,
     pub prompt: String,
     pub user_message_timestamps: bool,
     pub assistant_name: Option<String>,
@@ -56,9 +72,12 @@ pub struct WeatherConfig {
     pub latitude: f64,
     pub longitude: f64,
     pub timezone: String,
-    pub temperature_unit: String,
-    pub speed_unit: String,
-    pub precipitation_unit: String,
+    #[serde(deserialize_with = "deserialize_insensitive")]
+    pub temperature_unit: WeatherTemperatureUnit,
+    #[serde(deserialize_with = "deserialize_insensitive")]
+    pub speed_unit: WeatherSpeedUnit,
+    #[serde(deserialize_with = "deserialize_insensitive")]
+    pub precipitation_unit: WeatherPrecipitationUnit,
     pub refresh_interval: u64,
 }
 
@@ -73,7 +92,7 @@ impl Default for Config {
         Config {
             ai: AiConfig {
                 enabled: true,
-                service: "openai".to_owned(),
+                service: AiService::OpenAi,
                 prompt: "You are a helpful AI assistant running on a sidebar in a Linux desktop environment.".to_owned(),
                 user_message_timestamps: true,
                 assistant_name: None,
@@ -81,14 +100,14 @@ impl Default for Config {
                 openai: OpenAiConfig {
                     api_key: "your-api-key-here".to_owned(),
                     model: "gpt-4.1".to_owned(),
-                    service_tier: "default".to_owned(),
-                    reasoning_effort: "none".to_owned(),
+                    service_tier: OpenAiServiceTier::Default,
+                    reasoning_effort: OpenAiReasoningEffort::None,
                 },
                 gemini: GeminiConfig {
                     api_key: "your-api-key-here".to_owned(),
                     model: "gemini-2.0-flash".to_owned(),
                     thinking_budget: -1,
-                    thinking_level: "budget".to_owned(),
+                    thinking_level: GeminiThinkingLevel::Budget,
                 },
                 features: AiFeatures {
                     power_control: true,
@@ -101,13 +120,23 @@ impl Default for Config {
                 latitude: 0.0,
                 longitude: 0.0,
                 timezone: "auto".to_owned(),
-                temperature_unit: "fahrenheit".to_owned(),
-                speed_unit: "mph".to_owned(),
-                precipitation_unit: "inch".to_owned(),
+                temperature_unit: WeatherTemperatureUnit::Fahrenheit,
+                speed_unit: WeatherSpeedUnit::Mph,
+                precipitation_unit: WeatherPrecipitationUnit::Inch,
                 refresh_interval: 1800,
             },
         }
     }
+}
+
+pub fn deserialize_insensitive<'de, T, D>(deserializer: D) -> Result<T, D::Error>
+where
+    T: std::str::FromStr,
+    T::Err: std::fmt::Display,
+    D: serde::Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    T::from_str(&s).map_err(serde::de::Error::custom)
 }
 
 fn config_path() -> String {
@@ -154,12 +183,16 @@ pub fn watch() {
                     Ok(event) => if event.paths.iter().any(|p| p.file_name() == Some("config.toml".as_ref()))
                         && matches!(event.kind, EventKind::Access(AccessKind::Close(AccessMode::Write)))
                     {
-                        if let Ok(new_config) = read() {
-                            let mut config_lock = CONFIG.write().unwrap();
-                            *config_lock = new_config;
-                            info!(path = %config_path(), "Configuration reloaded");
-                        } else {
-                            warn!(path = %config_path(), "Failed to reload configuration");
+                        match read() {
+                            Ok(new_config) => {
+                                let mut config_lock = CONFIG.write().unwrap();
+                                *config_lock = new_config;
+                                info!("Configuration reloaded");
+                            },
+                            
+                            Err(err) => {
+                                warn!(%err, "Failed to reload configuration");
+                            }
                         }
                     },
 

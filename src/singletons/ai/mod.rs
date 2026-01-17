@@ -157,7 +157,7 @@ pub async fn start_request_cycle() {
 
     let config = read_config().clone();
     let service = SERVICES.iter()
-        .find(|s| s.service_name() == config.ai.service)
+        .find(|s| s.service() == config.ai.service)
         .unwrap_or(&SERVICES[0]);
     
     let mut failed = false;

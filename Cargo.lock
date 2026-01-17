@@ -1581,6 +1581,7 @@ dependencies = [
  "sha",
  "shlex",
  "sqlite",
+ "strum",
  "sysinfo",
  "tokio",
  "toml",

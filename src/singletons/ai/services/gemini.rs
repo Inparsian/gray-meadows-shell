@@ -9,7 +9,7 @@ use gemini_rust::{
     ThinkingConfig, ThinkingLevel,
 };
 
-use crate::config::read_config;
+use crate::config::{AiService as AiConfigService, GeminiThinkingLevel, read_config};
 use crate::utils::broadcast::BroadcastChannel;
 use crate::singletons::ai::images::load_image_data;
 use crate::singletons::ai::tools::gemini::add_gemini_tools;
@@ -157,8 +157,8 @@ impl GeminiService {
 }
 
 impl super::AiService for GeminiService {
-    fn service_name(&self) -> String {
-        "gemini".to_owned()
+    fn service(&self) -> AiConfigService {
+        AiConfigService::Gemini
     }
 
     fn make_stream_request(
@@ -183,11 +183,12 @@ impl super::AiService for GeminiService {
             let mut builder = Self::transform_items_into_builder(items, &client)
                 .with_system_prompt(transform_variables(system_prompt.as_str()))
                 .with_thinking_config(ThinkingConfig {
-                    thinking_budget: (!matches!(thinking_level.as_str(), "low" | "high")).then_some(thinking_budget),
+                    thinking_budget: (!matches!(thinking_level, GeminiThinkingLevel::Low | GeminiThinkingLevel::High))
+                        .then_some(thinking_budget),
                     include_thoughts: Some(true),
-                    thinking_level: match thinking_level.as_str() {
-                        "low" => Some(ThinkingLevel::Low),
-                        "high" => Some(ThinkingLevel::High),
+                    thinking_level: match thinking_level {
+                        GeminiThinkingLevel::Low => Some(ThinkingLevel::Low),
+                        GeminiThinkingLevel::High => Some(ThinkingLevel::High),
                         _ => None,
                     },
                 });
