@@ -56,10 +56,12 @@ thread_local! {
 #[derive(Debug, Clone)]
 pub struct GrayMeadowsGlobal {
     game_mode: Mutable<bool>,
+    do_not_disturb: Mutable<bool>,
 }
 
 pub static APP: LazyLock<GrayMeadowsGlobal> = LazyLock::new(|| GrayMeadowsGlobal {
     game_mode: Mutable::new(false),
+    do_not_disturb: Mutable::new(false),
 });
 
 pub static SQL_CONNECTION: OnceLock<Mutex<Connection>> = OnceLock::new();
@@ -138,11 +140,14 @@ async fn main() {
                 Ok(connection) => {
                     let _ = SQL_CONNECTION.set(Mutex::new(connection));
                     info!(path = %format!("{}/sqlite.db", filesystem::get_config_directory()), "SQLite connection established");
-                }
+                    
+                    APP.do_not_disturb.set(sql::wrappers::state::get_do_not_disturb().unwrap_or(false));
+                },
+                
                 Err(e) => {
                     error!(?e, "Failed to establish SQLite connection");
                     std::process::exit(1);
-                }
+                },
             }
 
             let _ = gtk4::init();

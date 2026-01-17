@@ -1,3 +1,4 @@
+pub mod notifications;
 pub mod keybinds;
 pub mod gamemode;
 

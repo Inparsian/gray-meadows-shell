@@ -14,6 +14,18 @@ pub fn establish_connection() -> Result<Connection, Box<dyn std::error::Error>> 
 
     // Create tables if they do not exist
     connection.execute("
+        CREATE TABLE IF NOT EXISTS state (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            do_not_disturb INTEGER NOT NULL DEFAULT 0
+        )
+    ")?;
+    
+    connection.execute("
+        INSERT OR IGNORE INTO state (id, do_not_disturb) 
+        VALUES (1, 0)
+    ")?;
+    
+    connection.execute("
         CREATE TABLE IF NOT EXISTS desktop_runs (
             command TEXT NOT NULL,
             runs INTEGER NOT NULL DEFAULT 0,

@@ -7,7 +7,7 @@ use gtk4::prelude::*;
 use gdk4::cairo::{Region, RectangleInt};
 use gtk4_layer_shell::{Edge, Layer, LayerShell as _};
 
-use crate::APP_LOCAL;
+use crate::{APP, APP_LOCAL};
 use crate::singletons::notifications::{self, wrapper::NotificationHint};
 use crate::widgets::notifications::notification::NotificationDismissAnimation;
 use self::notification::NotificationWidget;
@@ -110,7 +110,7 @@ pub fn listen_for_notifications() {
     gtk4::glib::spawn_future_local(async move {
         while let Ok(message) = receiver.recv().await {
             match message {
-                BusEvent::NotificationAdded(_, notification) => {
+                BusEvent::NotificationAdded(_, notification) => if !APP.do_not_disturb.get() {
                     APP_LOCAL.with(move |app| {
                         for container in app.notification_containers.borrow().iter() {
                             let mut notif_widget = NotificationWidget::new(notification.clone());
