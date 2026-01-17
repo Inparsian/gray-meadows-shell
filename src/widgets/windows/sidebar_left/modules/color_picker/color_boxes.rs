@@ -4,7 +4,7 @@ use gtk4::prelude::*;
 
 use crate::ipc;
 use crate::color::LighterDarkerResult;
-use crate::color::models::{Rgba, Hsv, Hsl, Cmyk, Oklch, ColorModel as _};
+use crate::color::models::{Rgba, Hsv, Hsl, Cmyk, Oklab, Oklch, ColorModel as _};
 use crate::singletons::clipboard;
 use crate::utils::gesture;
 use crate::widgets::common::{dynamic_grid::DynamicGrid, tabs::Tabs};
@@ -39,6 +39,7 @@ pub fn get_color_box(hsv: Hsv, color_tabs: &Tabs) -> ColorBox {
                         Some("hsv") => hsv.into_string(),
                         Some("hsl") => Hsl::from_model(*hsv).into_string(),
                         Some("cmyk") => Cmyk::from_model(*hsv).into_string(),
+                        Some("oklab") => Oklab::from_model(*hsv).into_string(),
                         Some("oklch") => Oklch::from_model(*hsv).into_string(),
                         _ => hsv.into_hex()
                     };

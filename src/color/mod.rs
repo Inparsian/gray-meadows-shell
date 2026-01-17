@@ -3,7 +3,7 @@ pub mod models;
 use std::cmp::Ordering::Equal;
 
 use crate::FLOAT_TOLERANCE;
-use self::models::{Rgba, Hsv, Hsl, Cmyk, Oklch, ColorModel as _};
+use self::models::{Rgba, Hsv, Hsl, Cmyk, Oklab, Oklch, ColorModel as _};
 
 pub struct LighterDarkerResult {
     pub hsv: Hsv,
@@ -39,6 +39,7 @@ pub fn parse_color_into_hex(string: &str) -> Option<String> {
         |s: &str| Hsv::from_string(s).map(|hsv| hsv.into_hex()),
         |s: &str| Hsl::from_string(s).map(|hsl| hsl.into_hex()),
         |s: &str| Cmyk::from_string(s).map(|cmyk| cmyk.into_hex()),
+        |s: &str| Oklab::from_string(s).map(|oklab| oklab.into_hex()),
         |s: &str| Oklch::from_string(s).map(|oklch| oklch.into_hex()),
     ]
     .iter().find_map(|parse| parse(string))

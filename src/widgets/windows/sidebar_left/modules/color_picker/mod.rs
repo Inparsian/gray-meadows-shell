@@ -8,7 +8,7 @@ use futures_signals::signal::{Mutable, SignalExt as _};
 use gtk4::{Adjustment, prelude::*};
 
 use crate::color::{parse_color_into_hex, int_to_hex};
-use crate::color::models::{Rgba, Hsv, Hsl, Cmyk, Oklch, ColorModel as _};
+use crate::color::models::{Rgba, Hsv, Hsl, Cmyk, Oklab, Oklch, ColorModel as _};
 use crate::ipc;
 use crate::singletons::clipboard;
 use crate::utils::timeout::Timeout;
@@ -34,6 +34,7 @@ pub fn new() -> gtk4::Box {
     color_tabs.add_tab("HSV", "hsv".to_owned(), None);
     color_tabs.add_tab("HSL", "hsl".to_owned(), None);
     color_tabs.add_tab("CMYK", "cmyk".to_owned(), None);
+    color_tabs.add_tab("OKLAB", "oklab".to_owned(), None);
     color_tabs.add_tab("OKLCH", "oklch".to_owned(), None);
 
     let transform_tabs = Tabs::new(TabSize::Normal, false);
@@ -153,14 +154,31 @@ pub fn new() -> gtk4::Box {
         cmyk_value.black = value as u8;
         Hsv::from_model(cmyk_value)
     });
+    
+    let mut oklab_fields = Fields::new();
+    create_spin_field!(oklab_fields, 3, 0.033, Adjustment::new(0.0, 0.0, 100.0, 0.033, 0.033, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
+        let mut oklab_value = Oklab::from_model(hsv.get());
+        oklab_value.lightness = value;
+        Hsv::from_model(oklab_value)
+    });
+    create_spin_field!(oklab_fields, 3, 0.0033, Adjustment::new(0.0, -0.4, 0.4, 0.0033, 0.0033, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
+        let mut oklab_value = Oklab::from_model(hsv.get());
+        oklab_value.a = value;
+        Hsv::from_model(oklab_value)
+    });
+    create_spin_field!(oklab_fields, 3, 0.0033, Adjustment::new(0.0, -0.4, 0.4, 0.0033, 0.0033, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
+        let mut oklab_value = Oklab::from_model(hsv.get());
+        oklab_value.b = value;
+        Hsv::from_model(oklab_value)
+    });
 
     let mut oklch_fields = Fields::new();
-    create_spin_field!(oklch_fields, 4, 0.033, Adjustment::new(0.0, 0.0, 100.0, 0.033, 0.033, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
+    create_spin_field!(oklch_fields, 3, 0.033, Adjustment::new(0.0, 0.0, 100.0, 0.033, 0.033, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
         let mut oklch_value = Oklch::from_model(hsv.get());
         oklch_value.lightness = value;
         Hsv::from_model(oklch_value)
     });
-    create_spin_field!(oklch_fields, 4, 0.033, Adjustment::new(0.0, 0.0, 100.0, 0.033, 0.033, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
+    create_spin_field!(oklch_fields, 3, 0.033, Adjustment::new(0.0, 0.0, 100.0, 0.033, 0.033, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
         let mut oklch_value = Oklch::from_model(hsv.get());
         oklch_value.chroma = value;
         Hsv::from_model(oklch_value)
@@ -251,6 +269,7 @@ pub fn new() -> gtk4::Box {
     color_tabs_stack.add_tab(Some("hsv"), &hsv_fields.widget);
     color_tabs_stack.add_tab(Some("hsl"), &hsl_fields.widget);
     color_tabs_stack.add_tab(Some("cmyk"), &cmyk_fields.widget);
+    color_tabs_stack.add_tab(Some("oklab"), &oklab_fields.widget);
     color_tabs_stack.add_tab(Some("oklch"), &oklch_fields.widget);
 
     gtk4::glib::spawn_future_local(signal!(hsv, (hsv) {
@@ -259,6 +278,7 @@ pub fn new() -> gtk4::Box {
         let rgba = Rgba::from_model(hsv);
         let hsl = Hsl::from_model(hsv);
         let cmyk = Cmyk::from_model(hsv);
+        let oklab = Oklab::from_model(hsv);
         let oklch = Oklch::from_model(hsv);
 
         hex_fields.update(vec![Text(hsv.into_hex())]);
@@ -267,6 +287,7 @@ pub fn new() -> gtk4::Box {
         hsv_fields.update(vec![Float(hsv.hue), Float(hsv.saturation), Float(hsv.value)]);
         hsl_fields.update(vec![Float(hsl.hue), Float(hsl.saturation), Float(hsl.lightness)]);
         cmyk_fields.update(vec![Float(cmyk.cyan as f64), Float(cmyk.magenta as f64), Float(cmyk.yellow as f64), Float(cmyk.black as f64)]);
+        oklab_fields.update(vec![Float(oklab.lightness), Float(oklab.a), Float(oklab.b)]);
         oklch_fields.update(vec![Float(oklch.lightness), Float(oklch.chroma), Float(oklch.hue)]);
     }));
 

@@ -2,6 +2,7 @@ pub mod rgba;
 pub mod hsv;
 pub mod hsl;
 pub mod cmyk;
+pub mod oklab;
 pub mod oklch;
 
 pub use {
@@ -9,6 +10,7 @@ pub use {
     hsv::Hsv,
     hsl::Hsl,
     cmyk::Cmyk,
+    oklab::Oklab,
     oklch::Oklch
 };
 
