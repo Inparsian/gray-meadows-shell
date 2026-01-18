@@ -221,8 +221,10 @@ impl ChatMessage {
                     message_id
                 };
 
-                gtk4::glib::spawn_future_local(ai::trim_items(message_id));
-                tokio::spawn(ai::start_request_cycle());
+                gtk4::glib::spawn_future_local(async move {
+                    ai::trim_items(message_id).await;
+                    ai::start_request_cycle().await;
+                });
             }
         });
         controls_box.append(&retry_button);
