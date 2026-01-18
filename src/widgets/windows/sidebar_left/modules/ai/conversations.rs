@@ -32,7 +32,7 @@ pub struct ConversationItem {
 }
 
 impl ConversationItem {
-    pub fn new(conversation: AiConversation) -> Self {
+    pub async fn new(conversation: AiConversation) -> Self {
         let conversation = Rc::new(RefCell::new(conversation));
 
         let root = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
@@ -62,7 +62,13 @@ impl ConversationItem {
             move |_| {
                 let new_title = title_input.text().to_string();
                 if !new_title.is_empty() && new_title != conversation.borrow().title {
-                    ai::conversation::rename_conversation(conversation.borrow().id, &new_title);
+                    gtk4::glib::spawn_future_local({
+                        let id = conversation.borrow().id;
+                        let new_title = new_title.clone();
+                        async move {
+                            ai::conversation::rename_conversation(id, &new_title).await;
+                        }
+                    });
                     conversation.borrow_mut().title = new_title;
                     title_input.set_visible(false);
                     title_label.set_visible(true);
@@ -71,7 +77,8 @@ impl ConversationItem {
         });
         info_box.append(&title_input);
 
-        let message_count = aichats::get_messages_length(conversation.borrow().id).unwrap_or(0);
+        let conversation_id = conversation.borrow().id;
+        let message_count = aichats::get_messages_length(conversation_id).await.unwrap_or(0);
         let length_label = gtk4::Label::new(Some(&message_count_str(message_count)));
         length_label.set_css_classes(&["ai-chat-conversation-item-length-label"]);
         length_label.set_halign(gtk4::Align::Start);
@@ -104,7 +111,7 @@ impl ConversationItem {
         delete_button.connect_clicked({
             let conversation = conversation.clone();
             move |_| {
-                ai::conversation::delete_conversation(conversation.borrow().id);
+                gtk4::glib::spawn_future_local(ai::conversation::delete_conversation(conversation.borrow().id));
             }
         });
         controls_box.append(&delete_button);
@@ -131,7 +138,7 @@ impl ConversationItem {
         info_box.add_controller(gesture::on_primary_up({
             let conversation = conversation.clone();
             move |_, _, _| if !WidgetExt::is_visible(&title_input) {
-                ai::conversation::load_conversation(conversation.borrow().id);
+                gtk4::glib::spawn_future_local(ai::conversation::load_conversation(conversation.borrow().id));
             }
         }));
 
@@ -177,7 +184,7 @@ impl ConversationsList {
                     while let Ok(message) = receiver.recv().await {
                         match message {
                             AiChannelMessage::ConversationAdded(conversation) => {
-                                let item = ConversationItem::new(conversation);
+                                let item = ConversationItem::new(conversation).await;
                                 me.root.append(&item.root);
                                 me.conversations.borrow_mut().push(item);
                             },
@@ -201,10 +208,10 @@ impl ConversationsList {
                             },
 
                             AiChannelMessage::ConversationTrimmed(conversation_id, _) => {
-                                let conversations = me.conversations.borrow();
-                                for item in conversations.iter() {
+                                let conversations = me.conversations.borrow().clone();
+                                for item in &conversations {
                                     if item.conversation.borrow().id == conversation_id {
-                                        let current_length = aichats::get_messages_length(conversation_id).unwrap_or(0);
+                                        let current_length = aichats::get_messages_length(conversation_id).await.unwrap_or(0);
                                         item.set_length(current_length);
                                         break;
                                     }
@@ -212,10 +219,10 @@ impl ConversationsList {
                             },
 
                             AiChannelMessage::ConversationLoaded(conversation) => {
-                                let conversations = me.conversations.borrow();
-                                for item in conversations.iter() {
+                                let conversations = me.conversations.borrow().clone();
+                                for item in &conversations {
                                     if item.conversation.borrow().id == conversation.id {
-                                        let current_length = aichats::get_messages_length(conversation.id).unwrap_or(0);
+                                        let current_length = aichats::get_messages_length(conversation.id).await.unwrap_or(0);
                                         item.set_length(current_length);
                                         break;
                                     }
@@ -228,10 +235,10 @@ impl ConversationsList {
                                     continue;
                                 };
 
-                                let conversations = me.conversations.borrow();
-                                for item in conversations.iter() {
+                                let conversations = me.conversations.borrow().clone();
+                                for item in &conversations {
                                     if item.conversation.borrow().id == current_conversation_id {
-                                        let current_length = aichats::get_messages_length(current_conversation_id).unwrap_or(0);
+                                        let current_length = aichats::get_messages_length(current_conversation_id).await.unwrap_or(0);
                                         item.set_length(current_length);
                                         break;
                                     }
@@ -246,13 +253,19 @@ impl ConversationsList {
         }
 
         // Add existing conversations from the database
-        if let Ok(existing_conversations) = aichats::get_all_conversations() {
-            for conversation in existing_conversations {
-                let item = ConversationItem::new(conversation);
-                me.root.append(&item.root);
-                me.conversations.borrow_mut().push(item);
+        gtk4::glib::spawn_future_local({
+            let root = me.root.clone();
+            let conversations = me.conversations.clone();
+            async move {
+                if let Ok(existing_conversations) = aichats::get_all_conversations().await {
+                    for conversation in existing_conversations {
+                        let item = ConversationItem::new(conversation).await;
+                        root.append(&item.root);
+                        conversations.borrow_mut().push(item);
+                    }
+                }
             }
-        }
+        });
 
         me
     }

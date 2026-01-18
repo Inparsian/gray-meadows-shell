@@ -20,16 +20,16 @@ mod session;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::sync::{LazyLock, Mutex, OnceLock};
+use std::sync::LazyLock;
 use futures_signals::signal::Mutable;
 use gtk4::prelude::*;
 use libadwaita::Application;
-use rusqlite::Connection;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::time::ChronoLocal;
 
+use self::sql::actor::SqlActor;
 use self::widgets::{bar, windows::{self, GmsWindow}, notifications::NotificationsWindow};
-use self::utils::{display, process, filesystem};
+use self::utils::{display, process};
 
 const FLOAT_TOLERANCE: f64 = 0.0001;
 
@@ -64,7 +64,7 @@ pub static APP: LazyLock<GrayMeadowsGlobal> = LazyLock::new(|| GrayMeadowsGlobal
     do_not_disturb: Mutable::new(false),
 });
 
-pub static SQL_CONNECTION: OnceLock<Mutex<Connection>> = OnceLock::new();
+pub static SQL_ACTOR: LazyLock<SqlActor> = LazyLock::new(SqlActor::default);
 
 pub static USERNAME: LazyLock<String> = LazyLock::new(|| {
     std::env::var("USER").unwrap_or_else(|_| "unknown".to_owned())
@@ -136,19 +136,8 @@ async fn main() {
                 }
             });
 
-            match sql::establish_connection() {
-                Ok(connection) => {
-                    let _ = SQL_CONNECTION.set(Mutex::new(connection));
-                    info!(path = %format!("{}/sqlite.db", filesystem::get_config_directory()), "SQLite connection established");
-                    
-                    APP.do_not_disturb.set(sql::wrappers::state::get_do_not_disturb().unwrap_or(false));
-                },
-                
-                Err(e) => {
-                    error!(?e, "Failed to establish SQLite connection");
-                    std::process::exit(1);
-                },
-            }
+            sql::init_database().await;
+            APP.do_not_disturb.set(sql::wrappers::state::get_do_not_disturb().await.unwrap_or(false));
 
             let _ = gtk4::init();
 
@@ -168,7 +157,7 @@ async fn main() {
             scss::bundle_apply_scss();
             scss::watch_scss();
 
-            singletons::activate_all();
+            singletons::activate_all().await;
             windows::listen_for_ipc_messages();
             bar::listen_for_ipc_messages();
             config::watch();

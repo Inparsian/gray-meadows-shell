@@ -72,7 +72,7 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
         if !ai::is_currently_in_cycle()
             && let Some(conversation_id) = ai::current_conversation_id()
         {
-            ai::conversation::clear_conversation(conversation_id);
+            gtk4::glib::spawn_future_local(ai::conversation::clear_conversation(conversation_id));
         }
     });
     conversation_controls.append(&clear_conversation_button);
@@ -296,7 +296,7 @@ pub fn conversations_ui(stack: &gtk4::Stack) -> gtk4::Box {
 
     let new_conversation_button = conversation_ui_header_button("add", "New Conversation");
     new_conversation_button.connect_clicked(move |_| {
-        ai::conversation::add_conversation("Untitled");
+        gtk4::glib::spawn_future_local(ai::conversation::add_conversation("Untitled"));
     });
     header.append(&new_conversation_button);
 

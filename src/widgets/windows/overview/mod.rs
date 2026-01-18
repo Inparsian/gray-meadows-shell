@@ -3,9 +3,12 @@ mod list;
 mod modules;
 mod windows;
 
-use std::{cell::RefCell, rc::Rc, sync::LazyLock};
+use std::cell::RefCell;
+use std::rc::Rc;
+use std::sync::LazyLock;
 use freedesktop_desktop_entry::get_languages_from_env;
 use gtk4::prelude::*;
+use gtk4::glib::{self, clone};
 use regex::Regex;
 use urlencoding::encode;
 
@@ -47,7 +50,7 @@ fn generate_entry_box_icon_stack() -> gtk4::Stack {
     stack
 }
 
-fn generate_search_results(query: &str) -> Vec<OverviewSearchItem> {
+async fn generate_search_results(query: &str) -> Vec<OverviewSearchItem> {
     let mut results = Vec::new();
 
     if MODULES.iter().any(|module| validate_input(*module, query)) {
@@ -63,7 +66,7 @@ fn generate_search_results(query: &str) -> Vec<OverviewSearchItem> {
     } else {
         // Filter and weigh the applications based on the query
         let locales = get_languages_from_env();
-        let desktops = apps::query_desktops(query);
+        let desktops = apps::query_desktops(query).await;
         for i in 0..8 {
             if let Some(entry) = desktops.get(i) {
                 let entry = &entry.entry;
@@ -164,81 +167,6 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
                     search_results.borrow().get_widget().first_child().map(|child| child.activate());
                 }
             },
-
-            connect_changed: {
-                let entry_box = entry_box.clone();
-                let entry_prompt_revealer = entry_prompt_revealer.clone();
-                let search_results = search_results.clone();
-                let search_results_revealer = search_results_revealer.clone();
-                let windows_revealer = windows_revealer.clone();
-
-                move |entry| {
-                    if entry.text().is_empty() {
-                        entry_prompt_revealer.set_reveal_child(true);
-                        windows_revealer.add_css_class("revealed");
-                        windows_revealer.set_reveal_child(true);
-                        search_results_revealer.remove_css_class("revealed");
-                        search_results_revealer.set_reveal_child(false);
-                        entry_box.style_context().remove_class("entry-extended");
-                        entry_box_icon.set_visible_child_name("search");
-                    } else {
-                        entry_prompt_revealer.set_reveal_child(false);
-                        windows_revealer.remove_css_class("revealed");
-                        windows_revealer.set_reveal_child(false);
-                        search_results_revealer.add_css_class("revealed");
-                        search_results_revealer.set_reveal_child(true);
-                        entry_box.style_context().add_class("entry-extended");
-
-                        let results = generate_search_results(&entry.text());
-
-                        // Insert the new items into the search results list
-                        let mut search_results_mut = search_results.borrow_mut();
-                        for (i, item) in results.iter().enumerate() {
-                            if let Some(index) = search_results_mut.items.iter().position(|r| r.smart_compare(item)) {
-                                let existing_item = &mut search_results_mut.items[index];
-                                if item.exact_id_comp_has() {
-                                    if item.query.is_some() && existing_item.query != item.query {
-                                        existing_item.query = item.query.clone();
-                                        existing_item.set_title_markup();
-                                    }
-                                } else {
-                                    existing_item.set_title_label(&item.title);
-
-                                    if let Ok(action) = item.action.try_borrow() {
-                                        existing_item.set_action(action.clone());
-                                    }
-                                }
-
-                                // Move this item if its position has changed
-                                if index != i {
-                                    search_results_mut.move_item(index, i);
-                                }
-                            } else {
-                                search_results_mut.insert(item, i);
-                            }
-                        }
-
-                        // Remove items that are not in results
-                        for (i, item) in search_results_mut.items.clone().iter().enumerate().rev() {
-                            if !results.iter().any(|r| r.smart_compare(item)) {
-                                search_results_mut.remove(i);
-                            }
-                        }
-
-                        // Update the entry box icon if any module extensions matched
-                        let mut matched_icon = "search";
-                        for module in MODULES.iter() {
-                            if validate_input(*module, &entry.text()) {
-                                matched_icon = module.icon();
-                                break;
-                            }
-                        }
-                        entry_box_icon.set_visible_child_name(matched_icon);
-
-                        search_results_mut.lock();
-                    }
-                }
-            }
         },
 
         entry_overlay = gtk4::Overlay {
@@ -353,7 +281,8 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
         }
     }));
 
-    windows_box.add_controller(gesture::on_key_press({
+    windows_box.add_controller(gesture::on_key_press(clone!(
+        #[weak] entry,
         move |val, _| {
             if ALPHANUMERIC_SYMBOLIC_REGEX.is_match(&val.to_unicode().unwrap_or_default().to_string()) {
                 entry.grab_focus_without_selecting();
@@ -364,13 +293,97 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
                 entry.select_region(text.len() as i32, text.len() as i32);
             }
         }
-    }));
+    )));
+    
+    entry.connect_changed(move |entry| {
+        gtk4::glib::spawn_future_local(clone!(
+            #[weak] entry,
+            #[weak] entry_prompt_revealer,
+            #[weak] windows_revealer,
+            #[weak] search_results,
+            #[weak] search_results_revealer,
+            #[weak] entry_box,
+            #[weak] entry_box_icon,
+            async move {
+                if entry.text().is_empty() {
+                    entry_prompt_revealer.set_reveal_child(true);
+                    windows_revealer.add_css_class("revealed");
+                    windows_revealer.set_reveal_child(true);
+                    search_results_revealer.remove_css_class("revealed");
+                    search_results_revealer.set_reveal_child(false);
+                    entry_box.style_context().remove_class("entry-extended");
+                    entry_box_icon.set_visible_child_name("search");
+                } else {
+                    entry_prompt_revealer.set_reveal_child(false);
+                    windows_revealer.remove_css_class("revealed");
+                    windows_revealer.set_reveal_child(false);
+                    search_results_revealer.add_css_class("revealed");
+                    search_results_revealer.set_reveal_child(true);
+                    entry_box.style_context().add_class("entry-extended");
+    
+                    let results = generate_search_results(&entry.text()).await;
+    
+                    // Insert the new items into the search results list
+                    let mut search_results_mut = search_results.borrow_mut();
+                    for (i, item) in results.iter().enumerate() {
+                        if let Some(index) = search_results_mut.items.iter().position(|r| r.smart_compare(item)) {
+                            let existing_item = &mut search_results_mut.items[index];
+                            if item.exact_id_comp_has() {
+                                if item.query.is_some() && existing_item.query != item.query {
+                                    existing_item.query = item.query.clone();
+                                    existing_item.set_title_markup();
+                                }
+                            } else {
+                                existing_item.set_title_label(&item.title);
+    
+                                if let Ok(action) = item.action.try_borrow() {
+                                    existing_item.set_action(action.clone());
+                                }
+                            }
+    
+                            // Move this item if its position has changed
+                            if index != i {
+                                search_results_mut.move_item(index, i);
+                            }
+                        } else {
+                            search_results_mut.insert(item, i);
+                        }
+                    }
+    
+                    // Remove items that are not in results
+                    for (i, item) in search_results_mut.items.clone().iter().enumerate().rev() {
+                        if !results.iter().any(|r| r.smart_compare(item)) {
+                            search_results_mut.remove(i);
+                        }
+                    }
+    
+                    // Update the entry box icon if any module extensions matched
+                    let mut matched_icon = "search";
+                    for module in MODULES.iter() {
+                        if validate_input(*module, &entry.text()) {
+                            matched_icon = module.icon();
+                            break;
+                        }
+                    }
+                    entry_box_icon.set_visible_child_name(matched_icon);
+    
+                    search_results_mut.lock();
+                }
+            }
+        ));
+    });
 
     ipc::listen_for_messages_local(move |message| {
         if message.as_str() == "update_overview_windows" {
             // Tell the windows to update their contents
-            frequent_window.update();
-            recent_window.update();
+            gtk4::glib::spawn_future_local(clone!(
+                #[strong] frequent_window,
+                #[strong] recent_window,
+                async move {
+                    frequent_window.update().await;
+                    recent_window.update().await;
+                }
+            ));
         }
     });
 

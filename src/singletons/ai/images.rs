@@ -34,9 +34,9 @@ pub fn load_image_data(uuid: &str) -> Result<String, anyhow::Error> {
     Ok(base64)
 }
 
-pub fn collect_garbage() {
+pub async fn collect_garbage() {
     let images_dir = get_ai_images_directory();
-    let used_uuids = aichats::get_all_image_item_uuids().unwrap_or_default();
+    let used_uuids = aichats::get_all_image_item_uuids().await.unwrap_or_default();
     let used_set: HashSet<String> = used_uuids.into_iter()
         .map(|uuid| format!("{}.png", uuid))
         .collect();

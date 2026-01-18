@@ -13,7 +13,7 @@ pub mod clipboard;
 pub mod ai;
 pub mod weather;
 
-pub fn activate_all() {
+pub async fn activate_all() {
     date_time::activate();
     mpris::activate();
     sysstats::activate();
@@ -26,6 +26,6 @@ pub fn activate_all() {
     notifications::activate();
     //networkmanager::activate();
     clipboard::activate();
-    ai::activate();
+    ai::activate().await;
     weather::activate();
 }

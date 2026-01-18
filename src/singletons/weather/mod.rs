@@ -111,7 +111,7 @@ impl Weather {
         {
             Ok(response) => match response.json::<OpenMeteoResponse>().await {
                 Ok(weather_data) => {
-                    let _ = set_weather_forecast(&weather_data);
+                    let _ = set_weather_forecast(&weather_data).await;
                     self.last_response.set(Some(weather_data));
                 }
 
@@ -127,8 +127,8 @@ impl Weather {
     }
 
     /// Returns the last cached forecast's age in seconds, if there was a hit.
-    pub fn cache_check(&self) -> Option<i64> {
-        if let Ok((fetched_at, forecast)) = get_weather_forecast() {
+    pub async fn cache_check(&self) -> Option<i64> {
+        if let Ok((fetched_at, forecast)) = get_weather_forecast().await {
             let now = chrono::Utc::now().naive_utc();
             let elapsed = now.signed_duration_since(fetched_at).num_seconds();
             debug!(elapsed, "Weather cache hit");
@@ -196,7 +196,7 @@ pub fn activate() {
         }
 
         let clamped_interval = weather_config.refresh_interval.max(600);
-        if let Some(elapsed) = WEATHER.cache_check() && elapsed < clamped_interval as i64 {
+        if let Some(elapsed) = WEATHER.cache_check().await && elapsed < clamped_interval as i64 {
             let sleep_duration = clamped_interval as i64 - elapsed;
             info!(sleep_duration, "Weather cache valid, sleeping until next refresh");
             tokio::time::sleep(std::time::Duration::from_secs(sleep_duration as u64)).await;

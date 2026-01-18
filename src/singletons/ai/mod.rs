@@ -52,7 +52,7 @@ pub fn current_conversation_id() -> Option<i64> {
     conversation.as_ref().map(|conv| conv.id)
 }
 
-fn write_item_payload(payload: AiConversationItemPayload) -> i64 {
+async fn write_item_payload(payload: AiConversationItemPayload) -> i64 {
     let Some(session) = SESSION.get() else {
         warn!("AI session not initialized");
         return 0;
@@ -65,7 +65,7 @@ fn write_item_payload(payload: AiConversationItemPayload) -> i64 {
         timestamp: Some(chrono::Local::now().naive_local().to_string()),
     };
 
-    match aichats::add_item(&item) {
+    match aichats::add_item(&item).await {
         Ok(id) => {
             item.id = id;
             session.items.write().unwrap().push(item);
@@ -79,15 +79,14 @@ fn write_item_payload(payload: AiConversationItemPayload) -> i64 {
     }
 }
 
-pub fn trim_items(down_to_item_id: i64) {
+pub async fn trim_items(down_to_item_id: i64) {
     if let Some(session) = SESSION.get() {
-        let conversation = session.conversation.read().unwrap();
-        let Some(conversation) = &*conversation else {
+        let Some(conversation) = session.conversation.read().unwrap().clone() else {
             warn!("AI conversation not initialized");
             return;
         };
 
-        if let Err(err) = aichats::trim_items(conversation.id, down_to_item_id) {
+        if let Err(err) = aichats::trim_items(conversation.id, down_to_item_id).await {
             error!(%err, "Failed to trim AI chat items in database");
             return;
         }
@@ -104,13 +103,13 @@ pub fn trim_items(down_to_item_id: i64) {
     }
 }
 
-pub fn activate() {
-    let app_config = read_config();
+pub async fn activate() {
+    let app_config = read_config().clone();
     if !app_config.ai.enabled || (app_config.ai.openai.api_key.is_empty() && app_config.ai.gemini.api_key.is_empty()) {
         return;
     }
 
-    aichats::ensure_default_conversation().unwrap_or_else(|err| {
+    aichats::ensure_default_conversation().await.unwrap_or_else(|err| {
         error!(%err, "Failed to ensure default AI chat conversation");
     });
 
@@ -124,13 +123,13 @@ pub fn activate() {
     let _ = SESSION.set(session);
     let _ = CHANNEL.set(BroadcastChannel::new(100));
 
-    if let Ok(Some(id)) = aichats::get_state_conversation_id() {
-        conversation::load_conversation(id);
+    if let Ok(Some(id)) = aichats::get_state_conversation_id().await {
+        conversation::load_conversation(id).await;
     } else {
-        conversation::load_first_conversation();
+        conversation::load_first_conversation().await;
     }
 
-    images::collect_garbage();
+    images::collect_garbage().await;
 }
 
 pub async fn start_request_cycle() {
@@ -177,7 +176,7 @@ pub async fn start_request_cycle() {
         match service.make_stream_request(items, channel, stop_cycle_flag).await {
             Ok(result) => {
                 for (index, item) in result.items.iter().enumerate() {
-                    let id = write_item_payload(item.clone());
+                    let id = write_item_payload(item.clone()).await;
                     if index == 0 {
                         channel.send(AiChannelMessage::StreamComplete(id)).await;
                     }
@@ -213,7 +212,7 @@ pub async fn start_request_cycle() {
                     .collect::<Vec<_>>();
 
                 for payload in function_call_outputs {
-                    write_item_payload(payload);
+                    write_item_payload(payload).await;
                 }
 
                 // If more data should not be requested, break the cycle
@@ -240,7 +239,7 @@ pub async fn start_request_cycle() {
     *currently_in_cycle = false;
 }
 
-pub fn send_user_message(message: &str) -> i64 {
+pub async fn send_user_message(message: &str) -> i64 {
     if SESSION.get().is_none() {
         warn!("AI session not initialized");
         return 0;
@@ -251,10 +250,10 @@ pub fn send_user_message(message: &str) -> i64 {
         role: "user".to_owned(),
         content: message.to_owned(),
         thought_signature: None,
-    })
+    }).await
 }
 
-pub fn send_user_image(uuid: &str) -> i64 {
+pub async fn send_user_image(uuid: &str) -> i64 {
     if SESSION.get().is_none() {
         warn!("AI session not initialized");
         return 0;
@@ -262,5 +261,5 @@ pub fn send_user_image(uuid: &str) -> i64 {
 
     write_item_payload(AiConversationItemPayload::Image {
         uuid: uuid.to_owned(),
-    })
+    }).await
 }

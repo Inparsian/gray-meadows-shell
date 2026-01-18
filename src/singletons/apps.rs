@@ -20,7 +20,7 @@ pub fn activate() {
     }
 }
 
-pub fn calculate_weight(entry: &DesktopEntry, query: &str) -> f32 {
+pub async fn calculate_weight(entry: &DesktopEntry, query: &str) -> f32 {
     // Fixed weights:
     // 1. Exact match (10000)
     // 2. Lazy match, contains all characters, length match (500)
@@ -60,7 +60,7 @@ pub fn calculate_weight(entry: &DesktopEntry, query: &str) -> f32 {
 
     // How many times has this entry been run?
     if weight > 0.0
-        && let Ok(runs) = commands::get_runs(entry.exec().unwrap_or_default())
+        && let Ok(runs) = commands::get_runs(entry.exec().unwrap_or_default()).await
         && runs > 0
     {
         weight *= f32::max(1.25, runs as f32 / 4.0);
@@ -81,16 +81,19 @@ pub fn get_from_command(command: &str) -> Option<DesktopEntry> {
     None
 }
 
-pub fn query_desktops(query: &str) -> Vec<WeightedDesktopEntry> {
-    let desktops = DESKTOPS.lock().unwrap();
+pub async fn query_desktops(query: &str) -> Vec<WeightedDesktopEntry> {
+    let desktops = DESKTOPS.lock().unwrap().clone();
 
-    let mut weighted = desktops.iter()
-        .map(|entry| WeightedDesktopEntry {
-            entry: entry.clone(),
-            weight: calculate_weight(entry, query)
-        })
-        .filter(|entry| entry.weight > 0.0)
-        .collect::<Vec<_>>();
+    let mut weighted = Vec::new();
+    for desktop in &desktops {
+        let weight = calculate_weight(desktop, query).await;
+        if weight > 0.0 {
+            weighted.push(WeightedDesktopEntry {
+                entry: desktop.clone(),
+                weight,
+            });
+        }
+    }
 
     weighted.sort_by(|a, b| b.weight.partial_cmp(&a.weight).unwrap_or(std::cmp::Ordering::Equal));
 
@@ -117,7 +120,12 @@ pub fn refresh_desktops() {
 pub fn launch_and_track(command: &str) {
     process::launch(command);
 
-    let _ = commands::increment_runs(command);
+    gtk4::glib::spawn_future_local({
+        let command = command.to_owned();
+        async move {
+            let _ = commands::increment_runs(&command).await;
+        }
+    });
 }
 
 pub fn watch_desktops(path: &PathBuf) {

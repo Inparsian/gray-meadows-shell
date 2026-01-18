@@ -56,61 +56,71 @@ impl ChatInput {
             min_allocation_height: 0,
         });
         
-        let send_current_input = Rc::new({
+        let send_current_input = {
             let chat = chat.clone();
             let scroll_to_bottom = scroll_to_bottom.clone();
             let input = input.clone();
             let input_attachments = input_attachments.clone();
             move || {
-                let buffer = input.buffer();
-                let text = buffer.text(
-                    &buffer.start_iter(),
-                    &buffer.end_iter(),
-                    false
-                ).to_string();
+                let chat = chat.clone();
+                let scroll_to_bottom = scroll_to_bottom.clone();
+                let input = input.clone();
+                let input_attachments = input_attachments.clone();
+                async move {
+                    let buffer = input.buffer();
+                    let text = buffer.text(
+                        &buffer.start_iter(),
+                        &buffer.end_iter(),
+                        false
+                    ).to_string();
 
-                if ai::is_currently_in_cycle() {
-                    if let Some(session) = SESSION.get()
-                        && let Ok(mut stop_flag) = session.stop_cycle_flag.write()
-                    {
-                        *stop_flag = true;
-                    }
-                } else if input_attachments.get_attachments().is_empty() || input_attachments.all_ready() {
-                    let text_sent = (!text.is_empty()).then(|| { let id = ai::send_user_message(&text);
-                        let message = ChatMessage::new(
-                            ChatRole::User,
-                            Some(text),
-                        );
-                        message.set_id(id);
-                        chat.add_message(message);
-
-                        input.buffer().set_text("");
-                        id
-                    });
-
-                    let ready_attachments = input_attachments.get_attachments()
-                        .into_iter()
-                        .flatten()
-                        .collect::<Vec<_>>();
-
-                    for attachment in &ready_attachments {
-                        if let Ok(path) = cache_image_data(&attachment.base64) {
-                            let id = ai::send_user_image(&path);
-                            chat.assert_last_message_is_role(ChatRole::User, text_sent.or(Some(id)));
-                            chat.append_image_to_latest_message(&path);
+                    if ai::is_currently_in_cycle() {
+                        if let Some(session) = SESSION.get()
+                            && let Ok(mut stop_flag) = session.stop_cycle_flag.write()
+                        {
+                            *stop_flag = true;
                         }
-                    }
-
-                    input_attachments.clear();
-
-                    if (text_sent.is_some() && input_attachments.get_attachments().is_empty()) || !ready_attachments.is_empty() {
-                        scroll_to_bottom();
-
-                        tokio::spawn(ai::start_request_cycle());
+                    } else if input_attachments.get_attachments().is_empty() || input_attachments.all_ready() {
+                        #[allow(clippy::if_then_some_else_none)]
+                        let text_sent = if !text.is_empty() {
+                            let id = ai::send_user_message(&text).await;
+                            let message = ChatMessage::new(
+                                ChatRole::User,
+                                Some(text),
+                            );
+                            message.set_id(id);
+                            chat.add_message(message);
+    
+                            input.buffer().set_text("");
+                            Some(id)
+                        } else {
+                            None
+                        };
+    
+                        let ready_attachments = input_attachments.get_attachments()
+                            .into_iter()
+                            .flatten()
+                            .collect::<Vec<_>>();
+    
+                        for attachment in &ready_attachments {
+                            if let Ok(path) = cache_image_data(&attachment.base64) {
+                                let id = ai::send_user_image(&path).await;
+                                chat.assert_last_message_is_role(ChatRole::User, text_sent.or(Some(id)));
+                                chat.append_image_to_latest_message(&path);
+                            }
+                        }
+    
+                        input_attachments.clear();
+    
+                        if (text_sent.is_some() && input_attachments.get_attachments().is_empty()) || !ready_attachments.is_empty() {
+                            scroll_to_bottom();
+    
+                            tokio::spawn(ai::start_request_cycle());
+                        }
                     }
                 }
             }
-        });
+        };
 
         input.set_wrap_mode(gtk4::WrapMode::WordChar);
         input.set_css_classes(&["ai-chat-input"]);
@@ -153,10 +163,10 @@ impl ChatInput {
                 if (key == gtk4::gdk::Key::Return || key == gtk4::gdk::Key::KP_Enter)
                     && !state.contains(gtk4::gdk::ModifierType::SHIFT_MASK)
                 {
-                    send_current_input();
-                    gdk4::glib::Propagation::Stop
+                    gtk4::glib::spawn_future_local(send_current_input());
+                    gtk4::glib::Propagation::Stop
                 } else {
-                    gdk4::glib::Propagation::Proceed
+                    gtk4::glib::Propagation::Proceed
                 }
             }
         });
@@ -240,7 +250,9 @@ impl ChatInput {
         input_send_button.set_halign(gtk4::Align::End);
         input_send_button.set_hexpand(true);
         input_send_button.set_valign(gtk4::Align::Start);
-        input_send_button.connect_clicked(move |_| send_current_input());
+        input_send_button.connect_clicked(move |_| {
+            gtk4::glib::spawn_future_local(send_current_input());
+        });
         input_controls_box.append(&input_send_button);
 
         let input_send_button_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
