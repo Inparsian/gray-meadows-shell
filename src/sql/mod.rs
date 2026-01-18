@@ -1,6 +1,6 @@
 pub mod wrappers;
 
-use sqlite::Connection;
+use rusqlite::Connection;
 
 pub fn establish_connection() -> Result<Connection, Box<dyn std::error::Error>> {
     let state_dir = crate::utils::filesystem::get_local_state_directory();
@@ -18,20 +18,20 @@ pub fn establish_connection() -> Result<Connection, Box<dyn std::error::Error>> 
             id INTEGER PRIMARY KEY CHECK (id = 1),
             do_not_disturb INTEGER NOT NULL DEFAULT 0
         )
-    ")?;
+    ", [])?;
     
     connection.execute("
         INSERT OR IGNORE INTO state (id, do_not_disturb) 
         VALUES (1, 0)
-    ")?;
+    ", [])?;
     
     connection.execute("
         CREATE TABLE IF NOT EXISTS desktop_runs (
-            command TEXT NOT NULL,
+            command TEXT PRIMARY KEY,
             runs INTEGER NOT NULL DEFAULT 0,
             last_run TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
-    ")?;
+    ", [])?;
 
     connection.execute("
         CREATE TABLE IF NOT EXISTS timers (
@@ -39,7 +39,7 @@ pub fn establish_connection() -> Result<Connection, Box<dyn std::error::Error>> 
             duration INTEGER NOT NULL,
             description TEXT
         )
-    ")?;
+    ", [])?;
 
     // Store the JSON payloads, as they contain a lot of nested data returned
     // by the OpenMateo and NWS APIs.
@@ -50,7 +50,7 @@ pub fn establish_connection() -> Result<Connection, Box<dyn std::error::Error>> 
             fetched_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             payload TEXT NOT NULL
         )
-    ")?;
+    ", [])?;
 
     connection.execute("
         CREATE TABLE IF NOT EXISTS weather_alerts (
@@ -58,7 +58,7 @@ pub fn establish_connection() -> Result<Connection, Box<dyn std::error::Error>> 
             fetched_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             payload TEXT NOT NULL
         )
-    ")?;
+    ", [])?;
 
     // AI chat state
     connection.execute("
@@ -68,12 +68,12 @@ pub fn establish_connection() -> Result<Connection, Box<dyn std::error::Error>> 
             last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(current_conversation_id) REFERENCES aichat_conversations(id) ON DELETE SET NULL
         )
-    ")?;
+    ", [])?;
 
     connection.execute("
         INSERT OR IGNORE INTO aichat_state (id, current_conversation_id) 
         VALUES (1, NULL)
-    ")?;
+    ", [])?;
 
     // Tables for AI chat conversations
     connection.execute("
@@ -82,7 +82,7 @@ pub fn establish_connection() -> Result<Connection, Box<dyn std::error::Error>> 
             title TEXT NOT NULL,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
-    ")?;
+    ", [])?;
 
     // Items will be a catch-all for messages, reasoning, function calls, etc.
     // The Responses API is very different from the Chat Completions API and introduces
@@ -96,17 +96,7 @@ pub fn establish_connection() -> Result<Connection, Box<dyn std::error::Error>> 
             payload TEXT NOT NULL,
             FOREIGN KEY(conversation_id) REFERENCES aichat_conversations(id) ON DELETE CASCADE
         )
-    ")?;
+    ", [])?;
 
     Ok(connection)
-}
-
-pub fn last_insert_rowid(connection: &Connection) -> Result<i64, Box<dyn std::error::Error>> {
-    let mut cursor = connection.prepare("SELECT last_insert_rowid()")?;
-    let rowid = if cursor.next()? == sqlite::State::Row {
-        cursor.read::<i64, _>(0)?
-    } else {
-        0
-    };
-    Ok(rowid)
 }

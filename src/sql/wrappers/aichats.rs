@@ -1,33 +1,26 @@
 use crate::SQL_CONNECTION;
 use crate::singletons::ai::types::{AiConversation, AiConversationItem, AiConversationItemPayload};
-use super::super::last_insert_rowid;
 
 /// Gets the current conversation ID stored in the AI chat state.
 pub fn get_state_conversation_id() -> Result<Option<i64>, Box<dyn std::error::Error>> {
     if let Some(connection) = SQL_CONNECTION.get() {
         let connection = connection.lock()?;
-        let mut cursor = connection.prepare("SELECT current_conversation_id FROM aichat_state WHERE id = 1")?;
-        if cursor.next()? == sqlite::State::Row {
-            let conversation_id = cursor.read::<Option<i64>, _>(0)?;
-            return Ok(conversation_id);
+        match connection.query_row("SELECT current_conversation_id FROM aichat_state WHERE id = 1", [], |row| row.get(0)) {
+            Ok(row) => Ok(row),
+            Err(e) => Err(e.into()),
         }
+    } else {
+        Err("No database connection available".into())
     }
-
-    Err("No database connection available".into())
 }
 
 /// Sets the current conversation ID in the AI chat state.
 pub fn set_state_conversation_id(conversation_id: Option<i64>) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(connection) = SQL_CONNECTION.get() {
-        let connection = connection.lock()?;
-        let statement = conversation_id.map_or_else(
-            || "UPDATE aichat_state SET current_conversation_id = NULL WHERE id = 1".to_owned(), 
-            |id| format!(
-                "UPDATE aichat_state SET current_conversation_id = {} WHERE id = 1",
-                id
-            )
-        );
-        connection.execute(&statement)?;
+        connection.lock()?.execute(
+            "UPDATE aichat_state SET current_conversation_id = ?1 WHERE id = 1",
+            [conversation_id],
+        )?;
         Ok(())
     } else {
         Err("No database connection available".into())
@@ -38,13 +31,14 @@ pub fn set_state_conversation_id(conversation_id: Option<i64>) -> Result<(), Box
 pub fn ensure_default_conversation() -> Result<(), Box<dyn std::error::Error>> {
     if let Some(connection) = SQL_CONNECTION.get() {
         let connection = connection.lock()?;
-        let mut cursor = connection.prepare("SELECT COUNT(*) FROM aichat_conversations")?;
-        if cursor.next()? == sqlite::State::Row {
-            let count = cursor.read::<i64, _>(0)?;
-            if count == 0 {
-                connection.execute("INSERT INTO aichat_conversations (title) VALUES ('Default Conversation')")?;
-            }
+        let count: i64 = connection.query_row("SELECT COUNT(*) FROM aichat_conversations", [], |row| row.get(0))?;
+        if count == 0 {
+            connection.execute(
+                "INSERT INTO aichat_conversations (title) VALUES (?1)",
+                ["Default Conversation"],
+            )?;
         }
+        
         Ok(())
     } else {
         Err("No database connection available".into())
@@ -55,14 +49,11 @@ pub fn ensure_default_conversation() -> Result<(), Box<dyn std::error::Error>> {
 pub fn add_item(item: &AiConversationItem) -> Result<i64, Box<dyn std::error::Error>> {
     if let Some(connection) = SQL_CONNECTION.get() {
         let connection = connection.lock()?;
-        let statement = format!(
-            "INSERT INTO aichat_items (conversation_id, payload) \
-             VALUES ({}, '{}')",
-            item.conversation_id,
-            serde_json::to_string(&item.payload)?.replace('\'', "''")
-        );
-        connection.execute(&statement)?;
-        last_insert_rowid(&connection)
+        connection.execute(
+            "INSERT INTO aichat_items (conversation_id, payload) VALUES (?1, ?2)",
+            (item.conversation_id, serde_json::to_string(&item.payload)?),
+        )?;
+        Ok(connection.last_insert_rowid())
     } else {
         Err("No database connection available".into())
     }
@@ -71,12 +62,10 @@ pub fn add_item(item: &AiConversationItem) -> Result<i64, Box<dyn std::error::Er
 /// Removes items down to the specified item ID in a conversation.
 pub fn trim_items(conversation_id: i64, down_to_item_id: i64) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(connection) = SQL_CONNECTION.get() {
-        let connection = connection.lock()?;
-        let statement = format!(
-            "DELETE FROM aichat_items WHERE conversation_id = {} AND id >= {}",
-            conversation_id, down_to_item_id
-        );
-        connection.execute(&statement)?;
+        connection.lock()?.execute(
+            "DELETE FROM aichat_items WHERE conversation_id = ?1 AND id >= ?2",
+            (conversation_id, down_to_item_id)
+        )?;
         Ok(())
     } else {
         Err("No database connection available".into())
@@ -87,12 +76,11 @@ pub fn trim_items(conversation_id: i64, down_to_item_id: i64) -> Result<(), Box<
 pub fn add_conversation(title: &str) -> Result<i64, Box<dyn std::error::Error>> {
     if let Some(connection) = SQL_CONNECTION.get() {
         let connection = connection.lock()?;
-        let statement = format!(
-            "INSERT INTO aichat_conversations (title) VALUES ('{}')",
-            title.replace('\'', "''")
-        );
-        connection.execute(&statement)?;
-        Ok(last_insert_rowid(&connection)?)
+        connection.execute(
+            "INSERT INTO aichat_conversations (title) VALUES (?1)",
+            [title],
+        )?;
+        Ok(connection.last_insert_rowid())
     } else {
         Err("No database connection available".into())
     }
@@ -102,16 +90,8 @@ pub fn add_conversation(title: &str) -> Result<i64, Box<dyn std::error::Error>> 
 pub fn delete_conversation(conversation_id: i64) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(connection) = SQL_CONNECTION.get() {
         let connection = connection.lock()?;
-        let statement = format!(
-            "DELETE FROM aichat_conversations WHERE id = {}",
-            conversation_id
-        );
-        connection.execute(&statement)?;
-        let item_statement = format!(
-            "DELETE FROM aichat_items WHERE conversation_id = {}",
-            conversation_id
-        );
-        connection.execute(&item_statement)?;
+        connection.execute("DELETE FROM aichat_conversations WHERE id = ?1", [conversation_id])?;
+        connection.execute("DELETE FROM aichat_items WHERE conversation_id = ?1", [conversation_id])?;
         Ok(())
     } else {
         Err("No database connection available".into())
@@ -121,13 +101,10 @@ pub fn delete_conversation(conversation_id: i64) -> Result<(), Box<dyn std::erro
 /// Renames an existing AI chat conversation.
 pub fn rename_conversation(conversation_id: i64, new_title: &str) -> Result<(), Box<dyn std::error::Error>> {
     if let Some(connection) = SQL_CONNECTION.get() {
-        let connection = connection.lock()?;
-        let statement = format!(
-            "UPDATE aichat_conversations SET title = '{}' WHERE id = {}",
-            new_title.replace('\'', "''"),
-            conversation_id
-        );
-        connection.execute(&statement)?;
+        connection.lock()?.execute(
+            "UPDATE aichat_conversations SET title = ?1 WHERE id = ?2",
+            (new_title, conversation_id)
+        )?;
         Ok(())
     } else {
         Err("No database connection available".into())
@@ -138,36 +115,31 @@ pub fn rename_conversation(conversation_id: i64, new_title: &str) -> Result<(), 
 pub fn get_conversation(conversation_id: i64) -> Result<AiConversation, Box<dyn std::error::Error>> {
     if let Some(connection) = SQL_CONNECTION.get() {
         let connection = connection.lock()?;
-        let statement = format!(
-            "SELECT id, title FROM aichat_conversations WHERE id = {}",
-            conversation_id
-        );
-        let mut cursor = connection.prepare(&statement)?;
-        if cursor.next()? == sqlite::State::Row {
-            let conversation = AiConversation {
-                id: cursor.read::<i64, _>(0)?,
-                title: cursor.read::<String, _>(1)?,
-            };
-            return Ok(conversation);
+        match connection.query_row(
+            "SELECT id, title FROM aichat_conversations WHERE id = ?1", [conversation_id],
+            |row| Ok(AiConversation {
+                id: row.get(0)?,
+                title: row.get(1)?
+            })
+        ) {
+            Ok(row) => Ok(row),
+            Err(e) => Err(e.into()),
         }
+    } else {
+        Err("Conversation not found".into())
     }
-
-    Err("Conversation not found".into())
 }
 
 /// Retrieves all AI chat conversations.
 pub fn get_all_conversations() -> Result<Vec<AiConversation>, Box<dyn std::error::Error>> {
-    let mut conversations = Vec::new();
     if let Some(connection) = SQL_CONNECTION.get() {
         let connection = connection.lock()?;
-        let mut cursor = connection.prepare("SELECT id, title FROM aichat_conversations ORDER BY created_at ASC")?;
-        while cursor.next()? == sqlite::State::Row {
-            let conversation = AiConversation {
-                id: cursor.read::<i64, _>(0)?,
-                title: cursor.read::<String, _>(1)?,
-            };
-            conversations.push(conversation);
-        }
+        let mut statement = connection.prepare("SELECT id, title FROM aichat_conversations ORDER BY created_at ASC")?;
+        let conversations = statement.query_map([], |row| Ok(AiConversation {
+            id: row.get(0)?,
+            title: row.get(1)?
+        }))?.collect::<Result<Vec<_>, _>>()?;
+        
         Ok(conversations)
     } else {
         Err("No database connection available".into())
@@ -176,23 +148,18 @@ pub fn get_all_conversations() -> Result<Vec<AiConversation>, Box<dyn std::error
 
 /// Retrieves items for the specified AI chat conversation.
 pub fn get_items(conversation_id: i64) -> Result<Vec<AiConversationItem>, Box<dyn std::error::Error>> {
-    let mut items = Vec::new();
     if let Some(connection) = SQL_CONNECTION.get() {
         let connection = connection.lock()?;
-        let statement = format!(
-            "SELECT id, conversation_id, timestamp, payload \
-             FROM aichat_items WHERE conversation_id = {} ORDER BY timestamp ASC",
-            conversation_id
-        );
-        let mut cursor = connection.prepare(&statement)?;
-        while cursor.next()? == sqlite::State::Row {
-            items.push(AiConversationItem {
-                id: cursor.read::<i64, _>(0)?,
-                conversation_id: cursor.read::<i64, _>(1)?,
-                timestamp: cursor.read::<Option<String>, _>(2)?,
-                payload: serde_json::from_str(&cursor.read::<String, _>(3)?)?,
-            });
-        }
+        let mut statement = connection.prepare("SELECT id, conversation_id, timestamp, payload \
+         FROM aichat_items WHERE conversation_id = ?1 ORDER BY timestamp ASC")?;
+        let items = statement.query_map([conversation_id], |row| Ok(AiConversationItem {
+            id: row.get(0)?,
+            conversation_id: row.get(1)?,
+            payload: serde_json::from_value(row.get::<_,serde_json::Value>(3)?)
+                    .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?,
+            timestamp: row.get(2)?
+        }))?.collect::<Result<Vec<_>, _>>()?;
+        
         Ok(items)
     } else {
         Err("No database connection available".into())
@@ -201,20 +168,21 @@ pub fn get_items(conversation_id: i64) -> Result<Vec<AiConversationItem>, Box<dy
 
 /// Gets every single image item UUID that's stored in AI chat conversations.
 pub fn get_all_image_item_uuids() -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    let mut uuids = Vec::new();
     if let Some(connection) = SQL_CONNECTION.get() {
         let connection = connection.lock()?;
-        let mut cursor = connection.prepare(
-            "SELECT payload FROM aichat_items \
-             WHERE json_extract(payload, '$.type') = 'image'"
-        )?;
-        while cursor.next()? == sqlite::State::Row {
-            let payload_str = cursor.read::<String, _>(0)?;
-            let payload: AiConversationItemPayload = serde_json::from_str(&payload_str)?;
-            if let AiConversationItemPayload::Image { uuid } = payload {
-                uuids.push(uuid);
-            }
-        }
+        let mut statement = connection.prepare("SELECT payload FROM aichat_items WHERE json_extract(payload, '$.type') = 'image'")?;
+        let uuids = statement.query_map([], |row| {
+            let payload = serde_json::from_value(row.get::<_,serde_json::Value>(0)?)
+                .map_err(|e| rusqlite::Error::ToSqlConversionFailure(Box::new(e)))?;
+            Ok(payload)
+        })?
+        .filter_map(|payload| match payload {
+            Ok(AiConversationItemPayload::Image { uuid }) => Some(Ok(uuid)),
+            Ok(_) => None,
+            Err(err) => Some(Err(err))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+        
         Ok(uuids)
     } else {
         Err("No database connection available".into())

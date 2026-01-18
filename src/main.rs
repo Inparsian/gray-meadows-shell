@@ -24,7 +24,7 @@ use std::sync::{LazyLock, Mutex, OnceLock};
 use futures_signals::signal::Mutable;
 use gtk4::prelude::*;
 use libadwaita::Application;
-use sqlite::Connection;
+use rusqlite::Connection;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::time::ChronoLocal;
 

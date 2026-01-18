@@ -128,7 +128,7 @@ impl Weather {
 
     /// Returns the last cached forecast's age in seconds, if there was a hit.
     pub fn cache_check(&self) -> Option<i64> {
-        if let Ok(Some((fetched_at, forecast))) = get_weather_forecast() {
+        if let Ok((fetched_at, forecast)) = get_weather_forecast() {
             let now = chrono::Utc::now().naive_utc();
             let elapsed = now.signed_duration_since(fetched_at).num_seconds();
             debug!(elapsed, "Weather cache hit");
