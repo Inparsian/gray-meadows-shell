@@ -5,7 +5,7 @@ use serde_json::json;
 use crate::config::read_config;
 use crate::session::SessionAction;
 use crate::singletons::mpris::{self, mpris_player::LoopStatus};
-use crate::singletons::weather::WEATHER;
+use crate::singletons::weather::{WEATHER, get_wmo_code, get_daily_at};
 use super::types::AiFunction;
 
 pub fn get_tools() -> Vec<AiFunction> {
@@ -261,10 +261,73 @@ pub fn call_tool(name: &str, args: &str) -> serde_json::Value {
             WEATHER.last_response.get_cloned().map_or_else(|| json!({
                 "success": false,
                 "error": "Weather information is missing, either the weather service is disabled or the information was not fetched yet."
-            }), |weather| json!({
-                "success": true,
-                "weather": weather
-            }))
+            }), |weather| {
+                // Shrink the JSON structure to save tokens
+                let weekly_forecast = weather.daily.time
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, time)| {
+                        if let Some(daily) = get_daily_at(&weather, i) {
+                            let weekday = if i > 0 {
+                                chrono::NaiveDate::parse_from_str(time, "%Y-%m-%d")
+                                    .map_or_else(|_| "nil".to_owned(), |d| d.format("%A").to_string())
+                            } else {
+                                "Today".to_owned()
+                            };
+                            let condition = get_wmo_code(daily.weather_code).map_or_else(|| "Unknown", |code| code.text);
+                            let temperature_2m_min = format!("{}{}", daily.temperature_2m_min, weather.daily_units.temperature_2m_min);
+                            let temperature_2m_max = format!("{}{}", daily.temperature_2m_max, weather.daily_units.temperature_2m_max);
+                            
+                            Some(json!({
+                                "day": weekday,
+                                "condition": condition,
+                                "high": temperature_2m_max,
+                                "low": temperature_2m_min,
+                            }))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect::<Vec<_>>();
+                
+                let temperature_2m = format!("{}{}", weather.current.temperature_2m, weather.current_units.temperature_2m);
+                let relative_humidity_2m = format!("{}{}", weather.current.relative_humidity_2m, weather.current_units.relative_humidity_2m);
+                let apparent_temperature = format!("{}{}", weather.current.apparent_temperature, weather.current_units.apparent_temperature);
+                let precipitation = format!("{} {}", weather.current.precipitation, weather.current_units.precipitation);
+                let rain = format!("{} {}", weather.current.rain, weather.current_units.rain);
+                let showers = format!("{} {}", weather.current.showers, weather.current_units.showers);
+                let snowfall = format!("{} {}", weather.current.snowfall, weather.current_units.snowfall);
+                let condition = get_wmo_code(weather.current.weather_code).map_or_else(|| "Unknown", |code| code.text);
+                let cloud_cover = format!("{}{}", weather.current.cloud_cover, weather.current_units.cloud_cover);
+                let pressure_msl = format!("{} {}", weather.current.pressure_msl, weather.current_units.pressure_msl);
+                let surface_pressure = format!("{} {}", weather.current.surface_pressure, weather.current_units.surface_pressure);
+                let wind_speed_10m = format!("{} {}", weather.current.wind_speed_10m, weather.current_units.wind_speed_10m);
+                let wind_direction_10m = format!("{}{}", weather.current.wind_direction_10m, weather.current_units.wind_direction_10m);
+                let wind_gusts_10m = format!("{} {}", weather.current.wind_gusts_10m, weather.current_units.wind_gusts_10m);
+                
+                json!({
+                    "success": true,
+                    "weather": {
+                        "weekly": weekly_forecast,
+                        "current": {
+                            "condition": condition,
+                            "temperature": temperature_2m,
+                            "feels_like": apparent_temperature,
+                            "relative_humidity": relative_humidity_2m,
+                            "precipitation": precipitation,
+                            "rain": rain,
+                            "showers": showers,
+                            "snowfall": snowfall,
+                            "cloud_cover": cloud_cover,
+                            "pressure_msl": pressure_msl,
+                            "surface_pressure": surface_pressure,
+                            "wind_speed": wind_speed_10m,
+                            "wind_direction": wind_direction_10m,
+                            "wind_gusts": wind_gusts_10m
+                        }
+                    }
+                })
+            })
         },
 
         _ => json!({
