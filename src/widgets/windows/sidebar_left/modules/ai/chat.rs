@@ -393,7 +393,12 @@ impl Chat {
                 }
             }
         } else {
-            warn!("AI chat message role assertion failed: no messages present");
+            let new_message = ChatMessage::new(expected_role, None);
+            drop(messages);
+            self.add_message(new_message);
+            if let Some(id) = id {
+                self.messages.borrow_mut().last().unwrap().set_id(id);
+            }
         }
     }
 
