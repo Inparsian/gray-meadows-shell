@@ -20,7 +20,7 @@ pub async fn activate_all() {
     hyprland::activate();
     tray::activate();
     wireplumber::activate();
-    apps::activate();
+    apps::activate().await;
     calculator::activate();
     g_translate::activate();
     notifications::activate();

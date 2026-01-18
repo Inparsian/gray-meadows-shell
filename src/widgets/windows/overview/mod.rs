@@ -50,7 +50,7 @@ fn generate_entry_box_icon_stack() -> gtk4::Stack {
     stack
 }
 
-async fn generate_search_results(query: &str) -> Vec<OverviewSearchItem> {
+fn generate_search_results(query: &str) -> Vec<OverviewSearchItem> {
     let mut results = Vec::new();
 
     if MODULES.iter().any(|module| validate_input(*module, query)) {
@@ -66,7 +66,7 @@ async fn generate_search_results(query: &str) -> Vec<OverviewSearchItem> {
     } else {
         // Filter and weigh the applications based on the query
         let locales = get_languages_from_env();
-        let desktops = apps::query_desktops(query).await;
+        let desktops = apps::query_desktops(query);
         for i in 0..8 {
             if let Some(entry) = desktops.get(i) {
                 let entry = &entry.entry;
@@ -321,7 +321,7 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
                     search_results_revealer.set_reveal_child(true);
                     entry_box.style_context().add_class("entry-extended");
     
-                    let results = generate_search_results(&entry.text()).await;
+                    let results = generate_search_results(&entry.text());
     
                     // Insert the new items into the search results list
                     let mut search_results_mut = search_results.borrow_mut();
@@ -376,14 +376,8 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
     ipc::listen_for_messages_local(move |message| {
         if message.as_str() == "update_overview_windows" {
             // Tell the windows to update their contents
-            gtk4::glib::spawn_future_local(clone!(
-                #[strong] frequent_window,
-                #[strong] recent_window,
-                async move {
-                    frequent_window.update().await;
-                    recent_window.update().await;
-                }
-            ));
+            frequent_window.update();
+            recent_window.update();
         }
     });
 

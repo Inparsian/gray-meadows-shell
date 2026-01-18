@@ -1,7 +1,7 @@
 use gtk4::prelude::*;
 use relm4::RelmIterChildrenExt as _;
 
-use crate::sql::wrappers::commands;
+use crate::singletons::apps::runs;
 
 #[derive(Debug, Clone)]
 pub struct OverviewFrequentWindow {
@@ -19,17 +19,20 @@ impl OverviewFrequentWindow {
         }
     }
 
-    pub async fn update(&self) {
+    pub fn update(&self) {
         self.children.iter_children().for_each(|child| {
             self.children.remove(&child);
         });
 
-        // Get the frequently launched applications
-        if let Ok(entries) = commands::get_top_commands(10).await {
-            for entry in entries {
-                if let Some(button) = super::make_item_from_command(&entry.0) {
-                    self.children.append(&button);
-                }
+        let mut children = 0;
+        for entry in runs::get_top_commands() {
+            if children >= 10 {
+                break;
+            }
+            
+            if let Some(button) = super::make_item_from_command(&entry.command) {
+                self.children.append(&button);
+                children += 1;
             }
         }
     }

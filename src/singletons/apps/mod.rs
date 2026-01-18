@@ -1,4 +1,7 @@
-use std::{path::{Path, PathBuf}, sync::{Mutex, LazyLock}};
+pub mod runs;
+
+use std::path::{Path, PathBuf};
+use std::sync::{RwLock, LazyLock};
 use freedesktop_desktop_entry::{default_paths, get_languages_from_env, Iter, DesktopEntry};
 use notify::{event::{AccessKind, AccessMode}, EventKind, Watcher as _};
 
@@ -10,17 +13,18 @@ pub struct WeightedDesktopEntry {
     pub weight: f32,
 }
 
-pub static DESKTOPS: LazyLock<Mutex<Vec<DesktopEntry>>> = LazyLock::new(|| Mutex::new(Vec::new()));
+pub static DESKTOPS: LazyLock<RwLock<Vec<DesktopEntry>>> = LazyLock::new(|| RwLock::new(Vec::new()));
 
-pub fn activate() {
+pub async fn activate() {
     refresh_desktops();
+    runs::init().await;
 
     for path in default_paths() {
         std::thread::spawn(move || watch_desktops(&path));
     }
 }
 
-pub async fn calculate_weight(entry: &DesktopEntry, query: &str) -> f32 {
+pub fn calculate_weight(entry: &DesktopEntry, query: &str) -> f32 {
     // Fixed weights:
     // 1. Exact match (10000)
     // 2. Lazy match, contains all characters, length match (500)
@@ -60,18 +64,17 @@ pub async fn calculate_weight(entry: &DesktopEntry, query: &str) -> f32 {
 
     // How many times has this entry been run?
     if weight > 0.0
-        && let Ok(runs) = commands::get_runs(entry.exec().unwrap_or_default()).await
-        && runs > 0
+        && let Some(entry) = runs::get_entry(entry.exec().unwrap_or_default())
+        && entry.runs > 0
     {
-        weight *= f32::max(1.25, runs as f32 / 4.0);
+        weight *= f32::max(1.25, entry.runs as f32 / 4.0);
     }
 
     weight
 }
 
 pub fn get_from_command(command: &str) -> Option<DesktopEntry> {
-    let desktops = DESKTOPS.lock().unwrap();
-
+    let desktops = DESKTOPS.read().unwrap();
     for entry in desktops.iter() {
         if entry.exec() == Some(command) {
             return Some(entry.clone());
@@ -81,12 +84,12 @@ pub fn get_from_command(command: &str) -> Option<DesktopEntry> {
     None
 }
 
-pub async fn query_desktops(query: &str) -> Vec<WeightedDesktopEntry> {
-    let desktops = DESKTOPS.lock().unwrap().clone();
+pub fn query_desktops(query: &str) -> Vec<WeightedDesktopEntry> {
+    let desktops = DESKTOPS.read().unwrap().clone();
 
     let mut weighted = Vec::new();
     for desktop in &desktops {
-        let weight = calculate_weight(desktop, query).await;
+        let weight = calculate_weight(desktop, query);
         if weight > 0.0 {
             weighted.push(WeightedDesktopEntry {
                 entry: desktop.clone(),
@@ -96,7 +99,6 @@ pub async fn query_desktops(query: &str) -> Vec<WeightedDesktopEntry> {
     }
 
     weighted.sort_by(|a, b| b.weight.partial_cmp(&a.weight).unwrap_or(std::cmp::Ordering::Equal));
-
     weighted
 }
 
@@ -107,7 +109,7 @@ pub fn refresh_desktops() {
         .entries(Some(&locales))
         .collect::<Vec<DesktopEntry>>();
 
-    let mut desktops = DESKTOPS.lock().unwrap();
+    let mut desktops = DESKTOPS.write().unwrap();
     desktops.clear();
 
     for entry in entries {
@@ -124,6 +126,7 @@ pub fn launch_and_track(command: &str) {
         let command = command.to_owned();
         async move {
             let _ = commands::increment_runs(&command).await;
+            runs::increment_entry_runs(&command);
         }
     });
 }
