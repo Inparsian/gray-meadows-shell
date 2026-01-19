@@ -1,9 +1,11 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use gtk4::prelude::*;
+use gtk4::glib::{self, clone};
 
 use crate::ffi::astalwp::ffi::{self, Node};
 use crate::singletons::wireplumber;
+use crate::utils::gesture;
 use crate::widgets::common::dot_separator;
 
 pub struct AudioStream {
@@ -13,6 +15,8 @@ pub struct AudioStream {
     pub description_label: gtk4::Label,
     pub volume_label: gtk4::Label,
     pub mute_button: gtk4::Button,
+    pub is_dragging_volume: Rc<RefCell<bool>>,
+    pub volume_slider: gtk4::Scale,
 }
 
 impl AudioStream {
@@ -30,8 +34,8 @@ impl AudioStream {
         let volume_label = gtk4::Label::new(Some(&format!("{:.0}%", node.volume * 100.0)));
         volume_label.set_css_classes(&["audio-stream-volume"]);
         volume_label.set_xalign(1.0);
+        volume_label.set_width_chars(4);
         volume_label.set_halign(gtk4::Align::End);
-        volume_label.set_hexpand(true);
         
         let mute_button = gtk4::Button::new();
         mute_button.set_css_classes(&["audio-stream-mute-button"]);
@@ -48,6 +52,40 @@ impl AudioStream {
             mute_button.set_label("volume_up");
         }
         
+        let is_dragging_volume = Rc::new(RefCell::new(false));
+        let volume_slider = gtk4::Scale::new(gtk4::Orientation::Horizontal, Some(&gtk4::Adjustment::new(0.0, 0.0, 1.0, 0.05, 0.0, 0.0)));
+        volume_slider.set_css_classes(&["audio-stream-volume-slider"]);
+        volume_slider.set_draw_value(false);
+        volume_slider.set_hexpand(true);
+        volume_slider.set_value(node.volume as f64);
+        volume_slider.connect_value_changed(move |slider| {
+            let value = slider.value();
+            ffi::node_set_volume(node.id, value as f32);
+        });
+        
+        let volume_slider_drag_gesture = gtk4::GestureDrag::new();
+        volume_slider_drag_gesture.connect_drag_begin(clone!(
+            #[strong] is_dragging_volume,
+            move |_, _, _| {
+                *is_dragging_volume.borrow_mut() = true;
+            }
+        ));
+        volume_slider_drag_gesture.connect_drag_end(clone!(
+            #[strong] is_dragging_volume,
+            move |_, _, _| {
+                *is_dragging_volume.borrow_mut() = false;
+            }
+        ));
+        volume_slider.add_controller(volume_slider_drag_gesture);
+        volume_slider.add_controller(gesture::on_vertical_scroll(clone!(
+            #[weak] volume_slider,
+            move |dy| {
+                let current = volume_slider.value();
+                let new = dy.mul_add(-0.05, current).clamp(0.0, 1.0);
+                ffi::node_set_volume(node.id, new as f32);
+            }
+        )));
+        
         view! {
             root = gtk4::Box {
                 set_css_classes: &["audio-stream-root"],
@@ -61,6 +99,7 @@ impl AudioStream {
                 },
                 
                 gtk4::Box {
+                    append: &volume_slider,
                     append: &volume_label,
                     append: &mute_button,
                 },
@@ -74,6 +113,8 @@ impl AudioStream {
             description_label,
             volume_label,
             mute_button,
+            is_dragging_volume,
+            volume_slider,
         }
     }
     
@@ -89,6 +130,10 @@ impl AudioStream {
         } else {
             self.mute_button.set_label("volume_up");
             self.mute_button.remove_css_class("muted");
+        }
+        
+        if !*self.is_dragging_volume.borrow() {
+            self.volume_slider.set_value(node.volume as f64);
         }
     }
 }

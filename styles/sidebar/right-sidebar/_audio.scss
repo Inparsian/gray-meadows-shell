@@ -47,5 +47,45 @@
                 }
             }
         }
+        
+        .audio-stream-volume-slider {
+            padding-top: 0px;
+            padding-bottom: 0px;
+            padding-left: 0px;
+            padding-right: 12px;
+            
+            trough {
+                border-radius: 0px;
+                min-height: 8px;
+                min-width: 8px;
+                background-color: $background-color-quaternary;
+                transition-property: background-color;
+                transition-duration: 250ms;
+                transition-timing-function: cubic-bezier(0, 0.3, 0, 1);
+            }
+        
+            trough:focus {
+                outline: none;
+            }
+        
+            &:hover trough {
+                background-color: $background-color-quinary;
+            }
+        
+            highlight, &:hover highlight {
+                border-radius: 0px;
+                min-height: 4px;
+                min-width: 4px;
+                background-color: $foreground-color-primary;
+            }
+        
+            slider {
+                outline: none;
+                border-radius: 0px;
+                padding: 0px;
+                background-color: #00000000;
+                box-shadow: none;
+            }
+        }
     }
 }
