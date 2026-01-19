@@ -62,7 +62,7 @@ impl WeatherWeek {
 
                         gtk4::Label {
                             set_css_classes: &["material-icons"],
-                            set_label: "arrow_downward",
+                            set_label: "arrow_upward",
                         },
 
                         gtk4::Label {
