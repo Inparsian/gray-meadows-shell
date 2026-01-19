@@ -1,7 +1,10 @@
 .sidebar-right-top-tabs .audio-tab-root {
-    .audio-tab-coming-soon {
-        @include large-text;
-        color: $foreground-color-secondary;
-        padding: 16px;
+    .audio-streams-root {
+        margin-top: 4px;
+    }
+    
+    .audio-stream-root {
+        background: $background-color-tertiary;
+        padding: 8px;
     }
 }

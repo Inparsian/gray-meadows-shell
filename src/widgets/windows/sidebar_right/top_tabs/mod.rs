@@ -18,8 +18,6 @@ pub fn new() -> (Tabs, TabsStack) {
         &notifications::new(),
     );
 
-    tabs.current_tab.set(Some("notifications".to_owned()));
-
     tabs.add_tab(
         "audio",
         "audio".to_owned(),
@@ -30,6 +28,8 @@ pub fn new() -> (Tabs, TabsStack) {
         Some("audio"),
         &audio::new(),
     );
+    
+    tabs.current_tab.set(Some("audio".to_owned()));
 
     (tabs, tabs_stack)
 }
