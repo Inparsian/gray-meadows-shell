@@ -92,3 +92,13 @@ precipitation_unit = "inch"
 # There is a minimum of 10 minutes (600 seconds) to avoid excessive API usage,
 # any lower than this is polling noise.
 refresh_interval = 1800
+
+[weather.alerts]
+# Whether the weather alerts service is enabled.
+# This uses the NWS API, which is only available in the US. If your latitude and longitude
+# falls outside of NWS coverage, this will be disabled automatically.
+enabled = true
+
+# How often to refresh the weather alerts, in seconds.
+# There is a minimum of 10 seconds to avoid excessive API usage.
+refresh_interval = 30

@@ -67,6 +67,12 @@ pub struct AiConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct WeatherAlertsConfig {
+    pub enabled: bool,
+    pub refresh_interval: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WeatherConfig {
     pub enabled: bool,
     pub latitude: f64,
@@ -79,6 +85,7 @@ pub struct WeatherConfig {
     #[serde(deserialize_with = "deserialize_insensitive")]
     pub precipitation_unit: WeatherPrecipitationUnit,
     pub refresh_interval: u64,
+    pub alerts: WeatherAlertsConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -124,6 +131,10 @@ impl Default for Config {
                 speed_unit: WeatherSpeedUnit::Mph,
                 precipitation_unit: WeatherPrecipitationUnit::Inch,
                 refresh_interval: 1800,
+                alerts: WeatherAlertsConfig {
+                    enabled: true,
+                    refresh_interval: 30,
+                },
             },
         }
     }

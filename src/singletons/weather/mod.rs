@@ -1,5 +1,6 @@
 pub mod schemas {
     pub mod openmeteo;
+    pub mod nws;
 }
 
 use std::sync::LazyLock;
@@ -7,12 +8,14 @@ use futures_signals::signal::Mutable;
 use reqwest::Client;
 
 use crate::config::read_config;
-use crate::sql::wrappers::weather::{get_weather_forecast, set_weather_forecast};
+use crate::sql::wrappers::weather::{get_weather_forecast, set_weather_forecast, get_weather_alerts, set_weather_alerts};
 use self::schemas::openmeteo::{OpenMeteoResponse, OpenMeteoResponseDailyItem};
+use self::schemas::nws::{NwsAlertsResponse, NwsAlertsError};
 
 pub static WEATHER: LazyLock<Weather> = LazyLock::new(Weather::default);
 
 const OPENMETEO_API_URL: &str = "https://api.open-meteo.com/v1/forecast";
+const NWS_ACTIVE_ALERTS_API_URL: &str = "https://api.weather.gov/alerts/active";
 
 pub struct WmoCode {
     pub text: &'static str,
@@ -49,6 +52,7 @@ impl WmoCode {
 pub struct Weather {
     pub client: Client,
     pub last_response: Mutable<Option<OpenMeteoResponse>>,
+    pub last_alerts_response: Mutable<Option<NwsAlertsResponse>>,
 }
 
 impl Default for Weather {
@@ -59,6 +63,7 @@ impl Default for Weather {
                 .build()
                 .unwrap_or_default(),
             last_response: Mutable::new(None),
+            last_alerts_response: Mutable::new(None),
         }
     }
 }
@@ -122,7 +127,48 @@ impl Weather {
 
             Err(err) => {
                 error!(?err, "Failed to fetch weather data");
-            }
+            },
+        }
+    }
+    
+    /// Fetches the latest alerts from the National Weather Service.
+    pub async fn fetch_nws_alerts(&self) -> Option<NwsAlertsError> {
+        let weather_config = read_config().weather.clone();
+        
+        match self.client.get(NWS_ACTIVE_ALERTS_API_URL)
+            .query(&[("point", format!("{},{}", weather_config.latitude, weather_config.longitude))])
+            .send()
+            .await
+        {
+            Ok(response) if response.status().is_success() => match response.json::<NwsAlertsResponse>().await {
+                Ok(alerts) => {
+                    let _ = set_weather_alerts(&alerts).await;
+                    self.last_alerts_response.set(Some(alerts));
+                    None
+                },
+
+                Err(err) => {
+                    error!(?err, "Failed to parse NWS alerts");
+                    None
+                },
+            },
+            
+            Ok(response) => match response.json::<NwsAlertsError>().await {
+                Ok(err) => {
+                    error!(?err, "Failed to fetch NWS alerts");
+                    Some(err)
+                },
+                
+                Err(err) => {
+                    error!(?err, "Failed to parse NWS alerts error");
+                    None
+                },
+            },
+
+            Err(err) => {
+                error!(?err, "Failed to fetch NWS alerts");
+                None
+            },
         }
     }
 
@@ -133,6 +179,19 @@ impl Weather {
             let elapsed = now.signed_duration_since(fetched_at).num_seconds();
             debug!(elapsed, "Weather cache hit");
             self.last_response.set(Some(forecast));
+            Some(elapsed)
+        } else {
+            None
+        }
+    }
+    
+    /// Returns the last cached weather alerts response's age in seconds, if there was a hit.
+    pub async fn cache_check_alerts(&self) -> Option<i64> {
+        if let Ok((fetched_at, alerts)) = get_weather_alerts().await {
+            let now = chrono::Utc::now().naive_utc();
+            let elapsed = now.signed_duration_since(fetched_at).num_seconds();
+            debug!(elapsed, "Weather alerts cache hit");
+            self.last_alerts_response.set(Some(alerts));
             Some(elapsed)
         } else {
             None
@@ -185,6 +244,7 @@ pub fn get_wmo_code(code: i64) -> Option<WmoCode> {
 }
 
 pub fn activate() {
+    // OpenMeteo task
     tokio::spawn(async move {
         let weather_config = {
             let config = read_config();
@@ -204,6 +264,36 @@ pub fn activate() {
 
         loop {
             WEATHER.fetch().await;
+            tokio::time::sleep(std::time::Duration::from_secs(clamped_interval)).await;
+        }
+    });
+    
+    // NWS task
+    tokio::spawn(async move {
+        let weather_config = {
+            let config = read_config();
+            config.weather.clone()
+        };
+        
+        if !weather_config.enabled || !weather_config.alerts.enabled {
+            return;
+        }
+        
+        let clamped_interval = weather_config.alerts.refresh_interval.max(10);
+        if let Some(elapsed) = WEATHER.cache_check_alerts().await && elapsed < clamped_interval as i64 {
+            let sleep_duration = clamped_interval as i64 - elapsed;
+            info!(sleep_duration, "Weather alerts cache valid, sleeping until next refresh");
+            tokio::time::sleep(std::time::Duration::from_secs(sleep_duration as u64)).await;
+        }
+
+        loop {
+            if let Some(error) = WEATHER.fetch_nws_alerts().await
+                && error.detail.ends_with("out of bounds")
+            {
+                error!("Latitude and longitude are out of bounds for NWS alerts! Alerts will be now be disabled.");
+                break;
+            }
+            
             tokio::time::sleep(std::time::Duration::from_secs(clamped_interval)).await;
         }
     });
