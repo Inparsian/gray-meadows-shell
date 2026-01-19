@@ -47,6 +47,29 @@ void on_stream_removed(AstalWpAudio */*audio*/, AstalWpStream *stream, gpointer 
     }
 }
 
+void on_recorder_added(AstalWpAudio */*audio*/, AstalWpStream *stream, gpointer /*user_data*/) {
+    AstalWpNode *node = ASTAL_WP_NODE(stream);
+    Node node_data = make_node_data_from_node(node);
+
+    receive_create_recorder(node_data);
+
+    gulong handler_id = g_signal_connect(node, "notify", G_CALLBACK(on_node_notify), nullptr);
+    node_signals[node] = handler_id;
+}
+
+void on_recorder_removed(AstalWpAudio */*audio*/, AstalWpStream *stream, gpointer /*user_data*/) {
+    AstalWpNode *node = ASTAL_WP_NODE(stream);
+    Node node_data = make_node_data_from_node(node);
+
+    receive_remove_recorder(node_data);
+
+    auto it = node_signals.find(node);
+    if (it != node_signals.end()) {
+        g_signal_handler_disconnect(node, it->second);
+        node_signals.erase(it);
+    }
+}
+
 void on_microphone_added(AstalWpAudio */*audio*/, AstalWpEndpoint *endpoint, gpointer /*user_data*/) {
     Endpoint endpoint_data = make_endpoint_data_from_endpoint(endpoint, EndpointType::Microphone);
 

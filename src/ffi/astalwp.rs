@@ -13,6 +13,8 @@ pub enum WpEvent {
     UpdateDefaultSpeaker(i32),
     CreateStream(ffi::Node),
     RemoveStream(ffi::Node),
+    CreateRecorder(ffi::Node),
+    RemoveRecorder(ffi::Node),
     CreateMicrophone(ffi::Endpoint),
     RemoveMicrophone(ffi::Endpoint),
     CreateSpeaker(ffi::Endpoint),
@@ -26,14 +28,14 @@ pub mod ffi {
     pub enum EndpointType {
         Microphone,
         Speaker,
-        Unknown
+        Unknown,
     }
 
     #[derive(Debug, Clone)]
     struct Endpoint {
         type_: EndpointType,
         is_default: bool,
-        node: Node
+        node: Node,
     }
 
     #[derive(Debug, Clone)]
@@ -45,7 +47,7 @@ pub mod ffi {
         name: String,
         path: String,
         serial: i32,
-        volume: f32
+        volume: f32,
     }
 
     extern "Rust" {
@@ -54,6 +56,8 @@ pub mod ffi {
         pub fn receive_update_speaker(id: i32, property_name: String);
         pub fn receive_create_stream(node: Node);
         pub fn receive_remove_stream(node: Node);
+        pub fn receive_create_recorder(node: Node);
+        pub fn receive_remove_recorder(node: Node);
         pub fn receive_create_microphone(endpoint: Endpoint);
         pub fn receive_remove_microphone(endpoint: Endpoint);
         pub fn receive_create_speaker(endpoint: Endpoint);
@@ -87,10 +91,7 @@ fn broadcast(event: WpEvent) {
 }
 
 fn receive_update_node(id: i32, property_name: String) {
-    broadcast(WpEvent::UpdateNode(
-        id,
-        property_name,
-    ));
+    broadcast(WpEvent::UpdateNode(id, property_name));
 }
 
 fn receive_update_microphone(id: i32, property_name: String) {
@@ -99,10 +100,7 @@ fn receive_update_microphone(id: i32, property_name: String) {
         broadcast(WpEvent::UpdateDefaultMicrophone(()));
     }
     
-    broadcast(WpEvent::UpdateEndpoint(
-        id,
-        property_name,
-    ));
+    broadcast(WpEvent::UpdateEndpoint(id, property_name));
 }
 
 fn receive_update_speaker(id: i32, property_name: String) {
@@ -110,44 +108,37 @@ fn receive_update_speaker(id: i32, property_name: String) {
         broadcast(WpEvent::UpdateDefaultSpeaker(id));
     }
 
-    broadcast(WpEvent::UpdateEndpoint(
-        id,
-        property_name,
-    ));
+    broadcast(WpEvent::UpdateEndpoint(id, property_name));
 }
 
 fn receive_create_stream(node: ffi::Node) {
-    broadcast(WpEvent::CreateStream(
-        node,
-    ));
+    broadcast(WpEvent::CreateStream(node));
 }
 
 fn receive_remove_stream(node: ffi::Node) {
-    broadcast(WpEvent::RemoveStream(
-        node,
-    ));
+    broadcast(WpEvent::RemoveStream(node));
+}
+
+fn receive_create_recorder(node: ffi::Node) {
+    broadcast(WpEvent::CreateRecorder(node));
+}
+
+fn receive_remove_recorder(node: ffi::Node) {
+    broadcast(WpEvent::RemoveRecorder(node));
 }
 
 fn receive_create_microphone(endpoint: ffi::Endpoint) {
-    broadcast(WpEvent::CreateMicrophone(
-        endpoint,
-    ));
+    broadcast(WpEvent::CreateMicrophone(endpoint));
 }
 
 fn receive_remove_microphone(endpoint: ffi::Endpoint) {
-    broadcast(WpEvent::RemoveMicrophone(
-        endpoint,
-    ));
+    broadcast(WpEvent::RemoveMicrophone(endpoint));
 }
 
 fn receive_create_speaker(endpoint: ffi::Endpoint) {
-    broadcast(WpEvent::CreateSpeaker(
-        endpoint,
-    ));
+    broadcast(WpEvent::CreateSpeaker(endpoint));
 }
 
 fn receive_remove_speaker(endpoint: ffi::Endpoint) {
-    broadcast(WpEvent::RemoveSpeaker(
-        endpoint,
-    ));
+    broadcast(WpEvent::RemoveSpeaker(endpoint));
 }

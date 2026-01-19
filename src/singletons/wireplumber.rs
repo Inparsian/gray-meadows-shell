@@ -109,7 +109,7 @@ pub fn intercept_event(event: WpEvent) {
             });
         },
 
-        WpEvent::CreateStream(node) => {
+        WpEvent::CreateStream(node) | WpEvent::CreateRecorder(node) => {
             let _ = NODES.get().map(|nodes| {
                 if let Ok(mut nodes) = nodes.write() {
                     nodes.push(node.clone());
@@ -117,7 +117,7 @@ pub fn intercept_event(event: WpEvent) {
             });
         },
 
-        WpEvent::RemoveStream(node) => {
+        WpEvent::RemoveStream(node) | WpEvent::RemoveRecorder(node) => {
             let _ = NODES.get().map(|nodes| {
                 if let Ok(mut nodes) = nodes.write() {
                     nodes.retain(|n| n.id != node.id);
@@ -125,7 +125,7 @@ pub fn intercept_event(event: WpEvent) {
             });
         },
 
-        WpEvent::CreateMicrophone(endpoint) => {
+        WpEvent::CreateMicrophone(endpoint) | WpEvent::CreateSpeaker(endpoint) => {
             let _ = ENDPOINTS.get().map(|endpoints| {
                 if let Ok(mut endpoints) = endpoints.write() {
                     endpoints.push(endpoint.clone());
@@ -133,23 +133,7 @@ pub fn intercept_event(event: WpEvent) {
             });
         },
 
-        WpEvent::RemoveMicrophone(endpoint) => {
-            let _ = ENDPOINTS.get().map(|endpoints| {
-                if let Ok(mut endpoints) = endpoints.write() {
-                    endpoints.retain(|e| e.node.id != endpoint.node.id);
-                }
-            });
-        },
-
-        WpEvent::CreateSpeaker(endpoint) => {
-            let _ = ENDPOINTS.get().map(|endpoints| {
-                if let Ok(mut endpoints) = endpoints.write() {
-                    endpoints.push(endpoint.clone());
-                }
-            });
-        },
-
-        WpEvent::RemoveSpeaker(endpoint) => {
+        WpEvent::RemoveMicrophone(endpoint) | WpEvent::RemoveSpeaker(endpoint) => {
             let _ = ENDPOINTS.get().map(|endpoints| {
                 if let Ok(mut endpoints) = endpoints.write() {
                     endpoints.retain(|e| e.node.id != endpoint.node.id);

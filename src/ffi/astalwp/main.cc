@@ -36,6 +36,8 @@ void init() {
 
         g_signal_connect(audio, "stream-added", G_CALLBACK(on_stream_added), nullptr);
         g_signal_connect(audio, "stream-removed", G_CALLBACK(on_stream_removed), nullptr);
+        g_signal_connect(audio, "recorder-added", G_CALLBACK(on_recorder_added), nullptr);
+        g_signal_connect(audio, "recorder-removed", G_CALLBACK(on_recorder_removed), nullptr);
         g_signal_connect(audio, "microphone-added", G_CALLBACK(on_microphone_added), nullptr);
         g_signal_connect(audio, "microphone-removed", G_CALLBACK(on_microphone_removed), nullptr);
         g_signal_connect(audio, "speaker-added", G_CALLBACK(on_speaker_added), nullptr);

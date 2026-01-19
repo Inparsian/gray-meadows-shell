@@ -45,6 +45,8 @@ void receive_update_microphone(rust::i32 id, rust::String &property_name) noexce
 void receive_update_speaker(rust::i32 id, rust::String &property_name) noexcept;
 void receive_create_stream(Node node) noexcept;
 void receive_remove_stream(Node node) noexcept;
+void receive_create_recorder(Node node) noexcept;
+void receive_remove_recorder(Node node) noexcept;
 void receive_create_microphone(Endpoint endpoint) noexcept;
 void receive_remove_microphone(Endpoint endpoint) noexcept;
 void receive_create_speaker(Endpoint endpoint) noexcept;
