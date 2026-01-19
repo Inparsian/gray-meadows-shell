@@ -24,7 +24,6 @@ void init();
 
 rust::String node_get_description(rust::i32 id);
 rust::String node_get_icon(rust::i32 id);
-rust::i32 node_get_id(rust::i32 id);
 bool node_get_mute(rust::i32 id);
 rust::String node_get_name(rust::i32 id);
 rust::String node_get_path(rust::i32 id);

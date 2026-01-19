@@ -65,14 +65,6 @@ rust::String node_get_icon(rust::i32 id) {
         : rust::String();
 }
 
-rust::i32 node_get_id(rust::i32 id) {
-    AstalWpNode *node = get_node_by_id(id);
-
-    return node
-        ? rust::i32(astal_wp_node_get_id(node))
-        : 0;
-}
-
 bool node_get_mute(rust::i32 id) {
     AstalWpNode *node = get_node_by_id(id);
 

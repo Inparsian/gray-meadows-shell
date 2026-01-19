@@ -71,7 +71,6 @@ pub mod ffi {
 
         pub fn node_get_description(id: i32) -> String;
         pub fn node_get_icon(id: i32) -> String;
-        #[allow(dead_code)] pub fn node_get_id(id: i32) -> i32;
         pub fn node_get_mute(id: i32) -> bool;
         pub fn node_get_name(id: i32) -> String;
         pub fn node_get_path(id: i32) -> String;
