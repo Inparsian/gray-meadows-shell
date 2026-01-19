@@ -88,4 +88,44 @@
             margin-left: 1px;
         }
     }
+    
+    .weather-alerts {
+        .weather-alert-button {
+            background: #310000;
+            border-radius: 0px;
+            color: $foreground-color-primary;
+            padding: 8px;
+            font-weight: 300;
+            min-height: 0px;
+            min-width: 0px;
+        
+            &:hover, &:focus {
+                background: #3A0000;
+                outline: none;
+            }
+        
+            &:active {
+                background: #440000;
+            }
+        
+            .weather-alert-icon {
+                @include material-icons;
+                font-size: 13px;
+                font-weight: 400;
+                margin-right: 4px;
+            }
+        }
+        
+        .weather-alert-details {
+            background: #520000;
+            padding: 8px;
+            color: $foreground-color-primary;
+        
+            .weather-alert-field {
+                .weather-alert-field-value {
+                    color: rgba($foreground-color-primary, 0.64);
+                }
+            }
+        }
+    }
 }

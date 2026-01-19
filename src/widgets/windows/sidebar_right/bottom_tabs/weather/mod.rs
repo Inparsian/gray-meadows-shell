@@ -1,6 +1,7 @@
 mod overview;
 mod today;
 mod week;
+mod alerts;
 
 use gtk4::prelude::*;
 use futures_signals::signal::SignalExt as _;
@@ -12,6 +13,7 @@ pub fn new() -> gtk4::Box {
     let overview = overview::WeatherOverview::default();
     let today = today::WeatherToday::default();
     let week = week::WeatherWeek::default();
+    let alerts = alerts::WeatherAlerts::default();
 
     let tabs = Tabs::new(TabSize::Tiny, false);
     let tabs_stack = TabsStack::new(&tabs, Some("weather-tab-tabs"));
@@ -37,6 +39,17 @@ pub fn new() -> gtk4::Box {
         Some("week"),
         &week.bx,
     );
+    
+    tabs.add_tab(
+        "alerts",
+        "alerts".to_owned(),
+        None,
+    );
+
+    tabs_stack.add_tab(
+        Some("alerts"),
+        &alerts.root,
+    );
 
     tabs.current_tab.set(Some("today".to_owned()));
 
@@ -57,6 +70,12 @@ pub fn new() -> gtk4::Box {
             overview.update(forecast);
             today.update(forecast);
             week.update(forecast);
+        }
+    }));
+    
+    gtk4::glib::spawn_future_local(signal_cloned!(WEATHER.last_alerts_response, (weather_alerts) {
+        if let Some(weather_alerts) = &weather_alerts {
+            alerts.update(weather_alerts);
         }
     }));
 
