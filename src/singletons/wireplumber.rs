@@ -57,88 +57,72 @@ pub fn get_default_speaker() -> Option<ffi::Endpoint> {
     ENDPOINTS.get()?.read().ok()?.iter().find(|&e| e.is_default && e.type_ == ffi::EndpointType::Speaker).cloned()
 }
 
+pub fn update_node_property(node: &mut ffi::Node, property_name: &str) {
+    match property_name {
+        "description" => node.description = ffi::node_get_description(node.id),
+        "icon" => node.icon = ffi::node_get_icon(node.id),
+        "mute" => node.mute = ffi::node_get_mute(node.id),
+        "name" => node.name = ffi::node_get_name(node.id),
+        "path" => node.path = ffi::node_get_path(node.id),
+        "serial" => node.serial = ffi::node_get_serial(node.id),
+        "volume" => node.volume = ffi::node_get_volume(node.id),
+        _ => {}
+    }
+}
+
 pub fn intercept_event(event: WpEvent) {
     match event {
-        WpEvent::UpdateNode(id, property_name) => if let Some(node) = get_node(id) {
-            let _ = NODES.get().map(|nodes| {
-                if let Ok(mut nodes) = nodes.write()
-                    && let Some(existing_node) = nodes.iter_mut().find(|n| n.id == node.id)
-                {
-                    match property_name.as_str() {
-                        "description" => existing_node.description = ffi::node_get_description(id),
-                        "icon" => existing_node.icon = ffi::node_get_icon(id),
-                        "mute" => existing_node.mute = ffi::node_get_mute(id),
-                        "name" => existing_node.name = ffi::node_get_name(id),
-                        "path" => existing_node.path = ffi::node_get_path(id),
-                        "serial" => existing_node.serial = ffi::node_get_serial(id),
-                        "volume" => existing_node.volume = ffi::node_get_volume(id),
-                        _ => {}
-                    }
-                }
-            });
+        WpEvent::UpdateNode(id, property_name) => if let Some(node) = get_node(id)
+            && let Some(nodes) = NODES.get()
+            && let Ok(mut nodes) = nodes.write()
+            && let Some(existing_node) = nodes.iter_mut().find(|n| n.id == node.id)
+        {
+            update_node_property(existing_node, &property_name);
         },
 
-        WpEvent::UpdateEndpoint(id, property_name) => if let Some(endpoint) = get_endpoint(id) {
-            let _ = ENDPOINTS.get().map(|endpoints| if let Ok(mut endpoints) = endpoints.write() {
-                let endpoint_node_id = endpoint.node.id;
-                
-                if let Some(endpoint_index) = endpoints.iter().position(|e| e.node.id == endpoint_node_id) {
-                    match property_name.as_str() {
-                        "is-default" => {
-                            // Mutate all of the other endpoints to not be default.
-                            for (i, e) in endpoints.iter_mut().enumerate() {
-                                if i != endpoint_index {
-                                    e.is_default = false;
-                                }
-                            }
-                            
-                            endpoints[endpoint_index].is_default = ffi::endpoint_get_is_default(id);
-                        },
-                        // Node is Endpoint's ancestor, so updates for the underlying node will be handled
-                        // here as well.
-                        "description" => endpoints[endpoint_index].node.description = ffi::node_get_description(id),
-                        "icon" => endpoints[endpoint_index].node.icon = ffi::node_get_icon(id),
-                        "mute" => endpoints[endpoint_index].node.mute = ffi::node_get_mute(id),
-                        "name" => endpoints[endpoint_index].node.name = ffi::node_get_name(id),
-                        "path" => endpoints[endpoint_index].node.path = ffi::node_get_path(id),
-                        "serial" => endpoints[endpoint_index].node.serial = ffi::node_get_serial(id),
-                        "volume" => endpoints[endpoint_index].node.volume = ffi::node_get_volume(id),
-                        _ => {}
+        WpEvent::UpdateEndpoint(id, property_name) => if let Some(endpoint) = get_endpoint(id)
+            && let Some(endpoints) = ENDPOINTS.get()
+            && let Ok(mut endpoints) = endpoints.write()
+            && let Some(endpoint_index) = endpoints.iter().position(|e| e.node.id == endpoint.node.id)
+        {
+            match property_name.as_str() {
+                "is-default" => {
+                    // Mutate all of the other endpoints to not be default.
+                    for (i, e) in endpoints.iter_mut().enumerate() {
+                        if i != endpoint_index {
+                            e.is_default = false;
+                        }
                     }
-                }
-            });
+                    
+                    endpoints[endpoint_index].is_default = ffi::endpoint_get_is_default(id);
+                },
+                // Endpoint is a Node superset
+                _ => update_node_property(&mut endpoints[endpoint_index].node, &property_name),
+            }
         },
 
         WpEvent::CreateStream(node) | WpEvent::CreateRecorder(node) => {
-            let _ = NODES.get().map(|nodes| {
-                if let Ok(mut nodes) = nodes.write() {
-                    nodes.push(node.clone());
-                }
-            });
+            if let Some(nodes) = NODES.get() && let Ok(mut nodes) = nodes.write() {
+                nodes.push(node);
+            }
         },
 
         WpEvent::RemoveStream(node) | WpEvent::RemoveRecorder(node) => {
-            let _ = NODES.get().map(|nodes| {
-                if let Ok(mut nodes) = nodes.write() {
-                    nodes.retain(|n| n.id != node.id);
-                }
-            });
+            if let Some(nodes) = NODES.get() && let Ok(mut nodes) = nodes.write() {
+                nodes.retain(|n| n.id != node.id);
+            }
         },
 
         WpEvent::CreateMicrophone(endpoint) | WpEvent::CreateSpeaker(endpoint) => {
-            let _ = ENDPOINTS.get().map(|endpoints| {
-                if let Ok(mut endpoints) = endpoints.write() {
-                    endpoints.push(endpoint.clone());
-                }
-            });
+            if let Some(endpoints) = ENDPOINTS.get() && let Ok(mut endpoints) = endpoints.write() {
+                endpoints.push(endpoint);
+            }
         },
 
         WpEvent::RemoveMicrophone(endpoint) | WpEvent::RemoveSpeaker(endpoint) => {
-            let _ = ENDPOINTS.get().map(|endpoints| {
-                if let Ok(mut endpoints) = endpoints.write() {
-                    endpoints.retain(|e| e.node.id != endpoint.node.id);
-                }
-            });
+            if let Some(endpoints) = ENDPOINTS.get() && let Ok(mut endpoints) = endpoints.write() {
+                endpoints.retain(|e| e.node.id != endpoint.node.id);
+            }
         },
 
         _ => {}
