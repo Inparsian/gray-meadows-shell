@@ -6,5 +6,46 @@
     .audio-stream-root {
         background: $background-color-tertiary;
         padding: 8px;
+        
+        .audio-stream-mute-button {
+            @include material-icons;
+
+            color: $foreground-color-primary;
+            font-weight: 300;
+            font-size: 12px;
+            padding: 0px;
+            margin-left: 6px;
+            min-width: 20px;
+            min-height: 20px;
+            border-radius: 0px;
+
+            &.muted {
+                background: $foreground-color-primary;
+                color: $background-color-primary;
+                
+                &:hover, &:focus {
+                    background: $foreground-color-select;
+                    outline: none;
+                }
+
+                &:active {
+                    background: $foreground-color-active;
+                }
+            }
+            
+            &:not(muted) {
+                background: transparent;
+                color: $foreground-color-primary;
+                
+                &:hover, &:focus {
+                    background: #ffffff09;
+                    outline: none;
+                }
+    
+                &:active {
+                    background: #ffffff16;
+                }
+            }
+        }
     }
 }
