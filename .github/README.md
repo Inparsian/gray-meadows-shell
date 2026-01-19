@@ -10,7 +10,10 @@
   <img alt="GitHub pull requests" src="https://img.shields.io/github/issues-pr/Inparsian/gray-meadows-shell"/>
 </div>
 <div align="center">
-  <a href="https://gray-meadows.inpr.sn/">wiki</a>
+  <h3>
+    [<a href="https://gray-meadows.inpr.sn/">wiki</a>]​&nbsp;
+    [<a href="https://trello.com/b/bzhLDyI8/gray-meadows-shell-roadmap">trello</a>]
+  </h3>
 </div>
 <br>
 
@@ -62,14 +65,6 @@ ok
 ## ❤️ Sponsors
 I express my deep gratitude to the following sponsors for their generous support, it means a lot to me!
 - [Alexis](https://github.com/garado)
-
-## 🛠️ Current status
-
-Currently not ready for daily use yet, but it is getting closer. Technically you could use it right now if you wanted to, but it is not fully feature-complete and there may be bugs.
-
-The To-Do list has been moved to [Trello](https://trello.com/b/bzhLDyI8/gray-meadows-shell-roadmap).
-
-Contributions are welcome!
 
 ## 🤔 Why the name "Gray Meadows"?
 grayscale color scheme, first screenshot of the agsv2 version used a foggy forest wallpaper. was too lazy to come up with a better name
