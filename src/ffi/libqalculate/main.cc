@@ -1,7 +1,6 @@
 #include "main.h"
 #include <libqalculate/qalculate.h>
 #include <rust/cxx.h>
-#include <memory>
 
 static void assert_calculator() {
     if (!calculator) {

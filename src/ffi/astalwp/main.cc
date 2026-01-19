@@ -1,3 +1,5 @@
+#include <memory>
+#include <mutex>
 #include "main.h"
 
 static std::unique_ptr<GrayPlumber> instance = nullptr;

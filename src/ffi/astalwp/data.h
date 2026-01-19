@@ -1,7 +1,6 @@
 #pragma once
 #include "main.h"
 
-enum EndpointType;
 struct Node;
 struct Endpoint;
 

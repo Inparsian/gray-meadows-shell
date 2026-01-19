@@ -1,3 +1,5 @@
+/.cache
 /target
 /styles/output.css
 /styles/output.css.map
+/compile_commands.json

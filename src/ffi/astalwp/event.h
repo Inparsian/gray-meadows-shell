@@ -1,9 +1,7 @@
 #pragma once
-#include "main.h"
-#include "data.h"
-#include <unordered_map>
+#include <astal/wireplumber/wp.h>
+#include <gray-meadows-shell/src/ffi/astalwp.rs.h>
 
-enum EndpointType;
 struct Node;
 struct Endpoint;
 

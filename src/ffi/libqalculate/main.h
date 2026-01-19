@@ -1,7 +1,6 @@
 #pragma once
 #include <libqalculate/qalculate.h>
 #include <rust/cxx.h>
-#include <memory>
 
 void init_calc();
 

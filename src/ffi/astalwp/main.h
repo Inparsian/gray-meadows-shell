@@ -1,12 +1,9 @@
 #pragma once
-#include <memory>
-#include <mutex>
 #include <astal/wireplumber/wp.h>
 #include <gray-meadows-shell/src/ffi/astalwp.rs.h>
-#include <event.h>
 #include <rust/cxx.h>
+#include "event.h"
 
-enum EndpointType;
 struct Node;
 struct Endpoint;
 

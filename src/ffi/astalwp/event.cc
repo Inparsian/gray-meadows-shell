@@ -1,3 +1,5 @@
+#include <unordered_map>
+#include "data.h"
 #include "event.h"
 
 static std::unordered_map<AstalWpNode*, gulong> node_signals;
