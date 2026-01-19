@@ -9,7 +9,7 @@ pub static CHANNEL: LazyLock<BroadcastChannel<WpEvent>> = LazyLock::new(|| Broad
 pub enum WpEvent {
     UpdateNode(i32, String),
     UpdateEndpoint(i32, String),
-    UpdateDefaultMicrophone(()),
+    UpdateDefaultMicrophone(i32),
     UpdateDefaultSpeaker(i32),
     CreateStream(ffi::Node),
     RemoveStream(ffi::Node),
@@ -77,7 +77,7 @@ pub mod ffi {
         pub fn node_get_path(id: i32) -> String;
         pub fn node_get_serial(id: i32) -> i32;
         pub fn node_get_volume(id: i32) -> f32;
-        #[allow(dead_code)] pub fn node_set_mute(id: i32, mute: bool);
+        pub fn node_set_mute(id: i32, mute: bool);
         pub fn node_set_volume(id: i32, volume: f32);
 
         pub fn endpoint_get_is_default(id: i32) -> bool;
@@ -96,8 +96,7 @@ fn receive_update_node(id: i32, property_name: String) {
 
 fn receive_update_microphone(id: i32, property_name: String) {
     if property_name == "is-default" && ffi::endpoint_get_is_default(id) {
-        // TODO: UNUSED
-        broadcast(WpEvent::UpdateDefaultMicrophone(()));
+        broadcast(WpEvent::UpdateDefaultMicrophone(id));
     }
     
     broadcast(WpEvent::UpdateEndpoint(id, property_name));

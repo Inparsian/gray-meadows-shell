@@ -83,21 +83,17 @@ pub fn intercept_event(event: WpEvent) {
         WpEvent::UpdateEndpoint(id, property_name) => if let Some(endpoint) = get_endpoint(id)
             && let Some(endpoints) = ENDPOINTS.get()
             && let Ok(mut endpoints) = endpoints.write()
-            && let Some(endpoint_index) = endpoints.iter().position(|e| e.node.id == endpoint.node.id)
+            && let Some(existing_endpoint) = endpoints.iter_mut().find(|e| e.node.id == endpoint.node.id)
         {
-            match property_name.as_str() {
-                "is-default" => {
-                    // Mutate all of the other endpoints to not be default.
-                    for (i, e) in endpoints.iter_mut().enumerate() {
-                        if i != endpoint_index {
-                            e.is_default = false;
-                        }
-                    }
-                    
-                    endpoints[endpoint_index].is_default = ffi::endpoint_get_is_default(id);
-                },
-                // Endpoint is a Node superset
-                _ => update_node_property(&mut endpoints[endpoint_index].node, &property_name),
+            // Endpoint is a Node superset
+            update_node_property(&mut existing_endpoint.node, &property_name);
+        },
+        
+        WpEvent::UpdateDefaultMicrophone(id) | WpEvent::UpdateDefaultSpeaker(id) => {
+            if let Some(endpoints) = ENDPOINTS.get() && let Ok(mut endpoints) = endpoints.write() {
+                for e in endpoints.iter_mut() {
+                    e.is_default = e.node.id == id;
+                }
             }
         },
 
@@ -124,8 +120,6 @@ pub fn intercept_event(event: WpEvent) {
                 endpoints.retain(|e| e.node.id != endpoint.node.id);
             }
         },
-
-        _ => {}
     }
 }
 
