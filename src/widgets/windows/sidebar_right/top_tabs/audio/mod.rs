@@ -60,45 +60,53 @@ pub fn new() -> gtk4::Box {
                     recorders.update_stream(id);
                 },
                 
-                WpEvent::CreateMicrophone(endpoint) => if endpoint.is_default {
-                    mic_master.update_from(&endpoint);
+                WpEvent::CreateMicrophone(endpoint) => {
+                    mic_master.add_device(endpoint.clone());
+                    mic_master.update_from(&endpoint, true);
                 },
                 
-                WpEvent::CreateSpeaker(endpoint) => if endpoint.is_default {
-                    speaker_master.update_from(&endpoint);
+                WpEvent::CreateSpeaker(endpoint) => {
+                    speaker_master.add_device(endpoint.clone());
+                    speaker_master.update_from(&endpoint, true);
                 },
                 
-                WpEvent::RemoveMicrophone(endpoint) => if let Some(default_microphone) = wireplumber::get_default_microphone()
-                    && default_microphone.node.id == endpoint.node.id
-                {
-                    mic_master.update_from(&default_microphone);
+                WpEvent::RemoveMicrophone(endpoint) => {
+                    mic_master.remove_device(&endpoint);
+                    if let Some(default_microphone) = wireplumber::get_default_microphone()
+                        && default_microphone.node.id == endpoint.node.id
+                    {
+                        mic_master.update_from(&default_microphone, true);
+                    }
                 },
             
-                WpEvent::RemoveSpeaker(endpoint) => if let Some(default_speaker) = wireplumber::get_default_speaker()
-                    && default_speaker.node.id == endpoint.node.id
-                {
-                    speaker_master.update_from(&default_speaker);
+                WpEvent::RemoveSpeaker(endpoint) => {
+                    speaker_master.remove_device(&endpoint);
+                    if let Some(default_speaker) = wireplumber::get_default_speaker()
+                        && default_speaker.node.id == endpoint.node.id
+                    {
+                        speaker_master.update_from(&default_speaker, true);
+                    }
                 },
                 
                 WpEvent::UpdateDefaultMicrophone(id) => if let Some(microphone) = wireplumber::get_endpoint(id) {
-                    mic_master.update_from(&microphone);
+                    mic_master.update_from(&microphone, true);
                 },
             
                 WpEvent::UpdateDefaultSpeaker(id) => if let Some(speaker) = wireplumber::get_endpoint(id) {
-                    speaker_master.update_from(&speaker);
+                    speaker_master.update_from(&speaker, true);
                 },
             
                 WpEvent::UpdateEndpoint(id, property_name) => if property_name == "volume" {
                     if let Some(default_microphone) = wireplumber::get_default_microphone()
                         && default_microphone.node.id == id
                     {
-                        mic_master.update_from(&default_microphone);
+                        mic_master.update_from(&default_microphone, false);
                     }
                     
                     if let Some(default_speaker) = wireplumber::get_default_speaker()
                         && default_speaker.node.id == id
                     {
-                        speaker_master.update_from(&default_speaker);
+                        speaker_master.update_from(&default_speaker, false);
                     }
                 },
             }
