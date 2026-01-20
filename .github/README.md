@@ -12,6 +12,7 @@
 <div align="center">
   <h3>
     [<a href="https://gray-meadows.inpr.sn/">wiki</a>]​&nbsp;
+    [<a href="https://gray-meadows.inpr.sn/showcase">showcase</a>]​&nbsp;
     [<a href="https://trello.com/b/bzhLDyI8/gray-meadows-shell-roadmap">trello</a>]
   </h3>
 </div>
@@ -24,22 +25,25 @@ ok
 
 <table align="center">
   <tr>
-    <td colspan="5">
-      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/23d9bd08-8650-49c4-8bf7-63fecff50be3" />
+    <td colspan="3">
+      <img width="1920" height="1080" alt="1" src="https://github.com/user-attachments/assets/7fbfaec8-6ebf-4b88-bac8-9528c500d6db" />
     </td>
-    <td colspan="5">
-      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/af613a04-1611-4afd-b829-e03d01b3eb20" />
+    <td colspan="3">
+      <img width="1920" height="1080" alt="2" src="https://github.com/user-attachments/assets/47ace8c5-9aed-4f59-8f96-e77acb3c19c9" />
+    </td>
+    <td colspan="3">
+      <img width="1920" height="1080" alt="3" src="https://github.com/user-attachments/assets/a9558e80-a0fa-49d0-b33a-bf6d560f0da8" />
     </td>
   </tr>
   <tr>
-    <td colspan="3.33333">
-      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/cb200c75-7a86-41d0-8e59-49003ac2aa24" />
+    <td colspan="3">
+      <img width="1920" height="1080" alt="4" src="https://github.com/user-attachments/assets/31bfda9c-6dac-4147-b1c8-c212be6e2006" />
     </td>
-    <td colspan="3.33333">
-      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/6c60f4a2-1650-4c20-8101-5c0fc221fc5c" />
+    <td colspan="3">
+      <img width="1920" height="1080" alt="5" src="https://github.com/user-attachments/assets/9e08dcb5-4bac-44f1-a379-c002f4755e83" />
     </td>
-    <td colspan="3.33333">
-      <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/07aae2e3-4740-4e34-b3c4-ec6ee8a4e752" />
+    <td colspan="3">
+      <img width="1920" height="1080" alt="6" src="https://github.com/user-attachments/assets/6461d394-081d-4a61-9fc1-1e55074469af" />
     </td>
   </tr>
 </table>
