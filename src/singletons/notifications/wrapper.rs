@@ -15,12 +15,10 @@ use super::proxy::{self, OrgFreedesktopNotifications};
 static SHARED_CONNECTION: OnceLock<Arc<SyncConnection>> = OnceLock::new();
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub enum NotificationCloseReason {
     Expired = 1,
     Dismissed = 2,
     ClosedByCall = 3,
-    Undefined = 4,
 }
 
 #[derive(Debug, Clone)]
@@ -115,7 +113,7 @@ impl OrgFreedesktopNotifications for NotificationManager {
 
             notification.id = id;
             notifications.insert(id, notification.clone());
-            self.channel.send_blocking(BusEvent::NotificationAdded(id, notification));
+            self.channel.send_blocking(BusEvent::NotificationAdded(notification));
             Ok(id)
         }
     }

@@ -80,7 +80,7 @@ pub mod ffi {
         pub fn node_set_volume(id: i32, volume: f32);
 
         pub fn endpoint_get_is_default(id: i32) -> bool;
-        #[allow(dead_code)] pub fn endpoint_set_is_default(id: i32, is_default: bool);
+        pub fn endpoint_set_is_default(id: i32, is_default: bool);
     }
 }
 

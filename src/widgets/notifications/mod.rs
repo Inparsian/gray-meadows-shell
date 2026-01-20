@@ -110,7 +110,7 @@ pub fn listen_for_notifications() {
     gtk4::glib::spawn_future_local(async move {
         while let Ok(message) = receiver.recv().await {
             match message {
-                BusEvent::NotificationAdded(_, notification) => if !APP.do_not_disturb.get() {
+                BusEvent::NotificationAdded(notification) => if !APP.do_not_disturb.get() {
                     APP_LOCAL.with(move |app| {
                         for container in app.notification_containers.borrow().iter() {
                             let mut notif_widget = NotificationWidget::new(notification.clone());
@@ -145,8 +145,6 @@ pub fn listen_for_notifications() {
                         }
                     });
                 },
-
-                _ => {},
             }
         }
     });

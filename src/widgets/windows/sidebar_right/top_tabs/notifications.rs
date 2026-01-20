@@ -103,7 +103,7 @@ pub fn new() -> gtk4::Box {
             };
             
             match event {
-                BusEvent::NotificationAdded(_, notification) => {
+                BusEvent::NotificationAdded(notification) => {
                     let mut notif_widget = NotificationWidget::new(notification.clone());
                     notif_widget.set_notifications_ref(&widgets);
                     notifications_box.prepend(&notif_widget.root);
@@ -129,8 +129,6 @@ pub fn new() -> gtk4::Box {
                         }
                     }
                 },
-            
-                _ => {}
             }
         }
     });
