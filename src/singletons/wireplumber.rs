@@ -57,6 +57,10 @@ pub fn get_default_speaker() -> Option<ffi::Endpoint> {
     ENDPOINTS.get()?.read().ok()?.iter().find(|&e| e.is_default && e.type_ == ffi::EndpointType::Speaker).cloned()
 }
 
+pub fn get_default_microphone() -> Option<ffi::Endpoint> {
+    ENDPOINTS.get()?.read().ok()?.iter().find(|&e| e.is_default && e.type_ == ffi::EndpointType::Microphone).cloned()
+}
+
 pub fn update_node_property(node: &mut ffi::Node, property_name: &str) {
     match property_name {
         "description" => node.description = ffi::node_get_description(node.id),
