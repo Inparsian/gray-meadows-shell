@@ -19,24 +19,6 @@
 
 My personal stand-alone Hyprland desktop shell using gtk4 and gtk4-layer-shell, re-written from scratch in Rust and C++ (originally in TypeScript + JSX using AGSv2).
 
-- Bar with workspace management, music controls, system tray, system stats, volume, and more
-- OSD for notifications, volume and submaps
-- Clipboard manager powered by `cliphist` and `wl-clipboard`
-- Overview:
-  - Application launcher with intelligent searching
-  - Tracking of most launched applications, most launched apps get a search weight boost
-  - Run web searches, execute shell commands, calculator powered by Qalculate, text transformation tools, and more
-- Right sidebar:
-  - Notifications
-  - Audio controls
-  - Calendar
-  - Weather
-  - Timers *(soon)*
-- Left sidebar:
-  - Google Translate integration
-  - Advanced color picker
-  - Integrated AI assistant powered by OpenAI/Gemini
-
 ## 📷 Show me the screenshots
 ok
 
@@ -65,6 +47,26 @@ ok
 ## ❤️ Sponsors
 I express my deep gratitude to the following sponsors for their generous support, it means a lot to me!
 - [Alexis](https://github.com/garado)
+
+## 💡 Features
+
+- Bar with workspace management, music controls, system tray, system stats, volume, and more
+- OSD for notifications, volume and submaps
+- Clipboard manager powered by `cliphist` and `wl-clipboard`
+- Overview:
+  - Application launcher with intelligent searching
+  - Tracking of most launched applications, most launched apps get a search weight boost
+  - Run web searches, execute shell commands, calculator powered by Qalculate, text transformation tools, and more
+- Right sidebar:
+  - Notifications
+  - Audio controls
+  - Calendar
+  - Weather
+  - Timers *(soon)*
+- Left sidebar:
+  - Google Translate integration
+  - Advanced color picker
+  - Integrated AI assistant powered by OpenAI/Gemini
 
 ## 🤔 Why the name "Gray Meadows"?
 grayscale color scheme, first screenshot of the agsv2 version used a foggy forest wallpaper. was too lazy to come up with a better name
