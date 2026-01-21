@@ -72,7 +72,7 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
         if !ai::is_currently_in_cycle()
             && let Some(conversation_id) = ai::current_conversation_id()
         {
-            gtk4::glib::spawn_future_local(ai::conversation::clear_conversation(conversation_id));
+            glib::spawn_future_local(ai::conversation::clear_conversation(conversation_id));
         }
     });
     conversation_controls.append(&clear_conversation_button);
@@ -95,7 +95,7 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
     widget.append(&chat_window);
 
     let scroll_to_bottom: Rc<dyn Fn()> = Rc::new(move || {
-        gtk4::glib::timeout_add_local_once(Duration::from_millis(50), {
+        glib::timeout_add_local_once(Duration::from_millis(50), {
             let chat_window = chat_window.clone();
             move || {
                 let adjustment = chat_window.vadjustment();
@@ -113,7 +113,7 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
     if let Some(channel) = ai::CHANNEL.get() {
         let mut receiver = channel.subscribe();
 
-        gtk4::glib::spawn_future_local(async move {
+        glib::spawn_future_local(async move {
             let chat = chat.clone();
             let conversation_title = conversation_title.clone();
             while let Ok(message) = receiver.recv().await {
@@ -296,7 +296,7 @@ pub fn conversations_ui(stack: &gtk4::Stack) -> gtk4::Box {
 
     let new_conversation_button = conversation_ui_header_button("add", "New Conversation");
     new_conversation_button.connect_clicked(move |_| {
-        gtk4::glib::spawn_future_local(ai::conversation::add_conversation("Untitled"));
+        glib::spawn_future_local(ai::conversation::add_conversation("Untitled"));
     });
     header.append(&new_conversation_button);
 
@@ -331,7 +331,7 @@ pub fn new() -> gtk4::Box {
     if let Some(channel) = ai::CHANNEL.get() {
         let mut receiver = channel.subscribe();
 
-        gtk4::glib::spawn_future_local(async move {
+        glib::spawn_future_local(async move {
             while let Ok(message) = receiver.recv().await {
                 if let AiChannelMessage::ConversationLoaded(_) = message {
                     ui_stack.set_visible_child_name("chat_ui");

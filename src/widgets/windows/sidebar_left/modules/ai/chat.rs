@@ -200,7 +200,7 @@ impl ChatMessage {
         delete_button.connect_clicked({
             let id = id.clone();
             move |_| if !ai::is_currently_in_cycle() && let Some(message_id) = *id.borrow() {
-                gtk4::glib::spawn_future_local(ai::trim_items(message_id));
+                glib::spawn_future_local(ai::trim_items(message_id));
             }
         });
         controls_box.append(&delete_button);
@@ -221,7 +221,7 @@ impl ChatMessage {
                     message_id
                 };
 
-                gtk4::glib::spawn_future_local(async move {
+                glib::spawn_future_local(async move {
                     ai::trim_items(message_id).await;
                     ai::start_request_cycle().await;
                 });

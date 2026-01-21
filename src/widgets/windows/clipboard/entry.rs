@@ -56,7 +56,7 @@ pub fn clipboard_entry(id: usize, preview: &str) -> gtk4::Button {
             }
         });
 
-        gtk4::glib::spawn_future_local({
+        glib::spawn_future_local({
             let picture = picture.clone();
             async move {
                 if let Ok((width, height, decoded)) = rx.recv().await {

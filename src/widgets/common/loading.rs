@@ -52,7 +52,7 @@ pub fn new() -> gtk4::DrawingArea {
             drawing_area.queue_draw();
         }
         
-        gdk4::glib::ControlFlow::Continue
+        glib::ControlFlow::Continue
     });
     
     drawing_area

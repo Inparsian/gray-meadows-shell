@@ -64,7 +64,7 @@ impl NotificationsWindow {
                 }
             }
 
-            gdk4::glib::ControlFlow::Continue
+            glib::ControlFlow::Continue
         });
 
         NotificationsWindow {
@@ -94,7 +94,7 @@ impl NotificationsWindow {
             NOTIF_DISPLAY_TIMEOUT
         } as u64;
 
-        gtk4::glib::timeout_add_local_once(Duration::from_millis(timeout), {
+        glib::timeout_add_local_once(Duration::from_millis(timeout), {
             let widget = widget.clone();
             move || {
                 widget.queue_destroy(Some(NotificationDismissAnimation::Right));
@@ -107,7 +107,7 @@ pub fn listen_for_notifications() {
     use notifications::bus::BusEvent;
     let mut receiver = notifications::subscribe();
 
-    gtk4::glib::spawn_future_local(async move {
+    glib::spawn_future_local(async move {
         while let Ok(message) = receiver.recv().await {
             match message {
                 BusEvent::NotificationAdded(notification) => if !APP.do_not_disturb.get() {

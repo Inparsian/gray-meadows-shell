@@ -92,7 +92,7 @@ pub fn new() -> gtk4::Box {
     }
 
     let mut receiver = notifications::subscribe();
-    gtk4::glib::spawn_future_local(async move {
+    glib::spawn_future_local(async move {
         while let Ok(event) = receiver.recv().await {
             let update_view = || {
                 let count = notifications::NOTIFICATIONS.get()

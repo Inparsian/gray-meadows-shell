@@ -241,7 +241,7 @@ impl LanguageSelectView {
         let _ = view.update_page_boxes(None);
 
         // Start our event receiver task
-        gtk4::glib::spawn_future_local({
+        glib::spawn_future_local({
             let view = view.clone();
             async move {
                 let mut receiver = translate::subscribe_to_ui_events();

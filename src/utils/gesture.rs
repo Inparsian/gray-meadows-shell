@@ -12,7 +12,7 @@ where
 
     controller.connect_key_pressed(move |_, keyval, keycode, _| {
         on_press(keyval, keycode);
-        gtk4::glib::Propagation::Proceed
+        glib::Propagation::Proceed
     });
 
     controller
@@ -27,7 +27,7 @@ where
     controller.connect_scroll(move |_, _, dy| {
         on_scroll(dy);
 
-        gtk4::glib::Propagation::Stop
+        glib::Propagation::Stop
     });
 
     controller

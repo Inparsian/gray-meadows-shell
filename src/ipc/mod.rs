@@ -19,7 +19,7 @@ pub fn listen_for_messages_local<F>(callback: F)
 where
     F: Fn(String) + 'static,
 {
-    gtk4::glib::spawn_future_local(async move {
+    glib::spawn_future_local(async move {
         let mut receiver = server::subscribe();
         while let Ok(message) = receiver.recv().await {
             callback(message);

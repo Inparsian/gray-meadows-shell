@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc, time::Duration};
 
 #[derive(Clone, Debug)]
 pub struct Timeout {
-    source: Rc<RefCell<Option<gtk4::glib::SourceId>>>,
+    source: Rc<RefCell<Option<glib::SourceId>>>,
 }
 
 impl Default for Timeout {
@@ -23,7 +23,7 @@ impl Timeout {
                 existing_source.remove();
             }
 
-            *source = Some(gtk4::glib::timeout_add_local_once(duration, {
+            *source = Some(glib::timeout_add_local_once(duration, {
                 let source = self.source.clone();
                 move || {
                     callback();

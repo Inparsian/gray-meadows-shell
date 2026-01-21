@@ -302,7 +302,7 @@ pub fn new() -> gtk4::Box {
 
     // When the date changes, re-render the calendar
     let current_date = Rc::new(RefCell::new(DATE_TIME.get_cloned().date));
-    gtk4::glib::spawn_future_local(signal_cloned!(DATE_TIME, (date_time) {
+    glib::spawn_future_local(signal_cloned!(DATE_TIME, (date_time) {
         let mut lock = current_date.borrow_mut();
         if date_time.date != *lock {
             *lock = date_time.date;

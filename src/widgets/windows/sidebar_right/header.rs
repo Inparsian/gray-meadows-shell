@@ -98,7 +98,7 @@ pub fn new() -> gtk4::Box {
         face.set_from_file(Some(face_path));
     }
 
-    gtk4::glib::spawn_future_local(signal!(SYS_STATS.uptime, (uptime) {
+    glib::spawn_future_local(signal!(SYS_STATS.uptime, (uptime) {
         uptime_label.set_label(&get_uptime_label_text(Some(uptime)));
     }));
 

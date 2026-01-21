@@ -21,7 +21,7 @@ pub fn new() -> gtk4::Button {
 
     let button = toggle.button.clone();
 
-    gtk4::glib::spawn_future_local(signal_cloned!(hyprland::HYPRLAND.submap, (submap) {
+    glib::spawn_future_local(signal_cloned!(hyprland::HYPRLAND.submap, (submap) {
         if let Some(submap) = submap {
             toggle.set_toggled(submap == "grab");
         } else {

@@ -254,7 +254,7 @@ pub fn new() -> gtk4::Box {
     });
 
     // Start our event receiver task
-    gtk4::glib::spawn_future_local(async move {
+    glib::spawn_future_local(async move {
         let mut receiver = subscribe_to_ui_events();
         while let Ok(event) = receiver.recv().await {
             match event {

@@ -1,6 +1,5 @@
 use std::cell::RefCell;
 use gtk4::prelude::*;
-use gtk4::glib::{self, clone};
 use relm4::RelmRemoveAllExt as _;
 
 use crate::singletons::weather::schemas::nws::{NwsAlertsResponse, NwsFeature};

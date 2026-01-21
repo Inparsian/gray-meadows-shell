@@ -58,7 +58,7 @@ impl OverviewSearchList {
         *self.lock.borrow_mut() = true;
 
         // Unlock after LOCK_HOLD_DURATION
-        gtk4::glib::timeout_add_local_once(LOCK_HOLD_DURATION, {
+        glib::timeout_add_local_once(LOCK_HOLD_DURATION, {
             let lock = self.lock.clone();
             move || *lock.borrow_mut() = false
         });
@@ -72,7 +72,7 @@ impl OverviewSearchList {
         self.widget.insert(&item.get_row(), position as i32);
 
         // Reveal this item after 1ms
-        gtk4::glib::timeout_add_local_once(Duration::from_millis(1), {
+        glib::timeout_add_local_once(Duration::from_millis(1), {
             let item = item.clone();
             move || item.reveal()
         });
@@ -89,7 +89,7 @@ impl OverviewSearchList {
             let item = self.items.remove(position);
             item.hide();
 
-            gtk4::glib::timeout_add_local_once(Duration::from_millis(ITEM_ANIMATION_DURATION as u64), {
+            glib::timeout_add_local_once(Duration::from_millis(ITEM_ANIMATION_DURATION as u64), {
                 let widget = self.widget.clone();
                 move || widget.remove(&item.get_row())
             });

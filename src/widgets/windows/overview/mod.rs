@@ -8,7 +8,6 @@ use std::rc::Rc;
 use std::sync::LazyLock;
 use freedesktop_desktop_entry::get_languages_from_env;
 use gtk4::prelude::*;
-use gtk4::glib::{self, clone};
 use regex::Regex;
 use urlencoding::encode;
 
@@ -296,7 +295,7 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
     )));
     
     entry.connect_changed(move |entry| {
-        gtk4::glib::spawn_future_local(clone!(
+        glib::spawn_future_local(clone!(
             #[weak] entry,
             #[weak] entry_prompt_revealer,
             #[weak] windows_revealer,

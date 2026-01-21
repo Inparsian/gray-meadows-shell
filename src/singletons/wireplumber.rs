@@ -14,7 +14,7 @@ pub fn subscribe_default_speaker_volume<F>(callback: F)
 where 
     F: Fn(f32) + 'static
 {
-    gtk4::glib::spawn_future_local(async move {
+    glib::spawn_future_local(async move {
         let mut receiver = subscribe();
         while let Ok(event) = receiver.recv().await {
             match event {

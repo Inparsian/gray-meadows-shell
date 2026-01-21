@@ -62,7 +62,7 @@ impl ConversationItem {
             move |_| {
                 let new_title = title_input.text().to_string();
                 if !new_title.is_empty() && new_title != conversation.borrow().title {
-                    gtk4::glib::spawn_future_local({
+                    glib::spawn_future_local({
                         let id = conversation.borrow().id;
                         let new_title = new_title.clone();
                         async move {
@@ -111,7 +111,7 @@ impl ConversationItem {
         delete_button.connect_clicked({
             let conversation = conversation.clone();
             move |_| {
-                gtk4::glib::spawn_future_local(ai::conversation::delete_conversation(conversation.borrow().id));
+                glib::spawn_future_local(ai::conversation::delete_conversation(conversation.borrow().id));
             }
         });
         controls_box.append(&delete_button);
@@ -138,7 +138,7 @@ impl ConversationItem {
         info_box.add_controller(gesture::on_primary_up({
             let conversation = conversation.clone();
             move |_, _, _| if !WidgetExt::is_visible(&title_input) {
-                gtk4::glib::spawn_future_local(ai::conversation::load_conversation(conversation.borrow().id));
+                glib::spawn_future_local(ai::conversation::load_conversation(conversation.borrow().id));
             }
         }));
 
@@ -178,7 +178,7 @@ impl ConversationsList {
         // Listen for events from the AI singleton channel
         let receiver = ai::CHANNEL.get().map(|channel| channel.subscribe());
         if let Some(mut receiver) = receiver {
-            gtk4::glib::spawn_future_local({
+            glib::spawn_future_local({
                 let me = me.clone();
                 async move {
                     while let Ok(message) = receiver.recv().await {
@@ -253,7 +253,7 @@ impl ConversationsList {
         }
 
         // Add existing conversations from the database
-        gtk4::glib::spawn_future_local({
+        glib::spawn_future_local({
             let root = me.root.clone();
             let conversations = me.conversations.clone();
             async move {

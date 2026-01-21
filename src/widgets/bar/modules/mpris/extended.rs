@@ -285,10 +285,10 @@ fn default_mpris_player() -> gtk4::Box {
     });
 
     // run a future that changes the progress bar value every second if playing
-    gtk4::glib::spawn_future_local({
+    glib::spawn_future_local({
         async move {
             loop {
-                gtk4::glib::source::idle_add_local_once({
+                glib::source::idle_add_local_once({
                     let progress = progress.clone();
                     let progress_bar = progress_bar.clone();
                     move || {
@@ -305,7 +305,7 @@ fn default_mpris_player() -> gtk4::Box {
                     }
                 });
 
-                gtk4::glib::timeout_future(std::time::Duration::from_millis(500)).await;
+                glib::timeout_future(std::time::Duration::from_millis(500)).await;
             }
         }
     });

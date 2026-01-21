@@ -126,7 +126,7 @@ impl Tabs {
             }
         };
 
-        gtk4::glib::spawn_future_local({
+        glib::spawn_future_local({
             let widget = widget.clone();
             let only_current_tab_visible = self.only_current_tab_visible;
 
@@ -161,7 +161,7 @@ impl TabsStack {
         widget.set_transition_duration(150);
         widget.set_css_classes(&[class_name.unwrap_or("tabs-stack")]);
 
-        gtk4::glib::spawn_future_local({
+        glib::spawn_future_local({
             let widget = widget.clone();
             signal_cloned!(tabs.current_tab, (tab) {
                 widget.set_visible_child_name(tab.as_deref().unwrap_or_default());

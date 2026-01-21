@@ -74,7 +74,7 @@ impl ProgressBar {
                 drawing_area.queue_draw();
             }
             
-            gdk4::glib::ControlFlow::Continue
+            glib::ControlFlow::Continue
         });
 
         let primary_held = Rc::new(RefCell::new(false));

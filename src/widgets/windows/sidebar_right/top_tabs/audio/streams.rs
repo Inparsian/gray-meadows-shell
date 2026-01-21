@@ -1,7 +1,6 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use gtk4::prelude::*;
-use gtk4::glib::{self, clone};
 
 use crate::ffi::astalwp::ffi::{self, Node};
 use crate::singletons::wireplumber;

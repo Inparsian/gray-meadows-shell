@@ -1570,6 +1570,7 @@ dependencies = [
  "futures-signals",
  "gdk4",
  "gemini-rust",
+ "glib",
  "gtk4",
  "gtk4-layer-shell",
  "gtk4cmark",

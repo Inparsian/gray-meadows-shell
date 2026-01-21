@@ -19,7 +19,7 @@ pub fn new() -> gtk4::Box {
         }
     }
 
-    gtk4::glib::spawn_future_local(signal_cloned!(DATE_TIME, (date_time) {
+    glib::spawn_future_local(signal_cloned!(DATE_TIME, (date_time) {
         time_label.set_label(&date_time.time);
         date_label.set_label(&date_time.date);
     }));

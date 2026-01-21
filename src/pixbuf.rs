@@ -17,7 +17,7 @@ thread_local! {
 
 pub fn get_pixbuf(icon_name: &str) -> Option<Pixbuf> {
     // Ensure this is being run on the main context.
-    if !gtk4::glib::MainContext::default().is_owner() {
+    if !glib::MainContext::default().is_owner() {
         return None;
     }
 

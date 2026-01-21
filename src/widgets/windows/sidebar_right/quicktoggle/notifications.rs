@@ -16,10 +16,10 @@ pub fn new() -> gtk4::Button {
 
     let button = toggle.button.clone();
 
-    gtk4::glib::spawn_future_local(signal!(APP.do_not_disturb, (do_not_disturb) {
+    glib::spawn_future_local(signal!(APP.do_not_disturb, (do_not_disturb) {
         toggle.set_toggled(do_not_disturb);
         
-        gtk4::glib::spawn_future_local(async move {
+        glib::spawn_future_local(async move {
             if let Err(err) = set_do_not_disturb(do_not_disturb).await {
                 error!(%err, "Failed to set do not disturb");
             }

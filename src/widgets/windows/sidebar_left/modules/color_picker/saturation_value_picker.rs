@@ -71,7 +71,7 @@ impl SaturationValuePicker {
             *clicked.borrow_mut() = false;
         }));
 
-        gtk4::glib::spawn_future_local({
+        glib::spawn_future_local({
             let picker = picker.clone();
             signal!(hsv, (_) {
                 picker.update_background_hue();

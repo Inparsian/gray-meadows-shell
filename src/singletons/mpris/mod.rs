@@ -48,14 +48,14 @@ where
 {
     let callback = Rc::new(callback);
 
-    gtk4::glib::spawn_future_local({
+    glib::spawn_future_local({
         let callback = callback.clone();
 
         signal_vec_cloned!(MPRIS.players, (change) {
             let run_callback = || {
                 let callback = callback.clone();
 
-                gtk4::glib::source::idle_add_local_once(move || {
+                glib::source::idle_add_local_once(move || {
                     assert_default_player();
                     callback(MPRIS.default_player.get());
                 });
@@ -80,10 +80,10 @@ where
         })
     });
 
-    gtk4::glib::spawn_future_local(signal!(MPRIS.default_player, (index) {
+    glib::spawn_future_local(signal!(MPRIS.default_player, (index) {
         let callback = callback.clone();
         
-        gtk4::glib::source::idle_add_local_once(move || callback(index));
+        glib::source::idle_add_local_once(move || callback(index));
     }));
 }
 
@@ -94,14 +94,14 @@ where
 {
     let callback = Rc::new(callback);
 
-    gtk4::glib::spawn_future_local({
+    glib::spawn_future_local({
         let callback = callback.clone();
 
         signal_vec_cloned!(MPRIS.players, (change) {
             let run_callback = |difference| {
                 let callback = callback.clone();
 
-                gtk4::glib::source::idle_add_local_once(move || {
+                glib::source::idle_add_local_once(move || {
                     assert_default_player();
                     callback(difference, MPRIS.players.lock_ref().len() - 1);
                 });
@@ -122,7 +122,7 @@ where
     for index in 0..value {
         let callback = callback.clone();
         let player = MPRIS.players.lock_ref().get(index).cloned().unwrap();
-        gtk4::glib::source::idle_add_local_once(move || callback(VecDiff::Push { value: player }, index));
+        glib::source::idle_add_local_once(move || callback(VecDiff::Push { value: player }, index));
     }
 }
 

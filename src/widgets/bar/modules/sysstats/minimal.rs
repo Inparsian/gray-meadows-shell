@@ -47,7 +47,7 @@ pub fn minimal() -> gtk4::Box {
         box_.append(label);
         box_.append(&detailed_reveal);
 
-        gtk4::glib::spawn_future_local(signal!(DETAILED, (detailed) {
+        glib::spawn_future_local(signal!(DETAILED, (detailed) {
             detailed_reveal.set_reveal_child(detailed);
         }));
 
@@ -103,30 +103,30 @@ pub fn minimal() -> gtk4::Box {
         }
     }
 
-    gtk4::glib::spawn_future_local(signal!(SYS_STATS.memory, (memory) {
+    glib::spawn_future_local(signal!(SYS_STATS.memory, (memory) {
         ram_usage_label.set_label(&format_percentage(memory.usage_percentage()));
         detailed_ram_usage_label.set_label(&get_detailed_memory_usage_label_text(&memory));
     }));
 
-    gtk4::glib::spawn_future_local(signal!(SYS_STATS.swap, (swap) {
+    glib::spawn_future_local(signal!(SYS_STATS.swap, (swap) {
         swap_usage_label.set_label(&format_percentage(swap.usage_percentage()));
         detailed_swap_usage_label.set_label(&get_detailed_memory_usage_label_text(&swap));
         swap_usage_box.set_visible(swap.usage_percentage() > SWAP_SHOW_THRESHOLD);
     }));
 
-    gtk4::glib::spawn_future_local(signal!(SYS_STATS.global_cpu_usage, (global_cpu_usage) {
+    glib::spawn_future_local(signal!(SYS_STATS.global_cpu_usage, (global_cpu_usage) {
         cpu_usage_label.set_label(&format_percentage(global_cpu_usage));
     }));
 
-    gtk4::glib::spawn_future_local(signal!(SENSORS.cpu_temp, (cpu_temp) {
+    glib::spawn_future_local(signal!(SENSORS.cpu_temp, (cpu_temp) {
         cpu_temperature_label.set_label(&get_temperature_label_text(cpu_temp));
     }));
 
-    gtk4::glib::spawn_future_local(signal!(SYS_STATS.gpu_utilization, (gpu_utilization) {
+    glib::spawn_future_local(signal!(SYS_STATS.gpu_utilization, (gpu_utilization) {
         gpu_usage_label.set_label(&format_percentage(gpu_utilization));
     }));
     
-    gtk4::glib::spawn_future_local(signal!(SYS_STATS.gpu_temperature, (gpu_temperature) {
+    glib::spawn_future_local(signal!(SYS_STATS.gpu_temperature, (gpu_temperature) {
         gpu_temperature_label.set_label(&get_temperature_label_text(gpu_temperature));
     }));
 

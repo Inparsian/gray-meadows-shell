@@ -137,7 +137,7 @@ pub fn activate_lock(lock: &Rc<RefCell<bool>>) {
     *lock.borrow_mut() = true;
 
     // Unlock after LOCK_HOLD_DURATION
-    gtk4::glib::timeout_add_local_once(LOCK_HOLD_DURATION, {
+    glib::timeout_add_local_once(LOCK_HOLD_DURATION, {
         let lock = lock.clone();
         move || *lock.borrow_mut() = false
     });

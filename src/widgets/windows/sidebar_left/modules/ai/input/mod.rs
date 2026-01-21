@@ -163,10 +163,10 @@ impl ChatInput {
                 if (key == gtk4::gdk::Key::Return || key == gtk4::gdk::Key::KP_Enter)
                     && !state.contains(gtk4::gdk::ModifierType::SHIFT_MASK)
                 {
-                    gtk4::glib::spawn_future_local(send_current_input());
-                    gtk4::glib::Propagation::Stop
+                    glib::spawn_future_local(send_current_input());
+                    glib::Propagation::Stop
                 } else {
-                    gtk4::glib::Propagation::Proceed
+                    glib::Propagation::Proceed
                 }
             }
         });
@@ -251,7 +251,7 @@ impl ChatInput {
         input_send_button.set_hexpand(true);
         input_send_button.set_valign(gtk4::Align::Start);
         input_send_button.connect_clicked(move |_| {
-            gtk4::glib::spawn_future_local(send_current_input());
+            glib::spawn_future_local(send_current_input());
         });
         input_controls_box.append(&input_send_button);
 

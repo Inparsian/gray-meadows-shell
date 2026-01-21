@@ -65,7 +65,7 @@ pub fn new() -> gtk4::Box {
         }
     }
 
-    gtk4::glib::spawn_future_local(signal_cloned!(WEATHER.last_response, (forecast) {
+    glib::spawn_future_local(signal_cloned!(WEATHER.last_response, (forecast) {
         if let Some(forecast) = &forecast {
             overview.update(forecast);
             today.update(forecast);
@@ -73,7 +73,7 @@ pub fn new() -> gtk4::Box {
         }
     }));
     
-    gtk4::glib::spawn_future_local(signal_cloned!(WEATHER.last_alerts_response, (weather_alerts) {
+    glib::spawn_future_local(signal_cloned!(WEATHER.last_alerts_response, (weather_alerts) {
         if let Some(weather_alerts) = &weather_alerts {
             alerts.update(weather_alerts);
         }

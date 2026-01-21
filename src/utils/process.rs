@@ -63,7 +63,7 @@ pub fn launch(input: &str) {
         return;
     };
 
-    let binding = gtk4::glib::environ();
+    let binding = glib::environ();
     let envp: Vec<&Path> = binding
         .iter()
         .map(Path::new)
@@ -75,11 +75,11 @@ pub fn launch(input: &str) {
             .filter(|path: &&Path| !path.as_os_str().is_empty())
             .collect();
 
-        if let Err(err) = gtk4::glib::spawn_async(
+        if let Err(err) = glib::spawn_async(
             None::<&str>,
             &argv_paths,
             &envp,
-            gtk4::glib::SpawnFlags::SEARCH_PATH_FROM_ENVP | gtk4::glib::SpawnFlags::SEARCH_PATH,
+            glib::SpawnFlags::SEARCH_PATH_FROM_ENVP | glib::SpawnFlags::SEARCH_PATH,
             Some(Box::new(detach_child)),
         ) {
             error!(input, %err, "Failed to launch command");

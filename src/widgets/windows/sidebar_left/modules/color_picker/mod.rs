@@ -239,7 +239,7 @@ pub fn new() -> gtk4::Box {
     paste_from_clipboard_button.connect_clicked({
         let hsv = hsv.clone();
         move |_| {
-            gtk4::glib::spawn_future_local({
+            glib::spawn_future_local({
                 let hsv = hsv.clone();
                 let paste_from_clipboard_label = paste_from_clipboard_label.clone();
                 let button_label_change_timeout = button_label_change_timeout.clone();
@@ -272,7 +272,7 @@ pub fn new() -> gtk4::Box {
     color_tabs_stack.add_tab(Some("oklab"), &oklab_fields.widget);
     color_tabs_stack.add_tab(Some("oklch"), &oklch_fields.widget);
 
-    gtk4::glib::spawn_future_local(signal!(hsv, (hsv) {
+    glib::spawn_future_local(signal!(hsv, (hsv) {
         use fields::FieldUpdate::*;
 
         let rgba = Rgba::from_model(hsv);

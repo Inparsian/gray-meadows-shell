@@ -23,7 +23,7 @@ impl Osd for KeybindsOsd {
     }
 
     fn listen_for_events(&self) {
-        gtk4::glib::spawn_future_local({
+        glib::spawn_future_local({
             let revealers = self.revealers.clone();
 
             signal_cloned!(hyprland::HYPRLAND.submap, (submap) {

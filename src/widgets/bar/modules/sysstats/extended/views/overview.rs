@@ -27,23 +27,23 @@ pub fn overview() -> gtk4::Box {
         },
     }
 
-    gtk4::glib::spawn_future_local({
+    glib::spawn_future_local({
         let cpu_stat_row = cpu_stat_row.clone();
         signal!(SYS_STATS.global_cpu_usage, (cpu_usage) {
             cpu_stat_row.set_value(&format!("{:.1}%", cpu_usage));
         })
     });
 
-    gtk4::glib::spawn_future_local(signal!(SENSORS.cpu_temp, (cpu_temp) {
+    glib::spawn_future_local(signal!(SENSORS.cpu_temp, (cpu_temp) {
         cpu_stat_row.set_secondary_value(&format!("{:.1}°C", cpu_temp));
     }));
 
-    gtk4::glib::spawn_future_local(signal!(SYS_STATS.memory, (memory) {
+    glib::spawn_future_local(signal!(SYS_STATS.memory, (memory) {
         mem_stat_row.set_value(&format!("{:.1} / {:.1} GiB", bytes_to_gib(memory.used), bytes_to_gib(memory.total)));
         mem_stat_row.set_secondary_value(&format!("{:.1}%", memory.usage_percentage()));
     }));
 
-    gtk4::glib::spawn_future_local(signal!(SYS_STATS.swap, (swap) {
+    glib::spawn_future_local(signal!(SYS_STATS.swap, (swap) {
         swap_stat_row.set_value(&format!("{:.1} / {:.1} GiB", bytes_to_gib(swap.used), bytes_to_gib(swap.total)));
         swap_stat_row.set_secondary_value(&format!("{:.1}%", swap.usage_percentage()));
 
@@ -54,18 +54,18 @@ pub fn overview() -> gtk4::Box {
         }
     }));
 
-    gtk4::glib::spawn_future_local({
+    glib::spawn_future_local({
         let gpu_stat_row = gpu_stat_row.clone();
         signal!(SYS_STATS.gpu_utilization, (gpu_utilization) {
             gpu_stat_row.set_value(&format!("{:.1}%", gpu_utilization));
         })
     });
     
-    gtk4::glib::spawn_future_local(signal!(SYS_STATS.gpu_temperature, (gpu_temperature) {
+    glib::spawn_future_local(signal!(SYS_STATS.gpu_temperature, (gpu_temperature) {
         gpu_stat_row.set_secondary_value(&format!("{:.1}°C", gpu_temperature));
     }));
 
-    gtk4::glib::spawn_future_local(signal!(SYS_STATS.gpu_memory, (gpu_memory) {
+    glib::spawn_future_local(signal!(SYS_STATS.gpu_memory, (gpu_memory) {
         vram_stat_row.set_value(&format!("{:.1} / {:.1} GiB", bytes_to_gib(gpu_memory.used), bytes_to_gib(gpu_memory.total)));
         vram_stat_row.set_secondary_value(&format!("{:.1}%", gpu_memory.usage_percentage()));
     }));

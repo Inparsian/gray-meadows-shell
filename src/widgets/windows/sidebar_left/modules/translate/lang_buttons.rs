@@ -82,7 +82,7 @@ impl LanguageButtons {
             }}
         "));
 
-        gtk4::glib::timeout_add_local_once(Duration::from_millis(10), {
+        glib::timeout_add_local_once(Duration::from_millis(10), {
             let swap_transition_provider = self.swap_transition_provider.clone();
             move || swap_transition_provider.load_from_data("
                 .google-translate-language-select-button.source-lang,

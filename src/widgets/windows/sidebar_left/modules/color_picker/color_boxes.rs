@@ -111,7 +111,7 @@ pub fn get_analogous_color_boxes(hsv: &Mutable<Hsv>, count: u32, color_tabs: &Ta
         boxes.push(color_box);
     }
 
-    gtk4::glib::spawn_future_local({
+    glib::spawn_future_local({
         let boxes = boxes.clone();
         let color = hsv.get();
         signal!(hsv, (hsv) {
@@ -147,7 +147,7 @@ pub fn get_lighter_darker_color_boxes(hsv: &Mutable<Hsv>, count: u32, color_tabs
         boxes.push((color_box, label));
     }
 
-    gtk4::glib::spawn_future_local({
+    glib::spawn_future_local({
         let boxes = boxes.clone();
         let color = hsv.get();
         signal!(hsv, (hsv) {

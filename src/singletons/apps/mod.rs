@@ -122,7 +122,7 @@ pub fn refresh_desktops() {
 pub fn launch_and_track(command: &str) {
     process::launch(command);
 
-    gtk4::glib::spawn_future_local({
+    glib::spawn_future_local({
         let command = command.to_owned();
         async move {
             let _ = commands::increment_runs(&command).await;

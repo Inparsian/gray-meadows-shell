@@ -33,8 +33,8 @@ pub fn new() -> gtk4::Button {
             APP.game_mode.set(new_state);
 
             // This is an edge case in case game_mode somehow becomes desynced with hyprland's animation toggle
-            gtk4::glib::spawn_future_local(async move {
-                gtk4::glib::timeout_future(std::time::Duration::from_millis(100)).await;
+            glib::spawn_future_local(async move {
+                glib::timeout_future(std::time::Duration::from_millis(100)).await;
 
                 if let Some(message) = call_hyprctl("getoption animations:enabled") {
                     let hyprland_state = message.split('\n').next()
@@ -53,7 +53,7 @@ pub fn new() -> gtk4::Button {
 
     let button = toggle.button.clone();
 
-    gtk4::glib::spawn_future_local(signal!(APP.game_mode, (game_mode) {
+    glib::spawn_future_local(signal!(APP.game_mode, (game_mode) {
         toggle.set_toggled(game_mode);
     }));
 

@@ -57,7 +57,7 @@ impl SystemTrayItem {
                     }
                 });
 
-                gtk4::glib::spawn_future_local({
+                glib::spawn_future_local({
                     let popover_menu = popover_menu.clone();
                     async move {
                         if let Ok((item, layout)) = receiver.recv().await {
@@ -225,7 +225,7 @@ pub fn new() -> gtk4::Box {
     }
 
     // Watch for tray events
-    gtk4::glib::spawn_future_local(async move {
+    glib::spawn_future_local(async move {
         let mut receiver = tray::subscribe();
         while let Ok(event) = receiver.recv().await {
             match event {

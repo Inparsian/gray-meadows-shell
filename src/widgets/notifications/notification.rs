@@ -304,7 +304,7 @@ impl NotificationWidget {
 
     pub async fn wait_until_not_expanded(&self) {
         while *self.expanded.borrow() {
-            gtk4::glib::timeout_future(Duration::from_millis(50)).await;
+            glib::timeout_future(Duration::from_millis(50)).await;
         }
     }
 
@@ -312,10 +312,10 @@ impl NotificationWidget {
         let me = self.clone();
 
         // Wait until not expanded. if expanded, wait again
-        gtk4::glib::spawn_future_local(async move {
+        glib::spawn_future_local(async move {
             me.wait_until_not_expanded().await;
 
-            gtk4::glib::timeout_add_local_once(
+            glib::timeout_add_local_once(
                 Duration::from_millis(1000),
                 move || if *me.expanded.borrow() {
                     me.queue_destroy(animation);
@@ -345,7 +345,7 @@ impl NotificationWidget {
             notifications.borrow_mut().retain(|w| !w.root.eq(&self.root));
         }
 
-        gtk4::glib::timeout_add_local_once(
+        glib::timeout_add_local_once(
             Duration::from_millis(NOTIF_TRANSITION_DURATION as u64),
             {
                 let me = self.clone();

@@ -128,7 +128,7 @@ pub fn bundle_apply_scss() {
     if output.status.success() {
         let css = String::from_utf8_lossy(&output.stdout).to_string();
         
-        gtk4::glib::MainContext::default().invoke(move || {
+        glib::MainContext::default().invoke(move || {
             APP_LOCAL.with(|app| app.provider.load_from_data(&css));
         });
         

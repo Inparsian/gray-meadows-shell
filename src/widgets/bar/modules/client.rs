@@ -106,7 +106,7 @@ pub fn new() -> gtk4::Box {
     }
 
     // Subscribe to Hyprland signals to update the client information
-    gtk4::glib::spawn_future_local(signal_cloned!(hyprland::HYPRLAND.active_client, (client) {
+    glib::spawn_future_local(signal_cloned!(hyprland::HYPRLAND.active_client, (client) {
         if let Some(client) = client {
             client_box.set_visible(true);
             workspace_label.set_visible(false);
@@ -137,7 +137,7 @@ pub fn new() -> gtk4::Box {
         }
     }));
 
-    gtk4::glib::spawn_future_local(signal!(reveal_title, (reveal) {
+    glib::spawn_future_local(signal!(reveal_title, (reveal) {
         title_revealer.set_reveal_child(reveal);
         class_revealer.set_reveal_child(!reveal);
     }));

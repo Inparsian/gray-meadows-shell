@@ -138,7 +138,7 @@ pub fn new() -> gtk4::Box {
 
     workspaces_drawing_area.style_context().add_provider(&style_provider, gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION);
 
-    gtk4::glib::spawn_future_local({
+    glib::spawn_future_local({
         let workspaces_drawing_area = workspaces_drawing_area.clone();
         signal_cloned!(hyprland::HYPRLAND.workspaces, (_) {
             WORKSPACE_MASK.lock().unwrap().update();
@@ -146,7 +146,7 @@ pub fn new() -> gtk4::Box {
         })
     });
 
-    gtk4::glib::spawn_future_local(signal_cloned!(hyprland::HYPRLAND.active_workspace, (active) {
+    glib::spawn_future_local(signal_cloned!(hyprland::HYPRLAND.active_workspace, (active) {
         WORKSPACE_MASK.lock().unwrap().update();
             
         if let Some(active) = active {

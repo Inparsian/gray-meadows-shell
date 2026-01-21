@@ -48,7 +48,7 @@ pub fn new() -> gtk4::Box {
     root.append(&speaker_master.root);
     
     let mut channel = wireplumber::subscribe();
-    gtk4::glib::spawn_future_local(async move {
+    glib::spawn_future_local(async move {
         while let Ok(event) = channel.recv().await {
             match event {
                 WpEvent::CreateStream(node) => streams.add_stream(node),
