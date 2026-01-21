@@ -20,6 +20,8 @@
 
 My personal stand-alone Hyprland desktop shell using gtk4 and gtk4-layer-shell, re-written from scratch in Rust and C++ (originally in TypeScript + JSX using AGSv2).
 
+⚠️ This is beta software. It can be daily-driven, but there may be bugs, performance issues, and things that otherwise need polishing. If you find any, check the Trello and issues tab before opening an issue/pull request.
+
 ## 📷 Show me the screenshots
 ok
 
