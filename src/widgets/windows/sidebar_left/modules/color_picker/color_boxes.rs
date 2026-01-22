@@ -18,7 +18,6 @@ pub struct ColorBox {
 
 pub fn get_color_box(hsv: Hsv, color_tabs: &Tabs) -> ColorBox {
     let hsv = Rc::new(RefCell::new(hsv));
-    let current_tab = &color_tabs.current_tab;
 
     view! {
         color_box = gtk4::Box {
@@ -28,9 +27,9 @@ pub fn get_color_box(hsv: Hsv, color_tabs: &Tabs) -> ColorBox {
 
         color_copy_button = gtk4::Button {
             set_css_classes: &["color-picker-transform-copy-button"],
-            connect_clicked: {
-                let hsv = hsv.clone();
-                let current_tab = current_tab.clone();
+            connect_clicked: clone!(
+                #[strong] hsv,
+                #[strong(rename_to = current_tab)] color_tabs.current_tab,
                 move |_| {
                     let hsv = hsv.borrow();
                     let text = match current_tab.get_cloned().as_deref() {
@@ -46,14 +45,14 @@ pub fn get_color_box(hsv: Hsv, color_tabs: &Tabs) -> ColorBox {
 
                     std::thread::spawn(move || clipboard::copy_text(&text));
                 }
-            },
+            ),
 
-            add_controller: gesture::on_secondary_up({
-                let hsv = hsv.clone();
+            add_controller: gesture::on_secondary_up(clone!(
+                #[strong] hsv,
                 move |_, _, _| {
                     let _ = ipc::client::send_message(&format!("color_picker_set_hex {}", hsv.borrow().into_hex()));
                 }
-            }),
+            )),
 
             gtk4::Label {
                 set_css_classes: &["material-icons"],
@@ -66,15 +65,15 @@ pub fn get_color_box(hsv: Hsv, color_tabs: &Tabs) -> ColorBox {
             set_transition_type: gtk4::RevealerTransitionType::Crossfade,
             set_transition_duration: 200,
             set_reveal_child: false,
-            add_controller: gesture::on_enter({
-                let revealer = color_copy_button_revealer.clone();
-                move |_, _| revealer.set_reveal_child(true)
-            }),
+            add_controller: gesture::on_enter(clone!(
+                #[weak] color_copy_button_revealer,
+                move |_, _| color_copy_button_revealer.set_reveal_child(true)
+            )),
 
-            add_controller: gesture::on_leave({
-                let revealer = color_copy_button_revealer.clone();
-                move || revealer.set_reveal_child(false)
-            }),
+            add_controller: gesture::on_leave(clone!(
+                #[weak] color_copy_button_revealer,
+                move || color_copy_button_revealer.set_reveal_child(false)
+            )),
 
             set_child: Some(&color_copy_button)
         },

@@ -11,8 +11,8 @@ pub fn new() -> gtk4::DrawingArea {
     drawing_area.set_css_classes(&["loading-indicator"]);
 
     // draw cool animated loading boxes that move up and down
-    drawing_area.set_draw_func({
-        let frametime = frametime.clone();
+    drawing_area.set_draw_func(clone!(
+        #[strong] frametime,
         move |_, cr, width, height| {
             let time: f64 = *frametime.borrow();
             let box_width = width as f64 / 6.0;
@@ -44,7 +44,7 @@ pub fn new() -> gtk4::DrawingArea {
                 let _ = cr.fill();
             }
         }
-    });
+    ));
 
     drawing_area.add_tick_callback(move |drawing_area, clock| {
         if drawing_area.is_visible() {

@@ -3,7 +3,7 @@ use gtk4::prelude::*;
 
 use super::{send_ui_event, LanguageSelectReveal, UiEvent, SOURCE_LANG, TARGET_LANG};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, glib::Downgrade)]
 pub struct LanguageButtons {
     pub source_lang_button: gtk4::Button,
     pub target_lang_button: gtk4::Button,

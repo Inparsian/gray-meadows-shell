@@ -94,12 +94,12 @@ impl NotificationsWindow {
             NOTIF_DISPLAY_TIMEOUT
         } as u64;
 
-        glib::timeout_add_local_once(Duration::from_millis(timeout), {
-            let widget = widget.clone();
+        glib::timeout_add_local_once(Duration::from_millis(timeout), clone!(
+            #[weak] widget,
             move || {
                 widget.queue_destroy(Some(NotificationDismissAnimation::Right));
             }
-        });
+        ));
     }
 }
 

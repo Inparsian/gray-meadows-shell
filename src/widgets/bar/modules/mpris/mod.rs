@@ -14,9 +14,9 @@ pub fn new() -> BarModuleWrapper {
     let module = BarModule::new(minimal::minimal(), extended::extended());
     let wrapper = BarModuleWrapper::new(module, &["bar-mpris"]);
 
-    wrapper.bx.add_controller({
-        let module = wrapper.module.clone();
-        gesture::on_middle_down(move |_, _, _| if !module.is_expanded() {
+    wrapper.bx.add_controller(gesture::on_middle_down(clone!(
+        #[weak(rename_to = module)] wrapper.module,
+        move |_, _, _| if !module.is_expanded() {
             let Some(player) = mpris::get_default_player() else {
                 return warn!("No MPRIS player available to toggle play/pause");
             };
@@ -24,21 +24,21 @@ pub fn new() -> BarModuleWrapper {
             if let Err(e) = player.play_pause() {
                 error!(%e, "Failed to toggle play/pause");
             }
-        })
-    });
+        }
+    )));
 
-    wrapper.bx.add_controller({
-        let module = wrapper.module.clone();
-        gesture::on_secondary_down(move |_, _, _| if !module.is_expanded() {
+    wrapper.bx.add_controller(gesture::on_secondary_down(clone!(
+        #[weak(rename_to = module)] wrapper.module,
+        move |_, _, _| if !module.is_expanded() {
             mpris::with_default_player_mut(|player| if let Err(e) = player.next() {
                 error!(%e, "Failed to skip to next track");
             });
-        })
-    });
+        }
+    )));
 
-    wrapper.bx.add_controller({
-        let module = wrapper.module.clone();
-        gesture::on_vertical_scroll(move |delta_y| if !module.is_expanded() {
+    wrapper.bx.add_controller(gesture::on_vertical_scroll(clone!(
+        #[weak(rename_to = module)] wrapper.module,
+        move |delta_y| if !module.is_expanded() {
             let Some(player) = mpris::get_default_player() else {
                 return warn!("No MPRIS player available to adjust volume");
             };
@@ -51,8 +51,8 @@ pub fn new() -> BarModuleWrapper {
 
             player.adjust_volume(step)
                 .unwrap_or_else(|e| error!(%e, "Failed to adjust volume"));
-        })
-    });
+        }
+    )));
 
     wrapper
 }

@@ -55,26 +55,26 @@ impl ConversationItem {
         title_input.set_css_classes(&["ai-chat-conversation-item-title-input"]);
         title_input.set_hexpand(true);
         title_input.set_visible(false);
-        title_input.connect_activate({
-            let conversation = conversation.clone();
-            let title_label = title_label.clone();
-            let title_input = title_input.clone();
+        title_input.connect_activate(clone!(
+            #[weak] title_label,
+            #[weak] title_input,
+            #[strong] conversation,
             move |_| {
                 let new_title = title_input.text().to_string();
                 if !new_title.is_empty() && new_title != conversation.borrow().title {
-                    glib::spawn_future_local({
-                        let id = conversation.borrow().id;
-                        let new_title = new_title.clone();
+                    glib::spawn_future_local(clone!(
+                        #[strong(rename_to = id)] conversation.borrow().id,
+                        #[strong] new_title,
                         async move {
                             ai::conversation::rename_conversation(id, &new_title).await;
                         }
-                    });
+                    ));
                     conversation.borrow_mut().title = new_title;
                     title_input.set_visible(false);
                     title_label.set_visible(true);
                 }
             }
-        });
+        ));
         info_box.append(&title_input);
 
         let conversation_id = conversation.borrow().id;
@@ -89,10 +89,10 @@ impl ConversationItem {
         controls_box.set_css_classes(&["ai-chat-conversation-item-controls-box"]);
 
         let rename_button = conversation_control_button("edit", "Rename Conversation");
-        rename_button.connect_clicked({
-            let title_label = title_label.clone();
-            let title_input = title_input.clone();
-            let conversation = conversation.clone();
+        rename_button.connect_clicked(clone!(
+            #[weak] title_label,
+            #[weak] title_input,
+            #[strong] conversation,
             move |_| {
                 if WidgetExt::is_visible(&title_input) {
                     title_label.set_visible(true);
@@ -104,16 +104,16 @@ impl ConversationItem {
                     title_input.grab_focus();
                 }
             }
-        });
+        ));
         controls_box.append(&rename_button);
 
         let delete_button = conversation_control_button("close", "Delete Conversation");
-        delete_button.connect_clicked({
-            let conversation = conversation.clone();
+        delete_button.connect_clicked(clone!(
+            #[strong] conversation,
             move |_| {
                 glib::spawn_future_local(ai::conversation::delete_conversation(conversation.borrow().id));
             }
-        });
+        ));
         controls_box.append(&delete_button);
 
         let controls_revealer = gtk4::Revealer::new();
@@ -124,23 +124,23 @@ impl ConversationItem {
         controls_revealer.set_child(Some(&controls_box));
         root.append(&controls_revealer);
 
-        root.add_controller(gesture::on_enter({
-            let controls_revealer = controls_revealer.clone();
+        root.add_controller(gesture::on_enter(clone!(
+            #[weak] controls_revealer,
             move |_, _| {
                 controls_revealer.set_reveal_child(true);
             }
-        }));
+        )));
 
         root.add_controller(gesture::on_leave(move || {
             controls_revealer.set_reveal_child(false);
         }));
 
-        info_box.add_controller(gesture::on_primary_up({
-            let conversation = conversation.clone();
+        info_box.add_controller(gesture::on_primary_up(clone!(
+            #[strong] conversation,
             move |_, _, _| if !WidgetExt::is_visible(&title_input) {
                 glib::spawn_future_local(ai::conversation::load_conversation(conversation.borrow().id));
             }
-        }));
+        )));
 
         Self {
             conversation,
@@ -159,7 +159,7 @@ impl ConversationItem {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, glib::Downgrade)]
 pub struct ConversationsList {
     pub root: gtk4::Box,
     pub conversations: Rc<RefCell<Vec<ConversationItem>>>,
@@ -178,8 +178,8 @@ impl ConversationsList {
         // Listen for events from the AI singleton channel
         let receiver = ai::CHANNEL.get().map(|channel| channel.subscribe());
         if let Some(mut receiver) = receiver {
-            glib::spawn_future_local({
-                let me = me.clone();
+            glib::spawn_future_local(clone!(
+                #[weak] me,
                 async move {
                     while let Ok(message) = receiver.recv().await {
                         match message {
@@ -249,7 +249,7 @@ impl ConversationsList {
                         }
                     }
                 }
-            });
+            ));
         }
 
         // Add existing conversations from the database

@@ -8,7 +8,7 @@ use crate::utils::gesture;
 use super::{GmsWindow, hide_all_popups};
 
 /// A popup window that displays content on top of other windows. It closes itself when it loses focus.
-#[derive(Clone)]
+#[derive(Clone, glib::Downgrade)]
 pub struct PopupWindow {
     pub window: gtk4::ApplicationWindow,
     pub revealer: gtk4::Revealer,
@@ -147,22 +147,21 @@ impl PopupWindow {
         window.set_child(Some(&revealer));
 
         let popup = Self {
-            window: window.clone(),
+            window,
             revealer,
         };
 
-        window.add_controller(gesture::on_key_press({
-            let popup = popup.clone();
+        popup.window.add_controller(gesture::on_key_press(clone!(
+            #[weak] popup,
             move |key, _| if key.name() == Some("Escape".into()) {
                 popup.hide();
             }
-        }));
+        )));
 
-        window.add_controller(gesture::on_primary_full_press({
-            let revealer = popup.revealer.clone();
-            let popup = popup.clone();
+        popup.window.add_controller(gesture::on_primary_full_press(clone!(
+            #[weak] popup,
             move |_, (px, py), (rx, ry)| {
-                let allocation = revealer.allocation();
+                let allocation = popup.revealer.allocation();
                 if popup.window.is_visible()
                     && !allocation.contains_point(px as i32, py as i32)
                     && !allocation.contains_point(rx as i32, ry as i32)
@@ -170,7 +169,7 @@ impl PopupWindow {
                     popup.hide();
                 }
             }
-        }));
+        )));
 
         popup.set_clickthrough(true);
         popup

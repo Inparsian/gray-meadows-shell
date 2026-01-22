@@ -56,8 +56,8 @@ pub fn clipboard_entry(id: usize, preview: &str) -> gtk4::Button {
             }
         });
 
-        glib::spawn_future_local({
-            let picture = picture.clone();
+        glib::spawn_future_local(clone!(
+            #[weak] picture,
             async move {
                 if let Ok((width, height, decoded)) = rx.recv().await {
                     let loader = gtk4::gdk_pixbuf::PixbufLoader::new();
@@ -71,7 +71,7 @@ pub fn clipboard_entry(id: usize, preview: &str) -> gtk4::Button {
                     }
                 }
             }
-        });
+        ));
 
         vec![picture.upcast()]
     } else if let Some(hex) = color::parse_color_into_hex(preview) {

@@ -44,14 +44,14 @@ where
                         rule
                     };
 
-                    let add_eavesdrop_rule_result = connection.add_match(eavesdrop_rule, {
-                        let callback_arc = callback_arc.clone();
+                    let add_eavesdrop_rule_result = connection.add_match(eavesdrop_rule, clone!(
+                        #[strong] callback_arc,
                         move |(), _, msg| {
                             let callback_lock = callback_arc.lock().unwrap();
                             callback_lock(msg);
                             true
                         }
-                    });
+                    ));
 
                     match add_eavesdrop_rule_result {
                         Ok(_) => info!(bus = if system { "system" } else { "session" }, "Now eavesdropping D-Bus signals"),

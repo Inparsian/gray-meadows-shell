@@ -53,6 +53,57 @@ pub struct NotificationWidget {
     pub style_provider: gtk4::CssProvider,
 }
 
+impl glib::clone::Downgrade for NotificationWidget {
+    type Weak = NotificationWidgetWeak;
+
+    fn downgrade(&self) -> Self::Weak {
+        NotificationWidgetWeak {
+            notifications_ref: self.notifications_ref.clone(),
+            notification: Rc::downgrade(&self.notification),
+            expanded: Rc::downgrade(&self.expanded),
+            destroying: Rc::downgrade(&self.destroying),
+            bx: glib::clone::Downgrade::downgrade(&self.bx),
+            root: glib::clone::Downgrade::downgrade(&self.root),
+            summary: glib::clone::Downgrade::downgrade(&self.summary),
+            body: glib::clone::Downgrade::downgrade(&self.body),
+            actions_box: glib::clone::Downgrade::downgrade(&self.actions_box),
+            style_provider: glib::clone::Downgrade::downgrade(&self.style_provider),
+        }
+    }
+}
+
+pub struct NotificationWidgetWeak {
+    pub notifications_ref: Option<Weak<RefCell<Vec<NotificationWidget>>>>,
+    pub notification: Weak<RefCell<Notification>>,
+    pub expanded: Weak<RefCell<bool>>,
+    pub destroying: Weak<RefCell<bool>>,
+    pub bx: glib::WeakRef<gtk4::Box>,
+    pub root: glib::WeakRef<gtk4::Revealer>,
+    pub summary: glib::WeakRef<gtk4::Label>,
+    pub body: glib::WeakRef<gtk4::Label>,
+    pub actions_box: glib::WeakRef<gtk4::Box>,
+    pub style_provider: glib::WeakRef<gtk4::CssProvider>,
+}
+
+impl glib::clone::Upgrade for NotificationWidgetWeak {
+    type Strong = NotificationWidget;
+
+    fn upgrade(&self) -> Option<Self::Strong> {
+        Some(NotificationWidget {
+            notifications_ref: self.notifications_ref.clone(),
+            notification: self.notification.upgrade()?,
+            expanded: self.expanded.upgrade()?,
+            destroying: self.destroying.upgrade()?,
+            bx: self.bx.upgrade()?,
+            root: self.root.upgrade()?,
+            summary: self.summary.upgrade()?,
+            body: self.body.upgrade()?,
+            actions_box: self.actions_box.upgrade()?,
+            style_provider: self.style_provider.upgrade()?,
+        })
+    }
+}
+
 impl NotificationWidget {
     fn make_action_button(
         notification: &Notification,
@@ -168,14 +219,13 @@ impl NotificationWidget {
             style_provider,
         };
 
-        drag_gesture.connect_drag_update({
-            let style_provider = me.style_provider.clone();
-            let me = me.clone();
+        drag_gesture.connect_drag_update(clone!(
+            #[weak] me,
             move |_, offset_x, _| {
                 if offset_x.abs() as u32 >= DRAG_BEGIN_THRESHOLD {
                     let margin = me.get_offset_margin(offset_x);
                     let opacity = me.get_offset_opacity(offset_x);
-                    style_provider.load_from_data(&format!(
+                    me.style_provider.load_from_data(&format!(
                         ".notification {{
                         margin-left: {}px;
                         margin-right: {}px; 
@@ -186,14 +236,13 @@ impl NotificationWidget {
                         opacity,
                     ));
                 } else {
-                    style_provider.load_from_data(DEFAULT_CSS);
+                    me.style_provider.load_from_data(DEFAULT_CSS);
                 }
             }
-        });
+        ));
 
-        drag_gesture.connect_drag_end({
-            let me = me.clone();
-            let style_provider = me.style_provider.clone();
+        drag_gesture.connect_drag_end(clone!(
+            #[weak] me,
             move |_, offset_x, _| {
                 if offset_x.abs() as u32 >= DRAG_CONFIRM_THRESHOLD {
                     let animation = if offset_x < 0.0 {
@@ -208,27 +257,27 @@ impl NotificationWidget {
                         NotificationCloseReason::Dismissed
                     );
                 } else {
-                    style_provider.load_from_data(DEFAULT_CSS);
+                    me.style_provider.load_from_data(DEFAULT_CSS);
                 }
             }
-        });
+        ));
 
         me.root.add_controller(drag_gesture);
-        me.root.add_controller(gesture::on_enter({
-            let me = me.clone();
-            let actions = actions.clone();
+        me.root.add_controller(gesture::on_enter(clone!(
+            #[weak] me,
+            #[weak] actions,
             move |_, _| {
                 actions.set_reveal_child(!me.notification.borrow().actions.is_empty());
                 me.set_expand_state(!*me.destroying.borrow());
             }
-        }));
-        me.root.add_controller(gesture::on_leave({
-            let me = me.clone();
+        )));
+        me.root.add_controller(gesture::on_leave(clone!(
+            #[weak] me,
             move || {
                 actions.set_reveal_child(false);
                 me.set_expand_state(false);
             }
-        }));
+        )));
 
         me.bx.style_context().add_provider(&me.style_provider, gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION);
 
@@ -309,21 +358,22 @@ impl NotificationWidget {
     }
 
     pub fn queue_destroy(&self, animation: Option<NotificationDismissAnimation>) {
-        let me = self.clone();
-
         // Wait until not expanded. if expanded, wait again
-        glib::spawn_future_local(async move {
-            me.wait_until_not_expanded().await;
+        glib::spawn_future_local(clone!(
+            #[weak(rename_to = me)] self,
+            async move {
+                me.wait_until_not_expanded().await;
 
-            glib::timeout_add_local_once(
-                Duration::from_millis(1000),
-                move || if *me.expanded.borrow() {
-                    me.queue_destroy(animation);
-                } else {
-                    me.destroy(animation);
-                }
-            );
-        });
+                glib::timeout_add_local_once(
+                    Duration::from_millis(1000),
+                    move || if *me.expanded.borrow() {
+                        me.queue_destroy(animation);
+                    } else {
+                        me.destroy(animation);
+                    }
+                );
+            }
+        ));
     }
 
     pub fn destroy(&self, animation: Option<NotificationDismissAnimation>) {
@@ -347,12 +397,12 @@ impl NotificationWidget {
 
         glib::timeout_add_local_once(
             Duration::from_millis(NOTIF_TRANSITION_DURATION as u64),
-            {
-                let me = self.clone();
+            clone!(
+                #[weak(rename_to = me)] self,
                 move || if let (Some(child), Some(parent)) = me.get_removal_operation_widgets() {
                     parent.remove(&child);
                 }
-            }
+            )
         );
     }
 }

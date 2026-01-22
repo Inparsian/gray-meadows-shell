@@ -133,8 +133,8 @@ impl ImageAttachmentWidget {
         remove_button.set_halign(gtk4::Align::End);
         remove_button.set_valign(gtk4::Align::Start);
         remove_button.set_label("close");
-        remove_button.connect_clicked({
-            let uuid = uuid.clone();
+        remove_button.connect_clicked(clone!(
+            #[strong] uuid,
             move |_| {
                 let index = {
                     let attachments = attachments_ref.attachments.borrow();
@@ -145,7 +145,7 @@ impl ImageAttachmentWidget {
                     attachments_ref.remove(index);
                 }
             }
-        });
+        ));
         overlay.add_overlay(&remove_button);
 
         let attachment_widget = Self {
@@ -215,7 +215,7 @@ impl ImageAttachmentWidget {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, glib::Downgrade)]
 pub struct ImageAttachments {
     pub container: gtk4::Revealer,
     pub bx: gtk4::Box,

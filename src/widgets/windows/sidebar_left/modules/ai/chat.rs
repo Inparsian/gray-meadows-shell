@@ -73,8 +73,8 @@ impl ChatThinkingBlock {
         summary.set_hexpand(true);
         thinking_dropdown_revealer.set_child(Some(&summary));
 
-        thinking_dropdown_button.connect_clicked({
-            let root = root.clone();
+        thinking_dropdown_button.connect_clicked(clone!(
+            #[weak] root,
             move |_| {
                 let currently_revealed = thinking_dropdown_revealer.reveals_child();
                 thinking_dropdown_revealer.set_reveal_child(!currently_revealed);
@@ -85,7 +85,7 @@ impl ChatThinkingBlock {
                     root.add_css_class("expanded");
                 }
             }
-        });
+        ));
 
         Self {
             root,
@@ -197,21 +197,21 @@ impl ChatMessage {
         let delete_button = gtk4::Button::new();
         delete_button.set_css_classes(&["ai-chat-message-control-button"]);
         delete_button.set_label("delete");
-        delete_button.connect_clicked({
-            let id = id.clone();
+        delete_button.connect_clicked(clone!(
+            #[strong] id,
             move |_| if !ai::is_currently_in_cycle() && let Some(message_id) = *id.borrow() {
                 glib::spawn_future_local(ai::trim_items(message_id));
             }
-        });
+        ));
         controls_box.append(&delete_button);
 
         let retry_button = gtk4::Button::new();
         retry_button.set_css_classes(&["ai-chat-message-control-button"]);
         retry_button.set_label("refresh");
-        retry_button.connect_clicked({
-            let id = id.clone();
-            let attachments = attachments.clone();
-            let role = role.clone();
+        retry_button.connect_clicked(clone!(
+            #[strong] id,
+            #[strong] attachments,
+            #[strong] role,
             move |_| if !ai::is_currently_in_cycle() && let Some(message_id) = *id.borrow() {
                 // Increase message_id by 1 if this is a user message to trim down to the
                 // assistant response directly after it
@@ -226,7 +226,7 @@ impl ChatMessage {
                     ai::start_request_cycle().await;
                 });
             }
-        });
+        ));
         controls_box.append(&retry_button);
 
         header.append(&controls_revealer);
@@ -256,12 +256,12 @@ impl ChatMessage {
             root.insert_child_after(&loading, Some(&header));
         }
 
-        root.add_controller(gesture::on_enter({
-            let controls_revealer = controls_revealer.clone();
+        root.add_controller(gesture::on_enter(clone!(
+            #[weak] controls_revealer,
             move |_, _| {
                 controls_revealer.set_reveal_child(true);
             }
-        }));
+        )));
 
         root.add_controller(gesture::on_leave(move || {
             controls_revealer.set_reveal_child(false);

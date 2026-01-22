@@ -103,10 +103,10 @@ impl BarWindow {
         }
 
         // collapse expanded modules when clicking outside of them
-        window.add_controller(gesture::on_primary_full_press({
-            let window = window.clone();
-            let steal_window = steal_window.clone();
-            let modules = modules.clone();
+        window.add_controller(gesture::on_primary_full_press(clone!(
+            #[weak] window,
+            #[weak] steal_window,
+            #[strong] modules,
             move |_, (px, py), (rx, ry)| {
                 if py > BAR_HEIGHT as f64 && ry > BAR_HEIGHT as f64 {
                     let not_inside_any = modules.values().filter(|w| w.module.is_expanded()).any(|wrapper| {
@@ -134,12 +134,12 @@ impl BarWindow {
                     window.set_keyboard_mode(KeyboardMode::OnDemand);
                 }
             }
-        }));
+        )));
 
-        window.add_controller(gesture::on_secondary_up({
-            let window = window.clone();
-            let steal_window = steal_window.clone();
-            let modules = modules.clone();
+        window.add_controller(gesture::on_secondary_up(clone!(
+            #[weak] window,
+            #[weak] steal_window,
+            #[strong] modules,
             move |_, _, _| {
                 // usually signifies that a module is being collapsed, but we should make sure that all are collapsed
                 let any_expanded = modules.values().any(|wrapper| wrapper.module.is_expanded());
@@ -149,7 +149,7 @@ impl BarWindow {
                     window.set_keyboard_mode(KeyboardMode::None);
                 }
             }
-        }));
+        )));
 
         // the bar window should be above the steal window, we can assume any click here is outside the bar
         steal_window.add_controller(gesture::on_primary_up(move |_, _, _| {

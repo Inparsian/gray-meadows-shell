@@ -96,17 +96,17 @@ impl OverviewSearchItem {
             button = gtk4::Button {
                 set_css_classes: &["overview-search-item"],
 
-                connect_clicked: {
-                    let action = action.clone();
+                connect_clicked: clone!(
+                    #[strong] action,
                     move |_| if let Ok(action) = action.try_borrow() {
                         run_action(&action);
                     }
-                },
+                ),
             
-                connect_has_focus_notify: {
-                    let action_slide_revealer = action_slide_revealer.clone();
+                connect_has_focus_notify: clone!(
+                    #[weak] action_slide_revealer,
                     move |button| action_slide_revealer.set_reveal_child(button.has_focus())
-                },
+                ),
             
                 gtk4::Box {
                     set_css_classes: &["overview-search-item-box"],
@@ -263,21 +263,20 @@ pub fn run_action(action: &OverviewSearchItemAction) {
         OverviewSearchItemAction::Launch(command) => apps::launch_and_track(command),
 
         OverviewSearchItemAction::RunCommand(command) => {
-            std::thread::spawn({
-                let command = command.clone();
-            
+            std::thread::spawn(clone!(
+                #[strong] command,
                 move || std::process::Command::new("bash")
                     .arg("-c")
                     .arg(command)
                     .output()
-            });
+            ));
         },
     
         OverviewSearchItemAction::Copy(text) => {
-            std::thread::spawn({
-                let text = text.clone();
+            std::thread::spawn(clone!(
+                #[strong] text,
                 move || clipboard::copy_text(&text)
-            });
+            ));
         }
     
         OverviewSearchItemAction::Custom { func, .. } => func()

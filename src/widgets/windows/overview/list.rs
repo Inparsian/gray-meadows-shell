@@ -72,10 +72,10 @@ impl OverviewSearchList {
         self.widget.insert(&item.get_row(), position as i32);
 
         // Reveal this item after 1ms
-        glib::timeout_add_local_once(Duration::from_millis(1), {
-            let item = item.clone();
+        glib::timeout_add_local_once(Duration::from_millis(1), clone!(
+            #[strong] item,
             move || item.reveal()
-        });
+        ));
 
         self.items.insert(position, item.clone());
     }

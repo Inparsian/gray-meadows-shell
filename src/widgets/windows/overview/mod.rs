@@ -159,13 +159,12 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
             set_hexpand: true,
             set_has_frame: false,
 
-            connect_activate: {
-                let search_results = search_results.clone();
-
+            connect_activate: clone!(
+                #[weak] search_results,
                 move |entry| if !entry.text().to_string().is_empty() {
                     search_results.borrow().get_widget().first_child().map(|child| child.activate());
                 }
-            },
+            ),
         },
 
         entry_overlay = gtk4::Overlay {
@@ -195,19 +194,19 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
         &overview_box,
     );
 
-    fullscreen.window.connect_unmap({
-        let entry = entry.clone();
+    fullscreen.window.connect_unmap(clone!(
+        #[weak] entry,
         move |_| { entry.set_text(""); }
-    });
+    ));
 
-    fullscreen.window.connect_map({
-        let entry = entry.clone();
+    fullscreen.window.connect_map(clone!(
+        #[weak] entry,
         move |_| { entry.grab_focus(); }
-    });
+    ));
 
-    fullscreen.window.add_controller(gesture::on_key_press({
-        let entry = entry.clone();
-        let search_results = search_results.clone();
+    fullscreen.window.add_controller(gesture::on_key_press(clone!(
+        #[weak] entry,
+        #[weak] search_results,
 
         // ListBoxRow steals the events for the Arrow Keys if it's focused, so
         // we can assume that it isn't focused if an event for Down is triggered
@@ -223,13 +222,12 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
                 }
             }));
         }
-    }));
+    )));
 
     let search_results_widget = search_results.borrow().get_widget();
-    search_results_widget.add_controller(gesture::on_key_press({
-        let entry = entry.clone();
-        let search_results_widget = search_results_widget.clone();
-
+    search_results_widget.add_controller(gesture::on_key_press(clone!(
+        #[weak] entry,
+        #[weak] search_results_widget,
         move |val, _| {
             if val.name() == Some("Up".into()) {
                 let first_child = search_results_widget.first_child();
@@ -278,7 +276,7 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
                 entry.select_region(text.len() as i32, text.len() as i32);
             }
         }
-    }));
+    )));
 
     windows_box.add_controller(gesture::on_key_press(clone!(
         #[weak] entry,

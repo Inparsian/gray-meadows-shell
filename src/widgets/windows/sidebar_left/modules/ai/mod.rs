@@ -78,12 +78,12 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
     conversation_controls.append(&clear_conversation_button);
 
     let conversation_switch_button = conversation_control_button("menu_book", "Conversations");
-    conversation_switch_button.connect_clicked({
-        let stack = stack.clone();
+    conversation_switch_button.connect_clicked(clone!(
+        #[weak] stack,
         move |_| {
             stack.set_visible_child_name("conversations_ui");
         }
-    });
+    ));
     conversation_controls.append(&conversation_switch_button);
 
     let chat = Chat::default();
@@ -95,13 +95,13 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
     widget.append(&chat_window);
 
     let scroll_to_bottom: Rc<dyn Fn()> = Rc::new(move || {
-        glib::timeout_add_local_once(Duration::from_millis(50), {
-            let chat_window = chat_window.clone();
+        glib::timeout_add_local_once(Duration::from_millis(50), clone!(
+            #[weak] chat_window,
             move || {
                 let adjustment = chat_window.vadjustment();
                 adjustment.set_value(adjustment.upper() - adjustment.page_size());
             }
-        });
+        ));
     });
 
     let input = input::ChatInput::new(
@@ -286,12 +286,12 @@ pub fn conversations_ui(stack: &gtk4::Stack) -> gtk4::Box {
     widget.append(&header);
 
     let back_button = conversation_ui_header_button("arrow_back", "Back");
-    back_button.connect_clicked({
-        let stack = stack.clone();
+    back_button.connect_clicked(clone!(
+        #[weak] stack,
         move |_| {
             stack.set_visible_child_name("chat_ui");
         }
-    });
+    ));
     header.append(&back_button);
 
     let new_conversation_button = conversation_ui_header_button("add", "New Conversation");

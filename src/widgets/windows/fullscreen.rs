@@ -6,7 +6,7 @@ use crate::singletons::hyprland;
 use super::{GmsWindow, hide_all_fullscreen_windows};
 
 /// A window that takes up the whole screen. It closes itself when it loses focus.
-#[derive(Clone)]
+#[derive(Clone, glib::Downgrade)]
 pub struct FullscreenWindow {
     pub window: gtk4::ApplicationWindow,
 }
@@ -68,29 +68,31 @@ impl FullscreenWindow {
         window.set_child(Some(child));
 
         let fullscreen = Self {
-            window: window.clone(),
+            window,
         };
 
-        window.add_controller(gesture::on_primary_full_press({
-            let window = window.clone();
-            let fullscreen = fullscreen.clone();
+        fullscreen.window.add_controller(gesture::on_primary_full_press(clone!(
+            #[weak] fullscreen,
             move |_, (px, py), (rx, ry)| {
-                let allocation = window.child().expect("No child for fullscreen window").allocation();
-                if window.is_visible()
+                let allocation = fullscreen.window.child()
+                    .expect("No child for fullscreen window")
+                    .allocation();
+                
+                if fullscreen.window.is_visible()
                     && !allocation.contains_point(px as i32, py as i32)
                     && !allocation.contains_point(rx as i32, ry as i32) 
                 {
                     fullscreen.hide();
                 }
             }
-        }));
+        )));
 
-        window.add_controller(gesture::on_key_press({
-            let fullscreen = fullscreen.clone();
+        fullscreen.window.add_controller(gesture::on_key_press(clone!(
+            #[weak] fullscreen,
             move |key, _| if key.name() == Some("Escape".into()) {
                 fullscreen.hide();
             }
-        }));
+        )));
 
         fullscreen
     }

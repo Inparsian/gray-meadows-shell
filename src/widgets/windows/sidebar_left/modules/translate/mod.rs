@@ -18,7 +18,7 @@ static AUTO_DETECTED_LANG: LazyLock<Mutex<Option<Language>>> = LazyLock::new(|| 
 static REVEAL: LazyLock<Mutex<LanguageSelectReveal>> = LazyLock::new(|| Mutex::new(LanguageSelectReveal::None));
 static UI_EVENT_CHANNEL: LazyLock<BroadcastChannel<UiEvent>> = LazyLock::new(|| BroadcastChannel::new(10));
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, glib::Downgrade)]
 pub enum LanguageSelectReveal {
     Source,
     Target,
@@ -43,13 +43,12 @@ pub fn subscribe_to_ui_events() -> Receiver<UiEvent> {
 }
 
 pub fn send_ui_event(event: &UiEvent) {
-    tokio::spawn({
-        let event = event.clone();
-
+    tokio::spawn(clone!(
+        #[strong] event,
         async move {
             UI_EVENT_CHANNEL.send(event).await;
         }
-    });
+    ));
 }
 
 pub fn set_source_language(lang: Option<Language>) {
@@ -138,15 +137,14 @@ pub fn new() -> gtk4::Box {
 
                 gtk4::Button {
                     set_css_classes: &["google-translate-button"],
-                    connect_clicked: {
-                        let input_buffer = input_buffer.clone();
-                        let output_buffer = output_buffer.clone();
-
+                    connect_clicked: clone!(
+                        #[weak] input_buffer,
+                        #[weak] output_buffer,
                         move |_| if !is_working() {
                             input_buffer.set_text("");
                             output_buffer.set_text("");
                         }
-                    },
+                    ),
 
                     gtk4::Box {
                         set_spacing: 4,
@@ -165,11 +163,10 @@ pub fn new() -> gtk4::Box {
 
                 gtk4::Button {
                     set_css_classes: &["google-translate-button"],
-                    connect_clicked: {
-                        let input_buffer = input_buffer.clone();
-                        let output_buffer = output_buffer.clone();
-                        let language_buttons = language_buttons.clone();
-
+                    connect_clicked: clone!(
+                        #[weak] input_buffer,
+                        #[weak] output_buffer,
+                        #[weak] language_buttons,
                         move |_| if !is_working() {
                             let input_text = input_buffer.text(&input_buffer.start_iter(), &input_buffer.end_iter(), false).to_string();
                             let output_text = output_buffer.text(&output_buffer.start_iter(), &output_buffer.end_iter(), false).to_string();
@@ -183,7 +180,7 @@ pub fn new() -> gtk4::Box {
                             input_buffer.set_text(&output_text);
                             output_buffer.set_text(&input_text);
                         }
-                    },
+                    ),
                             
                     gtk4::Box {
                         set_spacing: 4,

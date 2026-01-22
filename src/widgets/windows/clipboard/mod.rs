@@ -34,19 +34,19 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
             set_placeholder_text: Some("Filter clipboard entries..."),
             set_hexpand: true,
             set_has_frame: false,
-            connect_changed: {
-                let listbox_clone = listbox.clone();
-                let entries_clone = entries.clone();
+            connect_changed: clone!(
+                #[weak] listbox,
+                #[strong] entries,
                 move |entry| {
                     let text = entry.text().to_string();
-                    listbox_clone.remove_all();
-                    for (id, preview) in entries_clone.borrow().iter() {
+                    listbox.remove_all();
+                    for (id, preview) in entries.borrow().iter() {
                         if preview.to_lowercase().contains(&text.to_lowercase()) {
-                            listbox_clone.append(&clipboard_entry(*id, preview));
+                            listbox.append(&clipboard_entry(*id, preview));
                         }
                     }
                 }
-            }
+            )
         },
 
         filter_entry_box = gtk4::Box {
@@ -75,9 +75,9 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
         }
     }
 
-    ipc::listen_for_messages_local({
-        let listbox = listbox.clone();
-        let entries = entries.clone();
+    ipc::listen_for_messages_local(clone!(
+        #[weak] listbox,
+        #[strong] entries,
         move |message| {
             if message.as_str() == "update_clipboard_window_entries" {
                 // Tell the window to update its entries
@@ -89,7 +89,7 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
                 }
             }
         }
-    });
+    ));
 
     for (id, preview) in entries.borrow().iter() {
         listbox.append(&clipboard_entry(*id, preview));
@@ -101,18 +101,16 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
         &child,
     );
 
-    fullscreen.window.connect_unmap({
-        let entry = entry.clone();
+    fullscreen.window.connect_unmap(clone!(
+        #[weak] entry,
         move |_| {
             entry.set_text("");
         }
-    });
+    ));
 
-    fullscreen.window.connect_map({
-        move |_| {
-            entry.grab_focus();
-            scrollable.vadjustment().set_value(0.0);
-        }
+    fullscreen.window.connect_map(move |_| {
+        entry.grab_focus();
+        scrollable.vadjustment().set_value(0.0);
     });
 
     fullscreen

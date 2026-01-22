@@ -11,7 +11,44 @@ pub struct SaturationValuePicker {
     pub widget: gtk4::Box,
     pub trough: gtk4::Box,
     widget_css_provider: gtk4::CssProvider,
-    trough_css_provider: gtk4::CssProvider
+    trough_css_provider: gtk4::CssProvider,
+}
+
+impl glib::clone::Downgrade for SaturationValuePicker {
+    type Weak = SaturationValuePickerWeak;
+    
+    fn downgrade(&self) -> Self::Weak {
+        SaturationValuePickerWeak {
+            hsv: self.hsv.clone(),
+            widget: glib::clone::Downgrade::downgrade(&self.widget),
+            trough: glib::clone::Downgrade::downgrade(&self.trough),
+            widget_css_provider: self.widget_css_provider.clone(),
+            trough_css_provider: self.trough_css_provider.clone()
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct SaturationValuePickerWeak {
+    pub hsv: Mutable<Hsv>,
+    pub widget: glib::WeakRef<gtk4::Box>,
+    pub trough: glib::WeakRef<gtk4::Box>,
+    widget_css_provider: gtk4::CssProvider,
+    trough_css_provider: gtk4::CssProvider,
+}
+
+impl glib::clone::Upgrade for SaturationValuePickerWeak {
+    type Strong = SaturationValuePicker;
+    
+    fn upgrade(&self) -> Option<SaturationValuePicker> {
+        Some(SaturationValuePicker {
+            hsv: self.hsv.clone(),
+            widget: self.widget.upgrade()?,
+            trough: self.trough.upgrade()?,
+            widget_css_provider: self.widget_css_provider.clone(),
+            trough_css_provider: self.trough_css_provider.clone()
+        })
+    }
 }
 
 impl SaturationValuePicker {
@@ -48,24 +85,22 @@ impl SaturationValuePicker {
 
         let clicked = Rc::new(RefCell::new(false));
 
-        widget.add_controller(gesture::on_primary_down({
-            let picker = picker.clone();
-            let clicked = clicked.clone();
-
+        widget.add_controller(gesture::on_primary_down(clone!(
+            #[weak] picker,
+            #[strong] clicked,
             move |_, x, y| {
                 *clicked.borrow_mut() = true;
                 picker.handle_click(x, y);
             }
-        }));
+        )));
 
-        widget.add_controller(gesture::on_motion({
-            let picker = picker.clone();
-            let clicked = clicked.clone();
-
+        widget.add_controller(gesture::on_motion(clone!(
+            #[weak] picker,
+            #[strong] clicked,
             move |x, y| if *clicked.borrow() {
                 picker.handle_click(x, y);
             }
-        }));
+        )));
 
         widget.add_controller(gesture::on_primary_up(move |_, _, _| {
             *clicked.borrow_mut() = false;

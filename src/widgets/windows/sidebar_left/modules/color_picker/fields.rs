@@ -32,14 +32,13 @@ impl Field {
             FieldType::Entry => {
                 let entry = gtk4::Entry::new();
                 entry.set_css_classes(&["color-picker-entry"]);
-
-                entry.connect_changed({
-                    let lock = lock.clone();
+                entry.connect_changed(clone!(
+                    #[strong] lock,
                     move |entry| if !lock.try_borrow().as_deref().unwrap_or(&true) {
                         activate_lock(&lock);
                         update_callback(FieldUpdate::Text(entry.text().to_string()));
                     }
-                });
+                ));
 
                 entry.upcast()
             },
@@ -48,14 +47,13 @@ impl Field {
                 let spin_button = gtk4::SpinButton::new(Some(&adjustment), step, digits);
                 spin_button.set_increments(step, step);
                 spin_button.set_css_classes(&["color-picker-spinbutton"]);
-
-                spin_button.connect_value_changed({
-                    let lock = lock.clone();
+                spin_button.connect_value_changed(clone!(
+                    #[strong] lock,
                     move |spin_button| if !lock.try_borrow().as_deref().unwrap_or(&true) {
                         activate_lock(&lock);
                         update_callback(FieldUpdate::Float(spin_button.value()));
                     }
-                });
+                ));
 
                 spin_button.upcast()
             }
@@ -137,8 +135,8 @@ pub fn activate_lock(lock: &Rc<RefCell<bool>>) {
     *lock.borrow_mut() = true;
 
     // Unlock after LOCK_HOLD_DURATION
-    glib::timeout_add_local_once(LOCK_HOLD_DURATION, {
-        let lock = lock.clone();
+    glib::timeout_add_local_once(LOCK_HOLD_DURATION, clone!(
+        #[strong] lock,
         move || *lock.borrow_mut() = false
-    });
+    ));
 }

@@ -59,7 +59,7 @@ impl ChatInput {
         let send_current_input = {
             let chat = chat.clone();
             let scroll_to_bottom = scroll_to_bottom.clone();
-            let input = input.clone();
+            let input = input.downgrade();
             let input_attachments = input_attachments.clone();
             move || {
                 let chat = chat.clone();
@@ -67,6 +67,10 @@ impl ChatInput {
                 let input = input.clone();
                 let input_attachments = input_attachments.clone();
                 async move {
+                    let Some(input) = input.upgrade() else {
+                        return;
+                    };
+                    
                     let buffer = input.buffer();
                     let text = buffer.text(
                         &buffer.start_iter(),
@@ -137,9 +141,9 @@ impl ChatInput {
                 input_placeholder.set_visible(false);
             }
 
-            input_watcher.one_shot_future({
-                let last_received_allocation = input_watcher.last_received_allocation.clone();
-                let input_scrolled_window = input_scrolled_window.clone();
+            input_watcher.one_shot_future(clone!(
+                #[strong(rename_to = last_received_allocation)] input_watcher.last_received_allocation,
+                #[weak] input_scrolled_window,
                 async move {
                     let height = last_received_allocation.get()
                         .map_or(MIN_INPUT_HEIGHT, |alloc| alloc.height());
@@ -154,11 +158,11 @@ impl ChatInput {
                         input_scrolled_window.vadjustment().set_value(0.0);
                     }
                 }
-            });
+            ));
         });
         let key_controller = gtk4::EventControllerKey::new();
-        key_controller.connect_key_pressed({
-            let send_current_input = send_current_input.clone();
+        key_controller.connect_key_pressed(clone!(
+            #[strong] send_current_input,
             move |_, key, _, state| {
                 if (key == gtk4::gdk::Key::Return || key == gtk4::gdk::Key::KP_Enter)
                     && !state.contains(gtk4::gdk::ModifierType::SHIFT_MASK)
@@ -169,36 +173,33 @@ impl ChatInput {
                     glib::Propagation::Proceed
                 }
             }
-        });
+        ));
         input.add_controller(key_controller);
-        input.connect_paste_clipboard({
-            let input_attachments = input_attachments.clone();
+        input.connect_paste_clipboard(clone!(
+            #[weak] input_attachments,
             move |input| {
                 let clipboard = input.clipboard();
                 let formats = clipboard.formats();
                 
                 if formats.contains_type(gdk4::Texture::static_type()) {
-                    clipboard.read_texture_async(None::<&gtk4::gio::Cancellable>, {
-                        let input_attachments = input_attachments.clone();
-                        move |result| {
-                            match result {
-                                Ok(Some(texture)) => {
-                                    input_attachments.push_texture(&texture);
-                                },
+                    clipboard.read_texture_async(None::<&gtk4::gio::Cancellable>, move |result| {
+                        match result {
+                            Ok(Some(texture)) => {
+                                input_attachments.push_texture(&texture);
+                            },
 
-                                Ok(None) => {
-                                    warn!("No texture found in clipboard");
-                                },
+                            Ok(None) => {
+                                warn!("No texture found in clipboard");
+                            },
 
-                                Err(err) => {
-                                    warn!(?err, "Error reading texture from clipboard");
-                                },
-                            }
+                            Err(err) => {
+                                warn!(?err, "Error reading texture from clipboard");
+                            },
                         }
                     });
                 }
             }
-        });
+        ));
 
         input_overlay.set_child(Some(&input));
 
@@ -226,8 +227,8 @@ impl ChatInput {
             filter.set_name(Some("Image Files"));
             file_chooser.add_filter(&filter);
 
-            file_chooser.connect_response({
-                let input_attachments = input_attachments.clone();
+            file_chooser.connect_response(clone!(
+                #[weak] input_attachments,
                 move |file_chooser, response| {
                     if response == gtk4::ResponseType::Accept
                         && let Some(file) = file_chooser.file()
@@ -238,7 +239,7 @@ impl ChatInput {
 
                     windows::show("left_sidebar");
                 }
-            });
+            ));
 
             windows::hide("left_sidebar");
             file_chooser.show();

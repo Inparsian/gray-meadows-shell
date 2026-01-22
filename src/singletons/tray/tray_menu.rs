@@ -28,14 +28,13 @@ fn build_gio_dbus_submenu_model(
 
     item.submenus.iter().for_each(|item| {
         let action = gio::ActionEntry::builder(label_to_action(&item.label).as_deref().unwrap_or_default())
-            .activate({
-                let dbus_menu = dbus_menu.clone();
-                let item = item.clone();
-
-                move |_: &gio::SimpleActionGroup, _, _| if dbus_menu.activate(item.id).is_err() {
+            .activate(clone!(
+                #[strong] dbus_menu,
+                #[strong] item,
+                move |_, _, _| if dbus_menu.activate(item.id).is_err() {
                     error!(label = %item.label, "Failed to activate menu item");
                 }
-            })
+            ))
             .build();
 
         if !item.submenus.is_empty() {
@@ -71,14 +70,13 @@ pub fn build_gio_dbus_menu_model_with_layout(item: StatusNotifierItem, menu_layo
             menu.insert_submenu(item.id as i32, Some(&item.label), &sub_menu_model);
         } else {
             let action = gio::ActionEntry::builder(label_to_action(&item.label).as_deref().unwrap_or_default())
-                .activate({
-                    let dbus_menu = dbus_menu.clone();
-                    let item = item.clone();
-
-                    move |_: &gio::SimpleActionGroup, _, _| if dbus_menu.activate(item.id).is_err() {
+                .activate(clone!(
+                    #[strong] dbus_menu,
+                    #[strong] item,
+                    move |_, _, _| if dbus_menu.activate(item.id).is_err() {
                         error!(label = %item.label, "Failed to activate menu item");
                     }
-                })
+                ))
                 .build();
 
             menu.insert_item(item.id as i32, &dbus_menu_item_to_gio_menu_item(item).unwrap());

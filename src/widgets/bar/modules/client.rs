@@ -25,19 +25,19 @@ pub fn new() -> gtk4::Box {
 
     view! {
         reveal_title_gesture = gtk4::EventControllerMotion {
-            connect_enter: {
-                let reveal_title = reveal_title.clone();
+            connect_enter: clone!(
+                #[strong] reveal_title,
                 move |_, _, _| {
                     reveal_title.set(true);
                 }
-            },
+            ),
 
-            connect_leave: {
-                let reveal_title = reveal_title.clone();
+            connect_leave: clone!(
+                #[strong] reveal_title,
                 move |_| {
                     reveal_title.set(false);
                 }
-            },
+            ),
         },
 
         icon = gtk4::Image {

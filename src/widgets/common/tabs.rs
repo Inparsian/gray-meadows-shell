@@ -176,11 +176,11 @@ impl Tabs {
             widget = gtk4::Button {
                 set_css_classes: &["tab", tab_class_name],
                 set_valign: gtk4::Align::Center,
-                connect_clicked: {
-                    let current_tab = current_tab.clone();
-                    let name = name.clone();
+                connect_clicked: clone!(
+                    #[strong] current_tab,
+                    #[strong] name,
                     move |_| current_tab.set(Some(name.clone()))
-                },
+                ),
 
                 gtk4::Box {
                     set_orientation: gtk4::Orientation::Horizontal,

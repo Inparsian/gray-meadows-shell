@@ -223,13 +223,13 @@ pub fn new() -> gtk4::Box {
     }
 
     let button_label_change_timeout = Timeout::default();
-    paste_from_clipboard_button.connect_clicked({
-        let hsv = hsv.clone();
+    paste_from_clipboard_button.connect_clicked(clone!(
+        #[strong] hsv,
         move |_| {
-            glib::spawn_future_local({
-                let hsv = hsv.clone();
-                let paste_from_clipboard_label = paste_from_clipboard_label.clone();
-                let button_label_change_timeout = button_label_change_timeout.clone();
+            glib::spawn_future_local(clone!(
+                #[strong] hsv,
+                #[weak] paste_from_clipboard_label,
+                #[weak] button_label_change_timeout,
                 async move {
                     let Some(clipboard_text) = clipboard::fetch_text_clipboard().await else {
                         return;
@@ -246,9 +246,9 @@ pub fn new() -> gtk4::Box {
                         );
                     }
                 }
-            });
+            ));
         }
-    });
+    ));
 
     color_tabs.add_tab("HEX", "hex", None, &hex_fields.widget);
     color_tabs.add_tab("INT", "int", None, &int_fields.widget);

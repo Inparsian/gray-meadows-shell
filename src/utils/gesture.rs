@@ -108,16 +108,16 @@ where
 
     let controller = gtk4::GestureClick::new();
     controller.set_button(button);
-    controller.connect_pressed({
-        let state = state.clone();
-        let pressed_xy = pressed_xy.clone();
+    controller.connect_pressed(clone!(
+        #[strong] state,
+        #[strong] pressed_xy,
         move |_, _, x, y| {
             let mut state = state.lock().unwrap();
             let mut p_xy = pressed_xy.lock().unwrap();
             *p_xy = (x, y);
             *state = true;
         }
-    });
+    ));
 
     controller.connect_released(move |_, n_press, x, y| {
         let mut state = state.lock().unwrap();

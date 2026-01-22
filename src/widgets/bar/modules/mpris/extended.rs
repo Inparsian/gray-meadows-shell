@@ -235,9 +235,9 @@ fn default_mpris_player() -> gtk4::Box {
         }
     }));
 
-    mpris::subscribe_to_default_player_changes({
-        let progress = progress.clone();
-        let progress_bar = progress_bar.clone();
+    mpris::subscribe_to_default_player_changes(clone!(
+        #[weak] progress,
+        #[weak] progress_bar,
         move |_| {
             if let Some(default_player) = mpris::get_default_player() {
                 no_players_widget.hide();
@@ -282,31 +282,29 @@ fn default_mpris_player() -> gtk4::Box {
                 background_style_provider.load_from_data("");
             }
         }
-    });
+    ));
 
     // run a future that changes the progress bar value every second if playing
-    glib::spawn_future_local({
-        async move {
-            loop {
-                glib::source::idle_add_local_once({
-                    let progress = progress.clone();
-                    let progress_bar = progress_bar.clone();
-                    move || {
-                        mpris::with_default_player_mut(|player| {
-                            if player.playback_status == PlaybackStatus::Playing
-                                && let Ok(position) = player.get_and_update_position()
-                                && let Some(duration) = player.metadata.length
-                            {
-                                progress.set_label(&format!("{} / {}", format_duration(position), format_duration(duration)));
-                                progress_bar.set_position(position as f64);
-                                progress_bar.set_duration(duration as f64);
-                            }
-                        });
-                    }
-                });
+    glib::spawn_future_local(async move {
+        loop {
+            glib::source::idle_add_local_once(clone!(
+                #[weak] progress,
+                #[weak] progress_bar,
+                move || {
+                    mpris::with_default_player_mut(|player| {
+                        if player.playback_status == PlaybackStatus::Playing
+                            && let Ok(position) = player.get_and_update_position()
+                            && let Some(duration) = player.metadata.length
+                        {
+                            progress.set_label(&format!("{} / {}", format_duration(position), format_duration(duration)));
+                            progress_bar.set_position(position as f64);
+                            progress_bar.set_duration(duration as f64);
+                        }
+                    });
+                }
+            ));
 
-                glib::timeout_future(std::time::Duration::from_millis(500)).await;
-            }
+            glib::timeout_future(std::time::Duration::from_millis(500)).await;
         }
     });
 
@@ -340,8 +338,8 @@ fn players_list() -> gtk4::Box {
     bx.set_css_classes(&["bar-mpris-players-list"]);
     bx.set_hexpand(true);
 
-    mpris::subscribe_to_player_list_changes({
-        let bx = bx.clone();
+    mpris::subscribe_to_player_list_changes(clone!(
+        #[weak] bx,
         move |difference, size| {
             match difference {
                 VecDiff::Push { value } => {
@@ -370,10 +368,10 @@ fn players_list() -> gtk4::Box {
                 bx.show();
             }
         }
-    });
+    ));
 
-    mpris::subscribe_to_default_player_changes({
-        let bx = bx.clone();
+    mpris::subscribe_to_default_player_changes(clone!(
+        #[weak] bx,
         move |index| {
             bx.iter_children().for_each(|child| {
                 child.set_css_classes(&["bar-mpris-players-list-item"]);
@@ -383,7 +381,7 @@ fn players_list() -> gtk4::Box {
                 selected_child.set_css_classes(&["bar-mpris-players-list-item", "is-default"]);
             }
         }
-    });
+    ));
 
     bx.add_controller(gesture::on_vertical_scroll(|delta_y| {
         let delta_index = if delta_y < 0.0 { 1 } else { -1 };

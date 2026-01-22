@@ -27,27 +27,23 @@ impl SystemTrayItem {
 
         popover_menu.set_css_classes(&["bar-tray-popover-menu"]);
 
-        self.popover_menu = Some(popover_menu);
-
-        let default_activate = gesture::on_primary_down({
-            let service = self.service.clone();
-        
+        let default_activate = gesture::on_primary_down(clone!(
+            #[strong(rename_to = service)] self.service,
             move |_, x, y| {
                 if let Some(item) = tray::try_read_item(&service) {
                     let _ = item.activate(x as i32, y as i32);
                 }
             }
-        });
+        ));
 
-        let menus_activate = gesture::on_secondary_down({
-            let service = self.service.clone();
-            let popover_menu = self.popover_menu.clone();
-
-            move |_, _, _| if let Some(popover_menu) = &popover_menu {
+        let menus_activate = gesture::on_secondary_down(clone!(
+            #[strong(rename_to = service)] self.service,
+            #[weak] popover_menu,
+            move |_, _, _| {
                 let (sender, receiver) = async_channel::bounded::<(StatusNotifierItem, Menu)>(1);
 
-                tokio::spawn({
-                    let service = service.clone();
+                tokio::spawn(clone!(
+                    #[strong] service,
                     async move {
                         if let Some(item) = tray::try_read_item(&service)
                             && let Ok(menu_layout) = item.menu.get_layout()
@@ -55,23 +51,22 @@ impl SystemTrayItem {
                             let _ = sender.send((item, menu_layout)).await;
                         }
                     }
-                });
+                ));
 
-                glib::spawn_future_local({
-                    let popover_menu = popover_menu.clone();
-                    async move {
-                        if let Ok((item, layout)) = receiver.recv().await {
-                            if let Some((model, actions)) = tray_menu::build_gio_dbus_menu_model_with_layout(item, &layout) {
-                                popover_menu.set_menu_model(Some(&model));
-                                popover_menu.insert_action_group("dbusmenu", Some(&actions));
-                            }
-
-                            popover_menu.popup();
+                glib::spawn_future_local(async move {
+                    if let Ok((item, layout)) = receiver.recv().await {
+                        if let Some((model, actions)) = tray_menu::build_gio_dbus_menu_model_with_layout(item, &layout) {
+                            popover_menu.set_menu_model(Some(&model));
+                            popover_menu.insert_action_group("dbusmenu", Some(&actions));
                         }
+
+                        popover_menu.popup();
                     }
                 });
             }
-        });
+        ));
+        
+        self.popover_menu = Some(popover_menu);
 
         view! {
             new_widget = gtk4::Image {

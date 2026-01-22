@@ -23,7 +23,7 @@ pub struct CalendarWeek {
     pub days: Vec<CalendarDay>,
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, glib::Downgrade)]
 pub struct Calendar {
     pub weeks: Rc<RefCell<Vec<CalendarWeek>>>,
     pub month: Rc<RefCell<u32>>,
@@ -122,61 +122,61 @@ impl Calendar {
         let prev_year_button = gtk4::Button::new();
         prev_year_button.set_css_classes(&["calendar-header-button"]);
         prev_year_button.set_label("keyboard_double_arrow_left");
-        prev_year_button.connect_clicked({
-            let me = self.clone();
+        prev_year_button.connect_clicked(clone!(
+            #[weak(rename_to = me)] self,
             move |_| {
                 me.shift_date_x_months(-12);
                 me.render();
             }
-        });
+        ));
         header.append(&prev_year_button);
 
         let prev_month_button = gtk4::Button::new();
         prev_month_button.set_css_classes(&["calendar-header-button"]);
         prev_month_button.set_label("chevron_left");
-        prev_month_button.connect_clicked({
-            let me = self.clone();
+        prev_month_button.connect_clicked(clone!(
+            #[weak(rename_to = me)] self,
             move |_| {
                 me.shift_date_x_months(-1);
                 me.render();
             }
-        });
+        ));
         header.append(&prev_month_button);
 
         let today_button = gtk4::Button::new();
         today_button.set_css_classes(&["calendar-header-button"]);
         today_button.set_label("today");
-        today_button.connect_clicked({
-            let me = self.clone();
+        today_button.connect_clicked(clone!(
+            #[weak(rename_to = me)] self,
             move |_| {
                 me.set_to_today();
                 me.render();
             }
-        });
+        ));
         header.append(&today_button);
 
         let next_month_button = gtk4::Button::new();
         next_month_button.set_css_classes(&["calendar-header-button"]);
         next_month_button.set_label("chevron_right");
-        next_month_button.connect_clicked({
-            let me = self.clone();
+        next_month_button.connect_clicked(clone!(
+            #[weak(rename_to = me)] self,
             move |_| {
                 me.shift_date_x_months(1);
                 me.render();
             }
-        });
+        ));
         header.append(&next_month_button);
 
         let next_year_button = gtk4::Button::new();
         next_year_button.set_css_classes(&["calendar-header-button"]);
         next_year_button.set_label("keyboard_double_arrow_right");
-        next_year_button.connect_clicked({
-            let me = self.clone();
+        next_year_button.connect_clicked(clone!(
+            #[weak(rename_to = me)] self,
             move |_| {
                 me.shift_date_x_months(12);
                 me.render();
             }
-        });
+        ));
         header.append(&next_year_button);
 
         let calendar_body = gtk4::Box::new(gtk4::Orientation::Vertical, 0);

@@ -10,7 +10,7 @@ static WAVE_AMPLITUDE_FACTOR: f64 = 10.0;
 static WAVE_SPEED: f64 = 3.0;
 static WAVE_LINE_WIDTH: f64 = 3.0;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, glib::Downgrade)]
 pub struct ProgressBar {
     pub drawing_area: gtk4::DrawingArea,
     pub position: Rc<RefCell<f64>>,
@@ -29,11 +29,11 @@ impl ProgressBar {
         drawing_area.set_content_height(24);
 
         // draw cool animated wavey progress bar
-        drawing_area.set_draw_func({
-            let position = position.clone();
-            let seek_position = seek_position.clone();
-            let duration = duration.clone();
-            let frametime = frametime.clone();
+        drawing_area.set_draw_func(clone!(
+            #[strong] position,
+            #[strong] seek_position,
+            #[strong] duration,
+            #[strong] frametime,
             move |_, cr, width, height| {
                 let pos: f64 = seek_position.borrow().map_or_else(|| *position.borrow(), |seek_pos| seek_pos);
                 let dur: f64 = *duration.borrow();
@@ -66,7 +66,7 @@ impl ProgressBar {
                 stroke(0.3, width); // background wave
                 stroke(1.0, progress_width); // foreground wave
             }
-        });
+        ));
         
         drawing_area.add_tick_callback(move |drawing_area, clock| {
             if drawing_area.is_visible() {
@@ -78,11 +78,11 @@ impl ProgressBar {
         });
 
         let primary_held = Rc::new(RefCell::new(false));
-        drawing_area.add_controller(gesture::on_primary_down({
-            let primary_held = primary_held.clone();
-            let seek_position = seek_position.clone();
-            let duration = duration.clone();
-            let drawing_area = drawing_area.clone();
+        drawing_area.add_controller(gesture::on_primary_down(clone!(
+            #[strong] primary_held,
+            #[strong] seek_position,
+            #[strong] duration,
+            #[weak] drawing_area,
             move |_, x, _| {
                 *primary_held.borrow_mut() = true;
 
@@ -92,13 +92,13 @@ impl ProgressBar {
                 *seek_position.borrow_mut() = Some(new_pos);
                 drawing_area.queue_draw();
             }
-        }));
+        )));
 
-        drawing_area.add_controller(gesture::on_motion({
-            let primary_held = primary_held.clone();
-            let seek_position = seek_position.clone();
-            let duration = duration.clone();
-            let drawing_area = drawing_area.clone();
+        drawing_area.add_controller(gesture::on_motion(clone!(
+            #[strong] primary_held,
+            #[strong] seek_position,
+            #[strong] duration,
+            #[weak] drawing_area,
             move |x, _| {
                 if *primary_held.borrow() {
                     let alloc = drawing_area.allocation();
@@ -108,12 +108,12 @@ impl ProgressBar {
                     drawing_area.queue_draw();
                 }
             }
-        }));
+        )));
 
-        drawing_area.add_controller(gesture::on_primary_up({
-            let position = position.clone();
-            let duration = duration.clone();
-            let drawing_area = drawing_area.clone();
+        drawing_area.add_controller(gesture::on_primary_up(clone!(
+            #[strong] position,
+            #[strong] duration,
+            #[weak] drawing_area,
             move |_, _, _| {
                 if *primary_held.borrow() {
                     let Some(player) = mpris::get_default_player() else {
@@ -139,7 +139,7 @@ impl ProgressBar {
                     *primary_held.borrow_mut() = false;
                 }
             }
-        }));
+        )));
 
         drawing_area.add_controller(gesture::on_vertical_scroll(|delta| {
             let Some(player) = mpris::get_default_player() else {

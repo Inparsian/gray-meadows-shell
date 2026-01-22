@@ -45,10 +45,10 @@ pub fn gen_button_with_mui_icon(
     button.set_css_classes(get_css_classes(false).as_slice());
     button.set_halign(gtk4::Align::End);
     button.set_valign(gtk4::Align::Center);
-    button.connect_clicked({
-        let button = button.clone();
-        let label = label.clone();
-        let icon = icon.clone();
+    button.connect_clicked(clone!(
+        #[weak] button,
+        #[weak] label,
+        #[strong] icon,
         move |_| {
             if let Some(cb) = &callback {
                 toggled.set(cb(toggled.get()));
@@ -56,7 +56,7 @@ pub fn gen_button_with_mui_icon(
                 label.set_label(if toggled.get() { &icon.enabled } else { &icon.disabled });
             }
         }
-    });
+    ));
 
     button.set_child(Some(label));
 

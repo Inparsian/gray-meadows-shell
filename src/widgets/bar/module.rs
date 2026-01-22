@@ -10,7 +10,7 @@ static TRANSITION_DURATION: f64 = 0.4;
 static DOWNSCALE_FACTOR: f64 = 0.000_000_001;
 static BLUR_FACTOR_PX: i32 = 8;
 
-#[derive(Clone)]
+#[derive(Clone, glib::Downgrade)]
 pub struct BarModule {
     timeout: Timeout,
     pub minimal: gtk4::Widget,
@@ -214,19 +214,19 @@ impl BarModuleWrapper {
         wrapper_box.set_valign(gtk4::Align::Start);
         wrapper_box.append(&widget_box);
 
-        wrapper_box.add_controller(gesture::on_primary_down({
-            let module = module.clone();
+        wrapper_box.add_controller(gesture::on_primary_down(clone!(
+            #[weak] module,
             move |_, _, _| if !module.is_expanded() {
                 module.set_expanded(true);
             }
-        }));
+        )));
 
-        wrapper_box.add_controller(gesture::on_secondary_down({
-            let module = module.clone();
+        wrapper_box.add_controller(gesture::on_secondary_down(clone!(
+            #[weak] module,
             move |_, _, _| if module.is_expanded() {
                 module.set_expanded(false);
             }
-        }));
+        )));
 
         Self {
             bx: wrapper_box,

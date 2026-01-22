@@ -13,6 +13,40 @@ pub struct HuePicker {
     trough_css_provider: gtk4::CssProvider
 }
 
+impl glib::clone::Downgrade for HuePicker {
+    type Weak = HuePickerWeak;
+    
+    fn downgrade(&self) -> Self::Weak {
+        HuePickerWeak {
+            hsv: self.hsv.clone(),
+            widget: glib::clone::Downgrade::downgrade(&self.widget),
+            trough: glib::clone::Downgrade::downgrade(&self.trough),
+            trough_css_provider: self.trough_css_provider.clone()
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct HuePickerWeak {
+    pub hsv: Mutable<Hsv>,
+    pub widget: glib::WeakRef<gtk4::Box>,
+    pub trough: glib::WeakRef<gtk4::Box>,
+    trough_css_provider: gtk4::CssProvider
+}
+
+impl glib::clone::Upgrade for HuePickerWeak {
+    type Strong = HuePicker;
+    
+    fn upgrade(&self) -> Option<HuePicker> {
+        Some(HuePicker {
+            hsv: self.hsv.clone(),
+            widget: self.widget.upgrade()?,
+            trough: self.trough.upgrade()?,
+            trough_css_provider: self.trough_css_provider.clone()
+        })
+    }
+}
+
 impl HuePicker {
     pub fn new(hsv: &Mutable<Hsv>) -> Self {
         let trough_css_provider = gtk4::CssProvider::new();
@@ -38,37 +72,39 @@ impl HuePicker {
 
         let clicked = Rc::new(RefCell::new(false));
 
-        widget.add_controller(gesture::on_primary_down({
-            let picker = picker.clone();
-            let clicked = clicked.clone();
-
+        widget.add_controller(gesture::on_primary_down(clone!(
+            #[weak] picker,
+            #[weak] clicked,
             move |_, _, y| {
                 *clicked.borrow_mut() = true;
                 picker.handle_click(y);
             }
-        }));
+        )));
 
-        widget.add_controller(gesture::on_motion({
-            let picker = picker.clone();
-            let clicked = clicked.clone();
-
+        widget.add_controller(gesture::on_motion(clone!(
+            #[weak] picker,
+            #[strong] clicked,
             move |_, y| if *clicked.borrow() {
                 picker.handle_click(y);
             }
-        }));
+        )));
 
         widget.add_controller(gesture::on_primary_up(move |_, _, _| {
             *clicked.borrow_mut() = false;
         }));
 
-        widget.add_controller(gesture::on_vertical_scroll({
-            let picker = picker.clone();
+        widget.add_controller(gesture::on_vertical_scroll(clone!(
+            #[weak] picker,
             move |y| picker.handle_scroll(y * 5.0)
-        }));
+        )));
 
         glib::spawn_future_local({
-            let picker = picker.clone();
-            signal!(hsv, (_) { picker.update_trough_position(); })
+            let picker = glib::clone::Downgrade::downgrade(&picker);
+            signal!(hsv, (_) {
+                if let Some(picker) = glib::clone::Upgrade::upgrade(&picker) {
+                    picker.update_trough_position();
+                }
+            })
         });
 
         picker

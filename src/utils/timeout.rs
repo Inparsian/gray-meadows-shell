@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc, time::Duration};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, glib::Downgrade)]
 pub struct Timeout {
     source: Rc<RefCell<Option<glib::SourceId>>>,
 }

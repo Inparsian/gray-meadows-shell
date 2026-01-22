@@ -118,7 +118,7 @@ fn get_page_boxes(reveal_type: &LanguageSelectReveal, filter: Option<&str>) -> V
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, glib::Downgrade)]
 pub struct LanguageSelectView {
     reveal_type: LanguageSelectReveal,
     current_page: Rc<RefCell<usize>>,
@@ -156,10 +156,10 @@ impl LanguageSelectView {
             label.set_css_classes(&["google-translate-language-select-filter-clear-label"]);
             label
         }));
-        view.filter_clear_button.connect_clicked({
-            let view = view.clone();
+        view.filter_clear_button.connect_clicked(clone!(
+            #[weak] view,
             move |_| view.clear_filter_entry()
-        });
+        ));
 
         view.filter_entry.set_css_classes(&["google-translate-language-select-filter-entry"]);
         view.filter_entry.set_placeholder_text(Some("Filter languages..."));
@@ -210,13 +210,12 @@ impl LanguageSelectView {
                 let prev_button = gtk4::Button::new();
                 prev_button.set_css_classes(&["google-translate-language-select-nav-button"]);
                 prev_button.set_label("Previous");
-                prev_button.connect_clicked({
-                    let view = view.clone();
+                prev_button.connect_clicked(clone!(
+                    #[weak] view,
                     move |_| {
-                        // .max(1) prevents substraction overflow.
                         let _ = view.set_page(view.get_current_page().max(1) - 1);
                     }
-                });
+                ));
                 prev_button
             });
 
@@ -226,12 +225,12 @@ impl LanguageSelectView {
                 let next_button = gtk4::Button::new();
                 next_button.set_css_classes(&["google-translate-language-select-nav-button"]);
                 next_button.set_label("Next");
-                next_button.connect_clicked({
-                    let view = view.clone();
+                next_button.connect_clicked(clone!(
+                    #[weak] view,
                     move |_| {
                         let _ = view.set_page(view.get_current_page() + 1);
                     }
-                });
+                ));
                 next_button
             });
 
@@ -241,8 +240,8 @@ impl LanguageSelectView {
         let _ = view.update_page_boxes(None);
 
         // Start our event receiver task
-        glib::spawn_future_local({
-            let view = view.clone();
+        glib::spawn_future_local(clone!(
+            #[weak] view,
             async move {
                 let mut receiver = translate::subscribe_to_ui_events();
                 while let Ok(event) = receiver.recv().await {
@@ -253,7 +252,7 @@ impl LanguageSelectView {
                     }
                 }
             }
-        });
+        ));
 
         view
     }

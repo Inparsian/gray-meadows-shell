@@ -43,8 +43,8 @@ pub fn new(application: &libadwaita::Application) -> PopupWindow {
         },
     };
 
-    let toggle_expand = {
-        let left_sidebar_box = left_sidebar_box.clone();
+    let toggle_expand = clone!(
+        #[weak] left_sidebar_box,
         move || if left_sidebar_box.has_css_class("expanded") {
             left_sidebar_box.remove_css_class("expanded");
             left_sidebar_expand_button_label.set_label("expand_content");
@@ -52,12 +52,12 @@ pub fn new(application: &libadwaita::Application) -> PopupWindow {
             left_sidebar_box.add_css_class("expanded");
             left_sidebar_expand_button_label.set_label("collapse_content");
         }
-    };
+    );
 
-    left_sidebar_expand_button.connect_clicked({
-        let toggle_expand = toggle_expand.clone();
+    left_sidebar_expand_button.connect_clicked(clone!(
+        #[strong] toggle_expand,
         move |_| toggle_expand()
-    });
+    ));
 
     ipc::listen_for_messages_local(move |message| {
         let mut split_whitespace_iterator = message.split_whitespace();
