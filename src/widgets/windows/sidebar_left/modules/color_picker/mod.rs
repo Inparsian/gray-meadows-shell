@@ -12,7 +12,7 @@ use crate::color::models::{Rgba, Hsv, Hsl, Cmyk, Oklab, Oklch, ColorModel as _};
 use crate::ipc;
 use crate::singletons::clipboard;
 use crate::utils::timeout::Timeout;
-use crate::widgets::common::tabs::{TabSize, Tabs, TabsStack};
+use crate::widgets::common::tabs::{TabSize, Tabs};
 use self::fields::Fields;
 use self::{saturation_value_picker::SaturationValuePicker, hue_picker::HuePicker};
 
@@ -26,26 +26,11 @@ pub fn new() -> gtk4::Box {
     let hue_picker = HuePicker::new(&hsv);
     let saturation_value_picker = SaturationValuePicker::new(&hsv);
 
-    let color_tabs = Tabs::new(TabSize::Normal, false);
-    color_tabs.current_tab.set(Some("hsv".to_owned()));
-    color_tabs.add_tab("HEX", "hex".to_owned(), None);
-    color_tabs.add_tab("INT", "int".to_owned(), None);
-    color_tabs.add_tab("RGB", "rgb".to_owned(), None);
-    color_tabs.add_tab("HSV", "hsv".to_owned(), None);
-    color_tabs.add_tab("HSL", "hsl".to_owned(), None);
-    color_tabs.add_tab("CMYK", "cmyk".to_owned(), None);
-    color_tabs.add_tab("OKLAB", "oklab".to_owned(), None);
-    color_tabs.add_tab("OKLCH", "oklch".to_owned(), None);
+    let color_tabs = Tabs::new(TabSize::Normal, false, Some("color-picker-tabs-stack"));
+    color_tabs.set_current_tab(Some("hsv"));
 
-    let transform_tabs = Tabs::new(TabSize::Normal, false);
-    transform_tabs.current_tab.set(Some("analogous".to_owned()));
-    transform_tabs.add_tab("ANALOGOUS", "analogous".to_owned(), None);
-    transform_tabs.add_tab("TRIADIC", "triadic".to_owned(), None);
-    transform_tabs.add_tab("TETRADIC", "tetradic".to_owned(), None);
-    transform_tabs.add_tab("LIGHTNESS", "lighter_darker".to_owned(), None);
-
-    let color_tabs_stack = TabsStack::new(&color_tabs, Some("color-picker-tabs-stack"));
-    let transform_tabs_stack = TabsStack::new(&transform_tabs, Some("color-picker-tabs-stack"));
+    let transform_tabs = Tabs::new(TabSize::Normal, false, Some("color-picker-tabs-stack"));
+    transform_tabs.set_current_tab(Some("analogous"));
 
     macro_rules! create_entry_field {
         ($fields:ident, $hsv:ident, $convert:expr) => {
@@ -228,10 +213,12 @@ pub fn new() -> gtk4::Box {
             },
 
             append: &paste_from_clipboard_button,
-            append: &color_tabs.widget,
-            append: &color_tabs_stack.widget,
-            append: &transform_tabs.widget,
-            append: &transform_tabs_stack.widget
+            append: &color_tabs.group()
+                .spacing(12)
+                .build(),
+            append: &transform_tabs.group()
+                .spacing(12)
+                .build(),
         }
     }
 
@@ -263,14 +250,14 @@ pub fn new() -> gtk4::Box {
         }
     });
 
-    color_tabs_stack.add_tab(Some("hex"), &hex_fields.widget);
-    color_tabs_stack.add_tab(Some("int"), &int_fields.widget);
-    color_tabs_stack.add_tab(Some("rgb"), &rgb_fields.widget);
-    color_tabs_stack.add_tab(Some("hsv"), &hsv_fields.widget);
-    color_tabs_stack.add_tab(Some("hsl"), &hsl_fields.widget);
-    color_tabs_stack.add_tab(Some("cmyk"), &cmyk_fields.widget);
-    color_tabs_stack.add_tab(Some("oklab"), &oklab_fields.widget);
-    color_tabs_stack.add_tab(Some("oklch"), &oklch_fields.widget);
+    color_tabs.add_tab("HEX", "hex", None, &hex_fields.widget);
+    color_tabs.add_tab("INT", "int", None, &int_fields.widget);
+    color_tabs.add_tab("RGB", "rgb", None, &rgb_fields.widget);
+    color_tabs.add_tab("HSV", "hsv", None, &hsv_fields.widget);
+    color_tabs.add_tab("HSL", "hsl", None, &hsl_fields.widget);
+    color_tabs.add_tab("CMYK", "cmyk", None, &cmyk_fields.widget);
+    color_tabs.add_tab("OKLAB", "oklab", None, &oklab_fields.widget);
+    color_tabs.add_tab("OKLCH", "oklch", None, &oklch_fields.widget);
 
     glib::spawn_future_local(signal!(hsv, (hsv) {
         use fields::FieldUpdate::*;
@@ -290,11 +277,11 @@ pub fn new() -> gtk4::Box {
         oklab_fields.update(vec![Float(oklab.lightness), Float(oklab.a), Float(oklab.b)]);
         oklch_fields.update(vec![Float(oklch.lightness), Float(oklch.chroma), Float(oklch.hue)]);
     }));
-
-    transform_tabs_stack.add_tab(Some("analogous"), &color_boxes::get_analogous_color_boxes(&hsv, 5, &color_tabs));
-    transform_tabs_stack.add_tab(Some("triadic"), &color_boxes::get_analogous_color_boxes(&hsv, 3, &color_tabs));
-    transform_tabs_stack.add_tab(Some("tetradic"), &color_boxes::get_analogous_color_boxes(&hsv, 4, &color_tabs));
-    transform_tabs_stack.add_tab(Some("lighter_darker"), &color_boxes::get_lighter_darker_color_boxes(&hsv, 20, &color_tabs).grid);
+    
+    transform_tabs.add_tab("ANALOGOUS", "analogous", None, &color_boxes::get_analogous_color_boxes(&hsv, 5, &color_tabs));
+    transform_tabs.add_tab("TRIADIC", "triadic", None, &color_boxes::get_analogous_color_boxes(&hsv, 3, &color_tabs));
+    transform_tabs.add_tab("TETRADIC", "tetradic", None, &color_boxes::get_analogous_color_boxes(&hsv, 4, &color_tabs));
+    transform_tabs.add_tab("LIGHTNESS", "lighter_darker", None, &color_boxes::get_lighter_darker_color_boxes(&hsv, 20, &color_tabs).grid);
 
     // Listen for IPC messages to update the HSV value
     ipc::listen_for_messages_local(move |message| {

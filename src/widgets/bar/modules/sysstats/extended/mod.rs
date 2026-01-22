@@ -4,7 +4,7 @@ mod views {
 
 use gtk4::prelude::*;
 
-use crate::widgets::common::tabs::{Tabs, TabsStack, TabSize};
+use crate::widgets::common::tabs::{Tabs, TabSize};
 use self::views::overview::overview;
 
 #[derive(Clone)]
@@ -54,23 +54,11 @@ impl CompactStatRow {
 }
 
 pub fn extended() -> gtk4::Box {
-    let tabs = Tabs::new(TabSize::Normal, true);
-    tabs.current_tab.set(Some("overview".to_owned()));
-    tabs.add_tab("overview", "overview".to_owned(), Some("overview"));
-
-    let tabs_stack = TabsStack::new(&tabs, Some("bar-sysstats-extended-tabs-stack"));
-    tabs_stack.add_tab(Some("overview"), &overview());
-
-    view! {
-        widget = gtk4::Box {
-            set_css_classes: &["bar-sysstats-extended"],
-            set_orientation: gtk4::Orientation::Vertical,
-            set_spacing: 8,
-
-            append: &tabs.widget,
-            append: &tabs_stack.widget
-        },
-    }
-
-    widget
+    let tabs = Tabs::new(TabSize::Normal, true, Some("bar-sysstats-extended-tabs-stack"));
+    tabs.set_current_tab(Some("overview"));
+    tabs.add_tab("overview", "overview", Some("overview"), &overview());
+    tabs.group()
+        .spacing(8)
+        .class_name("bar-sysstats-extended")
+        .build()
 }

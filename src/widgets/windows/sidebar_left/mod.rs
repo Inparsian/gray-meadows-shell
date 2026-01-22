@@ -3,20 +3,15 @@ pub mod modules;
 use gtk4::prelude::*;
 
 use crate::ipc;
-use crate::widgets::common::tabs::{TabSize, Tabs, TabsStack};
+use crate::widgets::common::tabs::{TabSize, Tabs};
 use super::popup::{PopupWindow, PopupMargin, PopupOptions};
 
 pub fn new(application: &libadwaita::Application) -> PopupWindow {
-    let tabs = Tabs::new(TabSize::Large, true);
-    tabs.current_tab.set(Some("ai".to_owned()));
-    tabs.add_tab("translate", "translate".to_owned(), Some("g_translate"));
-    tabs.add_tab("color picker", "color_picker".to_owned(), Some("palette"));
-    tabs.add_tab("ai", "ai".to_owned(), Some("chat"));
-
-    let tabs_stack = TabsStack::new(&tabs, None);
-    tabs_stack.add_tab(Some("translate"), &modules::translate::new());
-    tabs_stack.add_tab(Some("color_picker"), &modules::color_picker::new());
-    tabs_stack.add_tab(Some("ai"), &modules::ai::new());
+    let tabs = Tabs::new(TabSize::Large, true, None);
+    tabs.set_current_tab(Some("ai"));
+    tabs.add_tab("translate", "translate", Some("g_translate"), &modules::translate::new());
+    tabs.add_tab("color picker", "color_picker", Some("palette"), &modules::color_picker::new());
+    tabs.add_tab("ai", "ai", Some("chat"), &modules::ai::new());
 
     view! {
         left_sidebar_expand_button_label = gtk4::Label {
@@ -41,10 +36,10 @@ pub fn new(application: &libadwaita::Application) -> PopupWindow {
             gtk4::Box {
                 set_orientation: gtk4::Orientation::Horizontal,
                 set_spacing: 0,
-                append: &tabs.widget,
+                append: &tabs.select,
                 append: &left_sidebar_expand_button,
             },
-            append: &tabs_stack.widget,
+            append: &tabs.stack,
         },
     };
 
@@ -71,7 +66,7 @@ pub fn new(application: &libadwaita::Application) -> PopupWindow {
                 "change_left_sidebar_tab" => if let Some(tab) = split_whitespace_iterator.next()
                     && tabs.items.try_borrow().is_ok_and(|vec| vec.iter().any(|t| t.name == tab))
                 {
-                    tabs.current_tab.set(Some(tab.to_owned()));
+                    tabs.set_current_tab(Some(tab));
                 },
 
                 "toggle_left_sidebar_expanded" => toggle_expand(),

@@ -5,7 +5,7 @@ use gtk4::prelude::*;
 
 use crate::ffi::astalwp::{WpEvent, ffi::EndpointType};
 use crate::singletons::wireplumber;
-use crate::widgets::common::tabs::{Tabs, TabsStack, TabSize};
+use crate::widgets::common::tabs::{Tabs, TabSize};
 
 pub fn new() -> gtk4::Box {
     let root = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
@@ -15,35 +15,12 @@ pub fn new() -> gtk4::Box {
     let recorders = streams::AudioStreams::default();
     let mic_master = master::MasterControls::new(EndpointType::Microphone);
     let speaker_master = master::MasterControls::new(EndpointType::Speaker);
-    let tabs = Tabs::new(TabSize::Tiny, false);
-    let tabs_stack = TabsStack::new(&tabs, Some("audio-tab-tabs"));
-    
-    tabs.add_tab(
-        "playback",
-        "playback".to_owned(),
-        None,
-    );
-
-    tabs_stack.add_tab(
-        Some("playback"),
-        &streams.root,
-    );
-
-    tabs.add_tab(
-        "recording",
-        "recording".to_owned(),
-        None,
-    );
-
-    tabs_stack.add_tab(
-        Some("recording"),
-        &recorders.root,
-    );
-    
+    let tabs = Tabs::new(TabSize::Tiny, false, Some("audio-tab-tabs"));
+    tabs.add_tab("playback", "playback", None, &streams.root);
+    tabs.add_tab("recording", "recording", None, &recorders.root);
     tabs.current_tab.set(Some("playback".to_owned()));
     
-    root.append(&tabs.widget);
-    root.append(&tabs_stack.widget);
+    root.append(&tabs.group().vexpand(true).build());
     root.append(&mic_master.root);
     root.append(&speaker_master.root);
     

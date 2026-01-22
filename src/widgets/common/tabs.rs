@@ -4,7 +4,6 @@ use futures_signals::signal::{Mutable, SignalExt as _};
 
 use crate::utils::gesture;
 
-#[allow(dead_code)]
 pub enum TabSize {
     Tiny,
     Normal,
@@ -23,30 +22,89 @@ impl TabSize {
 
 pub struct Tab {
     pub name: String,
-    pub widget: gtk4::Button
+    pub widget: gtk4::Button,
+}
+
+pub struct TabGroupBuilder<'a> {
+    tabs: &'a Tabs,
+    spacing: i32,
+    class_name: Option<&'a str>,
+    hexpand: bool,
+    vexpand: bool,
+}
+
+impl<'a> TabGroupBuilder<'a> {
+    fn new(tabs: &'a Tabs) -> Self {
+        Self {
+            tabs,
+            spacing: Default::default(),
+            class_name: Default::default(),
+            hexpand: Default::default(),
+            vexpand: Default::default(),
+        }
+    }
+    
+    pub fn spacing(mut self, spacing: i32) -> Self {
+        self.spacing = spacing;
+        self
+    }
+    
+    pub fn class_name(mut self, class_name: &'a str) -> Self {
+        self.class_name = Some(class_name);
+        self
+    }
+    
+    pub fn hexpand(mut self, hexpand: bool) -> Self {
+        self.hexpand = hexpand;
+        self
+    }
+    
+    pub fn vexpand(mut self, vexpand: bool) -> Self {
+        self.vexpand = vexpand;
+        self
+    }
+    
+    pub fn build(self) -> gtk4::Box {
+        let widget = gtk4::Box::new(gtk4::Orientation::Vertical, self.spacing);
+        if let Some(class_name) = self.class_name.as_ref() {
+            widget.set_css_classes(&[class_name]);
+        }
+        widget.set_hexpand(self.hexpand);
+        widget.set_vexpand(self.vexpand);
+        widget.append(&self.tabs.select);
+        widget.append(&self.tabs.stack);
+        widget
+    }
 }
 
 pub struct Tabs {
-    pub size: TabSize,
-    pub only_current_tab_visible: bool,
+    size: TabSize,
+    only_current_tab_visible: bool,
     pub current_tab: Mutable<Option<String>>,
     pub items: Rc<RefCell<Vec<Tab>>>,
-    pub widget: gtk4::Box
+    pub stack: gtk4::Stack,
+    pub select: gtk4::Box,
 }
 
 impl Tabs {
-    pub fn new(size: TabSize, only_current_tab_visible: bool) -> Self {
-        let widget = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+    pub fn new(size: TabSize, only_current_tab_visible: bool, class_name: Option<&str>) -> Self {
+        let select = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);        
+        let stack = gtk4::Stack::builder()
+            .css_classes([class_name.unwrap_or("tabs-stack")])
+            .transition_type(gtk4::StackTransitionType::SlideLeftRight)
+            .transition_duration(150)
+            .build();
 
         let tabs = Self {
             size,
             only_current_tab_visible,
             current_tab: Mutable::new(None),
             items: Rc::new(RefCell::new(Vec::new())),
-            widget
+            stack,
+            select,
         };
 
-        tabs.widget.add_controller(gesture::on_vertical_scroll({
+        tabs.select.add_controller(gesture::on_vertical_scroll({
             let current_tab = tabs.current_tab.clone();
             let items = tabs.items.clone();
 
@@ -61,22 +119,37 @@ impl Tabs {
                 }
             }
         }));
+        
+        glib::spawn_future_local({
+            let stack = tabs.stack.clone();
+            signal_cloned!(tabs.current_tab, (tab) {
+                stack.set_visible_child_name(tab.as_deref().unwrap_or_default());
+            })
+        });
 
         tabs
     }
-
-    pub fn add_tab(&self, label: &str, name: String, icon: Option<&str>) {
-        let widget = self.create_tab_widget(label, name.clone(), icon, &self.current_tab);
-        let tab = Tab {
-            name,
-            widget
-        };
-
-        self.widget.append(&tab.widget);
-        self.items.borrow_mut().push(tab);
+    
+    pub fn group(&self) -> TabGroupBuilder<'_> {
+        TabGroupBuilder::new(self)
     }
 
-    pub fn create_tab_widget(&self, label: &str, name: String, icon: Option<&str>, current_tab: &Mutable<Option<String>>) -> gtk4::Button {
+    pub fn add_tab(&self, label: &str, name: &str, icon: Option<&str>, widget: &impl IsA<gtk4::Widget>) {
+        let tab = Tab {
+            name: name.to_owned(),
+            widget: self.create_tab_widget(label, name.to_owned(), icon, &self.current_tab)
+        };
+
+        self.select.append(&tab.widget);
+        self.items.borrow_mut().push(tab);
+        self.stack.add_named(widget, Some(name));
+    }
+    
+    pub fn set_current_tab(&self, name: Option<&str>) {
+        self.current_tab.set(name.map(|s| s.to_owned()));
+    }
+
+    fn create_tab_widget(&self, label: &str, name: String, icon: Option<&str>, current_tab: &Mutable<Option<String>>) -> gtk4::Button {
         let tab_class_name = self.size.to_class_name();
         let label_widget: gtk4::Widget = {
             let label = gtk4::Label::builder()
@@ -147,31 +220,5 @@ impl Tabs {
         });
 
         widget
-    }
-}
-
-pub struct TabsStack {
-    pub widget: gtk4::Stack
-}
-
-impl TabsStack {
-    pub fn new(tabs: &Tabs, class_name: Option<&str>) -> Self {
-        let widget = gtk4::Stack::new();
-        widget.set_transition_type(gtk4::StackTransitionType::SlideLeftRight);
-        widget.set_transition_duration(150);
-        widget.set_css_classes(&[class_name.unwrap_or("tabs-stack")]);
-
-        glib::spawn_future_local({
-            let widget = widget.clone();
-            signal_cloned!(tabs.current_tab, (tab) {
-                widget.set_visible_child_name(tab.as_deref().unwrap_or_default());
-            })
-        });
-
-        Self { widget }
-    }
-
-    pub fn add_tab(&self, name: Option<&str>, widget: &impl IsA<gtk4::Widget>) {
-        self.widget.add_named(widget, name);
     }
 }

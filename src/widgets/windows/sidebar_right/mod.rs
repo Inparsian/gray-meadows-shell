@@ -9,8 +9,8 @@ use super::popup::{PopupWindow, PopupMargin, PopupOptions};
 
 pub fn new(application: &libadwaita::Application) -> PopupWindow {
     let header = header::new();
-    let (top_tabs, top_tabs_stack) = top_tabs::new();
-    let (bottom_tabs, bottom_tabs_stack) = bottom_tabs::new();
+    let top_tabs = top_tabs::new();
+    let bottom_tabs = bottom_tabs::new();
 
     view! {
         quick_toggles = gtk4::Box {
@@ -34,26 +34,15 @@ pub fn new(application: &libadwaita::Application) -> PopupWindow {
 
             append: &header,
             append: &quick_toggles,
-
-            gtk4::Box {
-                set_orientation: gtk4::Orientation::Vertical,
-                set_css_classes: &["sidebar-right-top-tabs"],
-                set_spacing: 0,
-                set_hexpand: true,
-                set_vexpand: true,
-                append: &top_tabs.widget,
-                append: &top_tabs_stack.widget,
-            },
-
-            gtk4::Box {
-                set_orientation: gtk4::Orientation::Vertical,
-                set_css_classes: &["sidebar-right-bottom-tabs"],
-                set_spacing: 0,
-                set_hexpand: true,
-                set_vexpand: false,
-                append: &bottom_tabs.widget,
-                append: &bottom_tabs_stack.widget,
-            },
+            append: &top_tabs.group()
+                .class_name("sidebar-right-top-tabs")
+                .hexpand(true)
+                .vexpand(true)
+                .build(),
+            append: &bottom_tabs.group()
+                .class_name("sidebar-right-bottom-tabs")
+                .hexpand(true)
+                .build(),
         },
     };
 
