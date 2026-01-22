@@ -74,13 +74,12 @@ impl FullscreenWindow {
         window.add_controller(gesture::on_primary_full_press({
             let window = window.clone();
             let fullscreen = fullscreen.clone();
-
-            move |_, p_xy, r_xy| {
-                let allocation = window.child().unwrap().allocation();
-                let (px, py) = (p_xy.0 as i32, p_xy.1 as i32);
-                let (rx, ry) = (r_xy.0 as i32, r_xy.1 as i32);
-
-                if window.is_visible() && !allocation.contains_point(px, py) && !allocation.contains_point(rx, ry) {
+            move |_, (px, py), (rx, ry)| {
+                let allocation = window.child().expect("No child for fullscreen window").allocation();
+                if window.is_visible()
+                    && !allocation.contains_point(px as i32, py as i32)
+                    && !allocation.contains_point(rx as i32, ry as i32) 
+                {
                     fullscreen.hide();
                 }
             }
@@ -88,11 +87,8 @@ impl FullscreenWindow {
 
         window.add_controller(gesture::on_key_press({
             let fullscreen = fullscreen.clone();
-
-            move |val, _| {
-                if val.name() == Some("Escape".into()) {
-                    fullscreen.hide();
-                }
+            move |key, _| if key.name() == Some("Escape".into()) {
+                fullscreen.hide();
             }
         }));
 

@@ -81,14 +81,8 @@ impl BarWindow {
 
                 gtk4::CenterBox {
                     set_css_classes: &["bar"],
-
-                    // Left side widgets
                     set_start_widget: Some(&left_box),
-
-                    // Center widgets
                     set_center_widget: Some(&center_box),
-
-                    // Right side widgets
                     set_end_widget: Some(&right_box),
                 }
             },
@@ -115,37 +109,26 @@ impl BarWindow {
             let modules = modules.clone();
             move |_, (px, py), (rx, ry)| {
                 if py > BAR_HEIGHT as f64 && ry > BAR_HEIGHT as f64 {
-                    let mut inside_any = false;
-                    for wrapper in modules.values() {
-                        if wrapper.module.is_expanded() {
-                            let mod_allocation = wrapper.bx.allocation();
-                            let parent_allocation = wrapper.bx.parent().unwrap().allocation();
-                            let allocation = gdk4::Rectangle::new(
-                                mod_allocation.x() + parent_allocation.x(),
-                                mod_allocation.y() + parent_allocation.y(),
-                                mod_allocation.width(),
-                                mod_allocation.height(),
-                            );
+                    let not_inside_any = modules.values().filter(|w| w.module.is_expanded()).any(|wrapper| {
+                        let mod_allocation = wrapper.bx.allocation();
+                        let parent_allocation = wrapper.bx.parent().expect("No parent for bar module").allocation();
+                        let allocation = gdk4::Rectangle::new(
+                            mod_allocation.x() + parent_allocation.x(),
+                            mod_allocation.y() + parent_allocation.y(),
+                            mod_allocation.width(),
+                            mod_allocation.height(),
+                        );
+    
+                        !allocation.contains_point(rx as i32, ry as i32)
+                            && !allocation.contains_point(px as i32, py as i32)
+                    });
 
-                            let px_in = px >= allocation.x() as f64 && px <= (allocation.x() + allocation.width()) as f64;
-                            let py_in = py >= allocation.y() as f64 && py <= (allocation.y() + allocation.height()) as f64;
-                            let rx_in = rx >= allocation.x() as f64 && rx <= (allocation.x() + allocation.width()) as f64;
-                            let ry_in = ry >= allocation.y() as f64 && ry <= (allocation.y() + allocation.height()) as f64;
-                            if (px_in && py_in) || (rx_in && ry_in) {
-                                inside_any = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    if !inside_any {
+                    if not_inside_any {
                         hide_all_expanded_modules();
                     }
                 }
 
-                // if any are expanded at this point, activate the steal window
-                let any_expanded = modules.values().any(|wrapper| wrapper.module.is_expanded());
-                if any_expanded {
+                if modules.values().any(|wrapper| wrapper.module.is_expanded()) {
                     steal_window.set_visible(true);
                     window.set_layer(Layer::Overlay);
                     window.set_keyboard_mode(KeyboardMode::OnDemand);
@@ -202,7 +185,6 @@ pub fn toggle_module_by_name(name: &str) {
             if bar_window.monitor == monitor && let Some(wrapper) = bar_window.modules.get(name) {
                 wrapper.module.set_expanded(!wrapper.module.is_expanded());
 
-                // manage steal window visibility
                 let any_expanded = bar_window.modules.values().any(|w| w.module.is_expanded());
                 if any_expanded {
                     bar_window.steal_window.set_visible(true);

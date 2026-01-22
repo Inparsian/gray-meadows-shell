@@ -153,8 +153,7 @@ impl PopupWindow {
 
         window.add_controller(gesture::on_key_press({
             let popup = popup.clone();
-
-            move |val, _| if val.name() == Some("Escape".into()) {
+            move |key, _| if key.name() == Some("Escape".into()) {
                 popup.hide();
             }
         }));
@@ -162,15 +161,11 @@ impl PopupWindow {
         window.add_controller(gesture::on_primary_full_press({
             let revealer = popup.revealer.clone();
             let popup = popup.clone();
-
-            move |_, p_xy, r_xy| {
-                let (px, py) = (p_xy.0 as i32, p_xy.1 as i32);
-                let (rx, ry) = (r_xy.0 as i32, r_xy.1 as i32);
+            move |_, (px, py), (rx, ry)| {
                 let allocation = revealer.allocation();
-
                 if popup.window.is_visible()
-                    && !allocation.contains_point(px, py)
-                    && !allocation.contains_point(rx, ry)
+                    && !allocation.contains_point(px as i32, py as i32)
+                    && !allocation.contains_point(rx as i32, ry as i32)
                 {
                     popup.hide();
                 }
