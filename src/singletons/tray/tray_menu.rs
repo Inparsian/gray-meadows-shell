@@ -1,4 +1,4 @@
-use gdk4::gio::{self, prelude::ActionMapExtManual as _};
+use gio::prelude::ActionMapExtManual as _;
 
 use super::wrapper::{dbus_menu::{self, Menu}, sn_item::StatusNotifierItem};
 

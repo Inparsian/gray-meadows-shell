@@ -1,5 +1,5 @@
 use gdk4::gdk_pixbuf::Pixbuf;
-use gdk4::gio::prelude::FileExt as _;
+use gio::prelude::FileExt as _;
 use gtk4::TextDirection;
 use gtk4::gdk_pixbuf::InterpType;
 use std::cell::RefCell;

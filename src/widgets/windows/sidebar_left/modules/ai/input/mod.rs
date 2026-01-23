@@ -182,7 +182,7 @@ impl ChatInput {
                 let formats = clipboard.formats();
                 
                 if formats.contains_type(gdk4::Texture::static_type()) {
-                    clipboard.read_texture_async(None::<&gtk4::gio::Cancellable>, move |result| {
+                    clipboard.read_texture_async(None::<&gio::Cancellable>, move |result| {
                         match result {
                             Ok(Some(texture)) => {
                                 input_attachments.push_texture(&texture);

@@ -1,4 +1,3 @@
-use gdk4::gio;
 use gtk4::prelude::*;
 
 use crate::pixbuf;

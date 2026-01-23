@@ -1,6 +1,7 @@
-use std::{collections::HashMap, process::Stdio};
+use std::collections::HashMap;
+use std::process::Stdio;
 use std::io::{Read as _, Write as _};
-use std::sync::{LazyLock, Mutex};
+use std::sync::{LazyLock, RwLock};
 use regex::Regex;
 use tokio::time::timeout;
 
@@ -10,16 +11,17 @@ static IMAGE_BINARY_DATA_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"\[\[ binary data (\d+) ([KMGT]i)?B (\w+) (\d+)x(\d+) \]\]").expect("Failed to compile image binary data regex")
 });
 
-static DECODE_CACHE: LazyLock<Mutex<HashMap<usize, Vec<u8>>>> = LazyLock::new(|| {
-    Mutex::new(HashMap::new())
-});
+static DECODE_CACHE: LazyLock<RwLock<HashMap<i32, Vec<u8>>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
+static PREVIEW_CACHE: LazyLock<RwLock<HashMap<i32, String>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
 
 pub fn decode_clipboard_entry(id: &str) -> Option<Vec<u8>> {
-    if DECODE_CACHE.lock().unwrap().contains_key(&id.parse::<usize>().ok()?) {
-        return DECODE_CACHE.lock().unwrap().get(&id.parse::<usize>().ok()?).cloned();
+    {
+        let cache = DECODE_CACHE.read().unwrap();
+        if cache.contains_key(&id.parse::<i32>().ok()?) {
+            return cache.get(&id.parse::<i32>().ok()?).cloned();
+        }
     }
 
-    // fetch the image data from cliphist
     let output = std::process::Command::new("cliphist")
         .arg("decode")
         .arg(id)
@@ -27,8 +29,8 @@ pub fn decode_clipboard_entry(id: &str) -> Option<Vec<u8>> {
         .ok()?;
 
     output.status.success().then_some(output.stdout)
-        .inspect(|data| if let Ok(parsed_id) = id.parse::<usize>() {
-            DECODE_CACHE.lock().unwrap().insert(parsed_id, data.clone());
+        .inspect(|data| if let Ok(parsed_id) = id.parse::<i32>() {
+            DECODE_CACHE.write().unwrap().insert(parsed_id, data.clone());
         })
 }
 
@@ -36,27 +38,38 @@ pub fn is_an_image_clipboard_entry(preview: &str) -> bool {
     IMAGE_BINARY_DATA_PATTERN.is_match(preview)
 }
 
-pub fn fetch_clipboard_entries() -> Vec<(usize, String)> {
+pub fn refresh_clipboard_entries() {
     if let Ok(output) = std::process::Command::new("cliphist")
         .arg("list")
         .output()
         && output.status.success()
     {
         let stdout = String::from_utf8_lossy(&output.stdout);
-        
-        stdout.lines().filter_map(|line| {
+        let entries = stdout.lines().filter_map(|line| {
             let mut parts = line.splitn(2, '\t');
             let id_str = parts.next()?.trim();
             let preview = parts.next()?.trim().to_owned();
-            let id = id_str.parse::<usize>().ok()?;
+            let id = id_str.parse::<i32>().ok()?;
             Some((id, preview))
-        }).collect()
-    } else {
-        Vec::new()
+        }).collect::<Vec<(i32, String)>>();
+        
+        let mut cache = PREVIEW_CACHE.write().unwrap();
+        cache.clear();
+        for (id, preview) in &entries {
+            cache.insert(*id, preview.clone());
+        }
     }
 }
 
-pub fn copy_entry(id: usize) {
+pub fn get_preview(id: i32) -> Option<String> {
+    PREVIEW_CACHE.read().unwrap().get(&id).cloned()
+}
+
+pub fn get_all_previews() -> HashMap<i32, String> {
+    PREVIEW_CACHE.read().unwrap().clone()
+}
+
+pub fn copy_entry(id: i32) {
     // pipe cliphist decode <id> to wl-copy
     std::thread::spawn(move || {
         let decode_process = std::process::Command::new("cliphist")
