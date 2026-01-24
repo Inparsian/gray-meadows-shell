@@ -3,3 +3,5 @@
 /styles/output.css
 /styles/output.css.map
 /compile_commands.json
+/perf.data
+/flamegraph.svg

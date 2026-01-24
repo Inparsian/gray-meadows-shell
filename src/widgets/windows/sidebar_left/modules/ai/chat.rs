@@ -221,7 +221,7 @@ impl ChatMessage {
                     message_id
                 };
 
-                glib::spawn_future_local(async move {
+                tokio::spawn(async move {
                     ai::trim_items(message_id).await;
                     ai::start_request_cycle().await;
                 });
