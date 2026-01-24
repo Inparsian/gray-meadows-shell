@@ -41,15 +41,10 @@ mod imp {
 }
 
 use gtk4::prelude::*;
-use image::codecs::png::PngEncoder;
-use image::imageops::FilterType;
-use image::ImageEncoder as _;
 
 use crate::color;
 use crate::singletons::clipboard;
-
-static IMAGE_SIZE: u32 = 192;
-static IMAGE_SEMAPHORE: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(3);
+use crate::widgets::common::loading;
 
 glib::wrapper! {
     pub struct ClipboardEntry(ObjectSubclass<imp::ClipboardEntry>)
@@ -76,50 +71,39 @@ impl ClipboardEntry {
             return;
         };
         
-        let children: Vec<gtk4::Widget> = if clipboard::is_an_image_clipboard_entry(&preview) {
+        let bx = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        if clipboard::images::is_an_image_clipboard_entry(&preview) {
+            let preview_data = clipboard::images::ImagePreviewData::from_clipboard_preview(&preview).unwrap();
+            let (width, height) = clipboard::images::get_downscale_image_resolution(preview_data.width, preview_data.height);
+            let loading_bx = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+            loading_bx.set_css_classes(&["image-preview-loading-box"]);
+            loading_bx.set_halign(gtk4::Align::Start);
+            loading_bx.set_valign(gtk4::Align::Center);
+            loading_bx.set_size_request(width as i32, height as i32);
+            let loading_widget = loading::new();
+            loading_widget.set_halign(gtk4::Align::Center);
+            loading_widget.set_valign(gtk4::Align::Center);
+            loading_widget.set_vexpand(true);
+            loading_bx.append(&loading_widget);
+            
             let picture = gtk4::Picture::new();
+            picture.set_visible(false);
             picture.set_halign(gtk4::Align::Start);
             picture.set_valign(gtk4::Align::Center);
     
             let (tx, rx) = async_channel::unbounded::<(u32, u32, Vec<u8>)>();
             tokio::spawn(async move {
-                let _permit = IMAGE_SEMAPHORE.acquire().await.unwrap();
-                if let Some(decoded) = clipboard::decode_clipboard_entry(&id.to_string()) {
-                    let image = image::load_from_memory(&decoded).ok();
-                    if let Some(img) = image {
-                        let scaled_img = if img.width() > IMAGE_SIZE || img.height() > IMAGE_SIZE {
-                            let aspect = img.width() as f32 / img.height() as f32;
-                            let new_width = if aspect >= 1.0 {
-                                IMAGE_SIZE
-                            } else {
-                                (IMAGE_SIZE as f32 * aspect) as u32
-                            };
-                            let new_height = if aspect >= 1.0 {
-                                (IMAGE_SIZE as f32 / aspect) as u32
-                            } else {
-                                IMAGE_SIZE
-                            };
-                            // TODO: add a way to cache image clipboard entry thumbnails
-                            img.resize(new_width, new_height, FilterType::Nearest)
-                        } else {
-                            img
-                        };
-    
-                        let mut buf = Vec::new();
-                        if PngEncoder::new(&mut buf).write_image(
-                            scaled_img.as_bytes(),
-                            scaled_img.width(),
-                            scaled_img.height(),
-                            scaled_img.color().into()
-                        ).is_ok() {
-                            let _ = tx.send((scaled_img.width(), scaled_img.height(), buf)).await;
-                        }
-                    }
+                if let Some(image) = clipboard::images::get_image_entry(id).await {
+                    let _ = tx.send(image).await;
                 }
             });
+            
+            bx.append(&loading_bx);
+            bx.append(&picture);
     
             glib::spawn_future_local(clone!(
                 #[weak] picture,
+                #[weak] loading_bx,
                 async move {
                     if let Ok((width, height, decoded)) = rx.recv().await {
                         let loader = gtk4::gdk_pixbuf::PixbufLoader::new();
@@ -129,13 +113,13 @@ impl ClipboardEntry {
                                 picture.set_pixbuf(Some(&pixbuf));
                                 picture.set_width_request(width as i32);
                                 picture.set_height_request(height as i32);
+                                picture.set_visible(true);
+                                loading_bx.set_visible(false);
                             }
                         }
                     }
                 }
             ));
-    
-            vec![picture.upcast()]
         } else if let Some(hex) = color::parse_color_into_hex(&preview) {
             let color_style_provider = gtk4::CssProvider::new();
             let color_style = format!(".color-preview-box {{ background-color: {}; }}", hex);
@@ -150,7 +134,8 @@ impl ClipboardEntry {
             label.set_hexpand(true);
             label.set_xalign(0.0);
             label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
-            vec![color_box.upcast(), label.upcast()]
+            bx.append(&color_box);
+            bx.append(&label);
         } else {
             // glib hates nul bytes where gstrings do not actually end :)
             let preview_cleaned = preview.chars().filter(|c| c != &'\0').collect::<String>();
@@ -158,14 +143,10 @@ impl ClipboardEntry {
             label.set_hexpand(true);
             label.set_xalign(0.0);
             label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
-            vec![label.upcast()]
-        };
+            bx.append(&label);
+        }
     
         // stupid layout trick that helps the button not vertically stretch more than needed
-        let bx = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
-        for child in &children {
-            bx.append(child);
-        }
         let bxend = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
         bxend.set_halign(gtk4::Align::End);
         bx.append(&bxend);

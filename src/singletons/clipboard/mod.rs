@@ -1,15 +1,12 @@
+pub mod images;
+
 use std::collections::HashMap;
 use std::process::Stdio;
 use std::io::{Read as _, Write as _};
 use std::sync::{LazyLock, RwLock};
-use regex::Regex;
 use tokio::time::timeout;
 
 use crate::utils::process;
-
-static IMAGE_BINARY_DATA_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"\[\[ binary data (\d+) ([KMGT]i)?B (\w+) (\d+)x(\d+) \]\]").expect("Failed to compile image binary data regex")
-});
 
 static DECODE_CACHE: LazyLock<RwLock<HashMap<i32, Vec<u8>>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
 static PREVIEW_CACHE: LazyLock<RwLock<HashMap<i32, String>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
@@ -32,10 +29,6 @@ pub fn decode_clipboard_entry(id: &str) -> Option<Vec<u8>> {
         .inspect(|data| if let Ok(parsed_id) = id.parse::<i32>() {
             DECODE_CACHE.write().unwrap().insert(parsed_id, data.clone());
         })
-}
-
-pub fn is_an_image_clipboard_entry(preview: &str) -> bool {
-    IMAGE_BINARY_DATA_PATTERN.is_match(preview)
 }
 
 pub fn refresh_clipboard_entries() {
@@ -70,7 +63,6 @@ pub fn get_all_previews() -> HashMap<i32, String> {
 }
 
 pub fn copy_entry(id: i32) {
-    // pipe cliphist decode <id> to wl-copy
     std::thread::spawn(move || {
         let decode_process = std::process::Command::new("cliphist")
             .arg("decode")

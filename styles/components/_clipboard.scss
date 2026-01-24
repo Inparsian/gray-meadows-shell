@@ -64,6 +64,15 @@
                     min-height: 12px;
                     margin-right: 8px;
                 }
+                
+                .image-preview-loading-box {
+                    background: $background-color-secondary;
+                    
+                    .loading-indicator {
+                        margin-top: -8px;
+                        margin-bottom: 8px;
+                    }
+                }
             }
         }
     }
