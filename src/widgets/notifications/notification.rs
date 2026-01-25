@@ -154,7 +154,7 @@ impl NotificationWidget {
             actions = gtk4::Revealer {
                 set_reveal_child: false,
                 set_transition_type: gtk4::RevealerTransitionType::SlideDown,
-                set_transition_duration: NOTIF_TRANSITION_DURATION,
+                set_transition_duration: 150,
                 set_child: Some(&actions_box),
             },
 
