@@ -174,4 +174,7 @@ pub fn activate() {
 
     spawn_indefinite_watcher("text");
     spawn_indefinite_watcher("image");
+    tokio::spawn(async move {
+        refresh_clipboard_entries();
+    });
 }
