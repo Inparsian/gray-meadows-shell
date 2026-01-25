@@ -97,13 +97,14 @@ mod imp {
                 let progress = self.progress.get();
                 let direction = self.transition_direction.get();
 
+                // width & height are intentionally swapped, for_size is for the *opposite* orientation
                 let child_width = match direction {
-                    AdwRevealerDirection::Right | AdwRevealerDirection::Left => child.measure(gtk4::Orientation::Horizontal, -1).1,
+                    AdwRevealerDirection::Right | AdwRevealerDirection::Left => child.measure(gtk4::Orientation::Horizontal, height).1,
                     _ => width,
                 };
 
                 let child_height = match direction {
-                    AdwRevealerDirection::Down | AdwRevealerDirection::Up => child.measure(gtk4::Orientation::Vertical, -1).1,
+                    AdwRevealerDirection::Down | AdwRevealerDirection::Up => child.measure(gtk4::Orientation::Vertical, width).1,
                     _ => height,
                 };
 
