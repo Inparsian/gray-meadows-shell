@@ -7,10 +7,9 @@ use relm4::RelmRemoveAllExt as _;
 use crate::singletons::notifications::close_notification_by_id;
 use crate::singletons::notifications::wrapper::{Notification, NotificationAction, NotificationCloseReason};
 use crate::utils::gesture;
+use crate::widgets::common::revealer::{AdwRevealer, AdwRevealerDirection, GEasing};
 
-const NOTIF_TRANSITION_DURATION: u32 = 175; // ms
-#[allow(dead_code)]
-const DISMISS_ANIMATION_DELAY: u32 = 75; // ms
+const NOTIF_TRANSITION_DURATION: u32 = 800; // ms
 const DRAG_BEGIN_THRESHOLD: u32 = 30; // px
 const DRAG_CONFIRM_THRESHOLD: u32 = 100; // px
 const DEFAULT_CSS: &str = ".notification {
@@ -46,7 +45,7 @@ pub struct NotificationWidget {
     pub expanded: Rc<RefCell<bool>>,
     pub destroying: Rc<RefCell<bool>>,
     pub bx: gtk4::Box,
-    pub root: gtk4::Revealer,
+    pub root: AdwRevealer,
     pub summary: gtk4::Label,
     pub body: gtk4::Label,
     pub actions_box: gtk4::Box,
@@ -78,7 +77,7 @@ pub struct NotificationWidgetWeak {
     pub expanded: Weak<RefCell<bool>>,
     pub destroying: Weak<RefCell<bool>>,
     pub bx: glib::WeakRef<gtk4::Box>,
-    pub root: glib::WeakRef<gtk4::Revealer>,
+    pub root: glib::WeakRef<AdwRevealer>,
     pub summary: glib::WeakRef<gtk4::Label>,
     pub body: glib::WeakRef<gtk4::Label>,
     pub actions_box: glib::WeakRef<gtk4::Box>,
@@ -191,12 +190,14 @@ impl NotificationWidget {
                 append: &actions,
             },
 
-            root = gtk4::Revealer {
-                set_reveal_child: false,
-                set_transition_type: gtk4::RevealerTransitionType::SlideDown,
+            root = AdwRevealer {
+                set_reveal: false,
+                set_transition_direction: AdwRevealerDirection::Down,
                 set_transition_duration: NOTIF_TRANSITION_DURATION,
+                set_show_easing: GEasing::EaseOutBounce,
+                set_hide_easing: GEasing::EaseOutExpo,
                 set_hexpand: true,
-                set_child: Some(&bx),
+                set_child: Some(&bx.clone().upcast()),
                 set_overflow: gtk4::Overflow::Visible,
             }
         }
@@ -282,7 +283,7 @@ impl NotificationWidget {
         me.bx.style_context().add_provider(&me.style_provider, gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION);
 
         me.root.connect_map(move |revealer| {
-            revealer.set_reveal_child(true);
+            revealer.set_reveal(true);
         });
 
         me
@@ -383,7 +384,7 @@ impl NotificationWidget {
 
         self.destroying.replace(true);
         self.set_expand_state(false);
-        self.root.set_reveal_child(false);
+        self.root.set_reveal(false);
 
         if let Some(anim) = animation {
             let allocation = self.bx.allocation();
@@ -398,7 +399,7 @@ impl NotificationWidget {
         glib::timeout_add_local_once(
             Duration::from_millis(NOTIF_TRANSITION_DURATION as u64),
             clone!(
-                #[weak(rename_to = me)] self,
+                #[strong(rename_to = me)] self,
                 move || if let (Some(child), Some(parent)) = me.get_removal_operation_widgets() {
                     parent.remove(&child);
                 }

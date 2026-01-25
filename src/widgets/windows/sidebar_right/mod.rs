@@ -5,6 +5,7 @@ mod bottom_tabs;
 
 use gtk4::prelude::*;
 
+use crate::widgets::common::revealer::AdwRevealerDirection;
 use super::popup::{PopupWindow, PopupMargin, PopupOptions};
 
 pub fn new(application: &libadwaita::Application) -> PopupWindow {
@@ -64,7 +65,7 @@ pub fn new(application: &libadwaita::Application) -> PopupWindow {
             bottom: 0,
             left: 0,
         },
-        gtk4::RevealerTransitionType::SlideLeft,
-        200,
+        AdwRevealerDirection::Left,
+        400,
     )
 }

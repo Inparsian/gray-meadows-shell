@@ -1572,6 +1572,8 @@ dependencies = [
  "gemini-rust",
  "gio",
  "glib",
+ "graphene-rs",
+ "gsk4",
  "gtk4",
  "gtk4-layer-shell",
  "gtk4cmark",

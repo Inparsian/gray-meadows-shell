@@ -1,17 +1,18 @@
-use gtk4::{prelude::*, RevealerTransitionType};
+use gtk4::prelude::*;
 use gtk4::cairo::{RectangleInt, Region};
 use gtk4_layer_shell::{Edge, Layer, KeyboardMode, LayerShell as _};
 use libadwaita::Clamp;
 
 use crate::singletons::hyprland;
 use crate::utils::gesture;
+use crate::widgets::common::revealer::{AdwRevealer, AdwRevealerDirection, GEasing};
 use super::{GmsWindow, hide_all_popups};
 
 /// A popup window that displays content on top of other windows. It closes itself when it loses focus.
 #[derive(Clone, glib::Downgrade)]
 pub struct PopupWindow {
     pub window: gtk4::ApplicationWindow,
-    pub revealer: gtk4::Revealer,
+    pub revealer: AdwRevealer,
 }
 
 /// A margin for a popup window.
@@ -39,13 +40,13 @@ impl GmsWindow for PopupWindow {
         self.window.set_monitor(monitor.as_ref());
         self.set_clickthrough(false);
         self.window.add_css_class("visible");
-        self.revealer.set_reveal_child(true);
+        self.revealer.set_reveal(true);
     }
 
     fn hide(&self) {
         self.set_clickthrough(true);
         self.window.remove_css_class("visible");
-        self.revealer.set_reveal_child(false);
+        self.revealer.set_reveal(false);
     }
 
     fn toggle(&self) -> bool {
@@ -59,7 +60,7 @@ impl GmsWindow for PopupWindow {
     }
 
     fn is_visible(&self) -> bool {
-        self.revealer.reveals_child()
+        self.revealer.reveal()
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
@@ -82,7 +83,7 @@ impl PopupWindow {
         width: i32,
         height: i32,
         margin: PopupMargin,
-        transition_type: RevealerTransitionType,
+        transition_direction: AdwRevealerDirection,
         transition_duration: u32
     ) -> Self {
         let window_classes = vec!["popup-window"]
@@ -104,10 +105,13 @@ impl PopupWindow {
         window.set_namespace(Some("gms-popup"));
         window.show();
 
-        let revealer = gtk4::Revealer::new();
-        revealer.set_transition_type(transition_type);
-        revealer.set_transition_duration(transition_duration);
-        revealer.set_reveal_child(false);
+        let revealer = AdwRevealer::builder()
+            .css_classes(["popup-window-revealer"])
+            .transition_duration(transition_duration)
+            .transition_direction(transition_direction)
+            .show_easing(GEasing::EaseOutExpo)
+            .hide_easing(GEasing::EaseOutExpo)
+            .build();
         if options.anchor_left && !options.anchor_right {
             revealer.set_halign(gtk4::Align::Start);
         }
@@ -143,7 +147,7 @@ impl PopupWindow {
         container.append(child);
         
         clamp.set_child(Some(&container));
-        revealer.set_child(Some(&clamp));
+        revealer.set_child(Some(&clamp.upcast()));
         window.set_child(Some(&revealer));
 
         let popup = Self {

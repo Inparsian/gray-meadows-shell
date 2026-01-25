@@ -5,6 +5,7 @@ use gtk4::prelude::*;
 use crate::ffi::astalwp::ffi::{self, Endpoint, EndpointType};
 use crate::singletons::wireplumber;
 use crate::utils::gesture;
+use crate::widgets::common::revealer::{AdwRevealer, AdwRevealerDirection, GEasing};
 
 pub struct MasterDevice {
     pub endpoint: Endpoint,
@@ -138,8 +139,12 @@ impl MasterControls {
         volume_label.set_halign(gtk4::Align::End);
         controls_bx.append(&volume_label);
         
-        let devices_revealer = gtk4::Revealer::new();
-        devices_revealer.set_transition_type(gtk4::RevealerTransitionType::SlideUp);
+        let devices_revealer = AdwRevealer::builder()
+            .transition_direction(AdwRevealerDirection::Up)
+            .transition_duration(300)
+            .show_easing(GEasing::EaseOutExpo)
+            .hide_easing(GEasing::EaseOutExpo)
+            .build();
         root.prepend(&devices_revealer);
         
         let devices_scrolled_window = gtk4::ScrolledWindow::new();
@@ -148,7 +153,7 @@ impl MasterControls {
         devices_scrolled_window.set_propagate_natural_height(true);
         devices_scrolled_window.set_min_content_height(108);
         devices_scrolled_window.set_max_content_height(108);
-        devices_revealer.set_child(Some(&devices_scrolled_window));
+        devices_revealer.set_child(Some(&devices_scrolled_window.clone().upcast()));
         
         let devices_box = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
         devices_box.set_css_classes(&["audio-master-devices-box"]);
@@ -160,8 +165,8 @@ impl MasterControls {
             #[weak] devices_revealer,
             #[weak] devices_revealer_button,
             move |_| {
-                let revealed = !devices_revealer.reveals_child();
-                devices_revealer.set_reveal_child(revealed);
+                let revealed = !devices_revealer.reveal();
+                devices_revealer.set_reveal(revealed);
                 
                 if revealed {
                     devices_revealer_button.add_css_class("open");

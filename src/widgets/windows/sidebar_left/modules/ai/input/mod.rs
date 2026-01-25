@@ -10,8 +10,8 @@ use crate::utils::allocation_watcher::{AllocationWatcher, AllocationWatcherOptio
 use super::chat::{Chat, ChatMessage, ChatRole};
 use self::attachments::ImageAttachments;
 
-const MIN_INPUT_HEIGHT: i32 = 50;
-const MAX_INPUT_HEIGHT: i32 = 250;
+const MIN_INPUT_SCROLL_HEIGHT: i32 = 50;
+const MAX_INPUT_SCROLL_HEIGHT: i32 = 250;
 
 pub struct ChatInput {
     pub widget: gtk4::Box,
@@ -33,8 +33,8 @@ impl ChatInput {
         let input_scrolled_window = gtk4::ScrolledWindow::new();
         input_scrolled_window.set_policy(gtk4::PolicyType::Never, gtk4::PolicyType::Never);
         input_scrolled_window.set_propagate_natural_height(true);
-        input_scrolled_window.set_min_content_height(MIN_INPUT_HEIGHT);
-        input_scrolled_window.set_max_content_height(MAX_INPUT_HEIGHT);
+        input_scrolled_window.set_min_content_height(MIN_INPUT_SCROLL_HEIGHT);
+        input_scrolled_window.set_max_content_height(MAX_INPUT_SCROLL_HEIGHT);
         input_box.append(&input_scrolled_window);
 
         let input_overlay = gtk4::Overlay::new();
@@ -127,6 +127,7 @@ impl ChatInput {
         };
 
         input.set_wrap_mode(gtk4::WrapMode::WordChar);
+        input.set_height_request(21);
         input.set_css_classes(&["ai-chat-input"]);
         input.set_hexpand(true);
         input.set_valign(gtk4::Align::Start);
@@ -146,15 +147,15 @@ impl ChatInput {
                 #[weak] input_scrolled_window,
                 async move {
                     let height = last_received_allocation.get()
-                        .map_or(MIN_INPUT_HEIGHT, |alloc| alloc.height());
+                        .map_or(MIN_INPUT_SCROLL_HEIGHT, |alloc| alloc.height());
                 
-                    input_scrolled_window.set_vscrollbar_policy(if height > MIN_INPUT_HEIGHT {
+                    input_scrolled_window.set_vscrollbar_policy(if height > MIN_INPUT_SCROLL_HEIGHT {
                         gtk4::PolicyType::Automatic
                     } else {
                         gtk4::PolicyType::Never
                     });
                 
-                    if height <= MAX_INPUT_HEIGHT {
+                    if height <= MAX_INPUT_SCROLL_HEIGHT {
                         input_scrolled_window.vadjustment().set_value(0.0);
                     }
                 }
