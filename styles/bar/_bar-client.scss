@@ -1,4 +1,11 @@
 .bar-window .bar .bar-widget.bar-client {
+    .bar-client-workspace-icon {
+        @include material-icons;
+        margin-right: 6px;
+        font-weight: 600;
+        font-size: 14px;
+    }
+    
     .bar-client-title {
         margin-top: -1px;
         margin-bottom: -1px;

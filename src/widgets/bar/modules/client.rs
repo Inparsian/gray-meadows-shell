@@ -91,9 +91,23 @@ pub fn new() -> gtk4::Box {
 
         workspace_label = gtk4::Label {
             set_css_classes: &["bar-client-workspace"],
-            set_label: "Workspace 1",
+            set_label: "1",
             set_xalign: 0.0,
             set_hexpand: false
+        },
+        
+        workspace_box = gtk4::Box {
+            set_orientation: gtk4::Orientation::Horizontal,
+            set_spacing: 0,
+            
+            gtk4::Label {
+                set_css_classes: &["bar-client-workspace-icon"],
+                set_label: "square",
+                set_xalign: 0.0,
+                set_hexpand: false
+            },
+            
+            append: &workspace_label,
         },
 
         widget = gtk4::Box {
@@ -101,7 +115,7 @@ pub fn new() -> gtk4::Box {
             set_hexpand: false,
 
             append: &client_box,
-            append: &workspace_label
+            append: &workspace_box,
         }
     }
 
@@ -109,7 +123,7 @@ pub fn new() -> gtk4::Box {
     glib::spawn_future_local(signal_cloned!(hyprland::HYPRLAND.active_client, (client) {
         if let Some(client) = client {
             client_box.set_visible(true);
-            workspace_label.set_visible(false);
+            workspace_box.set_visible(false);
 
             class.set_label(&client.class);
             title.set_label(&client.title);
@@ -128,11 +142,11 @@ pub fn new() -> gtk4::Box {
             let active_workspace = hyprland::HYPRLAND.active_workspace.get_cloned();
 
             client_box.set_visible(false);
-            workspace_label.set_visible(true);
+            workspace_box.set_visible(true);
             
             workspace_label.set_label(&active_workspace.map_or(
                 "No active workspace".to_owned(), 
-                |w| format!("Workspace {}", w.id)
+                |w| format!("{}", w.id)
             ));
         }
     }));
