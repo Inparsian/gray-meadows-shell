@@ -223,6 +223,10 @@ impl NotificationWidget {
         drag_gesture.connect_drag_update(clone!(
             #[weak] me,
             move |_, offset_x, _| {
+                if *me.destroying.borrow() {
+                    return;
+                }
+                
                 if offset_x.abs() as u32 >= DRAG_BEGIN_THRESHOLD {
                     let margin = me.get_offset_margin(offset_x);
                     let opacity = me.get_offset_opacity(offset_x);
@@ -245,6 +249,10 @@ impl NotificationWidget {
         drag_gesture.connect_drag_end(clone!(
             #[weak] me,
             move |_, offset_x, _| {
+                if *me.destroying.borrow() {
+                    return;
+                }
+                
                 if offset_x.abs() as u32 >= DRAG_CONFIRM_THRESHOLD {
                     let animation = if offset_x < 0.0 {
                         NotificationDismissAnimation::Left
@@ -269,7 +277,7 @@ impl NotificationWidget {
             #[weak] actions,
             move |_, _| {
                 actions.set_reveal_child(!me.notification.borrow().actions.is_empty());
-                me.set_expand_state(!*me.destroying.borrow());
+                me.set_expand_state(true);
             }
         )));
         me.root.add_controller(gesture::on_leave(clone!(
@@ -318,12 +326,12 @@ impl NotificationWidget {
 
     pub fn set_expand_state(&self, expanded: bool) {
         self.expanded.replace(expanded);
-        if expanded {
-            self.body.set_ellipsize(gtk4::pango::EllipsizeMode::None);
-            self.body.set_wrap(true);
-        } else {
+        if !expanded && !*self.destroying.borrow() {
             self.body.set_ellipsize(gtk4::pango::EllipsizeMode::End);
             self.body.set_wrap(false);
+        } else {
+            self.body.set_ellipsize(gtk4::pango::EllipsizeMode::None);
+            self.body.set_wrap(true);
         }
     }
 
@@ -365,14 +373,14 @@ impl NotificationWidget {
             async move {
                 me.wait_until_not_expanded().await;
 
-                glib::timeout_add_local_once(
-                    Duration::from_millis(1000),
+                glib::timeout_add_local_once(Duration::from_millis(1000), clone!(
+                    #[weak] me,
                     move || if *me.expanded.borrow() {
                         me.queue_destroy(animation);
                     } else {
                         me.destroy(animation);
                     }
-                );
+                ));
             }
         ));
     }
