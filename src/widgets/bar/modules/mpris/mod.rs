@@ -6,17 +6,17 @@ use gtk4::prelude::*;
 
 use crate::singletons::mpris;
 use crate::utils::gesture;
-use super::super::module::{BarModule, BarModuleWrapper};
+use super::super::base::BarModule;
 
 const VOLUME_STEP: f64 = 0.05;
 
-pub fn new() -> BarModuleWrapper {
-    let module = BarModule::new(minimal::minimal(), extended::extended());
-    let wrapper = BarModuleWrapper::new(module, &["bar-mpris"]);
+pub fn new() -> BarModule {
+    let module = BarModule::with_widgets(&minimal::minimal().upcast(), &extended::extended().upcast());
+    module.add_css_class("bar-mpris");
 
-    wrapper.bx.add_controller(gesture::on_middle_down(clone!(
-        #[weak(rename_to = module)] wrapper.module,
-        move |_, _, _| if !module.is_expanded() {
+    module.add_controller(gesture::on_middle_down(clone!(
+        #[weak] module,
+        move |_, _, _| if !module.expanded() {
             let Some(player) = mpris::get_default_player() else {
                 return warn!("No MPRIS player available to toggle play/pause");
             };
@@ -27,18 +27,18 @@ pub fn new() -> BarModuleWrapper {
         }
     )));
 
-    wrapper.bx.add_controller(gesture::on_secondary_down(clone!(
-        #[weak(rename_to = module)] wrapper.module,
-        move |_, _, _| if !module.is_expanded() {
+    module.add_controller(gesture::on_secondary_down(clone!(
+        #[weak] module,
+        move |_, _, _| if !module.expanded() {
             mpris::with_default_player_mut(|player| if let Err(e) = player.next() {
                 error!(%e, "Failed to skip to next track");
             });
         }
     )));
 
-    wrapper.bx.add_controller(gesture::on_vertical_scroll(clone!(
-        #[weak(rename_to = module)] wrapper.module,
-        move |delta_y| if !module.is_expanded() {
+    module.add_controller(gesture::on_vertical_scroll(clone!(
+        #[weak] module,
+        move |delta_y| if !module.expanded() {
             let Some(player) = mpris::get_default_player() else {
                 return warn!("No MPRIS player available to adjust volume");
             };
@@ -54,5 +54,5 @@ pub fn new() -> BarModuleWrapper {
         }
     )));
 
-    wrapper
+    module
 }

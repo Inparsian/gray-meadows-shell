@@ -7,7 +7,7 @@ use ::hyprland::dispatch::WorkspaceIdentifierWithSpecial;
 use crate::scss;
 use crate::singletons::hyprland;
 use crate::utils::gesture;
-use super::super::wrapper::SimpleBarModuleWrapper;
+use super::super::base::BarModule;
 
 const SHOWN_WORKSPACES: usize = 10;
 const WORKSPACE_WIDTH: f64 = 13.0;
@@ -44,7 +44,7 @@ impl WorkspaceMask {
     }
 }
 
-pub fn new() -> gtk4::Box {
+pub fn new() -> BarModule {
     let style_provider = gtk4::CssProvider::new();
 
     view! {
@@ -130,8 +130,7 @@ pub fn new() -> gtk4::Box {
         workspaces_box = gtk4::Box {
             set_orientation: gtk4::Orientation::Horizontal,
             set_spacing: 0,
-            set_css_classes: &["bar-widget", "bar-workspaces"],
-
+            
             append: &workspaces_drawing_area
         }
     }
@@ -159,8 +158,11 @@ pub fn new() -> gtk4::Box {
         workspaces_drawing_area.queue_draw();
     }));
 
-    SimpleBarModuleWrapper::new(&workspaces_box)
-        .add_controller(workspaces_click_gesture)
-        .add_controller(workspaces_scroll_gesture)
-        .get_widget()
+    let module = BarModule::builder()
+        .minimal_widget(&workspaces_box.upcast())
+        .build();
+    module.add_css_class("bar-workspaces");
+    module.add_controller(workspaces_click_gesture);
+    module.add_controller(workspaces_scroll_gesture);
+    module
 }

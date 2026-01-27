@@ -3,16 +3,14 @@ use gtk4::prelude::*;
 
 use crate::singletons::date_time::DATE_TIME;
 use crate::widgets::common::dot_separator;
-use super::super::wrapper::SimpleBarModuleWrapper;
+use super::super::base::BarModule;
 
-pub fn new() -> gtk4::Box {
+pub fn new() -> BarModule {
     view! {
         time_label = gtk4::Label {},
         date_label = gtk4::Label {},
         widget = gtk4::Box {
-            set_css_classes: &["bar-widget"],
             set_hexpand: false,
-
             append: &time_label,
             append: &dot_separator::new(),
             append: &date_label
@@ -24,5 +22,7 @@ pub fn new() -> gtk4::Box {
         date_label.set_label(&date_time.date);
     }));
 
-    SimpleBarModuleWrapper::new(&widget).get_widget()
+    BarModule::builder()
+        .minimal_widget(&widget.upcast())
+        .build()
 }

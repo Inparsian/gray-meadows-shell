@@ -5,46 +5,33 @@
 .bar-window {
     background: transparent;
 
-    .bar-expanded-wrapper, .bar-minimal-wrapper {
-        transition-property: transform, opacity, margin, filter;
-        transition-delay: 0s;
-
-        &.expanding {
-            transition-timing-function: cubic-bezier(0.33, 0.66, 0.1, 1);
-        }
-
-        &.collapsing {
-            transition-timing-function: cubic-bezier(0.5, 0.33, 0, 1);
-        }
-    }
-
     .bar {
         @include normal-text;
 
-        .bar-widget-wrapper {
+        .bar-widget {
+            color: $foreground-color-primary;
             padding-top: 5px;
             padding-bottom: 5px;
             padding-left: 2px;
             padding-right: 2px;
-            min-height: 24px;
-
+            
+            .bar-module-background {
+                background: $background-color-primary;
+            }
+            
+            .bar-minimal-widget {
+                min-height: 24px;
+                padding-left: 6px;
+                padding-right: 6px;
+            }
+            
             &:first-child {
                 padding-left: 5px;
             }
-
+            
             &:last-child {
                 padding-right: 5px;
             }
-        }
-
-        .bar-widget {
-            background: $background-color-primary;
-            color: $foreground-color-primary;
-
-            padding-top: 4px;
-            padding-bottom: 4px;
-            padding-left: 6px;
-            padding-right: 6px;
         }
     }
 }

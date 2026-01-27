@@ -1,6 +1,9 @@
 .bar-window .bar .bar-widget.bar-mpris {
-    padding: 0px;
-
+    .bar-minimal-widget {
+        padding-left: 0px;
+        padding-right: 0px;
+    }
+    
     .bar-mpris-track {
         padding-top: 4px;
         padding-bottom: 4px;

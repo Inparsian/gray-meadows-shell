@@ -3,7 +3,7 @@ use gtk4::prelude::*;
 
 use crate::singletons::hyprland;
 use crate::APP_LOCAL;
-use super::super::wrapper::SimpleBarModuleWrapper;
+use super::super::base::BarModule;
 
 const MAX_CLASS_WIDTH: i32 = 29;
 const MAX_TITLE_WIDTH: i32 = 54;
@@ -20,7 +20,7 @@ fn icon_or(icon_name: Option<&str>) -> Option<&str> {
     Some("emote-love")
 }
 
-pub fn new() -> gtk4::Box {
+pub fn new() -> BarModule {
     let reveal_title = Mutable::new(false);
 
     view! {
@@ -111,9 +111,7 @@ pub fn new() -> gtk4::Box {
         },
 
         widget = gtk4::Box {
-            set_css_classes: &["bar-widget", "bar-client"],
             set_hexpand: false,
-
             append: &client_box,
             append: &workspace_box,
         }
@@ -156,7 +154,10 @@ pub fn new() -> gtk4::Box {
         class_revealer.set_reveal_child(!reveal);
     }));
 
-    SimpleBarModuleWrapper::new(&widget)
-        .add_controller(reveal_title_gesture)
-        .get_widget()
+    let module = BarModule::builder()
+        .minimal_widget(&widget.upcast())
+        .build();
+    module.add_css_class("bar-client");
+    module.add_controller(reveal_title_gesture);
+    module
 }

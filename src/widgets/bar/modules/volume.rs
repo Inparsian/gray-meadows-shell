@@ -4,7 +4,7 @@ use crate::ffi::astalwp::ffi;
 use crate::utils::gesture;
 use crate::singletons::wireplumber;
 use crate::widgets::windows;
-use super::super::wrapper::SimpleBarModuleWrapper;
+use super::super::base::BarModule;
 
 const VOLUME_STEP: f32 = 0.05;
 const LOW_VOLUME_CHAR: &str = "";
@@ -21,7 +21,7 @@ fn volume_to_char(volume: f32) -> String {
     }
 }
 
-pub fn new() -> gtk4::Box {
+pub fn new() -> BarModule {
     view! {
         volume_scroll_gesture = gesture::on_vertical_scroll(|delta_y| {
             if let Some(default_speaker) = wireplumber::get_default_speaker() {
@@ -44,10 +44,9 @@ pub fn new() -> gtk4::Box {
         },
 
         widget = gtk4::Box {
-            set_css_classes: &["bar-widget"],
             set_spacing: 6,
             set_hexpand: false,
-
+            
             append: &volume_char_label,
             append: &volume_percentage_label
         }
@@ -58,8 +57,10 @@ pub fn new() -> gtk4::Box {
         volume_percentage_label.set_label(&format!("{:.0}%", volume * 100.0));
     });
 
-    SimpleBarModuleWrapper::new(&widget)
-        .add_controller(volume_scroll_gesture)
-        .add_controller(volume_click_gesture)
-        .get_widget()
+    let module = BarModule::builder()
+        .minimal_widget(&widget.upcast())
+        .build();
+    module.add_controller(volume_scroll_gesture);
+    module.add_controller(volume_click_gesture);
+    module
 }

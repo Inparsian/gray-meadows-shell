@@ -1,5 +1,4 @@
-pub mod wrapper;
-pub mod module;
+pub mod base;
 mod modules {
     pub mod workspaces;
     pub mod client;
@@ -18,7 +17,7 @@ use crate::APP_LOCAL;
 use crate::ipc;
 use crate::singletons::hyprland;
 use crate::utils::gesture;
-use self::module::{BarModuleWrapper, hide_all_expanded_modules};
+use self::base::{BarModule, hide_all_expanded_modules};
 
 static BAR_HEIGHT: i32 = 33;
 
@@ -26,7 +25,7 @@ pub struct BarWindow {
     pub window: gtk4::ApplicationWindow,
     pub monitor: gdk4::Monitor,
     pub steal_window: gtk4::ApplicationWindow,
-    pub modules: HashMap<String, BarModuleWrapper>,
+    pub modules: HashMap<String, BarModule>,
 }
 
 impl BarWindow {
@@ -52,8 +51,8 @@ impl BarWindow {
                 set_spacing: 1,
                 set_valign: gtk4::Align::Start,
 
-                append: &sysstats_module.bx,
-                append: &mpris_module.bx,
+                append: &sysstats_module,
+                append: &mpris_module,
                 append: &modules::clock::new()
             },
 
@@ -109,9 +108,9 @@ impl BarWindow {
             #[strong] modules,
             move |_, (px, py), (rx, ry)| {
                 if py > BAR_HEIGHT as f64 && ry > BAR_HEIGHT as f64 {
-                    let not_inside_any = modules.values().filter(|w| w.module.is_expanded()).any(|wrapper| {
-                        let mod_allocation = wrapper.bx.allocation();
-                        let parent_allocation = wrapper.bx.parent().expect("No parent for bar module").allocation();
+                    let not_inside_any = modules.values().filter(|module| module.expanded()).any(|module| {
+                        let mod_allocation = module.allocation();
+                        let parent_allocation = module.parent().expect("No parent for bar module").allocation();
                         let allocation = gdk4::Rectangle::new(
                             mod_allocation.x() + parent_allocation.x(),
                             mod_allocation.y() + parent_allocation.y(),
@@ -128,7 +127,7 @@ impl BarWindow {
                     }
                 }
 
-                if modules.values().any(|wrapper| wrapper.module.is_expanded()) {
+                if modules.values().any(|module| module.expanded()) {
                     steal_window.set_visible(true);
                     window.set_layer(Layer::Overlay);
                     window.set_keyboard_mode(KeyboardMode::OnDemand);
@@ -142,7 +141,7 @@ impl BarWindow {
             #[strong] modules,
             move |_, _, _| {
                 // usually signifies that a module is being collapsed, but we should make sure that all are collapsed
-                let any_expanded = modules.values().any(|wrapper| wrapper.module.is_expanded());
+                let any_expanded = modules.values().any(|module| module.expanded());
                 if !any_expanded {
                     steal_window.set_visible(false);
                     window.set_layer(Layer::Top);
@@ -165,8 +164,8 @@ impl BarWindow {
     }
 
     pub fn hide_all_expanded_modules(&self) {
-        for wrapper in self.modules.values() {
-            wrapper.module.set_expanded(false);
+        for module in self.modules.values() {
+            module.set_expanded(false);
         }
 
         self.steal_window.set_visible(false);
@@ -182,10 +181,10 @@ pub fn toggle_module_by_name(name: &str) {
 
     APP_LOCAL.with(|app| {
         for bar_window in &*app.bars.borrow() {
-            if bar_window.monitor == monitor && let Some(wrapper) = bar_window.modules.get(name) {
-                wrapper.module.set_expanded(!wrapper.module.is_expanded());
+            if bar_window.monitor == monitor && let Some(module) = bar_window.modules.get(name) {
+                module.set_expanded(!module.expanded());
 
-                let any_expanded = bar_window.modules.values().any(|w| w.module.is_expanded());
+                let any_expanded = bar_window.modules.values().any(|module| module.expanded());
                 if any_expanded {
                     bar_window.steal_window.set_visible(true);
                     bar_window.window.set_layer(Layer::Overlay);

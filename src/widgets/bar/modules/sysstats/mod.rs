@@ -4,23 +4,23 @@ pub mod extended;
 use gtk4::prelude::*;
 
 use crate::utils::gesture;
-use super::super::module::{BarModule, BarModuleWrapper};
+use super::super::base::BarModule;
 
 /// Show swap usage only if it's above this threshold, 
 /// indicating that the system is under memory pressure.
 pub const SWAP_SHOW_THRESHOLD: f64 = 5.0; 
 
-pub fn new() -> BarModuleWrapper {
-    let module = BarModule::new(minimal::minimal(), extended::extended());
-    let wrapper = BarModuleWrapper::new(module, &["bar-sysstats"]);
+pub fn new() -> BarModule {
+    let module = BarModule::with_widgets(&minimal::minimal().upcast(), &extended::extended().upcast());
+    module.add_css_class("bar-sysstats");
 
-    wrapper.bx.add_controller(gesture::on_middle_down(clone!(
-        #[weak(rename_to = module)] wrapper.module,
-        move |_, _, _| if !module.is_expanded() {
+    module.add_controller(gesture::on_middle_down(clone!(
+        #[weak] module,
+        move |_, _, _| if !module.expanded() {
             let detailed = minimal::DETAILED.get();
             minimal::DETAILED.set(!detailed);
         }
     )));
 
-    wrapper
+    module
 }

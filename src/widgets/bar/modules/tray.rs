@@ -3,7 +3,7 @@ use gtk4::prelude::*;
 use crate::pixbuf;
 use crate::utils::gesture;
 use crate::singletons::tray::{self, bus::BusEvent, icon, tray_menu, wrapper::{dbus_menu::Menu, sn_item::StatusNotifierItem}};
-use super::super::wrapper::SimpleBarModuleWrapper;
+use super::super::base::BarModule;
 
 #[derive(Default, Clone)]
 struct SystemTrayItem {
@@ -123,7 +123,6 @@ struct SystemTray {
 impl SystemTray {
     fn new() -> Self {
         let box_ = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
-        box_.set_css_classes(&["bar-widget", "bar-tray"]);
         box_.set_visible(false);
         box_.set_hexpand(false);
 
@@ -196,7 +195,7 @@ impl SystemTray {
     }
 }
 
-pub fn new() -> gtk4::Box {
+pub fn new() -> BarModule {
     let mut tray = SystemTray::new();
     let widget = tray.get_widget();
 
@@ -238,5 +237,9 @@ pub fn new() -> gtk4::Box {
         }
     });
 
-    SimpleBarModuleWrapper::new(&widget).get_widget()
+    let module = BarModule::builder()
+        .minimal_widget(&widget.upcast())
+        .build();
+    module.add_css_class("bar-tray");
+    module
 }
