@@ -157,16 +157,18 @@ impl Default for WeatherAlerts {
 
 impl WeatherAlerts {
     pub fn update(&self, alerts: &NwsAlertsResponse) {
-        for alert in self.alerts.borrow().iter() {
+        let mut alerts_mut = self.alerts.borrow_mut();
+        for alert in alerts_mut.clone() {
             if !alerts.features.iter().any(|a| a.properties.id == alert.alert.properties.id) {
                 self.bx.remove(&alert.bx);
+                alerts_mut.retain(|a| a.alert.properties.id != alert.alert.properties.id);
             }
         }
-
+    
         for alert in &alerts.features {
-            if !self.alerts.borrow().iter().any(|a| a.alert.properties.id == alert.properties.id) {
+            if !alerts_mut.iter().any(|a| a.alert.properties.id == alert.properties.id) {
                 let alert = WeatherAlert::new(alert.clone());
-                self.alerts.borrow_mut().push(alert.clone());
+                alerts_mut.push(alert.clone());
                 self.bx.append(&alert.bx);
                 alert.construct();
             }
