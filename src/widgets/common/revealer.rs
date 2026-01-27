@@ -120,13 +120,18 @@ mod imp {
 
         fn snapshot(&self, snapshot: &gtk4::Snapshot) {
             if let Some(child) = self.child.borrow().as_ref() && child.should_layout() {
-                let width = self.obj().width() as f32;
-                let height = self.obj().height() as f32;
+                let obj = self.obj();
+                let width = obj.width() as f32;
+                let height = obj.height() as f32;
 
                 if width > 0.0 && height > 0.0 {
-                    snapshot.push_clip(&graphene::Rect::new(0.0, 0.0, width, height));
-                    self.obj().snapshot_child(child, snapshot);
-                    snapshot.pop();
+                    if obj.overflow() == gtk4::Overflow::Hidden {
+                        snapshot.push_clip(&graphene::Rect::new(0.0, 0.0, width, height));
+                    }
+                    obj.snapshot_child(child, snapshot);
+                    if obj.overflow() == gtk4::Overflow::Hidden {
+                        snapshot.pop();
+                    }
                 }
             }
         }
@@ -330,7 +335,8 @@ pub struct AdwRevealerBuilder {
 impl AdwRevealerBuilder {
     fn new() -> Self {
         Self {
-            builder: glib::Object::builder(),
+            builder: glib::Object::builder()
+                .property("overflow", gtk4::Overflow::Hidden),
         }
     }
 
@@ -341,6 +347,11 @@ impl AdwRevealerBuilder {
     
     pub fn css_classes(mut self, classes: impl Into<glib::StrV>) -> Self {
         self.builder = self.builder.property("css-classes", classes.into());
+        self
+    }
+    
+    pub fn overflow(mut self, overflow: gtk4::Overflow) -> Self {
+        self.builder = self.builder.property("overflow", overflow);
         self
     }
 
