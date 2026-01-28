@@ -30,6 +30,12 @@ pub fn increment_entry_runs(command: &str) {
     if let Some(entry) = writer.get_mut(command) {
         entry.last_run = now;
         entry.runs += 1;
+    } else {
+        writer.insert(command.to_owned(), DesktopRunsEntry {
+            command: command.to_owned(),
+            runs: 1,
+            last_run: now,
+        });
     }
 }
 
