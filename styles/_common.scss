@@ -85,3 +85,10 @@
 .tabs-stack {
     padding: 8px;
 }
+
+tooltip {
+    background: $background-color-primary;
+    color: $foreground-color-primary;
+    border-radius: 0px;
+    border: 1px solid $border-color-primary;
+}
