@@ -49,8 +49,11 @@ impl WeatherAlert {
     }
     
     pub fn construct(&self) {
-        let parse_dt = |dt: &str| chrono::DateTime::parse_from_rfc3339(dt)
-            .map_or_else(|_| dt.to_owned(), |dt| dt.format("%B %d, %Y at %I:%M %p").to_string());
+        let parse_dt = |dt: Option<&String>| dt.map_or_else(
+            || "indeterminate".to_owned(),
+            |dt| chrono::DateTime::parse_from_rfc3339(dt)
+                .map_or_else(|_| dt.to_owned(), |dt| dt.format("%B %d, %Y at %I:%M %p").to_string())
+        );
         
         view! {
             revealer = gtk4::Revealer {
@@ -65,11 +68,11 @@ impl WeatherAlert {
                     set_spacing: 4,
                     
                     append: &Self::construct_field("Sent by", &self.alert.properties.sender_name),
-                    append: &Self::construct_field("Sent on", &parse_dt(&self.alert.properties.sent)),
-                    append: &Self::construct_field("Effective", &parse_dt(&self.alert.properties.effective)),
-                    append: &Self::construct_field("Onset", &parse_dt(&self.alert.properties.onset)),
-                    append: &Self::construct_field("Expires", &parse_dt(&self.alert.properties.expires)),
-                    append: &Self::construct_field("Ends", &parse_dt(&self.alert.properties.ends)),
+                    append: &Self::construct_field("Sent on", &parse_dt(Some(&self.alert.properties.sent))),
+                    append: &Self::construct_field("Effective", &parse_dt(Some(&self.alert.properties.effective))),
+                    append: &Self::construct_field("Onset", &parse_dt(self.alert.properties.onset.as_ref())),
+                    append: &Self::construct_field("Expires", &parse_dt(Some(&self.alert.properties.expires))),
+                    append: &Self::construct_field("Ends", &parse_dt(self.alert.properties.ends.as_ref())),
                     
                     gtk4::Box {
                         set_margin_top: 16,
@@ -86,7 +89,7 @@ impl WeatherAlert {
                         },
                         
                         gtk4::Label {
-                            set_label: &self.alert.properties.instruction,
+                            set_label: &self.alert.properties.instruction.as_ref().unwrap_or(&"...".to_owned()),
                             set_css_classes: &["weather-alert-instruction"],
                             set_hexpand: true,
                             set_xalign: 0.0,

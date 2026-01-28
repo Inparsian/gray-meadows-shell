@@ -53,9 +53,9 @@ pub struct NwsFeatureProperties {
     pub id: String,
     pub sent: String,
     pub effective: String,
-    pub onset: String,
+    pub onset: Option<String>,
     pub expires: String,
-    pub ends: String,
+    pub ends: Option<String>,
     pub status: NwsAlertStatus,
     pub message_type: NwsAlertMessageType,
     pub severity: NwsAlertSeverity,
@@ -64,9 +64,9 @@ pub struct NwsFeatureProperties {
     pub event: String,
     pub sender: String,
     pub sender_name: String,
-    pub headline: String,
+    pub headline: Option<String>,
     pub description: String,
-    pub instruction: String,
+    pub instruction: Option<String>,
     pub response: String,
 }
 
