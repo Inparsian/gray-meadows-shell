@@ -339,9 +339,7 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
                             }
     
                             // Move this item if its position has changed
-                            if index != i {
-                                search_results_mut.move_item(index, i);
-                            }
+                            search_results_mut.move_item(index, i);
                         } else {
                             search_results_mut.insert(item, i);
                         }

@@ -97,7 +97,7 @@ impl OverviewSearchList {
     }
 
     pub fn move_item(&mut self, from: usize, to: usize) {
-        if from < self.items.len() && to < self.items.len() && from != to {
+        if from != to && from < self.items.len() && to < self.items.len() {
             let item = self.items.remove(from);
             self.items.insert(to, item);
 
