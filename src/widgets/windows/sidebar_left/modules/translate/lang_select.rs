@@ -2,7 +2,7 @@ use std::{cell::RefCell, error::Error, rc::Rc};
 use gtk4::prelude::*;
 use relm4::RelmRemoveAllExt as _;
 
-use crate::services::g_translate::language::{self, Language};
+use crate::services::g_translate::languages::{self, Language};
 use super::super::translate::{self, LanguageSelectReveal, UiEvent};
 
 const BUTTONS_PER_ROW: usize = 3;
@@ -15,9 +15,9 @@ fn get_page_boxes(reveal_type: &LanguageSelectReveal, filter: Option<&str>) -> V
     let mut buttons: Vec<gtk4::Button> = Vec::new();
 
     let languages: Vec<Language> = if *reveal_type == LanguageSelectReveal::Source {
-        language::get_all_with_auto()
+        languages::get_all_with_auto()
     } else {
-        language::get_all()
+        languages::get_all()
     };
 
     for lang in languages {
@@ -33,8 +33,8 @@ fn get_page_boxes(reveal_type: &LanguageSelectReveal, filter: Option<&str>) -> V
             #[strong(rename_to = lang_code)] lang.code,
             move |_| {
                 match reveal_type {
-                    LanguageSelectReveal::Source => translate::set_source_language(language::get_by_code(&lang_code)),
-                    LanguageSelectReveal::Target => translate::set_target_language(language::get_by_code(&lang_code)),
+                    LanguageSelectReveal::Source => translate::set_source_language(languages::get_by_code(&lang_code)),
+                    LanguageSelectReveal::Target => translate::set_target_language(languages::get_by_code(&lang_code)),
                     _ => unreachable!(),
                 }
 
@@ -173,14 +173,28 @@ impl LanguageSelectView {
         view.widget.set_css_classes(&["google-translate-language-select-box"]);
         view.widget.set_hexpand(true);
         view.widget.append(&{
+            let bx = gtk4::CenterBox::builder()
+                .orientation(gtk4::Orientation::Horizontal)
+                .hexpand(true)
+                .build();
+            
+            let back_button = gtk4::Button::builder()
+                .css_classes(["google-translate-language-select-back-button"])
+                .label("arrow_back")
+                .build();
+            back_button.connect_clicked(|_| {
+                translate::send_ui_event(&UiEvent::LanguageSelectRevealChanged(LanguageSelectReveal::None));
+            });
+            bx.set_start_widget(Some(&back_button));
+            
             let label = gtk4::Label::new(Some(if view.reveal_type == LanguageSelectReveal::Source {
                 "Source Language"
             } else {
                 "Target Language"
             }));
-
             label.set_css_classes(&["google-translate-language-select-label"]);
-            label
+            bx.set_center_widget(Some(&label));
+            bx
         });
 
         view.widget.append(&{

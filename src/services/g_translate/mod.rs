@@ -1,11 +1,11 @@
 #![allow(dead_code)]
-pub mod language;
+pub mod languages;
 pub mod result;
 
 use std::sync::{Mutex, LazyLock};
 use serde::Serialize;
 
-use self::{language::Language, result::GoogleTranslateResult};
+use self::{languages::Language, result::GoogleTranslateResult};
 
 pub static SESSION: LazyLock<Mutex<GoogleTranslateSession>> = LazyLock::new(|| Mutex::new(GoogleTranslateSession::default()));
 static LENGTH_REGEX: LazyLock<regex::Regex> = LazyLock::new(|| regex::Regex::new(r"^(\d+)").unwrap());
@@ -139,7 +139,7 @@ pub async fn translate(
         } else {
             result.from.language.code = json[1][3].as_str().unwrap_or("").to_owned();
         }
-        result.from.language.name = language::get_language_name(&result.from.language.code)
+        result.from.language.name = languages::get_language_name(&result.from.language.code)
             .unwrap_or_else(|| "Unknown".to_owned());
 
         // Build target text and language code
@@ -155,7 +155,7 @@ pub async fn translate(
             result.to.text = json[1][0][0][0].as_str().unwrap_or("").to_owned();
         }
         result.to.language.code = json[1][1].as_str().unwrap_or("").to_owned();
-        result.to.language.name = language::get_language_name(&result.to.language.code)
+        result.to.language.name = languages::get_language_name(&result.to.language.code)
             .unwrap_or_else(|| "Unknown".to_owned());
 
         // Autocorrect / didYouMean for source text, if any

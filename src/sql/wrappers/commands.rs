@@ -9,18 +9,16 @@ pub struct DesktopRunsEntry {
 
 /// Fetches all runs for all commands.
 pub async fn get_all_runs() -> anyhow::Result<Vec<DesktopRunsEntry>> {
-    SQL_ACTOR.with({
-        move |connection| {
-            let mut statement = connection.prepare("SELECT command, runs, last_run FROM desktop_runs")?;
-            let commands = statement.query_map([], |row| {
-                Ok(DesktopRunsEntry {
-                    command: row.get(0)?,
-                    runs: row.get(1)?,
-                    last_run: row.get(2)?,
-                })
-            })?.collect::<Result<Vec<_>, _>>()?;
-            Ok(commands)
-        }
+    SQL_ACTOR.with(|connection| {
+        let mut statement = connection.prepare("SELECT command, runs, last_run FROM desktop_runs")?;
+        let commands = statement.query_map([], |row| {
+            Ok(DesktopRunsEntry {
+                command: row.get(0)?,
+                runs: row.get(1)?,
+                last_run: row.get(2)?,
+            })
+        })?.collect::<Result<Vec<_>, _>>()?;
+        Ok(commands)
     }).await?
 }
 

@@ -1,4 +1,4 @@
-use super::language::Language;
+use super::languages::Language;
 
 #[derive(Debug, Clone, Default)]
 pub struct GoogleTranslateResult {

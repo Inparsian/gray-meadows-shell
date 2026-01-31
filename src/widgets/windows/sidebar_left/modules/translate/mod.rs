@@ -6,15 +6,17 @@ use std::time::Duration;
 use async_broadcast::Receiver;
 use gtk4::prelude::*;
 
-use crate::services::g_translate::language::{self, Language};
+use crate::services::g_translate::languages::{self, Language};
 use crate::services::g_translate::result::GoogleTranslateResult;
 use crate::services::g_translate::translate;
 use crate::utils::broadcast::BroadcastChannel;
 use crate::utils::timeout::Timeout;
+use self::lang_buttons::{LanguageButtons, LanguageButtonsKind};
+use self::lang_select::LanguageSelectView;
 
 static WORKING: LazyLock<RwLock<bool>> = LazyLock::new(|| RwLock::new(false));
-static SOURCE_LANG: LazyLock<RwLock<Option<Language>>> = LazyLock::new(|| RwLock::new(language::get_by_code("en")));
-static TARGET_LANG: LazyLock<RwLock<Option<Language>>> = LazyLock::new(|| RwLock::new(language::get_by_code("es")));
+static SOURCE_LANG: LazyLock<RwLock<Option<Language>>> = LazyLock::new(|| RwLock::new(languages::get_by_code("en")));
+static TARGET_LANG: LazyLock<RwLock<Option<Language>>> = LazyLock::new(|| RwLock::new(languages::get_by_code("es")));
 static AUTO_DETECTED_LANG: LazyLock<RwLock<Option<Language>>> = LazyLock::new(|| RwLock::new(None));
 static REVEAL: LazyLock<RwLock<LanguageSelectReveal>> = LazyLock::new(|| RwLock::new(LanguageSelectReveal::None));
 static UI_EVENT_CHANNEL: LazyLock<BroadcastChannel<UiEvent>> = LazyLock::new(|| BroadcastChannel::new(10));
@@ -98,9 +100,10 @@ pub fn new() -> gtk4::Box {
     let input_buffer = gtk4::TextBuffer::new(None);
     let output_buffer = gtk4::TextBuffer::new(None);
 
-    let language_buttons = lang_buttons::LanguageButtons::new();
-    let source_select_view = lang_select::LanguageSelectView::new(LanguageSelectReveal::Source);
-    let target_select_view = lang_select::LanguageSelectView::new(LanguageSelectReveal::Target);
+    let source_language_buttons = LanguageButtons::new(LanguageButtonsKind::Source);
+    let target_language_buttons = LanguageButtons::new(LanguageButtonsKind::Target);
+    let source_select_view = LanguageSelectView::new(LanguageSelectReveal::Source);
+    let target_select_view = LanguageSelectView::new(LanguageSelectReveal::Target);
 
     view! {
         input_text_view = gtk4::TextView {
@@ -120,13 +123,17 @@ pub fn new() -> gtk4::Box {
 
         main_ui = gtk4::Box {
             set_orientation: gtk4::Orientation::Vertical,
-            set_spacing: 8,
+            set_spacing: 0,
             set_hexpand: true,
+            
+            append: &source_language_buttons.container,
 
             gtk4::ScrolledWindow {
                 set_vexpand: true,
                 set_child: Some(&input_text_view)
             },
+            
+            append: &target_language_buttons.container,
 
             gtk4::ScrolledWindow {
                 set_vexpand: true,
@@ -168,19 +175,22 @@ pub fn new() -> gtk4::Box {
                     connect_clicked: clone!(
                         #[weak] input_buffer,
                         #[weak] output_buffer,
-                        #[weak] language_buttons,
                         move |_| if !is_working() {
-                            let input_text = input_buffer.text(&input_buffer.start_iter(), &input_buffer.end_iter(), false).to_string();
-                            let output_text = output_buffer.text(&output_buffer.start_iter(), &output_buffer.end_iter(), false).to_string();
-                            let source_lang_cloned = SOURCE_LANG.read().unwrap().clone();
-                            let target_lang_cloned = TARGET_LANG.read().unwrap().clone();
-
-                            set_source_language(target_lang_cloned);
-                            set_target_language(source_lang_cloned);
-                            language_buttons.swap_animation();
-
-                            input_buffer.set_text(&output_text);
-                            output_buffer.set_text(&input_text);
+                            let source_lang = SOURCE_LANG.read().unwrap().clone();
+                            let target_lang = TARGET_LANG.read().unwrap().clone();
+                            
+                            if source_lang.as_ref().is_none_or(|lang| !lang.is_auto())
+                                && target_lang.as_ref().is_none_or(|lang| !lang.is_auto())
+                            {
+                                let input_text = input_buffer.text(&input_buffer.start_iter(), &input_buffer.end_iter(), false).to_string();
+                                let output_text = output_buffer.text(&output_buffer.start_iter(), &output_buffer.end_iter(), false).to_string();
+    
+                                set_source_language(target_lang);
+                                set_target_language(source_lang);
+    
+                                input_buffer.set_text(&output_text);
+                                output_buffer.set_text(&input_text);
+                            }
                         }
                     ),
                             
@@ -204,7 +214,7 @@ pub fn new() -> gtk4::Box {
         select_ui_stack = gtk4::Stack {
             set_hexpand: true,
             set_transition_type: gtk4::StackTransitionType::SlideLeftRight,
-            set_transition_duration: 250,
+            set_transition_duration: 0,
 
             add_named: (source_select_view.get_widget(), Some("source")),
             add_named: (target_select_view.get_widget(), Some("target"))
@@ -219,11 +229,11 @@ pub fn new() -> gtk4::Box {
 
         ui_stack = gtk4::Stack {
             set_hexpand: true,
-            set_transition_type: gtk4::StackTransitionType::SlideUpDown,
+            set_transition_type: gtk4::StackTransitionType::SlideLeftRight,
             set_transition_duration: 250,
 
-            add_named: (&select_ui, Some("select")),
             add_named: (&main_ui, Some("main")),
+            add_named: (&select_ui, Some("select")),
             
             set_visible_child_name: "main"
         },
@@ -234,7 +244,6 @@ pub fn new() -> gtk4::Box {
             set_spacing: 8,
             set_hexpand: true,
 
-            append: &language_buttons.container,
             append: &ui_stack,
         }
     };
@@ -271,7 +280,7 @@ pub fn new() -> gtk4::Box {
                             if SOURCE_LANG.read().unwrap().as_ref().unwrap().is_auto() {
                                 *AUTO_DETECTED_LANG.write().unwrap() = Some(res.from.language.clone());
 
-                                language_buttons.set_source_label(&format!("Auto ({})", res.from.language.name));
+                                source_language_buttons.set_auto_language(&res.from.language.name);
                             }
                         },
 
@@ -283,12 +292,12 @@ pub fn new() -> gtk4::Box {
                     input_text_view.set_editable(true);
                 },
 
-                UiEvent::SourceLanguageChanged(lang) => {
-                    language_buttons.set_source_label(lang.as_ref().map_or("Source...", |l| &l.name));
+                UiEvent::SourceLanguageChanged(lang) => if let Some(lang) = lang {
+                    source_language_buttons.push_language(lang);
                 },
 
-                UiEvent::TargetLanguageChanged(lang) => {
-                    language_buttons.set_target_label(lang.as_ref().map_or("Target...", |l| &l.name));
+                UiEvent::TargetLanguageChanged(lang) => if let Some(lang) = lang {
+                    target_language_buttons.push_language(lang);
                 },
 
                 UiEvent::LanguageSelectRevealChanged(reveal) => {
@@ -300,7 +309,7 @@ pub fn new() -> gtk4::Box {
                         "select"
                     });
 
-                    if [LanguageSelectReveal::Source, LanguageSelectReveal::Target].contains(&reveal) {
+                    if matches!(&reveal, LanguageSelectReveal::Source | LanguageSelectReveal::Target) {
                         select_ui_stack.set_visible_child_name(match reveal {
                             LanguageSelectReveal::Target => "target",
                             LanguageSelectReveal::Source => "source",

@@ -31,11 +31,93 @@
             font-size: 16px;
         }
     }
+    
+    .google-translate-languages-scrolled-window scrollbar range trough {
+        margin: 0px;
+        
+        slider {
+            min-height: 4px;
+            transition: min-height 0.25s ease-in-out;
+            &:hover {
+                min-height: 6px;
+            }
+        }
+    }
+    
+    .google-translate-language-button {
+        @include normal-text;
+        background: transparent;
+        font-weight: 300;
+        border: 0px;
+        color: $foreground-color-primary;
+        padding: 3px 12px 6px 12px;
+        border-radius: 0px;
+        transition-property: border-bottom, color;
+        transition-duration: 0.25s;
+        
+        &:not(.selected) {
+            border-bottom: 1px solid transparent;
+            color: rgba($foreground-color-primary, 0.6666666667);
+        
+            &:hover, &:focus {
+                color: rgba($foreground-color-primary, 0.8);
+                outline: none;
+            }
+        
+            &:active {
+                color: rgba($foreground-color-primary, 0.9333333333);
+            }
+        }
+    
+        &.selected {
+            border-bottom: 1px solid $foreground-color-primary;
+            color: $foreground-color-primary;
+        
+            &:hover, &:focus {
+                color: $foreground-color-primary-focus;
+                outline: none;
+            }
+        
+            &:active {
+                color: $foreground-color-primary-active;
+            }
+        }
+
+        .material-icons {
+            font-weight: 400;
+            font-size: 16px;
+        }
+    }
+    
+    .google-translate-language-select-back-button,
+    .google-translate-language-select-menu-button {
+        @include material-icons;
+        background: transparent;
+        font-size: 16px;
+        font-weight: 400;
+        border: 0px;
+        color: $foreground-color-secondary;
+        transition-property: color;
+        transition-duration: 0.25s;
+        padding: 0px;
+        padding-left: 4px;
+        border-radius: 0px;
+
+        &:hover, &:focus {
+            outline: none;
+            color: $foreground-color-select;
+        }
+        
+        &:active {
+            color: $foreground-color-active;
+        }
+    }
 
     .google-translate-language-select-box {
         .google-translate-language-select-label {
             @include large-text;
             margin-top: 6px;
+            margin-bottom: 6px;
         }
 
         .google-translate-language-select-nav-button {
@@ -96,6 +178,7 @@
     .google-translate-text-view {
         @include large-text;
         padding: 12px;
+        margin-bottom: 16px;
         background: $background-color-secondary;
 
         text {
