@@ -11,7 +11,7 @@ use super::super::base::BarModule;
 pub const SWAP_SHOW_THRESHOLD: f64 = 5.0; 
 
 pub fn new() -> BarModule {
-    let module = BarModule::with_widgets(&minimal::minimal().upcast(), &extended::extended().upcast());
+    let module = BarModule::with_widgets(&minimal::minimal(), &extended::extended());
     module.add_css_class("bar-sysstats");
 
     module.add_controller(gesture::on_middle_down(clone!(

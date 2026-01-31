@@ -58,7 +58,7 @@ pub fn new() -> BarModule {
     });
 
     let module = BarModule::builder()
-        .minimal_widget(&widget.upcast())
+        .minimal_widget(&widget)
         .build();
     module.add_controller(volume_scroll_gesture);
     module.add_controller(volume_click_gesture);

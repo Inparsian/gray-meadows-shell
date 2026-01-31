@@ -197,7 +197,7 @@ impl NotificationWidget {
                 set_show_easing: GEasing::EaseOutBounce,
                 set_hide_easing: GEasing::EaseOutExpo,
                 set_hexpand: true,
-                set_child: Some(&bx.clone().upcast()),
+                set_child_from: Some(&bx),
                 set_overflow: gtk4::Overflow::Visible,
             }
         }

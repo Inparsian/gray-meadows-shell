@@ -159,7 +159,7 @@ pub fn new() -> BarModule {
     }));
 
     let module = BarModule::builder()
-        .minimal_widget(&workspaces_box.upcast())
+        .minimal_widget(&workspaces_box)
         .build();
     module.add_css_class("bar-workspaces");
     module.add_controller(workspaces_click_gesture);

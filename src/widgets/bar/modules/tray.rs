@@ -238,7 +238,7 @@ pub fn new() -> BarModule {
     });
 
     let module = BarModule::builder()
-        .minimal_widget(&widget.upcast())
+        .minimal_widget(&widget)
         .build();
     module.add_css_class("bar-tray");
     module

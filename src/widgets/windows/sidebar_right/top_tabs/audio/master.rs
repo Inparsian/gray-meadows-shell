@@ -153,7 +153,7 @@ impl MasterControls {
         devices_scrolled_window.set_propagate_natural_height(true);
         devices_scrolled_window.set_min_content_height(108);
         devices_scrolled_window.set_max_content_height(108);
-        devices_revealer.set_child(Some(&devices_scrolled_window.clone().upcast()));
+        devices_revealer.set_child_from(Some(&devices_scrolled_window));
         
         let devices_box = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
         devices_box.set_css_classes(&["audio-master-devices-box"]);

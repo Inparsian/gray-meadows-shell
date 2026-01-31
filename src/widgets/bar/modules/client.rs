@@ -155,7 +155,7 @@ pub fn new() -> BarModule {
     }));
 
     let module = BarModule::builder()
-        .minimal_widget(&widget.upcast())
+        .minimal_widget(&widget)
         .build();
     module.add_css_class("bar-client");
     module.add_controller(reveal_title_gesture);

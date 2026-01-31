@@ -215,6 +215,8 @@ mod imp {
     }
 }
 
+use gtk4::prelude::IsA;
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, glib::Enum, Default)]
 #[enum_type(name = "GEasing")]
 /// Copied from libadwaita to implement glib::Enum
@@ -323,6 +325,12 @@ impl Default for AdwRevealer {
 }
 
 impl AdwRevealer {
+    /// Helper function to avoid having to clone and/or upcast Widgets.
+    pub fn set_child_from<W: IsA<gtk4::Widget>>(&self, child: Option<&W>) {
+        let child: Option<&gtk4::Widget> = child.map(|w| w.as_ref());
+        self.set_child(child);
+    }
+    
     pub fn builder() -> AdwRevealerBuilder {
         AdwRevealerBuilder::new()
     }
@@ -340,8 +348,9 @@ impl AdwRevealerBuilder {
         }
     }
 
-    pub fn child(mut self, child: impl Into<Option<gtk4::Widget>>) -> Self {
-        self.builder = self.builder.property("child", child.into());
+    pub fn child<W: IsA<gtk4::Widget>>(mut self, child: Option<&W>) -> Self {
+        let child: Option<&gtk4::Widget> = child.map(|w| w.as_ref());
+        self.builder = self.builder.property("child", child);
         self
     }
     

@@ -330,6 +330,8 @@ mod imp {
     }
 }
 
+use gtk4::prelude::IsA;
+
 use crate::APP_LOCAL;
 
 static BLUR_FACTOR_PX: i32 = 32;
@@ -347,7 +349,7 @@ impl Default for BarModule {
 }
 
 impl BarModule {
-    pub fn with_widgets(minimal_widget: &gtk4::Widget, expanded_widget: &gtk4::Widget) -> Self {
+    pub fn with_widgets<W: IsA<gtk4::Widget>>(minimal_widget: &W, expanded_widget: &W) -> Self {
         Self::builder()
             .minimal_widget(minimal_widget)
             .expanded_widget(expanded_widget)
@@ -374,12 +376,14 @@ impl BarModuleBuilder {
         self.builder.build()
     }
 
-    pub fn minimal_widget(mut self, widget: &gtk4::Widget) -> Self {
+    pub fn minimal_widget<W: IsA<gtk4::Widget>>(mut self, widget: &W) -> Self {
+        let widget: &gtk4::Widget = widget.as_ref();
         self.builder = self.builder.property("minimal-widget", widget);
         self
     }
 
-    pub fn expanded_widget(mut self, widget: &gtk4::Widget) -> Self {
+    pub fn expanded_widget<W: IsA<gtk4::Widget>>(mut self, widget: &W) -> Self {
+        let widget: &gtk4::Widget = widget.as_ref();
         self.builder = self.builder.property("expanded-widget", widget);
         self
     }

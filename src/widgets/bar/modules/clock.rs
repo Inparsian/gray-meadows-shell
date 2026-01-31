@@ -23,6 +23,6 @@ pub fn new() -> BarModule {
     }));
 
     BarModule::builder()
-        .minimal_widget(&widget.upcast())
+        .minimal_widget(&widget)
         .build()
 }

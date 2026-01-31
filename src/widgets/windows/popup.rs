@@ -104,8 +104,32 @@ impl PopupWindow {
         window.set_anchor(Edge::Bottom, true);
         window.set_namespace(Some("gms-popup"));
         window.show();
+        
+        let container = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        container.append(child);
+        
+        let clamp = Clamp::builder()
+            .child(&container)
+            .focusable(true)
+            .maximum_size(if options.anchor_left && options.anchor_right {
+                -1
+            } else {
+                width
+            })
+            .height_request(if options.anchor_top && options.anchor_bottom {
+                -1
+            } else {
+                height
+            })
+            .unit(libadwaita::LengthUnit::Px)
+            .margin_top(margin.top)
+            .margin_end(margin.right)
+            .margin_bottom(margin.bottom)
+            .margin_start(margin.left)
+            .build();
 
         let revealer = AdwRevealer::builder()
+            .child(Some(&clamp))
             .css_classes(["popup-window-revealer"])
             .transition_duration(transition_duration)
             .transition_direction(transition_direction)
@@ -124,30 +148,7 @@ impl PopupWindow {
         else if options.anchor_bottom && !options.anchor_top {
             revealer.set_valign(gtk4::Align::End);
         }
-
-        let clamp = Clamp::new();
-        clamp.set_focusable(true);
-        clamp.set_maximum_size(if options.anchor_left && options.anchor_right {
-            -1
-        } else {
-            width
-        });
-        clamp.set_height_request(if options.anchor_top && options.anchor_bottom {
-            -1
-        } else {
-            height
-        });
-        clamp.set_unit(libadwaita::LengthUnit::Px);
-        clamp.set_margin_top(margin.top);
-        clamp.set_margin_end(margin.right);
-        clamp.set_margin_bottom(margin.bottom);
-        clamp.set_margin_start(margin.left);
-
-        let container = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
-        container.append(child);
         
-        clamp.set_child(Some(&container));
-        revealer.set_child(Some(&clamp.upcast()));
         window.set_child(Some(&revealer));
 
         let popup = Self {
