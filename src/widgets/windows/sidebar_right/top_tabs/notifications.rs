@@ -2,8 +2,8 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use gtk4::prelude::*;
 
-use crate::singletons::notifications::{self, clear_notifications};
-use crate::singletons::notifications::bus::BusEvent;
+use crate::services::notifications::{self, clear_notifications};
+use crate::services::notifications::bus::BusEvent;
 use crate::widgets::notifications::notification::{self, NotificationWidget};
 
 pub fn new() -> gtk4::Box {

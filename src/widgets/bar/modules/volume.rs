@@ -2,7 +2,7 @@ use gtk4::prelude::*;
 
 use crate::ffi::astalwp::ffi;
 use crate::utils::gesture;
-use crate::singletons::wireplumber;
+use crate::services::wireplumber;
 use crate::widgets::windows;
 use super::super::base::BarModule;
 

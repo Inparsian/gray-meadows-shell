@@ -1,8 +1,8 @@
 use chrono::NaiveDateTime;
 
 use crate::SQL_ACTOR;
-use crate::singletons::weather::schemas::openmeteo::OpenMeteoResponse;
-use crate::singletons::weather::schemas::nws::NwsAlertsResponse;
+use crate::services::weather::schemas::openmeteo::OpenMeteoResponse;
+use crate::services::weather::schemas::nws::NwsAlertsResponse;
 
 pub async fn get_weather_forecast() -> anyhow::Result<(chrono::NaiveDateTime, OpenMeteoResponse)> {
     SQL_ACTOR.with(|connection| {

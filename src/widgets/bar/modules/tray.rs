@@ -2,7 +2,7 @@ use gtk4::prelude::*;
 
 use crate::pixbuf;
 use crate::utils::gesture;
-use crate::singletons::tray::{self, bus::BusEvent, icon, tray_menu, wrapper::{dbus_menu::Menu, sn_item::StatusNotifierItem}};
+use crate::services::tray::{self, bus::BusEvent, icon, tray_menu, wrapper::{dbus_menu::Menu, sn_item::StatusNotifierItem}};
 use super::super::base::BarModule;
 
 #[derive(Default, Clone)]
@@ -76,7 +76,7 @@ impl SystemTrayItem {
             }
         };
 
-        if let Some(item) = crate::singletons::tray::try_read_item(&self.service) {
+        if let Some(item) = crate::services::tray::try_read_item(&self.service) {
             if !item.icon_pixmap.is_empty() {
                 new_widget.set_from_pixbuf(icon::make_icon_pixbuf(Some(&item.icon_pixmap)).as_ref());
             } else {
@@ -95,7 +95,7 @@ impl SystemTrayItem {
     }
 
     pub fn update(&self, member: &str) {
-        if let (Some(widget), Some(item)) = (&self.widget, crate::singletons::tray::try_read_item(&self.service)) {
+        if let (Some(widget), Some(item)) = (&self.widget, crate::services::tray::try_read_item(&self.service)) {
             match member {
                 "NewToolTip" => if !item.tool_tip.title.is_empty() {
                     widget.set_tooltip_text(Some(&item.tool_tip.title));
@@ -201,7 +201,7 @@ pub fn new() -> BarModule {
 
     // We may have missed some items that were registered before we start listening.
     // Fetch the current items and register them.
-    if let Some(items) = crate::singletons::tray::ITEMS.get() {
+    if let Some(items) = crate::services::tray::ITEMS.get() {
         for item in &items.try_read().map_or(Vec::new(), |items| items.clone()) {
             tray.add_item(item.service.clone());
         }

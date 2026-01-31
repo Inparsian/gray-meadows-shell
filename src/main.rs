@@ -10,7 +10,7 @@ mod macros;
 mod color;
 mod ipc;
 mod ffi;
-mod singletons;
+mod services;
 mod widgets;
 mod sql;
 mod utils;
@@ -159,7 +159,7 @@ async fn main() {
             scss::bundle_apply_scss();
             scss::watch_scss();
 
-            singletons::activate_all().await;
+            services::activate_all().await;
             windows::listen_for_ipc_messages();
             bar::listen_for_ipc_messages();
             config::watch();

@@ -3,7 +3,7 @@ use gtk4::prelude::*;
 use futures_signals::signal::SignalExt as _;
 
 use crate::USERNAME;
-use crate::singletons::sysstats::SYS_STATS;
+use crate::services::sysstats::SYS_STATS;
 use crate::utils::filesystem;
 use crate::widgets::windows;
 

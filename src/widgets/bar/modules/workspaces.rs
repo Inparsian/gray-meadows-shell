@@ -5,7 +5,7 @@ use ::hyprland::dispatch;
 use ::hyprland::dispatch::WorkspaceIdentifierWithSpecial;
 
 use crate::scss;
-use crate::singletons::hyprland;
+use crate::services::hyprland;
 use crate::utils::gesture;
 use super::super::base::BarModule;
 

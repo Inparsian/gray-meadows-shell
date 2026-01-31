@@ -1,6 +1,6 @@
 use crate::USERNAME;
-use crate::singletons::hyprland::HYPRLAND;
-use crate::singletons::mpris;
+use crate::services::hyprland::HYPRLAND;
+use crate::services::mpris;
 
 fn us_to_readable_duration(us: u64) -> String {
     let total_seconds = us / 1_000_000;

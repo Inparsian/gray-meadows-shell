@@ -2,7 +2,7 @@ use gtk4::prelude::*;
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell as _};
 
 use crate::utils::gesture;
-use crate::singletons::hyprland;
+use crate::services::hyprland;
 use super::{GmsWindow, hide_all_fullscreen_windows};
 
 /// A window that takes up the whole screen. It closes itself when it loses focus.

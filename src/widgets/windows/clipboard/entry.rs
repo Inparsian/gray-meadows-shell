@@ -3,7 +3,7 @@ mod imp {
     use gtk4::prelude::*;
     use gtk4::subclass::prelude::*;
     
-    use crate::singletons::clipboard;
+    use crate::services::clipboard;
     use crate::widgets::windows;
     
     #[derive(glib::Properties, Default)]
@@ -43,7 +43,7 @@ mod imp {
 use gtk4::prelude::*;
 
 use crate::color;
-use crate::singletons::clipboard;
+use crate::services::clipboard;
 use crate::widgets::common::loading;
 
 glib::wrapper! {

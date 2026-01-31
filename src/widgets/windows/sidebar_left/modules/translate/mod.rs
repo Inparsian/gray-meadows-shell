@@ -5,9 +5,9 @@ use std::{sync::{Mutex, LazyLock}, time::Duration};
 use async_broadcast::Receiver;
 use gtk4::prelude::*;
 
-use crate::singletons::g_translate::language::{self, AUTO_LANG, Language};
-use crate::singletons::g_translate::result::GoogleTranslateResult;
-use crate::singletons::g_translate::translate;
+use crate::services::g_translate::language::{self, AUTO_LANG, Language};
+use crate::services::g_translate::result::GoogleTranslateResult;
+use crate::services::g_translate::translate;
 use crate::utils::broadcast::BroadcastChannel;
 use crate::utils::timeout::Timeout;
 

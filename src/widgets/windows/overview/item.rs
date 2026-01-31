@@ -4,7 +4,7 @@ use gtk4::prelude::*;
 use crate::pixbuf;
 use crate::scss;
 use crate::widgets::windows;
-use crate::singletons::{apps, clipboard};
+use crate::services::{apps, clipboard};
 use crate::utils::matching;
 use crate::color::models::ColorModel as _;
 

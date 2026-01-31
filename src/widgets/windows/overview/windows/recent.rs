@@ -1,7 +1,7 @@
 use gtk4::prelude::*;
 use relm4::RelmIterChildrenExt as _;
 
-use crate::singletons::apps::runs;
+use crate::services::apps::runs;
 
 #[derive(Debug, Clone)]
 pub struct OverviewRecentWindow {

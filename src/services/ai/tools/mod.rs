@@ -4,8 +4,8 @@ use serde_json::json;
 
 use crate::config::read_config;
 use crate::session::SessionAction;
-use crate::singletons::mpris::{self, mpris_player::LoopStatus};
-use crate::singletons::weather::{WEATHER, get_wmo_code, get_daily_at};
+use crate::services::mpris::{self, mpris_player::LoopStatus};
+use crate::services::weather::{WEATHER, get_wmo_code, get_daily_at};
 use super::types::AiFunction;
 
 pub fn get_tools() -> Vec<AiFunction> {

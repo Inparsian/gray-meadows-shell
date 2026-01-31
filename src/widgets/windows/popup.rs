@@ -3,7 +3,7 @@ use gtk4::cairo::{RectangleInt, Region};
 use gtk4_layer_shell::{Edge, Layer, KeyboardMode, LayerShell as _};
 use libadwaita::Clamp;
 
-use crate::singletons::hyprland;
+use crate::services::hyprland;
 use crate::utils::gesture;
 use crate::widgets::common::revealer::{AdwRevealer, AdwRevealerDirection, GEasing};
 use super::{GmsWindow, hide_all_popups};

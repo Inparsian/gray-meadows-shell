@@ -4,7 +4,7 @@ mod progress;
 
 use gtk4::prelude::*;
 
-use crate::singletons::mpris;
+use crate::services::mpris;
 use crate::utils::gesture;
 use super::super::base::BarModule;
 

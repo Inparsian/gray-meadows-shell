@@ -5,7 +5,7 @@ use gtk4::prelude::*;
 use std::collections::HashSet;
 
 use crate::ipc;
-use crate::singletons::clipboard;
+use crate::services::clipboard;
 use self::data::ClipboardEntryData;
 use self::entry::ClipboardEntry;
 use super::fullscreen::FullscreenWindow;

@@ -1,7 +1,7 @@
 use std::{rc::Rc, cell::RefCell};
 use futures_signals::signal::SignalExt as _;
 
-use crate::singletons::hyprland;
+use crate::services::hyprland;
 use super::{OsdRevealer, Osd};
 
 #[derive(Debug, Clone)]

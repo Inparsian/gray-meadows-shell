@@ -3,7 +3,7 @@ use std::rc::Rc;
 use gtk4::prelude::*;
 
 use crate::sql::wrappers::aichats;
-use crate::singletons::ai::{self, AiChannelMessage, types::AiConversation};
+use crate::services::ai::{self, AiChannelMessage, types::AiConversation};
 use crate::utils::gesture;
 
 fn conversation_control_button(icon_name: &str, tooltip: &str) -> gtk4::Button {

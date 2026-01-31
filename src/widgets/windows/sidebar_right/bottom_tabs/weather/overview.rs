@@ -1,7 +1,7 @@
 use gtk4::prelude::*;
 
-use crate::singletons::weather::get_wmo_code;
-use crate::singletons::weather::schemas::openmeteo::OpenMeteoResponse;
+use crate::services::weather::get_wmo_code;
+use crate::services::weather::schemas::openmeteo::OpenMeteoResponse;
 
 pub struct WeatherOverview {
     pub current_icon: gtk4::Label,

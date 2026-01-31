@@ -2,8 +2,8 @@ use std::sync::LazyLock;
 use futures_signals::signal::{Mutable, SignalExt as _};
 use gtk4::prelude::*;
 
-use crate::singletons::sysstats::{MemoryInfo, SYS_STATS};
-use crate::singletons::sysstats::sensors::SENSORS;
+use crate::services::sysstats::{MemoryInfo, SYS_STATS};
+use crate::services::sysstats::sensors::SENSORS;
 use crate::utils::unit::bytes_to_gib;
 use super::SWAP_SHOW_THRESHOLD;
 

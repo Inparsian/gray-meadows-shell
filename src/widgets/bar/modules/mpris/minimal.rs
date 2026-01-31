@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use gtk4::prelude::*;
 
-use crate::singletons::mpris;
+use crate::services::mpris;
 
 const ALBUM_ART_WIDTH: i32 = 24; // Expected width of the album art image
 const ALBUM_ART_HEIGHT: i32 = 24; // Expected height of the album art image

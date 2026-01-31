@@ -2,7 +2,7 @@ use futures_signals::signal::SignalExt as _;
 use ::hyprland::dispatch;
 use ::hyprland::instance::Instance;
 
-use crate::singletons::hyprland;
+use crate::services::hyprland;
 use super::{QuickToggle, QuickToggleMuiIcon};
 
 pub fn new() -> gtk4::Button {

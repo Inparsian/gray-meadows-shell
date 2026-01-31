@@ -6,8 +6,8 @@ use std::rc::Rc;
 use std::time::Duration;
 use gtk4::prelude::*;
 
-use crate::singletons::ai::{self, SESSION, AiChannelMessage};
-use crate::singletons::ai::types::{AiConversationDelta, AiConversationItemPayload};
+use crate::services::ai::{self, SESSION, AiChannelMessage};
+use crate::services::ai::types::{AiConversationDelta, AiConversationItemPayload};
 use self::chat::{Chat, ChatMessage, ChatRole};
 
 pub fn conversation_control_button(icon: &str, label: &str) -> gtk4::Button {

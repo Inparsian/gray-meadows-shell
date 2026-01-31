@@ -11,8 +11,8 @@ use gemini_rust::{
 
 use crate::config::{AiService as AiConfigService, GeminiThinkingLevel, read_config};
 use crate::utils::broadcast::BroadcastChannel;
-use crate::singletons::ai::images::load_image_data;
-use crate::singletons::ai::tools::gemini::add_gemini_tools;
+use crate::services::ai::images::load_image_data;
+use crate::services::ai::tools::gemini::add_gemini_tools;
 use super::super::variables::transform_variables;
 use super::super::{AiChannelMessage, AiConversationItem, AiConversationItemPayload, AiConversationDelta};
 

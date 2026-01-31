@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use gtk4::prelude::*;
 
 use crate::ffi::astalwp::ffi::{self, Node};
-use crate::singletons::wireplumber;
+use crate::services::wireplumber;
 use crate::utils::gesture;
 use crate::widgets::common::dot_separator;
 

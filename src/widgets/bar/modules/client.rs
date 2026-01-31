@@ -1,7 +1,7 @@
 use futures_signals::signal::{Mutable, SignalExt as _};
 use gtk4::prelude::*;
 
-use crate::singletons::hyprland;
+use crate::services::hyprland;
 use crate::APP_LOCAL;
 use super::super::base::BarModule;
 

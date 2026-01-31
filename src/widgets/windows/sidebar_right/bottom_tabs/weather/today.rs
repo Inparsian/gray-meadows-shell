@@ -1,6 +1,6 @@
 use gtk4::prelude::*;
 
-use crate::singletons::weather::schemas::openmeteo::OpenMeteoResponse;
+use crate::services::weather::schemas::openmeteo::OpenMeteoResponse;
 
 pub struct WeatherToday {
     pub wind_speed: gtk4::Label,

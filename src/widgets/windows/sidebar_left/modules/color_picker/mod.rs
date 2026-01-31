@@ -10,7 +10,7 @@ use gtk4::{Adjustment, prelude::*};
 use crate::color::{parse_color_into_hex, int_to_hex};
 use crate::color::models::{Rgba, Hsv, Hsl, Cmyk, Oklab, Oklch, ColorModel as _};
 use crate::ipc;
-use crate::singletons::clipboard;
+use crate::services::clipboard;
 use crate::utils::timeout::Timeout;
 use crate::widgets::common::tabs::{TabSize, Tabs};
 use self::fields::Fields;

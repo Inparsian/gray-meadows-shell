@@ -6,7 +6,7 @@ mod alerts;
 use gtk4::prelude::*;
 use futures_signals::signal::SignalExt as _;
 
-use crate::singletons::weather::WEATHER;
+use crate::services::weather::WEATHER;
 use crate::widgets::common::tabs::{Tabs, TabSize};
 
 pub fn new() -> gtk4::Box {

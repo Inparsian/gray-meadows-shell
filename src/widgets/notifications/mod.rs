@@ -8,7 +8,7 @@ use gdk4::cairo::{Region, RectangleInt};
 use gtk4_layer_shell::{Edge, Layer, LayerShell as _};
 
 use crate::{APP, APP_LOCAL};
-use crate::singletons::notifications::{self, wrapper::NotificationHint};
+use crate::services::notifications::{self, wrapper::NotificationHint};
 use crate::widgets::notifications::notification::NotificationDismissAnimation;
 use self::notification::NotificationWidget;
 

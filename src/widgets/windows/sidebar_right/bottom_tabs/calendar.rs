@@ -6,7 +6,7 @@ use chrono::Datelike as _;
 use relm4::RelmRemoveAllExt as _;
 use num_traits::cast::FromPrimitive as _;
 
-use crate::singletons::date_time::DATE_TIME;
+use crate::services::date_time::DATE_TIME;
 
 pub enum CalendarMarker {
     OutsideMonth,

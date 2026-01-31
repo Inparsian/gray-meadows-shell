@@ -3,8 +3,8 @@ mod attachments;
 use std::rc::Rc;
 use gtk4::prelude::*;
 
-use crate::singletons::ai::{self, SESSION};
-use crate::singletons::ai::images::cache_image_data;
+use crate::services::ai::{self, SESSION};
+use crate::services::ai::images::cache_image_data;
 use crate::widgets::windows;
 use crate::utils::allocation_watcher::{AllocationWatcher, AllocationWatcherOptions};
 use super::chat::{Chat, ChatMessage, ChatRole};

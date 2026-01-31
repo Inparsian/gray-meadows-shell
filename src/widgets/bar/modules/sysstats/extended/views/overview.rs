@@ -1,8 +1,8 @@
 use gtk4::prelude::*;
 use futures_signals::signal::SignalExt as _;
 
-use crate::singletons::sysstats::SYS_STATS;
-use crate::singletons::sysstats::sensors::SENSORS;
+use crate::services::sysstats::SYS_STATS;
+use crate::services::sysstats::sensors::SENSORS;
 use crate::utils::unit::bytes_to_gib;
 use super::super::CompactStatRow;
 use super::super::super::SWAP_SHOW_THRESHOLD;

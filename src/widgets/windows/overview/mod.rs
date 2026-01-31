@@ -12,7 +12,7 @@ use regex::Regex;
 use urlencoding::encode;
 
 use crate::ipc;
-use crate::singletons::apps;
+use crate::services::apps;
 use crate::utils::gesture;
 use self::item::{OverviewSearchItem, OverviewSearchItemAction};
 use self::list::{OverviewSearchList, get_button_from_row};

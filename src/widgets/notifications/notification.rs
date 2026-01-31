@@ -4,8 +4,8 @@ use std::rc::{Rc, Weak};
 use gtk4::prelude::*;
 use relm4::RelmRemoveAllExt as _;
 
-use crate::singletons::notifications::close_notification_by_id;
-use crate::singletons::notifications::wrapper::{Notification, NotificationAction, NotificationCloseReason};
+use crate::services::notifications::close_notification_by_id;
+use crate::services::notifications::wrapper::{Notification, NotificationAction, NotificationCloseReason};
 use crate::utils::gesture;
 use crate::widgets::common::revealer::{AdwRevealer, AdwRevealerDirection, GEasing};
 
@@ -114,7 +114,7 @@ impl NotificationWidget {
             let notification_id = notification.id;
             let action_id = action.id.clone();
             move |_| {
-                crate::singletons::notifications::invoke_notification_action(notification_id, &action_id);
+                crate::services::notifications::invoke_notification_action(notification_id, &action_id);
             }
         });
         

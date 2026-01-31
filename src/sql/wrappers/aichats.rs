@@ -1,5 +1,5 @@
 use crate::SQL_ACTOR;
-use crate::singletons::ai::types::{AiConversation, AiConversationItem, AiConversationItemPayload};
+use crate::services::ai::types::{AiConversation, AiConversationItem, AiConversationItemPayload};
 
 /// Gets the current conversation ID stored in the AI chat state.
 pub async fn get_state_conversation_id() -> anyhow::Result<Option<i64>> {

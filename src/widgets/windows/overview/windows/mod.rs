@@ -3,7 +3,7 @@ use gtk4::prelude::*;
 
 use crate::pixbuf;
 use crate::widgets::windows;
-use crate::singletons::apps;
+use crate::services::apps;
 
 pub mod frequent;
 pub mod recent;

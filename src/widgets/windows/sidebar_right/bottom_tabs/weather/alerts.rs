@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use gtk4::prelude::*;
 use relm4::RelmRemoveAllExt as _;
 
-use crate::singletons::weather::schemas::nws::{NwsAlertsResponse, NwsFeature};
+use crate::services::weather::schemas::nws::{NwsAlertsResponse, NwsFeature};
 
 #[derive(Clone)]
 pub struct WeatherAlert {

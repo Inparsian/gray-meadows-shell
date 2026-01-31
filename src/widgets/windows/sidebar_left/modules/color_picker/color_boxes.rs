@@ -5,7 +5,7 @@ use gtk4::prelude::*;
 use crate::ipc;
 use crate::color::LighterDarkerResult;
 use crate::color::models::{Rgba, Hsv, Hsl, Cmyk, Oklab, Oklch, ColorModel as _};
-use crate::singletons::clipboard;
+use crate::services::clipboard;
 use crate::utils::gesture;
 use crate::widgets::common::{dynamic_grid::DynamicGrid, tabs::Tabs};
 

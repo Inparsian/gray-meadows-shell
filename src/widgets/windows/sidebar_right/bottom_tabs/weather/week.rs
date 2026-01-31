@@ -1,8 +1,8 @@
 use gtk4::prelude::*;
 use relm4::RelmRemoveAllExt as _;
 
-use crate::singletons::weather::{get_daily_at, get_wmo_code};
-use crate::singletons::weather::schemas::openmeteo::OpenMeteoResponse;
+use crate::services::weather::{get_daily_at, get_wmo_code};
+use crate::services::weather::schemas::openmeteo::OpenMeteoResponse;
 
 pub struct WeatherWeek {
     pub bx: gtk4::Box,

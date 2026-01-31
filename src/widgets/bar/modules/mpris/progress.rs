@@ -3,7 +3,7 @@ use gtk4::prelude::*;
 
 use crate::scss;
 use crate::utils::gesture;
-use crate::singletons::mpris;
+use crate::services::mpris;
 use super::extended::SEEK_STEP_MICROSECONDS;
 
 static WAVE_AMPLITUDE_FACTOR: f64 = 10.0;

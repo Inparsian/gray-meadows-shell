@@ -6,8 +6,8 @@ use relm4::RelmIterChildrenExt as _;
 
 use crate::USERNAME;
 use crate::config::read_config;
-use crate::singletons::ai;
-use crate::singletons::ai::images::uuid_to_file_path;
+use crate::services::ai;
+use crate::services::ai::images::uuid_to_file_path;
 use crate::utils::{filesystem, gesture};
 use crate::widgets::common::loading;
 

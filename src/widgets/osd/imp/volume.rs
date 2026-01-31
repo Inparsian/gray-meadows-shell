@@ -1,7 +1,7 @@
 use std::{rc::Rc, cell::RefCell};
 use gtk4::prelude::*;
 
-use crate::singletons::wireplumber;
+use crate::services::wireplumber;
 use super::{OsdRevealer, Osd};
 
 #[derive(Debug, Clone)]

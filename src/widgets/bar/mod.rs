@@ -17,7 +17,7 @@ use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell as _};
 
 use crate::APP_LOCAL;
 use crate::ipc;
-use crate::singletons::hyprland;
+use crate::services::hyprland;
 use crate::utils::gesture;
 use self::base::{BarModule, hide_all_expanded_modules};
 

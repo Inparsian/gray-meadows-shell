@@ -4,7 +4,7 @@ mod streams;
 use gtk4::prelude::*;
 
 use crate::ffi::astalwp::{WpEvent, ffi::EndpointType};
-use crate::singletons::wireplumber;
+use crate::services::wireplumber;
 use crate::widgets::common::tabs::{Tabs, TabSize};
 
 pub fn new() -> gtk4::Box {
