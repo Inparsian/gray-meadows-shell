@@ -1,6 +1,7 @@
 pub mod proxy;
 pub mod wrapper;
 pub mod bus;
+pub mod client;
 
 use std::collections::HashMap;
 use std::sync::{Arc, LazyLock, OnceLock, RwLock};

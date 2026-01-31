@@ -10,7 +10,7 @@ use dbus_tokio::connection;
 
 use crate::utils::broadcast::BroadcastChannel;
 use super::bus::{self, BusEvent};
-use super::proxy::{self, OrgFreedesktopNotifications};
+use super::proxy::{self, server::OrgFreedesktopNotifications};
 
 static SHARED_CONNECTION: OnceLock<Arc<SyncConnection>> = OnceLock::new();
 
@@ -176,7 +176,7 @@ impl NotificationManager {
             .ok_or_else(|| dbus::Error::new_failed("Shared connection not initialized. Call init_shared_connection() first."))?;
 
         let mut crossroads = Crossroads::new();
-        let watcher_token: IfaceToken<NotificationManager> = proxy::register_org_freedesktop_notifications(&mut crossroads);
+        let watcher_token: IfaceToken<NotificationManager> = proxy::server::register_org_freedesktop_notifications(&mut crossroads);
 
         crossroads.insert(bus::NOTIFICATIONS_DBUS_OBJECT, &[watcher_token], self);
 
@@ -234,7 +234,7 @@ fn emit_notification_closed(id: u32, reason: u32) {
         &"NotificationClosed".into(),
     );
 
-    signal.append_all(proxy::OrgFreedesktopNotificationsNotificationClosed {
+    signal.append_all(proxy::server::OrgFreedesktopNotificationsNotificationClosed {
         id,
         reason,
     });
@@ -257,7 +257,7 @@ pub(super) fn emit_notification_action_invoked(id: u32, action_key: &str) {
         &"ActionInvoked".into(),
     );
 
-    signal.append_all(proxy::OrgFreedesktopNotificationsActionInvoked {
+    signal.append_all(proxy::server::OrgFreedesktopNotificationsActionInvoked {
         id,
         action_key: action_key.to_owned(),
     });
