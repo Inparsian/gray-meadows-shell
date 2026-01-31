@@ -1,21 +1,22 @@
 mod lang_buttons;
 mod lang_select;
 
-use std::{sync::{Mutex, LazyLock}, time::Duration};
+use std::sync::{RwLock, LazyLock};
+use std::time::Duration;
 use async_broadcast::Receiver;
 use gtk4::prelude::*;
 
-use crate::services::g_translate::language::{self, AUTO_LANG, Language};
+use crate::services::g_translate::language::{self, Language};
 use crate::services::g_translate::result::GoogleTranslateResult;
 use crate::services::g_translate::translate;
 use crate::utils::broadcast::BroadcastChannel;
 use crate::utils::timeout::Timeout;
 
-static WORKING: LazyLock<Mutex<bool>> = LazyLock::new(|| Mutex::new(false));
-static SOURCE_LANG: LazyLock<Mutex<Option<Language>>> = LazyLock::new(|| Mutex::new(language::get_by_name("English")));
-static TARGET_LANG: LazyLock<Mutex<Option<Language>>> = LazyLock::new(|| Mutex::new(language::get_by_name("Spanish")));
-static AUTO_DETECTED_LANG: LazyLock<Mutex<Option<Language>>> = LazyLock::new(|| Mutex::new(None));
-static REVEAL: LazyLock<Mutex<LanguageSelectReveal>> = LazyLock::new(|| Mutex::new(LanguageSelectReveal::None));
+static WORKING: LazyLock<RwLock<bool>> = LazyLock::new(|| RwLock::new(false));
+static SOURCE_LANG: LazyLock<RwLock<Option<Language>>> = LazyLock::new(|| RwLock::new(language::get_by_code("en")));
+static TARGET_LANG: LazyLock<RwLock<Option<Language>>> = LazyLock::new(|| RwLock::new(language::get_by_code("es")));
+static AUTO_DETECTED_LANG: LazyLock<RwLock<Option<Language>>> = LazyLock::new(|| RwLock::new(None));
+static REVEAL: LazyLock<RwLock<LanguageSelectReveal>> = LazyLock::new(|| RwLock::new(LanguageSelectReveal::None));
 static UI_EVENT_CHANNEL: LazyLock<BroadcastChannel<UiEvent>> = LazyLock::new(|| BroadcastChannel::new(10));
 
 #[derive(Debug, Clone, PartialEq, Eq, glib::Downgrade)]
@@ -35,7 +36,7 @@ pub enum UiEvent {
 }
 
 fn is_working() -> bool {
-    WORKING.try_lock().map(|w| *w).unwrap_or(true)
+    WORKING.try_read().map(|w| *w).unwrap_or(true)
 }
 
 pub fn subscribe_to_ui_events() -> Receiver<UiEvent> {
@@ -52,25 +53,26 @@ pub fn send_ui_event(event: &UiEvent) {
 }
 
 pub fn set_source_language(lang: Option<Language>) {
-    let mut source_lang = SOURCE_LANG.lock().unwrap();
+    let mut source_lang = SOURCE_LANG.write().unwrap();
     *source_lang = lang.clone();
 
     send_ui_event(&UiEvent::SourceLanguageChanged(lang));
 }
 
 pub fn set_target_language(lang: Option<Language>) {
-    let mut target_lang = TARGET_LANG.lock().unwrap();
+    let mut target_lang = TARGET_LANG.write().unwrap();
     *target_lang = lang.clone();
     
     send_ui_event(&UiEvent::TargetLanguageChanged(lang));
 }
 
 async fn translate_future(text: String, autocorrect: bool) {
-    let source_lang = SOURCE_LANG.lock().unwrap().clone();
-    let target_lang = TARGET_LANG.lock().unwrap().clone();
+    let source_lang = SOURCE_LANG.read().unwrap().clone();
+    let target_lang = TARGET_LANG.read().unwrap().clone();
 
     if let (Some(source_lang), Some(target_lang)) = (source_lang, target_lang) {
-        if WORKING.lock().map(|mut w| *w = true).is_ok() {
+        if !*WORKING.read().unwrap() {
+            *WORKING.write().unwrap() = true;
             send_ui_event(&UiEvent::TranslationStarted);
 
             let translation_result = translate(&text, source_lang, target_lang, autocorrect)
@@ -82,7 +84,7 @@ async fn translate_future(text: String, autocorrect: bool) {
             // Keep a hold of the working state for a while longer to prevent
             // an infinite translation loop due to buffer change signals.
             tokio::time::sleep(Duration::from_millis(10)).await;
-            let _ = WORKING.lock().map(|mut w| *w = false);
+            *WORKING.write().unwrap() = false;
         } else {
             warn!("Translation already in progress");
         }
@@ -170,8 +172,8 @@ pub fn new() -> gtk4::Box {
                         move |_| if !is_working() {
                             let input_text = input_buffer.text(&input_buffer.start_iter(), &input_buffer.end_iter(), false).to_string();
                             let output_text = output_buffer.text(&output_buffer.start_iter(), &output_buffer.end_iter(), false).to_string();
-                            let source_lang_cloned = SOURCE_LANG.lock().unwrap().clone();
-                            let target_lang_cloned = TARGET_LANG.lock().unwrap().clone();
+                            let source_lang_cloned = SOURCE_LANG.read().unwrap().clone();
+                            let target_lang_cloned = TARGET_LANG.read().unwrap().clone();
 
                             set_source_language(target_lang_cloned);
                             set_target_language(source_lang_cloned);
@@ -266,10 +268,8 @@ pub fn new() -> gtk4::Box {
                             output_buffer.set_text(&res.to.text);
 
                             // Set the auto-detected language if applicable
-                            if SOURCE_LANG.lock().unwrap().as_ref().unwrap() == &*AUTO_LANG {
-                                let mut auto_detected_lang = AUTO_DETECTED_LANG.lock().unwrap();
-
-                                *auto_detected_lang = Some(res.from.language.clone());
+                            if SOURCE_LANG.read().unwrap().as_ref().unwrap().is_auto() {
+                                *AUTO_DETECTED_LANG.write().unwrap() = Some(res.from.language.clone());
 
                                 language_buttons.set_source_label(&format!("Auto ({})", res.from.language.name));
                             }
@@ -292,7 +292,7 @@ pub fn new() -> gtk4::Box {
                 },
 
                 UiEvent::LanguageSelectRevealChanged(reveal) => {
-                    let was_already_open = reveal == *REVEAL.lock().unwrap();
+                    let was_already_open = reveal == *REVEAL.read().unwrap();
 
                     ui_stack.set_visible_child_name(if was_already_open || reveal == LanguageSelectReveal::None {
                         "main"
@@ -308,7 +308,7 @@ pub fn new() -> gtk4::Box {
                         });
                     }
 
-                    *REVEAL.lock().unwrap() = if was_already_open {
+                    *REVEAL.write().unwrap() = if was_already_open {
                         LanguageSelectReveal::None
                     } else {
                         reveal

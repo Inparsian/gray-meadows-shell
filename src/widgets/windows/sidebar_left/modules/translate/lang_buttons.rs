@@ -17,14 +17,14 @@ impl LanguageButtons {
 
         view! {
             source_lang_button = gtk4::Button {
-                set_label: SOURCE_LANG.lock().unwrap().as_ref().map_or("Source...", |l| &l.name),
+                set_label: SOURCE_LANG.read().unwrap().as_ref().map_or("Source...", |l| &l.name),
                 set_css_classes: &["google-translate-language-select-button", "source-lang"],
                 set_hexpand: true,
                 connect_clicked: move |_| send_ui_event(&UiEvent::LanguageSelectRevealChanged(LanguageSelectReveal::Source))
             },
 
             target_lang_button = gtk4::Button {
-                set_label: TARGET_LANG.lock().unwrap().as_ref().map_or("Target...", |l| &l.name),
+                set_label: TARGET_LANG.read().unwrap().as_ref().map_or("Target...", |l| &l.name),
                 set_css_classes: &["google-translate-language-select-button", "target-lang"],
                 set_hexpand: true,
                 connect_clicked: move |_| send_ui_event(&UiEvent::LanguageSelectRevealChanged(LanguageSelectReveal::Target))

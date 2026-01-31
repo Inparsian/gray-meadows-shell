@@ -2,7 +2,7 @@ use std::{cell::RefCell, error::Error, rc::Rc};
 use gtk4::prelude::*;
 use relm4::RelmRemoveAllExt as _;
 
-use crate::services::g_translate::language::{self, Language, AUTO_LANG, LANGUAGES};
+use crate::services::g_translate::language::{self, Language};
 use super::super::translate::{self, LanguageSelectReveal, UiEvent};
 
 const BUTTONS_PER_ROW: usize = 3;
@@ -15,11 +15,9 @@ fn get_page_boxes(reveal_type: &LanguageSelectReveal, filter: Option<&str>) -> V
     let mut buttons: Vec<gtk4::Button> = Vec::new();
 
     let languages: Vec<Language> = if *reveal_type == LanguageSelectReveal::Source {
-        let mut langs = vec![AUTO_LANG.clone()];
-        langs.extend(LANGUAGES.iter().cloned());
-        langs
+        language::get_all_with_auto()
     } else {
-        LANGUAGES.clone()
+        language::get_all()
     };
 
     for lang in languages {
@@ -30,20 +28,19 @@ fn get_page_boxes(reveal_type: &LanguageSelectReveal, filter: Option<&str>) -> V
         let button = gtk4::Button::new();
         button.set_css_classes(&["google-translate-language-select-button"]);
         button.set_hexpand(true);
-        button.connect_clicked({
-            let reveal_type = reveal_type.clone();
-            let lang_name = lang.name.clone();
-
+        button.connect_clicked(clone!(
+            #[strong] reveal_type,
+            #[strong(rename_to = lang_code)] lang.code,
             move |_| {
                 match reveal_type {
-                    LanguageSelectReveal::Source => translate::set_source_language(language::get_by_name(&lang_name)),
-                    LanguageSelectReveal::Target => translate::set_target_language(language::get_by_name(&lang_name)),
+                    LanguageSelectReveal::Source => translate::set_source_language(language::get_by_code(&lang_code)),
+                    LanguageSelectReveal::Target => translate::set_target_language(language::get_by_code(&lang_code)),
                     _ => unreachable!(),
                 }
 
                 translate::send_ui_event(&UiEvent::LanguageSelectRevealChanged(LanguageSelectReveal::None));
             }
-        });
+        ));
 
         let button_label = gtk4::Label::new(Some(&lang.name));
         button_label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
