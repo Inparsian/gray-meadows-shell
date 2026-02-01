@@ -9,19 +9,22 @@
     }
 
     .osd-item {
-        transition-property: opacity, transform;
-        transition-timing-function: cubic-bezier(0.5, 0, 0, 1);
+        transition-property: opacity, transform, filter;
 
         &.revealed {
             transition-duration: 0.4s;
+            transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+            filter: blur(0px);
             opacity: 1;
             transform: scale(1);
         }
 
         &:not(.revealed) {
-            transition-duration: 0.2s;
+            transition-duration: 0.5s;
+            transition-timing-function: cubic-bezier(0.68, -0.6, 0.32, 1.6);
+            filter: blur(10px);
             opacity: 0;
-            transform: scale(0.5);
+            transform: scale(0.95);
         }
     }
 

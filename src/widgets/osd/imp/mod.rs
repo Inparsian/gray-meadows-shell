@@ -5,8 +5,9 @@ use std::time::Duration;
 use gtk4::prelude::*;
 
 use crate::utils::timeout::Timeout;
+use crate::widgets::common::revealer::{AdwRevealer, AdwRevealerDirection, GEasing};
 
-static TRANSITION_DURATION_MS: u32 = 200;
+static TRANSITION_DURATION_MS: u32 = 600;
 static DISPLAY_DURATION: f64 = 2.0;
 
 pub trait Osd {
@@ -21,7 +22,7 @@ pub struct OsdRevealer {
     pub header_key: gtk4::Label,
     pub header_value: gtk4::Label,
     pub levelbar: gtk4::LevelBar,
-    pub reveal: gtk4::Revealer,
+    pub reveal: AdwRevealer,
 }
 
 impl Default for OsdRevealer {
@@ -60,14 +61,16 @@ impl Default for OsdRevealer {
                 append: &levelbar,
             },
 
-            reveal = gtk4::Revealer {
+            reveal = AdwRevealer {
                 set_css_classes: &["osd-item"],
-                set_reveal_child: false,
-                set_transition_type: gtk4::RevealerTransitionType::SlideUp,
+                set_reveal: false,
+                set_transition_direction: AdwRevealerDirection::Up,
                 set_transition_duration: TRANSITION_DURATION_MS,
+                set_show_easing: GEasing::EaseOutExpo,
+                set_hide_easing: GEasing::EaseInOutBack,
                 set_halign: gtk4::Align::Center,
                 set_valign: gtk4::Align::End,
-                set_child: Some(&bx),
+                set_child_from: Some(&bx),
             }
         }
 
@@ -84,13 +87,13 @@ impl Default for OsdRevealer {
 impl OsdRevealer {
     pub fn reveal(&self) {
         self.reveal.add_css_class("revealed");
-        self.reveal.set_reveal_child(true);
+        self.reveal.set_reveal(true);
 
         self.timeout.set(Duration::from_secs_f64(DISPLAY_DURATION), {
             let reveal = self.reveal.clone();
             move || {
                 reveal.remove_css_class("revealed");
-                reveal.set_reveal_child(false);
+                reveal.set_reveal(false);
             }
         });
     }
