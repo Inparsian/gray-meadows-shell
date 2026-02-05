@@ -149,7 +149,9 @@ pub fn watch_scss() {
             notify::RecursiveMode::Recursive,
         );
 
-        if result.is_ok() {
+        if let Err(error) = result {
+            error!(%error, "Failed to watch styles directory");
+        } else {
             info!(%styles_path, "Watching styles directory");
 
             for res in rx {
@@ -167,8 +169,6 @@ pub fn watch_scss() {
                     }
                 }
             }
-        } else {
-            error!(error = %result.unwrap_err(), "Failed to watch styles directory");
         }
     });
 }

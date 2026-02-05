@@ -20,7 +20,7 @@ pub enum ChatRole {
 #[derive(Debug, Clone)]
 pub struct ChatThinkingBlock {
     pub root: gtk4::Box,
-    pub summary_root: gtk4cmark::view::MarkdownView,
+    pub summary_root: gtk4cmark::MarkdownView,
     pub summary: Option<String>,
 }
 
@@ -66,7 +66,7 @@ impl ChatThinkingBlock {
         thinking_dropdown_revealer.set_reveal_child(false);
         root.append(&thinking_dropdown_revealer);
 
-        let summary = gtk4cmark::view::MarkdownView::default();
+        let summary = gtk4cmark::MarkdownView::default();
         summary.set_css_classes(&["ai-chat-thinking-summary"]);
         summary.set_overflow(gtk4::Overflow::Hidden);
         summary.set_vexpand(true);
@@ -108,7 +108,7 @@ pub struct ChatMessage {
     pub thinking: Option<ChatThinkingBlock>,
     pub attachments: Rc<RefCell<i64>>,
     pub root: gtk4::Box,
-    pub markdown: gtk4cmark::view::MarkdownView,
+    pub markdown: gtk4cmark::MarkdownView,
     pub loading: gtk4::DrawingArea,
     pub header: gtk4::Box,
     pub footer: gtk4::Box,
@@ -231,7 +231,7 @@ impl ChatMessage {
 
         header.append(&controls_revealer);
 
-        let markdown = gtk4cmark::view::MarkdownView::default();
+        let markdown = gtk4cmark::MarkdownView::default();
         markdown.set_css_classes(&["ai-chat-message-content"]);
         markdown.set_overflow(gtk4::Overflow::Hidden);
         markdown.set_vexpand(true);

@@ -140,7 +140,9 @@ pub fn watch_desktops(path: &PathBuf) {
         notify::RecursiveMode::Recursive,
     );
 
-    if result.is_ok() {
+    if let Err(error) = result {
+        error!(%error, "Failed to watch .desktop directory");
+    } else {
         info!(path = %path.to_string_lossy(), "Watching .desktop files");
 
         for res in rx {
@@ -168,7 +170,5 @@ pub fn watch_desktops(path: &PathBuf) {
                 }
             }
         }
-    } else {
-        error!(error = %result.unwrap_err(), "Failed to watch .desktop directory");
     }
 }

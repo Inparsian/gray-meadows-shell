@@ -124,7 +124,9 @@ pub fn watch() {
             notify::RecursiveMode::NonRecursive,
         );
 
-        if result.is_ok() {
+        if let Err(error) = result {
+            error!(%error, "Failed to watch configuration file");
+        } else {
             info!(path = %config_path(), "Watching configuration file");
 
             for res in rx {
@@ -150,8 +152,6 @@ pub fn watch() {
                     },
                 }
             }
-        } else {
-            error!(error = %result.unwrap_err(), "Failed to watch configuration file");
         }
     });
 }

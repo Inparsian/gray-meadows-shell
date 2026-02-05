@@ -191,10 +191,10 @@ pub async fn refresh_session() -> Result<(), Box<dyn std::error::Error>> {
 pub fn activate() {
     tokio::spawn(async {
         let refresh_session_result = refresh_session().await;
-        if refresh_session_result.is_ok() {
-            info!("Google Translate session initialized");
+        if let Err(error) = refresh_session_result {
+            error!(%error, "Failed to initialize Google Translate session");
         } else {
-            error!(error = ?refresh_session_result.unwrap_err(), "Failed to initialize Google Translate session");
+            info!("Google Translate session initialized");
         }
     });
 }
