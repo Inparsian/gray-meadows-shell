@@ -1,13 +1,13 @@
 use std::cell::RefCell;
 use std::rc::Rc;
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::sql::wrappers::aichats;
 use crate::services::ai::{self, AiChannelMessage, types::AiConversation};
 use crate::utils::gesture;
 
-fn conversation_control_button(icon_name: &str, tooltip: &str) -> gtk4::Button {
-    let button = gtk4::Button::new();
+fn conversation_control_button(icon_name: &str, tooltip: &str) -> gtk::Button {
+    let button = gtk::Button::new();
     button.set_css_classes(&["ai-chat-conversation-item-control-button"]);
     button.set_label(icon_name);
     button.set_tooltip_text(Some(tooltip));
@@ -26,31 +26,31 @@ fn message_count_str(count: usize) -> String {
 #[derive(Debug, Clone)]
 pub struct ConversationItem {
     pub conversation: Rc<RefCell<AiConversation>>,
-    pub root: gtk4::Box,
-    pub title_label: gtk4::Label,
-    pub length_label: gtk4::Label,
+    pub root: gtk::Box,
+    pub title_label: gtk::Label,
+    pub length_label: gtk::Label,
 }
 
 impl ConversationItem {
     pub async fn new(conversation: AiConversation) -> Self {
         let conversation = Rc::new(RefCell::new(conversation));
 
-        let root = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        let root = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         root.set_css_classes(&["ai-chat-conversation-item"]);
 
-        let info_box = gtk4::Box::new(gtk4::Orientation::Vertical, 4);
+        let info_box = gtk::Box::new(gtk::Orientation::Vertical, 4);
         info_box.set_css_classes(&["ai-chat-conversation-item-info-box"]);
         info_box.set_hexpand(true);
         root.append(&info_box);
         
-        let title_label = gtk4::Label::new(Some(&conversation.borrow().title));
+        let title_label = gtk::Label::new(Some(&conversation.borrow().title));
         title_label.set_css_classes(&["ai-chat-conversation-item-title-label"]);
         title_label.set_hexpand(true);
         title_label.set_xalign(0.0);
-        title_label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
+        title_label.set_ellipsize(gtk::pango::EllipsizeMode::End);
         info_box.append(&title_label);
 
-        let title_input = gtk4::Entry::new();
+        let title_input = gtk::Entry::new();
         title_input.set_text(&conversation.borrow().title);
         title_input.set_css_classes(&["ai-chat-conversation-item-title-input"]);
         title_input.set_hexpand(true);
@@ -79,13 +79,13 @@ impl ConversationItem {
 
         let conversation_id = conversation.borrow().id;
         let message_count = aichats::get_messages_length(conversation_id).await.unwrap_or(0);
-        let length_label = gtk4::Label::new(Some(&message_count_str(message_count)));
+        let length_label = gtk::Label::new(Some(&message_count_str(message_count)));
         length_label.set_css_classes(&["ai-chat-conversation-item-length-label"]);
-        length_label.set_halign(gtk4::Align::Start);
+        length_label.set_halign(gtk::Align::Start);
         length_label.set_xalign(0.0);
         info_box.append(&length_label);
 
-        let controls_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 8);
+        let controls_box = gtk::Box::new(gtk::Orientation::Horizontal, 8);
         controls_box.set_css_classes(&["ai-chat-conversation-item-controls-box"]);
 
         let rename_button = conversation_control_button("edit", "Rename Conversation");
@@ -116,10 +116,10 @@ impl ConversationItem {
         ));
         controls_box.append(&delete_button);
 
-        let controls_revealer = gtk4::Revealer::new();
+        let controls_revealer = gtk::Revealer::new();
         controls_revealer.set_css_classes(&["ai-chat-conversation-item-controls-revealer"]);
-        controls_revealer.set_valign(gtk4::Align::Start);
-        controls_revealer.set_transition_type(gtk4::RevealerTransitionType::Crossfade);
+        controls_revealer.set_valign(gtk::Align::Start);
+        controls_revealer.set_transition_type(gtk::RevealerTransitionType::Crossfade);
         controls_revealer.set_transition_duration(200);
         controls_revealer.set_child(Some(&controls_box));
         root.append(&controls_revealer);
@@ -161,13 +161,13 @@ impl ConversationItem {
 
 #[derive(Debug, Clone, glib::Downgrade)]
 pub struct ConversationsList {
-    pub root: gtk4::Box,
+    pub root: gtk::Box,
     pub conversations: Rc<RefCell<Vec<ConversationItem>>>,
 }
 
 impl ConversationsList {
     pub fn new() -> Self {
-        let root = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        let root = gtk::Box::new(gtk::Orientation::Vertical, 0);
         root.set_css_classes(&["ai-chat-conversations-list"]);
 
         let me = Self {

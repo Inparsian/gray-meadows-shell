@@ -1,6 +1,6 @@
 use std::rc::Rc;
 use std::cell::RefCell;
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::services::g_translate::languages::{self, Language};
 use crate::sql::wrappers::translate::LANGUAGES_LIMIT;
@@ -16,14 +16,14 @@ pub enum LanguageButtonsKind {
 #[derive(Debug, Clone, glib::Downgrade)]
 pub struct LanguageButtons {
     pub kind: LanguageButtonsKind,
-    pub buttons: Rc<RefCell<Vec<(Language, gtk4::Button)>>>,
-    pub container: gtk4::Box,
-    pub languages_box: gtk4::Box,
+    pub buttons: Rc<RefCell<Vec<(Language, gtk::Button)>>>,
+    pub container: gtk::Box,
+    pub languages_box: gtk::Box,
 }
 
 impl LanguageButtons {
-    fn language_button(kind: &LanguageButtonsKind, language: Language) -> (Language, gtk4::Button) {
-        let button = gtk4::Button::builder()
+    fn language_button(kind: &LanguageButtonsKind, language: Language) -> (Language, gtk::Button) {
+        let button = gtk::Button::builder()
             .css_classes(["google-translate-language-button"])
             .label(&language.name)
             .build();
@@ -46,21 +46,21 @@ impl LanguageButtons {
     
     pub fn new(kind: LanguageButtonsKind) -> Self {
         let buttons = Rc::new(RefCell::new(Vec::new()));
-        let container = gtk4::Box::builder()
-            .orientation(gtk4::Orientation::Horizontal)
+        let container = gtk::Box::builder()
+            .orientation(gtk::Orientation::Horizontal)
             .spacing(0)
             .hexpand(true)
             .build();
         
-        let languages_box_scrolled = gtk4::ScrolledWindow::builder()
+        let languages_box_scrolled = gtk::ScrolledWindow::builder()
             .css_classes(["google-translate-languages-scrolled-window"])
-            .hscrollbar_policy(gtk4::PolicyType::Automatic)
-            .vscrollbar_policy(gtk4::PolicyType::Never)
+            .hscrollbar_policy(gtk::PolicyType::Automatic)
+            .vscrollbar_policy(gtk::PolicyType::Never)
             .hexpand(true)
             .build();
         
-        let languages_box = gtk4::Box::builder()
-            .orientation(gtk4::Orientation::Horizontal)
+        let languages_box = gtk::Box::builder()
+            .orientation(gtk::Orientation::Horizontal)
             .spacing(0)
             .hexpand(true)
             .build();
@@ -72,8 +72,8 @@ impl LanguageButtons {
             languages_box.append(&Self::language_button(&kind, Language::auto()).1);
         }
         
-        let select = gtk4::Button::builder()
-            .halign(gtk4::Align::End)
+        let select = gtk::Button::builder()
+            .halign(gtk::Align::End)
             .css_classes(["google-translate-language-select-menu-button"])
             .label("chevron_right")
             .build();
@@ -158,7 +158,7 @@ impl LanguageButtons {
             }
             
             if let Some(button) = self.languages_box.first_child()
-                .and_then(|child| child.downcast::<gtk4::Button>().ok())
+                .and_then(|child| child.downcast::<gtk::Button>().ok())
             {
                 button.add_css_class("selected");
             }
@@ -175,7 +175,7 @@ impl LanguageButtons {
             
             if self.kind == LanguageButtonsKind::Source
                 && let Some(button) = self.languages_box.first_child()
-                    .and_then(|child| child.downcast::<gtk4::Button>().ok())
+                    .and_then(|child| child.downcast::<gtk::Button>().ok())
             {
                 button.remove_css_class("selected");
             }
@@ -211,7 +211,7 @@ impl LanguageButtons {
         
         if self.kind == LanguageButtonsKind::Source {
             if let Some(first_button) = self.languages_box.first_child()
-                .and_then(|child| child.downcast::<gtk4::Button>().ok())
+                .and_then(|child| child.downcast::<gtk::Button>().ok())
             {
                 first_button.remove_css_class("selected");
                 self.languages_box.insert_child_after(&button.1, Some(&first_button));
@@ -234,7 +234,7 @@ impl LanguageButtons {
     
     pub fn set_auto_language(&self, name: &str) {
         if let Some(button) = self.languages_box.first_child()
-            .and_then(|child| child.downcast::<gtk4::Button>().ok())
+            .and_then(|child| child.downcast::<gtk::Button>().ok())
         {
             button.set_label(&format!("Auto ({})", name));
         }

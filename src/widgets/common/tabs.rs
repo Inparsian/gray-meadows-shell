@@ -1,5 +1,5 @@
 use std::{cell::RefCell, rc::Rc};
-use gtk4::prelude::*;
+use gtk::prelude::*;
 use futures_signals::signal::{Mutable, SignalExt as _};
 
 use crate::utils::gesture;
@@ -22,7 +22,7 @@ impl TabSize {
 
 pub struct Tab {
     pub name: String,
-    pub widget: gtk4::Button,
+    pub widget: gtk::Button,
 }
 
 pub struct TabGroupBuilder<'a> {
@@ -64,8 +64,8 @@ impl<'a> TabGroupBuilder<'a> {
         self
     }
     
-    pub fn build(self) -> gtk4::Box {
-        let widget = gtk4::Box::new(gtk4::Orientation::Vertical, self.spacing);
+    pub fn build(self) -> gtk::Box {
+        let widget = gtk::Box::new(gtk::Orientation::Vertical, self.spacing);
         if let Some(class_name) = self.class_name.as_ref() {
             widget.set_css_classes(&[class_name]);
         }
@@ -82,16 +82,16 @@ pub struct Tabs {
     only_current_tab_visible: bool,
     pub current_tab: Mutable<Option<String>>,
     pub items: Rc<RefCell<Vec<Tab>>>,
-    pub stack: gtk4::Stack,
-    pub select: gtk4::Box,
+    pub stack: gtk::Stack,
+    pub select: gtk::Box,
 }
 
 impl Tabs {
     pub fn new(size: TabSize, only_current_tab_visible: bool, class_name: Option<&str>) -> Self {
-        let select = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);        
-        let stack = gtk4::Stack::builder()
+        let select = gtk::Box::new(gtk::Orientation::Horizontal, 0);        
+        let stack = gtk::Stack::builder()
             .css_classes([class_name.unwrap_or("tabs-stack")])
-            .transition_type(gtk4::StackTransitionType::SlideLeftRight)
+            .transition_type(gtk::StackTransitionType::SlideLeftRight)
             .transition_duration(150)
             .build();
 
@@ -134,7 +134,7 @@ impl Tabs {
         TabGroupBuilder::new(self)
     }
 
-    pub fn add_tab(&self, label: &str, name: &str, icon: Option<&str>, widget: &impl IsA<gtk4::Widget>) {
+    pub fn add_tab(&self, label: &str, name: &str, icon: Option<&str>, widget: &impl IsA<gtk::Widget>) {
         let tab = Tab {
             name: name.to_owned(),
             widget: self.create_tab_widget(label, name.to_owned(), icon, &self.current_tab)
@@ -149,19 +149,19 @@ impl Tabs {
         self.current_tab.set(name.map(|s| s.to_owned()));
     }
 
-    fn create_tab_widget(&self, label: &str, name: String, icon: Option<&str>, current_tab: &Mutable<Option<String>>) -> gtk4::Button {
+    fn create_tab_widget(&self, label: &str, name: String, icon: Option<&str>, current_tab: &Mutable<Option<String>>) -> gtk::Button {
         let tab_class_name = self.size.to_class_name();
-        let label_widget: gtk4::Widget = {
-            let label = gtk4::Label::builder()
+        let label_widget: gtk::Widget = {
+            let label = gtk::Label::builder()
                 .label(label)
                 .css_classes(["tab-label".to_owned()])
                 .xalign(0.0)
                 .build();
 
             if self.only_current_tab_visible {
-                let label_revealer = gtk4::Revealer::builder()
+                let label_revealer = gtk::Revealer::builder()
                     .reveal_child(current_tab.get_cloned() == Some(name.clone()))
-                    .transition_type(gtk4::RevealerTransitionType::SlideRight)
+                    .transition_type(gtk::RevealerTransitionType::SlideRight)
                     .transition_duration(150)
                     .child(&label)
                     .build();
@@ -173,25 +173,25 @@ impl Tabs {
         };
 
         view! {
-            widget = gtk4::Button {
+            widget = gtk::Button {
                 set_css_classes: &["tab", tab_class_name],
-                set_valign: gtk4::Align::Center,
+                set_valign: gtk::Align::Center,
                 connect_clicked: clone!(
                     #[strong] current_tab,
                     #[strong] name,
                     move |_| current_tab.set(Some(name.clone()))
                 ),
 
-                gtk4::Box {
-                    set_orientation: gtk4::Orientation::Horizontal,
+                gtk::Box {
+                    set_orientation: gtk::Orientation::Horizontal,
 
-                    gtk4::Label {
+                    gtk::Label {
                         set_css_classes: &["tab-icon"],
                         set_visible: icon.is_some(),
                         set_label: icon.unwrap_or_default(),
                         set_xalign: 0.5,
-                        set_valign: gtk4::Align::Center,
-                        set_halign: gtk4::Align::Center
+                        set_valign: gtk::Align::Center,
+                        set_halign: gtk::Align::Center
                     },
 
                     append: &label_widget
@@ -211,7 +211,7 @@ impl Tabs {
                 }
 
                 if only_current_tab_visible {
-                    let label_revealer = label_widget.downcast_ref::<gtk4::Revealer>();
+                    let label_revealer = label_widget.downcast_ref::<gtk::Revealer>();
                     if let Some(r) = label_revealer {
                         r.set_reveal_child(tab == Some(name.clone()));
                     }

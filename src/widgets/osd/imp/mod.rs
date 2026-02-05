@@ -2,7 +2,7 @@ pub mod volume;
 pub mod keybinds;
 
 use std::time::Duration;
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::utils::timeout::Timeout;
 use crate::widgets::common::revealer::{AdwRevealer, AdwRevealerDirection, GEasing};
@@ -19,31 +19,31 @@ pub trait Osd {
 #[derive(Debug, Clone)]
 pub struct OsdRevealer {
     timeout: Timeout,
-    pub header_key: gtk4::Label,
-    pub header_value: gtk4::Label,
-    pub levelbar: gtk4::LevelBar,
+    pub header_key: gtk::Label,
+    pub header_value: gtk::Label,
+    pub levelbar: gtk::LevelBar,
     pub reveal: AdwRevealer,
 }
 
 impl Default for OsdRevealer {
     fn default() -> Self {
         view! {
-            header_key = gtk4::Label {
+            header_key = gtk::Label {
                 set_css_classes: &["osd-header-key"],
             },
 
-            header_value = gtk4::Label {
+            header_value = gtk::Label {
                 set_css_classes: &["osd-header-value"],
             },
 
-            header_centerbox = gtk4::CenterBox {
-                set_orientation: gtk4::Orientation::Horizontal,
+            header_centerbox = gtk::CenterBox {
+                set_orientation: gtk::Orientation::Horizontal,
                 set_start_widget: Some(&header_key),
-                set_center_widget: Some(&gtk4::Box::new(gtk4::Orientation::Horizontal, 0)),
+                set_center_widget: Some(&gtk::Box::new(gtk::Orientation::Horizontal, 0)),
                 set_end_widget: Some(&header_value),
             },
 
-            levelbar = gtk4::LevelBar {
+            levelbar = gtk::LevelBar {
                 set_css_classes: &["osd-levelbar"],
                 set_min_value: 0.0,
                 set_max_value: 1.0,
@@ -52,9 +52,9 @@ impl Default for OsdRevealer {
                 set_visible: false,
             },
 
-            bx = gtk4::Box {
+            bx = gtk::Box {
                 set_css_classes: &["osd-box"],
-                set_orientation: gtk4::Orientation::Vertical,
+                set_orientation: gtk::Orientation::Vertical,
                 set_spacing: 0,
 
                 append: &header_centerbox,
@@ -68,8 +68,8 @@ impl Default for OsdRevealer {
                 set_transition_duration: TRANSITION_DURATION_MS,
                 set_show_easing: GEasing::EaseOutExpo,
                 set_hide_easing: GEasing::EaseInOutBack,
-                set_halign: gtk4::Align::Center,
-                set_valign: gtk4::Align::End,
+                set_halign: gtk::Align::Center,
+                set_valign: gtk::Align::End,
                 set_child_from: Some(&bx),
             }
         }

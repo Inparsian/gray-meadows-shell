@@ -1,4 +1,4 @@
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::pixbuf;
 use crate::utils::gesture;
@@ -8,8 +8,8 @@ use super::super::base::BarModule;
 #[derive(Default, Clone)]
 struct SystemTrayItem {
     pub service: String,
-    pub widget: Option<gtk4::Image>,
-    popover_menu: Option<gtk4::PopoverMenu>
+    pub widget: Option<gtk::Image>,
+    popover_menu: Option<gtk::PopoverMenu>
 }
 
 impl SystemTrayItem {
@@ -22,7 +22,7 @@ impl SystemTrayItem {
 
     pub fn build_widget(&mut self) {
         let empty_model: gio::MenuModel = gio::Menu::new().into();
-        let popover_menu = gtk4::PopoverMenu::from_model(Some(&empty_model));
+        let popover_menu = gtk::PopoverMenu::from_model(Some(&empty_model));
 
         popover_menu.set_css_classes(&["bar-tray-popover-menu"]);
 
@@ -68,7 +68,7 @@ impl SystemTrayItem {
         self.popover_menu = Some(popover_menu);
 
         view! {
-            new_widget = gtk4::Image {
+            new_widget = gtk::Image {
                 set_css_classes: &["bar-tray-item"],
                 set_pixel_size: 14,
                 add_controller: default_activate,
@@ -116,13 +116,13 @@ impl SystemTrayItem {
 
 #[derive(Clone)]
 struct SystemTray {
-    box_: gtk4::Box,
+    box_: gtk::Box,
     items: Vec<SystemTrayItem>,
 }
 
 impl SystemTray {
     fn new() -> Self {
-        let box_ = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        let box_ = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         box_.set_visible(false);
         box_.set_hexpand(false);
 
@@ -190,7 +190,7 @@ impl SystemTray {
         }
     }
 
-    fn get_widget(&self) -> gtk4::Box {
+    fn get_widget(&self) -> gtk::Box {
         self.box_.clone()
     }
 }

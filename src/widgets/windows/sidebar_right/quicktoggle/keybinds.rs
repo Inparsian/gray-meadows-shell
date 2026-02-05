@@ -5,7 +5,7 @@ use ::hyprland::instance::Instance;
 use crate::services::hyprland;
 use super::{QuickToggle, QuickToggleMuiIcon};
 
-pub fn new() -> gtk4::Button {
+pub fn new() -> gtk::Button {
     let toggle = QuickToggle::new_from_icon(
         QuickToggleMuiIcon::new("keyboard_off", "keyboard"),
         Some(Box::new(|current_state| {

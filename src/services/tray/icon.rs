@@ -69,7 +69,7 @@ pub fn compress_icon_pixmap(pixmap: Option<&Vec<RawPixmap>>) -> Option<Vec<RawPi
     })
 }
 
-pub fn make_icon_pixbuf(pixmap: Option<&Vec<RawPixmap>>) -> Option<gtk4::gdk_pixbuf::Pixbuf> {
+pub fn make_icon_pixbuf(pixmap: Option<&Vec<RawPixmap>>) -> Option<gtk::gdk_pixbuf::Pixbuf> {
     let argb32_icon = pixmap?;
     let closest_icon = argb32_icon.iter()
         .min_by_key(|pixmap| {
@@ -80,9 +80,9 @@ pub fn make_icon_pixbuf(pixmap: Option<&Vec<RawPixmap>>) -> Option<gtk4::gdk_pix
         });
 
     closest_icon.map(|icon| {
-        let pixbuf = gtk4::gdk_pixbuf::Pixbuf::from_mut_slice(
+        let pixbuf = gtk::gdk_pixbuf::Pixbuf::from_mut_slice(
             icon.2.clone(),
-            gtk4::gdk_pixbuf::Colorspace::Rgb,
+            gtk::gdk_pixbuf::Colorspace::Rgb,
             true,
             8,
             icon.0,

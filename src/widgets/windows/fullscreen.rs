@@ -1,4 +1,4 @@
-use gtk4::prelude::*;
+use gtk::prelude::*;
 use gtk4_layer_shell::{Edge, KeyboardMode, Layer, LayerShell as _};
 
 use crate::utils::gesture;
@@ -8,7 +8,7 @@ use super::{GmsWindow, hide_all_fullscreen_windows};
 /// A window that takes up the whole screen. It closes itself when it loses focus.
 #[derive(Clone, glib::Downgrade)]
 pub struct FullscreenWindow {
-    pub window: gtk4::ApplicationWindow,
+    pub window: gtk::ApplicationWindow,
 }
 
 impl GmsWindow for FullscreenWindow {
@@ -50,10 +50,10 @@ impl FullscreenWindow {
     pub fn new(
         application: &libadwaita::Application,
         classes: &[&str],
-        child: &impl IsA<gtk4::Widget>
+        child: &impl IsA<gtk::Widget>
     ) -> Self {
         let monitor = hyprland::get_active_monitor();
-        let window = gtk4::ApplicationWindow::new(application);
+        let window = gtk::ApplicationWindow::new(application);
         
         window.set_css_classes(classes);
         window.init_layer_shell();

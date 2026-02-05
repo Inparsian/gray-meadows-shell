@@ -24,7 +24,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::sync::LazyLock;
 use futures_signals::signal::Mutable;
-use gtk4::prelude::*;
+use gtk::prelude::*;
 use libadwaita::Application;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::time::ChronoLocal;
@@ -36,8 +36,8 @@ use self::utils::{display, process};
 const FLOAT_TOLERANCE: f64 = 0.0001;
 
 pub struct GrayMeadowsLocal {
-    provider: gtk4::CssProvider,
-    icon_theme: gtk4::IconTheme,
+    provider: gtk::CssProvider,
+    icon_theme: gtk::IconTheme,
     pub bars: RefCell<Vec<widgets::bar::BarWindow>>,
     pub osd_containers: RefCell<Vec<widgets::osd::OsdWindow>>,
     pub notification_containers: RefCell<Vec<NotificationsWindow>>,
@@ -46,8 +46,8 @@ pub struct GrayMeadowsLocal {
 
 thread_local! {
     pub static APP_LOCAL: GrayMeadowsLocal = GrayMeadowsLocal {
-        provider: gtk4::CssProvider::new(),
-        icon_theme: gtk4::IconTheme::default(),
+        provider: gtk::CssProvider::new(),
+        icon_theme: gtk::IconTheme::default(),
         bars: RefCell::new(Vec::new()),
         osd_containers: RefCell::new(Vec::new()),
         notification_containers: RefCell::new(Vec::new()),
@@ -76,7 +76,7 @@ fn activate(application: &Application) {
     let keybinds_osd = widgets::osd::imp::keybinds::KeybindsOsd::default();
     let volume_osd = widgets::osd::imp::volume::VolumeOsd::default();
 
-    for monitor in display::get_all_monitors(&gdk4::Display::default().expect("Failed to get default display")) {
+    for monitor in display::get_all_monitors(&gdk::Display::default().expect("Failed to get default display")) {
         let bar = widgets::bar::BarWindow::new(application, &monitor);
         let osd = widgets::osd::OsdWindow::new(application, &monitor);
         let notifications_window = NotificationsWindow::new(application, &monitor);
@@ -141,15 +141,15 @@ async fn main() {
             sql::init_database().await;
             APP.do_not_disturb.set(sql::wrappers::state::get_do_not_disturb().await.unwrap_or(false));
 
-            let _ = gtk4::init();
+            let _ = gtk::init();
 
-            gtk4::style_context_add_provider_for_display(
-                &gdk4::Display::default().expect("Failed to get default display"),
+            gtk::style_context_add_provider_for_display(
+                &gdk::Display::default().expect("Failed to get default display"),
                 &APP_LOCAL.with(|app| app.provider.clone()),
-                gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
+                gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
             );
 
-            if let Some(settings) = gtk4::Settings::default() {
+            if let Some(settings) = gtk::Settings::default() {
                 let current_icon_theme = settings.property::<String>("gtk-icon-theme-name");
                 APP_LOCAL.with(|app| {
                     app.icon_theme.set_theme_name(Some(&current_icon_theme));

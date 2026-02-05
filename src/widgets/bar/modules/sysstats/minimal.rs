@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 use futures_signals::signal::{Mutable, SignalExt as _};
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::services::sysstats::{MemoryInfo, SYS_STATS};
 use crate::services::sysstats::sensors::SENSORS;
@@ -29,17 +29,17 @@ fn get_temperature_label_text(cpu_temp: f64) -> String {
     format!("({:.1}°C)", cpu_temp)
 }
 
-pub fn minimal() -> gtk4::Box {
-    let create_sysstats_item = |icon: &str, label: &gtk4::Label, detail_label: &gtk4::Label| -> gtk4::Box {
-        let box_ = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+pub fn minimal() -> gtk::Box {
+    let create_sysstats_item = |icon: &str, label: &gtk::Label, detail_label: &gtk::Label| -> gtk::Box {
+        let box_ = gtk::Box::new(gtk::Orientation::Horizontal, 0);
 
-        let detailed_reveal = gtk4::Revealer::new();
-        detailed_reveal.set_transition_type(gtk4::RevealerTransitionType::SlideRight);
+        let detailed_reveal = gtk::Revealer::new();
+        detailed_reveal.set_transition_type(gtk::RevealerTransitionType::SlideRight);
         detailed_reveal.set_transition_duration(200);
         detailed_reveal.set_reveal_child(DETAILED.get());
         detailed_reveal.set_child(Some(detail_label));
 
-        let icon_label = gtk4::Label::new(Some(icon));
+        let icon_label = gtk::Label::new(Some(icon));
         icon_label.set_css_classes(&["bar-sysstats-icon"]);
 
         box_.set_css_classes(&["bar-sysstats-item"]);
@@ -55,45 +55,45 @@ pub fn minimal() -> gtk4::Box {
     };
 
     view! {        
-        ram_usage_label = gtk4::Label {
-            set_halign: gtk4::Align::Start,
+        ram_usage_label = gtk::Label {
+            set_halign: gtk::Align::Start,
         },
 
-        detailed_ram_usage_label = gtk4::Label {
+        detailed_ram_usage_label = gtk::Label {
             set_css_classes: &["bar-sysstats-detailed-label"],
-            set_halign: gtk4::Align::Start,
+            set_halign: gtk::Align::Start,
         },
 
-        swap_usage_label = gtk4::Label {
-            set_halign: gtk4::Align::Start,
+        swap_usage_label = gtk::Label {
+            set_halign: gtk::Align::Start,
         },
 
-        detailed_swap_usage_label = gtk4::Label {
+        detailed_swap_usage_label = gtk::Label {
             set_css_classes: &["bar-sysstats-detailed-label"],
-            set_halign: gtk4::Align::Start,
+            set_halign: gtk::Align::Start,
         },
 
-        cpu_usage_label = gtk4::Label {
-            set_halign: gtk4::Align::Start,
+        cpu_usage_label = gtk::Label {
+            set_halign: gtk::Align::Start,
         },
 
-        cpu_temperature_label = gtk4::Label {
+        cpu_temperature_label = gtk::Label {
             set_css_classes: &["bar-sysstats-detailed-label"],
-            set_halign: gtk4::Align::Start,
+            set_halign: gtk::Align::Start,
         },
 
-        gpu_usage_label = gtk4::Label {
-            set_halign: gtk4::Align::Start,
+        gpu_usage_label = gtk::Label {
+            set_halign: gtk::Align::Start,
         },
 
-        gpu_temperature_label = gtk4::Label {
+        gpu_temperature_label = gtk::Label {
             set_css_classes: &["bar-sysstats-detailed-label"],
-            set_halign: gtk4::Align::Start,
+            set_halign: gtk::Align::Start,
         },
 
         swap_usage_box = create_sysstats_item("", &swap_usage_label, &detailed_swap_usage_label),
 
-        widget = gtk4::Box {
+        widget = gtk::Box {
             set_hexpand: false,
 
             create_sysstats_item("󰍛", &ram_usage_label, &detailed_ram_usage_label) {},

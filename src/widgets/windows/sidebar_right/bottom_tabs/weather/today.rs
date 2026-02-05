@@ -1,48 +1,48 @@
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::services::weather::schemas::openmeteo::OpenMeteoResponse;
 
 pub struct WeatherToday {
-    pub wind_speed: gtk4::Label,
-    pub wind_direction: gtk4::Label,
-    pub wind_gusts: gtk4::Label,
-    pub pressure_msl: gtk4::Label,
-    pub surface_pressure: gtk4::Label,
-    pub relative_humidity: gtk4::Label,
-    pub cloud_cover: gtk4::Label,
-    pub precipitation_sum: gtk4::Label,
-    pub rain_sum: gtk4::Label,
-    pub showers_sum: gtk4::Label,
-    pub snowfall_sum: gtk4::Label,
+    pub wind_speed: gtk::Label,
+    pub wind_direction: gtk::Label,
+    pub wind_gusts: gtk::Label,
+    pub pressure_msl: gtk::Label,
+    pub surface_pressure: gtk::Label,
+    pub relative_humidity: gtk::Label,
+    pub cloud_cover: gtk::Label,
+    pub precipitation_sum: gtk::Label,
+    pub rain_sum: gtk::Label,
+    pub showers_sum: gtk::Label,
+    pub snowfall_sum: gtk::Label,
 }
 
 impl Default for WeatherToday {
     fn default() -> Self {
-        let wind_speed = gtk4::Label::new(None);
+        let wind_speed = gtk::Label::new(None);
         wind_speed.set_css_classes(&["weather-today-value"]);
-        let wind_direction = gtk4::Label::new(None);
+        let wind_direction = gtk::Label::new(None);
         wind_direction.set_css_classes(&["weather-today-secondary-value"]);
-        let wind_gusts = gtk4::Label::new(None);
+        let wind_gusts = gtk::Label::new(None);
         wind_gusts.set_css_classes(&["weather-today-wind-gust"]);
         wind_gusts.set_xalign(0.0);
-        let pressure_msl = gtk4::Label::new(None);
+        let pressure_msl = gtk::Label::new(None);
         pressure_msl.set_css_classes(&["weather-today-value"]);
         pressure_msl.set_xalign(0.0);
-        let surface_pressure = gtk4::Label::new(None);
+        let surface_pressure = gtk::Label::new(None);
         surface_pressure.set_css_classes(&["weather-today-secondary-value"]);
         surface_pressure.set_xalign(0.0);
-        let relative_humidity = gtk4::Label::new(None);
+        let relative_humidity = gtk::Label::new(None);
         relative_humidity.set_css_classes(&["weather-today-value"]);
         relative_humidity.set_xalign(0.0);
-        let cloud_cover = gtk4::Label::new(None);
+        let cloud_cover = gtk::Label::new(None);
         cloud_cover.set_css_classes(&["weather-today-value"]);
         cloud_cover.set_xalign(0.0);
-        let precipitation_sum = gtk4::Label::new(None);
+        let precipitation_sum = gtk::Label::new(None);
         precipitation_sum.set_css_classes(&["weather-today-value"]);
         precipitation_sum.set_xalign(0.0);
-        let rain_sum = gtk4::Label::new(None);
-        let showers_sum = gtk4::Label::new(None);
-        let snowfall_sum = gtk4::Label::new(None);
+        let rain_sum = gtk::Label::new(None);
+        let showers_sum = gtk::Label::new(None);
+        let snowfall_sum = gtk::Label::new(None);
 
         Self {
             wind_speed,
@@ -75,35 +75,35 @@ impl WeatherToday {
         self.snowfall_sum.set_label(&format!("{:.1} {}", forecast.current.snowfall, forecast.current_units.snowfall));
     }
 
-    pub fn build(&self) -> gtk4::Box {
+    pub fn build(&self) -> gtk::Box {
         view! {
-            root = gtk4::Box {
+            root = gtk::Box {
                 set_css_classes: &["weather-today"],
-                set_orientation: gtk4::Orientation::Vertical,
+                set_orientation: gtk::Orientation::Vertical,
                 set_hexpand: true,
                 set_spacing: 4,
 
-                gtk4::Box {
+                gtk::Box {
                     set_css_classes: &["weather-today-row"],
                     set_homogeneous: true,
                     set_hexpand: true,
                     set_spacing: 4,
 
-                    gtk4::Box {
+                    gtk::Box {
                         set_hexpand: true,
                         set_spacing: 8,
 
-                        gtk4::Label {
+                        gtk::Label {
                             set_css_classes: &["weather-today-icon"],
                             set_label: "air",
                         },
 
-                        gtk4::Box {
-                            set_orientation: gtk4::Orientation::Vertical,
+                        gtk::Box {
+                            set_orientation: gtk::Orientation::Vertical,
                             set_hexpand: true,
                             set_spacing: 2,
 
-                            gtk4::Box {
+                            gtk::Box {
                                 set_spacing: 4,
 
                                 append: &self.wind_speed,
@@ -114,17 +114,17 @@ impl WeatherToday {
                         },
                     },
 
-                    gtk4::Box {
+                    gtk::Box {
                         set_hexpand: true,
                         set_spacing: 8,
 
-                        gtk4::Label {
+                        gtk::Label {
                             set_css_classes: &["weather-today-icon"],
                             set_label: "speed",
                         },
 
-                        gtk4::Box {
-                            set_orientation: gtk4::Orientation::Vertical,
+                        gtk::Box {
+                            set_orientation: gtk::Orientation::Vertical,
                             set_hexpand: true,
                             set_spacing: 2,
 
@@ -134,17 +134,17 @@ impl WeatherToday {
                     },
                 },
 
-                gtk4::Box {
+                gtk::Box {
                     set_css_classes: &["weather-today-row"],
                     set_homogeneous: true,
                     set_hexpand: true,
                     set_spacing: 4,
 
-                    gtk4::Box {
+                    gtk::Box {
                         set_hexpand: true,
                         set_spacing: 8,
 
-                        gtk4::Label {
+                        gtk::Label {
                             set_css_classes: &["weather-today-icon"],
                             set_label: "humidity_percentage",
                         },
@@ -152,11 +152,11 @@ impl WeatherToday {
                         append: &self.relative_humidity,
                     },
 
-                    gtk4::Box {
+                    gtk::Box {
                         set_hexpand: true,
                         set_spacing: 8,
 
-                        gtk4::Label {
+                        gtk::Label {
                             set_css_classes: &["weather-today-icon"],
                             set_label: "cloud",
                         },
@@ -165,58 +165,58 @@ impl WeatherToday {
                     },
                 },
 
-                gtk4::Box {
+                gtk::Box {
                     set_css_classes: &["weather-today-row"],
                     set_homogeneous: true,
                     set_hexpand: true,
                     set_spacing: 4,
 
-                    gtk4::Box {
+                    gtk::Box {
                         set_hexpand: true,
                         set_spacing: 8,
 
-                        gtk4::Label {
+                        gtk::Label {
                             set_css_classes: &["weather-today-icon"],
                             set_label: "umbrella",
                         },
 
-                        gtk4::Box {
-                            set_orientation: gtk4::Orientation::Vertical,
+                        gtk::Box {
+                            set_orientation: gtk::Orientation::Vertical,
                             set_hexpand: true,
                             set_spacing: 2,
 
                             append: &self.precipitation_sum,
 
-                            gtk4::Box {
+                            gtk::Box {
                                 set_spacing: 4,
 
-                                gtk4::Box {
+                                gtk::Box {
                                     set_css_classes: &["weather-today-secondary-value"],
                                     set_spacing: 2,
 
-                                    gtk4::Label {
+                                    gtk::Label {
                                         set_css_classes: &["material-icons"],
                                         set_label: "water_drop",
                                     },
                                     append: &self.rain_sum,
                                 },
 
-                                gtk4::Box {
+                                gtk::Box {
                                     set_css_classes: &["weather-today-secondary-value"],
                                     set_spacing: 2,
 
-                                    gtk4::Label {
+                                    gtk::Label {
                                         set_css_classes: &["material-icons"],
                                         set_label: "shower",
                                     },
                                     append: &self.showers_sum,
                                 },
 
-                                gtk4::Box {
+                                gtk::Box {
                                     set_css_classes: &["weather-today-secondary-value"],
                                     set_spacing: 2,
 
-                                    gtk4::Label {
+                                    gtk::Label {
                                         set_css_classes: &["material-icons"],
                                         set_label: "ac_unit",
                                     },

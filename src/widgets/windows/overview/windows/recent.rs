@@ -1,12 +1,12 @@
-use gtk4::prelude::*;
+use gtk::prelude::*;
 use relm4::RelmIterChildrenExt as _;
 
 use crate::services::apps::runs;
 
 #[derive(Debug, Clone)]
 pub struct OverviewRecentWindow {
-    pub widget: gtk4::Box,
-    pub children: gtk4::Box,
+    pub widget: gtk::Box,
+    pub children: gtk::Box,
 }
 
 impl OverviewRecentWindow {

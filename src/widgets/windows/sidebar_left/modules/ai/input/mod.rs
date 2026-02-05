@@ -1,7 +1,7 @@
 mod attachments;
 
 use std::rc::Rc;
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::services::ai::{self, SESSION};
 use crate::services::ai::images::cache_image_data;
@@ -14,9 +14,9 @@ const MIN_INPUT_SCROLL_HEIGHT: i32 = 50;
 const MAX_INPUT_SCROLL_HEIGHT: i32 = 250;
 
 pub struct ChatInput {
-    pub widget: gtk4::Box,
-    pub input_send_icon: gtk4::Label,
-    pub input_send_label: gtk4::Label,
+    pub widget: gtk::Box,
+    pub input_send_icon: gtk::Label,
+    pub input_send_label: gtk::Label,
 }
 
 impl ChatInput {
@@ -24,30 +24,30 @@ impl ChatInput {
         chat: &Chat,
         scroll_to_bottom: &Rc<dyn Fn()>,
     ) -> Self {
-        let input_box = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        let input_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
         input_box.set_css_classes(&["ai-chat-input-box"]);
 
         let input_attachments = ImageAttachments::default();
         input_box.append(&input_attachments.container);
 
-        let input_scrolled_window = gtk4::ScrolledWindow::new();
-        input_scrolled_window.set_policy(gtk4::PolicyType::Never, gtk4::PolicyType::Never);
+        let input_scrolled_window = gtk::ScrolledWindow::new();
+        input_scrolled_window.set_policy(gtk::PolicyType::Never, gtk::PolicyType::Never);
         input_scrolled_window.set_propagate_natural_height(true);
         input_scrolled_window.set_min_content_height(MIN_INPUT_SCROLL_HEIGHT);
         input_scrolled_window.set_max_content_height(MAX_INPUT_SCROLL_HEIGHT);
         input_box.append(&input_scrolled_window);
 
-        let input_overlay = gtk4::Overlay::new();
+        let input_overlay = gtk::Overlay::new();
         input_scrolled_window.set_child(Some(&input_overlay));
 
-        let input_placeholder = gtk4::Label::new(Some("Type your message here"));
+        let input_placeholder = gtk::Label::new(Some("Type your message here"));
         input_placeholder.set_css_classes(&["ai-chat-input-placeholder"]);
-        input_placeholder.set_halign(gtk4::Align::Start);
-        input_placeholder.set_valign(gtk4::Align::Start);
+        input_placeholder.set_halign(gtk::Align::Start);
+        input_placeholder.set_valign(gtk::Align::Start);
         input_placeholder.set_can_target(false);
         input_overlay.add_overlay(&input_placeholder);
 
-        let input = gtk4::TextView::new();
+        let input = gtk::TextView::new();
         let input_watcher = AllocationWatcher::new(&input, AllocationWatcherOptions {
             timeout_millis: 250,
             max_allocation_width: None,
@@ -126,11 +126,11 @@ impl ChatInput {
             }
         };
 
-        input.set_wrap_mode(gtk4::WrapMode::WordChar);
+        input.set_wrap_mode(gtk::WrapMode::WordChar);
         input.set_height_request(21);
         input.set_css_classes(&["ai-chat-input"]);
         input.set_hexpand(true);
-        input.set_valign(gtk4::Align::Start);
+        input.set_valign(gtk::Align::Start);
         input.buffer().connect_changed(move |buffer| {
             if buffer.text(
                 &buffer.start_iter(),
@@ -150,9 +150,9 @@ impl ChatInput {
                         .map_or(MIN_INPUT_SCROLL_HEIGHT, |alloc| alloc.height());
                 
                     input_scrolled_window.set_vscrollbar_policy(if height > MIN_INPUT_SCROLL_HEIGHT {
-                        gtk4::PolicyType::Automatic
+                        gtk::PolicyType::Automatic
                     } else {
-                        gtk4::PolicyType::Never
+                        gtk::PolicyType::Never
                     });
                 
                     if height <= MAX_INPUT_SCROLL_HEIGHT {
@@ -161,12 +161,12 @@ impl ChatInput {
                 }
             ));
         });
-        let key_controller = gtk4::EventControllerKey::new();
+        let key_controller = gtk::EventControllerKey::new();
         key_controller.connect_key_pressed(clone!(
             #[strong] send_current_input,
             move |_, key, _, state| {
-                if (key == gtk4::gdk::Key::Return || key == gtk4::gdk::Key::KP_Enter)
-                    && !state.contains(gtk4::gdk::ModifierType::SHIFT_MASK)
+                if (key == gtk::gdk::Key::Return || key == gtk::gdk::Key::KP_Enter)
+                    && !state.contains(gtk::gdk::ModifierType::SHIFT_MASK)
                 {
                     glib::spawn_future_local(send_current_input());
                     glib::Propagation::Stop
@@ -182,7 +182,7 @@ impl ChatInput {
                 let clipboard = input.clipboard();
                 let formats = clipboard.formats();
                 
-                if formats.contains_type(gdk4::Texture::static_type()) {
+                if formats.contains_type(gdk::Texture::static_type()) {
                     clipboard.read_texture_async(None::<&gio::Cancellable>, move |result| {
                         match result {
                             Ok(Some(texture)) => {
@@ -204,25 +204,25 @@ impl ChatInput {
 
         input_overlay.set_child(Some(&input));
 
-        let input_controls_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        let input_controls_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         input_controls_box.set_css_classes(&["ai-chat-input-controls-box"]);
         input_box.append(&input_controls_box);
 
-        let input_attach_image_button = gtk4::Button::new();
+        let input_attach_image_button = gtk::Button::new();
         input_attach_image_button.set_css_classes(&["ai-chat-input-attach-image-button"]);
-        input_attach_image_button.set_halign(gtk4::Align::Start);
-        input_attach_image_button.set_valign(gtk4::Align::Start);
+        input_attach_image_button.set_halign(gtk::Align::Start);
+        input_attach_image_button.set_valign(gtk::Align::Start);
         input_attach_image_button.set_label("image");
         input_attach_image_button.connect_clicked(move |_| {
-            let file_chooser = gtk4::FileChooserNative::new(
+            let file_chooser = gtk::FileChooserNative::new(
                 Some("Select Image"),
-                None::<&gtk4::Window>,
-                gtk4::FileChooserAction::Open,
+                None::<&gtk::Window>,
+                gtk::FileChooserAction::Open,
                 Some("Open"),
                 Some("Cancel"),
             );
 
-            let filter = gtk4::FileFilter::new();
+            let filter = gtk::FileFilter::new();
             filter.add_mime_type("image/png");
             filter.add_mime_type("image/jpeg");
             filter.set_name(Some("Image Files"));
@@ -231,9 +231,9 @@ impl ChatInput {
             file_chooser.connect_response(clone!(
                 #[weak] input_attachments,
                 move |file_chooser, response| {
-                    if response == gtk4::ResponseType::Accept
+                    if response == gtk::ResponseType::Accept
                         && let Some(file) = file_chooser.file()
-                        && let Ok(texture) = gdk4::Texture::from_file(&file)
+                        && let Ok(texture) = gdk::Texture::from_file(&file)
                     {
                         input_attachments.push_texture(&texture);
                     }
@@ -247,23 +247,23 @@ impl ChatInput {
         });
         input_controls_box.append(&input_attach_image_button);
 
-        let input_send_button = gtk4::Button::new();
+        let input_send_button = gtk::Button::new();
         input_send_button.set_css_classes(&["ai-chat-input-send-button"]);
-        input_send_button.set_halign(gtk4::Align::End);
+        input_send_button.set_halign(gtk::Align::End);
         input_send_button.set_hexpand(true);
-        input_send_button.set_valign(gtk4::Align::Start);
+        input_send_button.set_valign(gtk::Align::Start);
         input_send_button.connect_clicked(move |_| {
             glib::spawn_future_local(send_current_input());
         });
         input_controls_box.append(&input_send_button);
 
-        let input_send_button_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        let input_send_button_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         input_send_button.set_child(Some(&input_send_button_box));
 
-        let input_send_label = gtk4::Label::new(Some("send"));
+        let input_send_label = gtk::Label::new(Some("send"));
         input_send_button_box.append(&input_send_label);
 
-        let input_send_icon = gtk4::Label::new(Some("keyboard_return"));
+        let input_send_icon = gtk::Label::new(Some("keyboard_return"));
         input_send_icon.set_css_classes(&["ai-chat-input-send-button-icon"]);
         input_send_button_box.append(&input_send_icon);
 

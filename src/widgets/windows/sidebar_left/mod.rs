@@ -1,6 +1,6 @@
 pub mod modules;
 
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::ipc;
 use crate::widgets::common::tabs::{TabSize, Tabs};
@@ -15,27 +15,27 @@ pub fn new(application: &libadwaita::Application) -> PopupWindow {
     tabs.add_tab("ai", "ai", Some("chat"), &modules::ai::new());
 
     view! {
-        left_sidebar_expand_button_label = gtk4::Label {
+        left_sidebar_expand_button_label = gtk::Label {
             set_css_classes: &["left-sidebar-expand-button-icon"],
             set_label: "expand_content",
         },
 
-        left_sidebar_expand_button = gtk4::Button {
+        left_sidebar_expand_button = gtk::Button {
             set_css_classes: &["left-sidebar-expand-button"],
-            set_halign: gtk4::Align::End,
+            set_halign: gtk::Align::End,
             set_hexpand: true,
             set_child: Some(&left_sidebar_expand_button_label),
         },
 
-        left_sidebar_box = gtk4::Box {
+        left_sidebar_box = gtk::Box {
             set_css_classes: &["left-sidebar-box"],
-            set_orientation: gtk4::Orientation::Vertical,
+            set_orientation: gtk::Orientation::Vertical,
             set_spacing: 12,
             set_hexpand: true,
             set_vexpand: true,
 
-            gtk4::Box {
-                set_orientation: gtk4::Orientation::Horizontal,
+            gtk::Box {
+                set_orientation: gtk::Orientation::Horizontal,
                 set_spacing: 0,
                 append: &tabs.select,
                 append: &left_sidebar_expand_button,

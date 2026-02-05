@@ -5,7 +5,7 @@ use crate::APP;
 use crate::services::hyprland::{call_hyprctl, call_hyprctl_batch};
 use super::{QuickToggle, QuickToggleMuiIcon};
 
-pub fn new() -> gtk4::Button {
+pub fn new() -> gtk::Button {
     let toggle = QuickToggle::new_from_icon(
         QuickToggleMuiIcon::new("gamepad", "gamepad"),
         Some(Box::new(|_| {

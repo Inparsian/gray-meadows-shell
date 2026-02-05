@@ -1,12 +1,12 @@
 use std::cell::RefCell;
 use std::rc::Rc;
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::scss;
 
-pub fn new() -> gtk4::DrawingArea {
+pub fn new() -> gtk::DrawingArea {
     let frametime = Rc::new(RefCell::new(0.0));
-    let drawing_area = gtk4::DrawingArea::new();
+    let drawing_area = gtk::DrawingArea::new();
     drawing_area.set_size_request(40, 20);
     drawing_area.set_css_classes(&["loading-indicator"]);
 

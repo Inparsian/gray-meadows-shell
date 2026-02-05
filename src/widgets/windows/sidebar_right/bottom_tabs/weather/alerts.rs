@@ -1,5 +1,5 @@
 use std::cell::RefCell;
-use gtk4::prelude::*;
+use gtk::prelude::*;
 use relm4::RelmRemoveAllExt as _;
 
 use crate::services::weather::schemas::nws::{NwsAlertsResponse, NwsFeature};
@@ -7,12 +7,12 @@ use crate::services::weather::schemas::nws::{NwsAlertsResponse, NwsFeature};
 #[derive(Clone)]
 pub struct WeatherAlert {
     pub alert: NwsFeature,
-    pub bx: gtk4::Box,
+    pub bx: gtk::Box,
 }
 
 impl WeatherAlert {
     pub fn new(alert: NwsFeature) -> Self {
-        let bx = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        let bx = gtk::Box::new(gtk::Orientation::Vertical, 0);
         bx.set_hexpand(true);
 
         Self {
@@ -21,21 +21,21 @@ impl WeatherAlert {
         }
     }
     
-    pub fn construct_field(label: &str, value: &str) -> gtk4::Box {
+    pub fn construct_field(label: &str, value: &str) -> gtk::Box {
         view! {
-            bx = gtk4::Box {
+            bx = gtk::Box {
                 set_css_classes: &["weather-alert-field"],
-                set_orientation: gtk4::Orientation::Horizontal,
+                set_orientation: gtk::Orientation::Horizontal,
                 set_spacing: 4,
                 
-                gtk4::Label {
+                gtk::Label {
                     set_label: label,
                     set_css_classes: &["weather-alert-field-label"],
                     set_hexpand: false,
                     set_xalign: 0.0,
                 },
                 
-                gtk4::Label {
+                gtk::Label {
                     set_label: value,
                     set_css_classes: &["weather-alert-field-value"],
                     set_hexpand: true,
@@ -56,15 +56,15 @@ impl WeatherAlert {
         );
         
         view! {
-            revealer = gtk4::Revealer {
+            revealer = gtk::Revealer {
                 set_hexpand: true,
                 set_reveal_child: false,
-                set_transition_type: gtk4::RevealerTransitionType::SlideDown,
+                set_transition_type: gtk::RevealerTransitionType::SlideDown,
                 set_transition_duration: 175,
                 
-                gtk4::Box {
+                gtk::Box {
                     set_css_classes: &["weather-alert-details"],
-                    set_orientation: gtk4::Orientation::Vertical,
+                    set_orientation: gtk::Orientation::Vertical,
                     set_spacing: 4,
                     
                     append: &Self::construct_field("Sent by", &self.alert.properties.sender_name),
@@ -74,13 +74,13 @@ impl WeatherAlert {
                     append: &Self::construct_field("Expires", &parse_dt(Some(&self.alert.properties.expires))),
                     append: &Self::construct_field("Ends", &parse_dt(self.alert.properties.ends.as_ref())),
                     
-                    gtk4::Box {
+                    gtk::Box {
                         set_margin_top: 16,
                         set_css_classes: &["weather-alert-description"],
-                        set_orientation: gtk4::Orientation::Vertical,
+                        set_orientation: gtk::Orientation::Vertical,
                         set_spacing: 16,
                         
-                        gtk4::Label {
+                        gtk::Label {
                             set_label: &self.alert.properties.description,
                             set_css_classes: &["weather-alert-description"],
                             set_hexpand: true,
@@ -88,7 +88,7 @@ impl WeatherAlert {
                             set_wrap: true,
                         },
                         
-                        gtk4::Label {
+                        gtk::Label {
                             set_label: &self.alert.properties.instruction.as_ref().unwrap_or(&"...".to_owned()),
                             set_css_classes: &["weather-alert-instruction"],
                             set_hexpand: true,
@@ -99,7 +99,7 @@ impl WeatherAlert {
                 },
             },
             
-            button = gtk4::Button {
+            button = gtk::Button {
                 set_css_classes: &["weather-alert-button"],
                 set_hexpand: true,
                 connect_clicked: clone!(
@@ -107,15 +107,15 @@ impl WeatherAlert {
                     move |_| revealer.set_reveal_child(!revealer.reveals_child())
                 ),
                 
-                gtk4::Box {
+                gtk::Box {
                     set_spacing: 4,
 
-                    gtk4::Label {
+                    gtk::Label {
                         set_label: "warning",
                         set_css_classes: &["weather-alert-icon"],
                     },
 
-                    gtk4::Label {
+                    gtk::Label {
                         set_label: &self.alert.properties.event,
                         set_hexpand: true,
                         set_xalign: 0.0,
@@ -134,21 +134,21 @@ impl WeatherAlert {
 }
 
 pub struct WeatherAlerts {
-    pub bx: gtk4::Box,
-    pub root: gtk4::ScrolledWindow,
+    pub bx: gtk::Box,
+    pub root: gtk::ScrolledWindow,
     pub alerts: RefCell<Vec<WeatherAlert>>,
 }
 
 impl Default for WeatherAlerts {
     fn default() -> Self {
-        let bx = gtk4::Box::new(gtk4::Orientation::Vertical, 4);
+        let bx = gtk::Box::new(gtk::Orientation::Vertical, 4);
         bx.set_css_classes(&["weather-alerts"]);
         
-        let root = gtk4::ScrolledWindow::new();
+        let root = gtk::ScrolledWindow::new();
         root.set_child(Some(&bx));
         root.set_vexpand(true);
         root.set_hexpand(true);
-        root.set_hscrollbar_policy(gtk4::PolicyType::Never);
+        root.set_hscrollbar_policy(gtk::PolicyType::Never);
 
         Self {
             bx,

@@ -1,89 +1,89 @@
 use std::cell::RefCell;
 use std::rc::Rc;
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::services::notifications::{self, clear_notifications};
 use crate::services::notifications::bus::BusEvent;
 use crate::widgets::notifications::notification::{self, NotificationWidget};
 
-pub fn new() -> gtk4::Box {
+pub fn new() -> gtk::Box {
     let widgets = Rc::new(RefCell::new(Vec::new()));
     
     view! {
-        header_counter = gtk4::Label {
+        header_counter = gtk::Label {
             set_label: "0 notifications",
             set_css_classes: &["notification-tab-header-counter"],
-            set_halign: gtk4::Align::Start,
+            set_halign: gtk::Align::Start,
             set_hexpand: true,
-            set_valign: gtk4::Align::Center,
+            set_valign: gtk::Align::Center,
         },
         
-        bx = gtk4::Box {
+        bx = gtk::Box {
             set_css_classes: &["notification-tab-header"],
             append: &header_counter,
             
-            gtk4::Button {
+            gtk::Button {
                 set_css_classes: &["notification-tab-clear-button"],
                 connect_clicked: |_| clear_notifications(),
                 
-                gtk4::Box {
+                gtk::Box {
                     set_spacing: 4,
                     
-                    gtk4::Label {
+                    gtk::Label {
                         set_css_classes: &["notification-tab-clear-button-icon"],
                         set_label: "clear_all",
                     },
                     
-                    gtk4::Label {
+                    gtk::Label {
                         set_label: "Clear",
                     },
                 }
             },
         },
         
-        notifications_empty_revealer = gtk4::Revealer {
-            set_transition_type: gtk4::RevealerTransitionType::Crossfade,
+        notifications_empty_revealer = gtk::Revealer {
+            set_transition_type: gtk::RevealerTransitionType::Crossfade,
             set_transition_duration: 175,
             set_vexpand: true,
             set_reveal_child: true,
             
-            gtk4::Box {
+            gtk::Box {
                 set_css_classes: &["notification-tab-empty-box"],
-                set_orientation: gtk4::Orientation::Vertical,
-                set_valign: gtk4::Align::Center,
+                set_orientation: gtk::Orientation::Vertical,
+                set_valign: gtk::Align::Center,
                 set_spacing: 8,
                 
-                gtk4::Label {
+                gtk::Label {
                     set_css_classes: &["notification-tab-empty-icon"],
                     set_label: "notifications_none",
                 },
                 
-                gtk4::Label {
+                gtk::Label {
                     set_css_classes: &["notification-tab-empty-sub-label"],
                     set_label: "You're all caught up!",
                 },
             }
         },
         
-        notifications_box = gtk4::Box {
-            set_orientation: gtk4::Orientation::Vertical,
+        notifications_box = gtk::Box {
+            set_orientation: gtk::Orientation::Vertical,
             set_spacing: 0,
         },
         
-        notifications_scrolled_window = gtk4::ScrolledWindow {
-            set_hscrollbar_policy: gtk4::PolicyType::Never,
-            set_vscrollbar_policy: gtk4::PolicyType::Automatic,
+        notifications_scrolled_window = gtk::ScrolledWindow {
+            set_hscrollbar_policy: gtk::PolicyType::Never,
+            set_vscrollbar_policy: gtk::PolicyType::Automatic,
             set_vexpand: true,
             set_child: Some(&notifications_box)
         },
         
-        notifications_view = gtk4::Overlay {
+        notifications_view = gtk::Overlay {
             add_overlay: &notifications_scrolled_window,
             set_child: Some(&notifications_empty_revealer),
         },
         
-        root = gtk4::Box {
-            set_orientation: gtk4::Orientation::Vertical,
+        root = gtk::Box {
+            set_orientation: gtk::Orientation::Vertical,
             set_spacing: 8,
             set_css_classes: &["notification-tab-root"],
             append: &bx,

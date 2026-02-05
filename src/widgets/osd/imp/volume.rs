@@ -1,5 +1,5 @@
 use std::{rc::Rc, cell::RefCell};
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::services::wireplumber;
 use super::{OsdRevealer, Osd};

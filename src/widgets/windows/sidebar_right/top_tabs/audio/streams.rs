@@ -1,6 +1,6 @@
 use std::rc::Rc;
 use std::cell::RefCell;
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::ffi::astalwp::ffi::{self, Node};
 use crate::services::wireplumber;
@@ -9,36 +9,36 @@ use crate::widgets::common::dot_separator;
 
 pub struct AudioStream {
     pub node: Node,
-    pub root: gtk4::Box,
-    pub name_label: gtk4::Label,
-    pub description_label: gtk4::Label,
-    pub volume_label: gtk4::Label,
-    pub mute_button: gtk4::Button,
+    pub root: gtk::Box,
+    pub name_label: gtk::Label,
+    pub description_label: gtk::Label,
+    pub volume_label: gtk::Label,
+    pub mute_button: gtk::Button,
     pub is_dragging_volume: Rc<RefCell<bool>>,
-    pub volume_slider: gtk4::Scale,
+    pub volume_slider: gtk::Scale,
 }
 
 impl AudioStream {
     pub fn new(node: Node) -> Self {
-        let description_label = gtk4::Label::new(Some(&node.description));
+        let description_label = gtk::Label::new(Some(&node.description));
         description_label.set_css_classes(&["audio-stream-description"]);
         description_label.set_xalign(0.0);
         
-        let name_label = gtk4::Label::new(Some(&node.name));
+        let name_label = gtk::Label::new(Some(&node.name));
         name_label.set_css_classes(&["audio-stream-name"]);
         name_label.set_xalign(0.0);
         name_label.set_hexpand(true);
-        name_label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
+        name_label.set_ellipsize(gtk::pango::EllipsizeMode::End);
         
-        let volume_label = gtk4::Label::new(Some(&format!("{:.0}%", node.volume * 100.0)));
+        let volume_label = gtk::Label::new(Some(&format!("{:.0}%", node.volume * 100.0)));
         volume_label.set_css_classes(&["audio-stream-volume"]);
         volume_label.set_xalign(1.0);
         volume_label.set_width_chars(4);
-        volume_label.set_halign(gtk4::Align::End);
+        volume_label.set_halign(gtk::Align::End);
         
-        let mute_button = gtk4::Button::new();
+        let mute_button = gtk::Button::new();
         mute_button.set_css_classes(&["audio-stream-mute-button"]);
-        mute_button.set_halign(gtk4::Align::End);
+        mute_button.set_halign(gtk::Align::End);
         mute_button.connect_clicked(move |_| {
             let mute = ffi::node_get_mute(node.id);
             ffi::node_set_mute(node.id, !mute);
@@ -52,7 +52,7 @@ impl AudioStream {
         }
         
         let is_dragging_volume = Rc::new(RefCell::new(false));
-        let volume_slider = gtk4::Scale::new(gtk4::Orientation::Horizontal, Some(&gtk4::Adjustment::new(0.0, 0.0, 1.0, 0.05, 0.0, 0.0)));
+        let volume_slider = gtk::Scale::new(gtk::Orientation::Horizontal, Some(&gtk::Adjustment::new(0.0, 0.0, 1.0, 0.05, 0.0, 0.0)));
         volume_slider.set_css_classes(&["audio-stream-volume-slider"]);
         volume_slider.set_draw_value(false);
         volume_slider.set_hexpand(true);
@@ -62,7 +62,7 @@ impl AudioStream {
             ffi::node_set_volume(node.id, value as f32);
         });
         
-        let volume_slider_drag_gesture = gtk4::GestureDrag::new();
+        let volume_slider_drag_gesture = gtk::GestureDrag::new();
         volume_slider_drag_gesture.connect_drag_begin(clone!(
             #[strong] is_dragging_volume,
             move |_, _, _| {
@@ -86,18 +86,18 @@ impl AudioStream {
         )));
         
         view! {
-            root = gtk4::Box {
+            root = gtk::Box {
                 set_css_classes: &["audio-stream-root"],
-                set_orientation: gtk4::Orientation::Vertical,
+                set_orientation: gtk::Orientation::Vertical,
                 set_spacing: 4,
                 
-                gtk4::Box {
+                gtk::Box {
                     append: &description_label,
                     append: &dot_separator::new(),
                     append: &name_label,
                 },
                 
-                gtk4::Box {
+                gtk::Box {
                     append: &volume_slider,
                     append: &volume_label,
                     append: &mute_button,
@@ -139,19 +139,19 @@ impl AudioStream {
 
 pub struct AudioStreams {
     pub streams: Rc<RefCell<Vec<AudioStream>>>,
-    pub bx: gtk4::Box,
-    pub root: gtk4::ScrolledWindow,
+    pub bx: gtk::Box,
+    pub root: gtk::ScrolledWindow,
 }
 
 impl Default for AudioStreams {
     fn default() -> Self {
-        let bx = gtk4::Box::new(gtk4::Orientation::Vertical, 4);
+        let bx = gtk::Box::new(gtk::Orientation::Vertical, 4);
         bx.set_css_classes(&["audio-streams-root"]);
         
-        let root = gtk4::ScrolledWindow::new();
+        let root = gtk::ScrolledWindow::new();
         root.set_child(Some(&bx));
-        root.set_hscrollbar_policy(gtk4::PolicyType::Never);
-        root.set_vscrollbar_policy(gtk4::PolicyType::Automatic);
+        root.set_hscrollbar_policy(gtk::PolicyType::Never);
+        root.set_vscrollbar_policy(gtk::PolicyType::Automatic);
         root.set_vexpand(true);
         root.set_min_content_height(100);
         

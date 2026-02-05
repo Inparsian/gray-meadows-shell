@@ -1,6 +1,6 @@
 use std::{rc::Rc, cell::RefCell};
 use futures_signals::signal::{Mutable, SignalExt as _};
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::ipc;
 use crate::color::LighterDarkerResult;
@@ -11,8 +11,8 @@ use crate::widgets::common::{dynamic_grid::DynamicGrid, tabs::Tabs};
 
 #[derive(Debug, Clone)]
 pub struct ColorBox {
-    pub widget: gtk4::Overlay,
-    pub css_provider: gtk4::CssProvider,
+    pub widget: gtk::Overlay,
+    pub css_provider: gtk::CssProvider,
     pub hsv: Rc<RefCell<Hsv>>
 }
 
@@ -20,12 +20,12 @@ pub fn get_color_box(hsv: Hsv, color_tabs: &Tabs) -> ColorBox {
     let hsv = Rc::new(RefCell::new(hsv));
 
     view! {
-        color_box = gtk4::Box {
+        color_box = gtk::Box {
             set_css_classes: &["color-picker-transform-color"],
             set_hexpand: true,
         },
 
-        color_copy_button = gtk4::Button {
+        color_copy_button = gtk::Button {
             set_css_classes: &["color-picker-transform-copy-button"],
             connect_clicked: clone!(
                 #[strong] hsv,
@@ -54,15 +54,15 @@ pub fn get_color_box(hsv: Hsv, color_tabs: &Tabs) -> ColorBox {
                 }
             )),
 
-            gtk4::Label {
+            gtk::Label {
                 set_css_classes: &["material-icons"],
                 set_label: "content_copy",
                 set_hexpand: true
             }
         },
 
-        color_copy_button_revealer = gtk4::Revealer {
-            set_transition_type: gtk4::RevealerTransitionType::Crossfade,
+        color_copy_button_revealer = gtk::Revealer {
+            set_transition_type: gtk::RevealerTransitionType::Crossfade,
             set_transition_duration: 200,
             set_reveal_child: false,
             add_controller: gesture::on_enter(clone!(
@@ -78,16 +78,16 @@ pub fn get_color_box(hsv: Hsv, color_tabs: &Tabs) -> ColorBox {
             set_child: Some(&color_copy_button)
         },
 
-        widget = gtk4::Overlay {
+        widget = gtk::Overlay {
             set_child: Some(&color_box),
             add_overlay: &color_copy_button_revealer
         }
     };
 
-    let css_provider = gtk4::CssProvider::new();
+    let css_provider = gtk::CssProvider::new();
     color_box.style_context().add_provider(
         &css_provider,
-        gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
     );
 
     ColorBox {
@@ -97,9 +97,9 @@ pub fn get_color_box(hsv: Hsv, color_tabs: &Tabs) -> ColorBox {
     }
 }
 
-pub fn get_analogous_color_boxes(hsv: &Mutable<Hsv>, count: u32, color_tabs: &Tabs) -> gtk4::Box {
-    let box_container = gtk4::Box::new(gtk4::Orientation::Horizontal, 8);
-    box_container.set_valign(gtk4::Align::Start);
+pub fn get_analogous_color_boxes(hsv: &Mutable<Hsv>, count: u32, color_tabs: &Tabs) -> gtk::Box {
+    let box_container = gtk::Box::new(gtk::Orientation::Horizontal, 8);
+    box_container.set_valign(gtk::Align::Start);
     
     let mut boxes: Vec<ColorBox> = Vec::new();
 
@@ -133,12 +133,12 @@ pub fn get_analogous_color_boxes(hsv: &Mutable<Hsv>, count: u32, color_tabs: &Ta
 
 pub fn get_lighter_darker_color_boxes(hsv: &Mutable<Hsv>, count: u32, color_tabs: &Tabs) -> DynamicGrid {
     let mut grid = DynamicGrid::new(4);
-    let mut boxes: Vec<(ColorBox, gtk4::Label)> = Vec::new();
+    let mut boxes: Vec<(ColorBox, gtk::Label)> = Vec::new();
 
     for _ in 0..=count {
         let color_box = get_color_box(hsv.get(), color_tabs);
-        let label = gtk4::Label::new(Some("0%"));
-        let box_ = gtk4::Box::new(gtk4::Orientation::Horizontal, 8);
+        let label = gtk::Label::new(Some("0%"));
+        let box_ = gtk::Box::new(gtk::Orientation::Horizontal, 8);
         box_.append(&color_box.widget);
         box_.append(&label);
 

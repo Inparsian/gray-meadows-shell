@@ -1,7 +1,7 @@
 mod imp {
     use std::cell::{Cell, RefCell};
-    use gtk4::prelude::*;
-    use gtk4::subclass::prelude::*;
+    use gtk::prelude::*;
+    use gtk::subclass::prelude::*;
     use libadwaita::prelude::*;
     
     use crate::utils::gesture;
@@ -11,9 +11,9 @@ mod imp {
     #[properties(wrapper_type = super::BarModule)]
     pub struct BarModule {
         #[property(get, set = Self::set_minimal_widget, nullable)]
-        pub minimal_widget: RefCell<Option<gtk4::Widget>>,
+        pub minimal_widget: RefCell<Option<gtk::Widget>>,
         #[property(get, set = Self::set_expanded_widget, nullable)]
-        pub expanded_widget: RefCell<Option<gtk4::Widget>>,
+        pub expanded_widget: RefCell<Option<gtk::Widget>>,
         #[property(get, set = Self::set_expanded)]
         pub expanded: Cell<bool>,
         
@@ -21,14 +21,14 @@ mod imp {
         pub progress: Cell<f64>,
         pub animation: RefCell<Option<libadwaita::Animation>>,
         
-        background_widget: RefCell<Option<gtk4::Widget>>,
+        background_widget: RefCell<Option<gtk::Widget>>,
     }
     
     #[glib::object_subclass]
     impl ObjectSubclass for BarModule {
         const NAME: &'static str = "GrayMeadowsBarModule";
         type Type = super::BarModule;
-        type ParentType = gtk4::Widget;
+        type ParentType = gtk::Widget;
     }
     
     #[glib::derived_properties]
@@ -37,7 +37,7 @@ mod imp {
             self.parent_constructed();
             
             let obj = self.obj();
-            obj.set_valign(gtk4::Align::Start);
+            obj.set_valign(gtk::Align::Start);
             obj.add_css_class("bar-widget");
             
             obj.add_controller(gesture::on_primary_down(clone!(
@@ -70,7 +70,7 @@ mod imp {
                 }
             )));
             
-            let background = gtk4::Box::builder()
+            let background = gtk::Box::builder()
                 .vexpand(true)
                 .hexpand(true)
                 .build();
@@ -93,7 +93,7 @@ mod imp {
     }
     
     impl WidgetImpl for BarModule {
-        fn measure(&self, orientation: gtk4::Orientation, for_size: i32) -> (i32, i32, i32, i32) {
+        fn measure(&self, orientation: gtk::Orientation, for_size: i32) -> (i32, i32, i32, i32) {
             self.minimal_widget.borrow().as_ref().map_or(
                 (0, 0, -1, -1),
                 |minimal_widget| self.expanded_widget.borrow().as_ref().map_or_else(
@@ -138,15 +138,15 @@ mod imp {
         
         fn size_allocate(&self, width: i32, height: i32, baseline: i32) {
             let minimal_nat_height = self.minimal_widget.borrow().as_ref().map_or(height, |minimal_widget| {
-                let (_, nat_height, _, _) = minimal_widget.measure(gtk4::Orientation::Vertical, -1);
-                let alloc = gtk4::Allocation::new(0, 0, width, nat_height);
+                let (_, nat_height, _, _) = minimal_widget.measure(gtk::Orientation::Vertical, -1);
+                let alloc = gtk::Allocation::new(0, 0, width, nat_height);
                 minimal_widget.size_allocate(&alloc, baseline);
                 nat_height
             });
     
             let expanded_nat_height = self.expanded_widget.borrow().as_ref().map_or(height, |expanded_widget| {
-                let (_, nat_height, _, _) = expanded_widget.measure(gtk4::Orientation::Vertical, -1);
-                let alloc = gtk4::Allocation::new(0, 0, width, nat_height);
+                let (_, nat_height, _, _) = expanded_widget.measure(gtk::Orientation::Vertical, -1);
+                let alloc = gtk::Allocation::new(0, 0, width, nat_height);
                 expanded_widget.size_allocate(&alloc, baseline);
                 nat_height
             });
@@ -161,12 +161,12 @@ mod imp {
                     minimal_nat_height
                 };
                 
-                let alloc = gtk4::Allocation::new(0, 0, width, background_height);
+                let alloc = gtk::Allocation::new(0, 0, width, background_height);
                 background_widget.size_allocate(&alloc, baseline);
             }
         }
     
-        fn snapshot(&self, snapshot: &gtk4::Snapshot) {
+        fn snapshot(&self, snapshot: &gtk::Snapshot) {
             if let Some(background_widget) = self.background_widget.borrow().as_ref() {
                 self.obj().snapshot_child(background_widget, snapshot);
             }
@@ -178,17 +178,17 @@ mod imp {
                     let height = self.obj().height();
                     
                     let minimal_nat = self.minimal_widget.borrow().as_ref().map_or((width, height), |minimal_widget| {
-                        let (_, nat_width, _, _) = minimal_widget.measure(gtk4::Orientation::Horizontal, -1);
-                        let (_, nat_height, _, _) = minimal_widget.measure(gtk4::Orientation::Vertical, -1);
-                        let alloc = gtk4::Allocation::new(0, 0, width, nat_height);
+                        let (_, nat_width, _, _) = minimal_widget.measure(gtk::Orientation::Horizontal, -1);
+                        let (_, nat_height, _, _) = minimal_widget.measure(gtk::Orientation::Vertical, -1);
+                        let alloc = gtk::Allocation::new(0, 0, width, nat_height);
                         minimal_widget.size_allocate(&alloc, -1);
                         (nat_width, nat_height)
                     });
             
                     let expanded_nat = self.expanded_widget.borrow().as_ref().map_or((width, height), |expanded_widget| {
-                        let (_, nat_width, _, _) = expanded_widget.measure(gtk4::Orientation::Horizontal, -1);
-                        let (_, nat_height, _, _) = expanded_widget.measure(gtk4::Orientation::Vertical, -1);
-                        let alloc = gtk4::Allocation::new(0, 0, width, nat_height);
+                        let (_, nat_width, _, _) = expanded_widget.measure(gtk::Orientation::Horizontal, -1);
+                        let (_, nat_height, _, _) = expanded_widget.measure(gtk::Orientation::Vertical, -1);
+                        let alloc = gtk::Allocation::new(0, 0, width, nat_height);
                         expanded_widget.size_allocate(&alloc, -1);
                         (nat_width, nat_height)
                     });
@@ -249,7 +249,7 @@ mod imp {
     }
     
     impl BarModule {
-        fn set_minimal_widget(&self, widget: Option<&gtk4::Widget>) {
+        fn set_minimal_widget(&self, widget: Option<&gtk::Widget>) {
             let mut stored = self.minimal_widget.borrow_mut();
             if let Some(minimal_widget) = stored.take() {
                 minimal_widget.unparent();
@@ -264,7 +264,7 @@ mod imp {
             }
         }
         
-        fn set_expanded_widget(&self, widget: Option<&gtk4::Widget>) {
+        fn set_expanded_widget(&self, widget: Option<&gtk::Widget>) {
             let mut stored = self.expanded_widget.borrow_mut();
             if let Some(expanded_widget) = stored.take() {
                 expanded_widget.unparent();
@@ -330,7 +330,7 @@ mod imp {
     }
 }
 
-use gtk4::prelude::IsA;
+use gtk::prelude::IsA;
 
 use crate::APP_LOCAL;
 
@@ -338,8 +338,8 @@ static BLUR_FACTOR_PX: i32 = 32;
 
 glib::wrapper! {
     pub struct BarModule(ObjectSubclass<imp::BarModule>)
-        @extends gtk4::Widget,
-        @implements gtk4::Accessible, gtk4::Buildable, gtk4::ConstraintTarget;
+        @extends gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl Default for BarModule {
@@ -349,7 +349,7 @@ impl Default for BarModule {
 }
 
 impl BarModule {
-    pub fn with_widgets<W: IsA<gtk4::Widget>>(minimal_widget: &W, expanded_widget: &W) -> Self {
+    pub fn with_widgets<W: IsA<gtk::Widget>>(minimal_widget: &W, expanded_widget: &W) -> Self {
         Self::builder()
             .minimal_widget(minimal_widget)
             .expanded_widget(expanded_widget)
@@ -376,14 +376,14 @@ impl BarModuleBuilder {
         self.builder.build()
     }
 
-    pub fn minimal_widget<W: IsA<gtk4::Widget>>(mut self, widget: &W) -> Self {
-        let widget: &gtk4::Widget = widget.as_ref();
+    pub fn minimal_widget<W: IsA<gtk::Widget>>(mut self, widget: &W) -> Self {
+        let widget: &gtk::Widget = widget.as_ref();
         self.builder = self.builder.property("minimal-widget", widget);
         self
     }
 
-    pub fn expanded_widget<W: IsA<gtk4::Widget>>(mut self, widget: &W) -> Self {
-        let widget: &gtk4::Widget = widget.as_ref();
+    pub fn expanded_widget<W: IsA<gtk::Widget>>(mut self, widget: &W) -> Self {
+        let widget: &gtk::Widget = widget.as_ref();
         self.builder = self.builder.property("expanded-widget", widget);
         self
     }

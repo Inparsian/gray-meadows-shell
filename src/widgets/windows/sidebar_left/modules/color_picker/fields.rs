@@ -1,12 +1,12 @@
 use std::{cell::RefCell, rc::Rc, time::Duration};
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 static LOCK_HOLD_DURATION: Duration = Duration::from_millis(2);
 
 #[derive(Debug, Clone)]
 pub enum FieldType {
     Entry,
-    SpinButton(u32, f64, gtk4::Adjustment)
+    SpinButton(u32, f64, gtk::Adjustment)
 }
 
 #[derive(Debug, Clone)]
@@ -17,7 +17,7 @@ pub enum FieldUpdate {
 
 #[derive(Debug, Clone)]
 pub struct Field {
-    pub widget: gtk4::Widget,
+    pub widget: gtk::Widget,
     pub lock: Rc<RefCell<bool>>
 }
 
@@ -28,9 +28,9 @@ impl Field {
     {
         let lock = Rc::new(RefCell::new(false));
 
-        let widget: gtk4::Widget = match field_type {
+        let widget: gtk::Widget = match field_type {
             FieldType::Entry => {
-                let entry = gtk4::Entry::new();
+                let entry = gtk::Entry::new();
                 entry.set_css_classes(&["color-picker-entry"]);
                 entry.connect_changed(clone!(
                     #[strong] lock,
@@ -44,7 +44,7 @@ impl Field {
             },
 
             FieldType::SpinButton(digits, step, adjustment) => {
-                let spin_button = gtk4::SpinButton::new(Some(&adjustment), step, digits);
+                let spin_button = gtk::SpinButton::new(Some(&adjustment), step, digits);
                 spin_button.set_increments(step, step);
                 spin_button.set_css_classes(&["color-picker-spinbutton"]);
                 spin_button.connect_value_changed(clone!(
@@ -80,16 +80,16 @@ impl Field {
 
 #[derive(Debug, Clone)]
 pub struct Fields {
-    pub widget: gtk4::Box,
+    pub widget: gtk::Box,
     pub fields: Vec<Field>
 }
 
 impl Fields {
     pub fn new() -> Self {
-        let widget = gtk4::Box::new(gtk4::Orientation::Horizontal, 8);
+        let widget = gtk::Box::new(gtk::Orientation::Horizontal, 8);
         widget.set_css_classes(&["color-picker-fields-box"]);
         widget.set_hexpand(true);
-        widget.set_valign(gtk4::Align::Start);
+        widget.set_valign(gtk::Align::Start);
         widget.set_homogeneous(true);
 
         Self {
@@ -118,11 +118,11 @@ impl Fields {
                 field.lock();
                 
                 match update {
-                    FieldUpdate::Text(text) => if let Some(entry) = field.widget.downcast_ref::<gtk4::Entry>() {
+                    FieldUpdate::Text(text) => if let Some(entry) = field.widget.downcast_ref::<gtk::Entry>() {
                         entry.set_text(&text);
                     },
 
-                    FieldUpdate::Float(value) => if let Some(spin_button) = field.widget.downcast_ref::<gtk4::SpinButton>() {
+                    FieldUpdate::Float(value) => if let Some(spin_button) = field.widget.downcast_ref::<gtk::SpinButton>() {
                         spin_button.set_value(value);
                     }
                 }

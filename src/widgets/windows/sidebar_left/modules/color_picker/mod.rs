@@ -5,7 +5,7 @@ mod color_boxes;
 
 use std::time::Duration;
 use futures_signals::signal::{Mutable, SignalExt as _};
-use gtk4::{Adjustment, prelude::*};
+use gtk::{Adjustment, prelude::*};
 
 use crate::color::{parse_color_into_hex, int_to_hex};
 use crate::color::models::{Rgba, Hsv, Hsl, Cmyk, Oklab, Oklch, ColorModel as _};
@@ -16,7 +16,7 @@ use crate::widgets::common::tabs::{TabSize, Tabs};
 use self::fields::Fields;
 use self::{saturation_value_picker::SaturationValuePicker, hue_picker::HuePicker};
 
-pub fn new() -> gtk4::Box {
+pub fn new() -> gtk::Box {
     let hsv = Mutable::new(Hsv {
         hue: 0.0,
         saturation: 100.0,
@@ -175,20 +175,20 @@ pub fn new() -> gtk4::Box {
     });
 
     view! {
-        paste_from_clipboard_label = gtk4::Label {
+        paste_from_clipboard_label = gtk::Label {
             set_label: "Paste from Clipboard",
         },
         
-        paste_from_clipboard_button = gtk4::Button {
+        paste_from_clipboard_button = gtk::Button {
             set_label: "Paste from Clipboard",
             set_css_classes: &["color-picker-button"],
 
-            gtk4::Box {
-                set_orientation: gtk4::Orientation::Horizontal,
+            gtk::Box {
+                set_orientation: gtk::Orientation::Horizontal,
                 set_spacing: 6,
-                set_halign: gtk4::Align::Center,
+                set_halign: gtk::Align::Center,
 
-                gtk4::Label {
+                gtk::Label {
                     set_css_classes: &["material-icons"],
                     set_label: "content_paste",
                 },
@@ -197,15 +197,15 @@ pub fn new() -> gtk4::Box {
             }
         },
 
-        widget = gtk4::Box {
+        widget = gtk::Box {
             set_css_classes: &["ColorPicker"],
-            set_orientation: gtk4::Orientation::Vertical,
+            set_orientation: gtk::Orientation::Vertical,
             set_spacing: 12,
             set_hexpand: true,
             set_vexpand: true,
 
-            gtk4::Box {
-                set_orientation: gtk4::Orientation::Horizontal,
+            gtk::Box {
+                set_orientation: gtk::Orientation::Horizontal,
                 set_spacing: 8,
 
                 append: hue_picker.get_widget(),

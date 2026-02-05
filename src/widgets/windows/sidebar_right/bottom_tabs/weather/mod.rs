@@ -3,13 +3,13 @@ mod today;
 mod week;
 mod alerts;
 
-use gtk4::prelude::*;
+use gtk::prelude::*;
 use futures_signals::signal::SignalExt as _;
 
 use crate::services::weather::WEATHER;
 use crate::widgets::common::tabs::{Tabs, TabSize};
 
-pub fn new() -> gtk4::Box {
+pub fn new() -> gtk::Box {
     let overview = overview::WeatherOverview::default();
     let today = today::WeatherToday::default();
     let week = week::WeatherWeek::default();
@@ -22,9 +22,9 @@ pub fn new() -> gtk4::Box {
     tabs.current_tab.set(Some("today".to_owned()));
 
     view! {
-        root = gtk4::Box {
+        root = gtk::Box {
             set_css_classes: &["weather-tab-root"],
-            set_orientation: gtk4::Orientation::Vertical,
+            set_orientation: gtk::Orientation::Vertical,
             set_spacing: 4,
 
             append: &overview.build(),

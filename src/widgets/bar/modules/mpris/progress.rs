@@ -1,5 +1,5 @@
 use std::{cell::RefCell, f64, rc::Rc};
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::scss;
 use crate::utils::gesture;
@@ -12,7 +12,7 @@ static WAVE_LINE_WIDTH: f64 = 3.0;
 
 #[derive(Debug, Clone, glib::Downgrade)]
 pub struct ProgressBar {
-    pub drawing_area: gtk4::DrawingArea,
+    pub drawing_area: gtk::DrawingArea,
     pub position: Rc<RefCell<f64>>,
     pub duration: Rc<RefCell<f64>>,
 }
@@ -23,7 +23,7 @@ impl ProgressBar {
         let seek_position: Rc<RefCell<Option<f64>>> = Rc::new(RefCell::new(None));
         let position = Rc::new(RefCell::new(0.0));
         let duration = Rc::new(RefCell::new(0.0));
-        let drawing_area = gtk4::DrawingArea::new();
+        let drawing_area = gtk::DrawingArea::new();
         drawing_area.set_css_classes(&["bar-mpris-extended-progress-bar"]);
         drawing_area.set_content_width(200);
         drawing_area.set_content_height(24);

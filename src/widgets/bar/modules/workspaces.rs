@@ -1,6 +1,6 @@
 use std::sync::{Mutex, LazyLock};
 use futures_signals::signal::SignalExt as _;
-use gtk4::prelude::*;
+use gtk::prelude::*;
 use ::hyprland::dispatch;
 use ::hyprland::dispatch::WorkspaceIdentifierWithSpecial;
 
@@ -45,7 +45,7 @@ impl WorkspaceMask {
 }
 
 pub fn new() -> BarModule {
-    let style_provider = gtk4::CssProvider::new();
+    let style_provider = gtk::CssProvider::new();
 
     view! {
         workspaces_click_gesture = gesture::on_primary_down(|_, x, _| {
@@ -65,7 +65,7 @@ pub fn new() -> BarModule {
             let _ = dispatch!(Workspace, WorkspaceIdentifierWithSpecial::RelativeMonitorIncludingEmpty(delta));
         }),
 
-        workspaces_drawing_area = gtk4::DrawingArea {
+        workspaces_drawing_area = gtk::DrawingArea {
             set_css_classes: &["bar-workspaces-drawingarea"],
 
             set_draw_func: {
@@ -73,7 +73,7 @@ pub fn new() -> BarModule {
                     area.set_size_request((SHOWN_WORKSPACES as i32 + 1) * WORKSPACE_WIDTH as i32, 16);
 
                     let active_ws: f64 = area.pango_context().font_description()
-                        .map_or(1.0, |desc| desc.size() as f64 / gtk4::pango::SCALE as f64);
+                        .map_or(1.0, |desc| desc.size() as f64 / gtk::pango::SCALE as f64);
 
                     // draw workspace squares
                     for i in 0..SHOWN_WORKSPACES+1 {
@@ -127,15 +127,15 @@ pub fn new() -> BarModule {
             }
         },
 
-        workspaces_box = gtk4::Box {
-            set_orientation: gtk4::Orientation::Horizontal,
+        workspaces_box = gtk::Box {
+            set_orientation: gtk::Orientation::Horizontal,
             set_spacing: 0,
             
             append: &workspaces_drawing_area
         }
     }
 
-    workspaces_drawing_area.style_context().add_provider(&style_provider, gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION);
+    workspaces_drawing_area.style_context().add_provider(&style_provider, gtk::STYLE_PROVIDER_PRIORITY_APPLICATION);
 
     glib::spawn_future_local({
         let workspaces_drawing_area = workspaces_drawing_area.clone();

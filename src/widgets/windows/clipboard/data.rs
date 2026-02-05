@@ -1,7 +1,7 @@
 mod imp {
     use std::cell::Cell;
-    use gtk4::prelude::*;
-    use gtk4::subclass::prelude::*;
+    use gtk::prelude::*;
+    use gtk::subclass::prelude::*;
     
     #[derive(glib::Properties, Default)]
     #[properties(wrapper_type = super::ClipboardEntryData)]

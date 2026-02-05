@@ -3,7 +3,7 @@ mod quicktoggle;
 mod top_tabs;
 mod bottom_tabs;
 
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::widgets::common::revealer::AdwRevealerDirection;
 use super::popup::{PopupWindow, PopupMargin, PopupOptions};
@@ -14,10 +14,10 @@ pub fn new(application: &libadwaita::Application) -> PopupWindow {
     let bottom_tabs = bottom_tabs::new();
 
     view! {
-        quick_toggles = gtk4::Box {
+        quick_toggles = gtk::Box {
             set_css_classes: &["sidebar-right-quicktoggles"],
             set_spacing: 4,
-            set_orientation: gtk4::Orientation::Horizontal,
+            set_orientation: gtk::Orientation::Horizontal,
             set_hexpand: true,
             set_vexpand: false,
 
@@ -26,9 +26,9 @@ pub fn new(application: &libadwaita::Application) -> PopupWindow {
             append: &quicktoggle::gamemode::new(),
         },
 
-        right_sidebar_box = gtk4::Box {
+        right_sidebar_box = gtk::Box {
             set_css_classes: &["right-sidebar-box"],
-            set_orientation: gtk4::Orientation::Vertical,
+            set_orientation: gtk::Orientation::Vertical,
             set_spacing: 12,
             set_hexpand: true,
             set_vexpand: true,

@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 use futures_signals::signal::Mutable;
-use gdk4::prelude::MonitorExt as _;
+use gdk::prelude::MonitorExt as _;
 use hyprland::data::{Client, Monitor, Workspace, Workspaces};
 use hyprland::event_listener::AsyncEventListener;
 use hyprland::shared::{HyprData as _, HyprDataActive as _, HyprDataActiveOptional as _};
@@ -92,10 +92,10 @@ pub fn activate() {
     });
 }
 
-pub fn get_active_monitor() -> Option<gdk4::Monitor> {
+pub fn get_active_monitor() -> Option<gdk::Monitor> {
     if let Ok(monitor) = Monitor::get_active() {
-        // Get the gdk4::Monitor from the display.
-        let monitors = display::get_all_monitors(&gdk4::Display::default()?);
+        // Get the gdk::Monitor from the display.
+        let monitors = display::get_all_monitors(&gdk::Display::default()?);
 
         for m in monitors {
             let geometry = m.geometry();

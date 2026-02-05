@@ -1,4 +1,4 @@
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::ffi::astalwp::ffi;
 use crate::utils::gesture;
@@ -35,15 +35,15 @@ pub fn new() -> BarModule {
             windows::toggle("right_sidebar");
         }),
 
-        volume_char_label = gtk4::Label {
+        volume_char_label = gtk::Label {
             set_label: LOW_VOLUME_CHAR,
         },
 
-        volume_percentage_label = gtk4::Label {
+        volume_percentage_label = gtk::Label {
             set_label: "0%",
         },
 
-        widget = gtk4::Box {
+        widget = gtk::Box {
             set_spacing: 6,
             set_hexpand: false,
             

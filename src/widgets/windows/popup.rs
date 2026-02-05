@@ -1,5 +1,5 @@
-use gtk4::prelude::*;
-use gtk4::cairo::{RectangleInt, Region};
+use gtk::prelude::*;
+use cairo::{RectangleInt, Region};
 use gtk4_layer_shell::{Edge, Layer, KeyboardMode, LayerShell as _};
 use libadwaita::Clamp;
 
@@ -11,7 +11,7 @@ use super::{GmsWindow, hide_all_popups};
 /// A popup window that displays content on top of other windows. It closes itself when it loses focus.
 #[derive(Clone, glib::Downgrade)]
 pub struct PopupWindow {
-    pub window: gtk4::ApplicationWindow,
+    pub window: gtk::ApplicationWindow,
     pub revealer: AdwRevealer,
 }
 
@@ -78,7 +78,7 @@ impl PopupWindow {
     pub fn new(
         application: &libadwaita::Application,
         classes: &[&str],
-        child: &impl IsA<gtk4::Widget>,
+        child: &impl IsA<gtk::Widget>,
         options: PopupOptions,
         width: i32,
         height: i32,
@@ -92,7 +92,7 @@ impl PopupWindow {
             .collect::<Vec<&str>>();
 
         let monitor = hyprland::get_active_monitor();
-        let window = gtk4::ApplicationWindow::new(application);
+        let window = gtk::ApplicationWindow::new(application);
         window.set_css_classes(&window_classes);
         window.init_layer_shell();
         window.set_monitor(monitor.as_ref());
@@ -105,7 +105,7 @@ impl PopupWindow {
         window.set_namespace(Some("gms-popup"));
         window.show();
         
-        let container = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        let container = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         container.append(child);
         
         let clamp = Clamp::builder()
@@ -137,16 +137,16 @@ impl PopupWindow {
             .hide_easing(GEasing::EaseOutExpo)
             .build();
         if options.anchor_left && !options.anchor_right {
-            revealer.set_halign(gtk4::Align::Start);
+            revealer.set_halign(gtk::Align::Start);
         }
         else if options.anchor_right && !options.anchor_left {
-            revealer.set_halign(gtk4::Align::End);
+            revealer.set_halign(gtk::Align::End);
         }
         if options.anchor_top && !options.anchor_bottom {
-            revealer.set_valign(gtk4::Align::Start);
+            revealer.set_valign(gtk::Align::Start);
         }
         else if options.anchor_bottom && !options.anchor_top {
-            revealer.set_valign(gtk4::Align::End);
+            revealer.set_valign(gtk::Align::End);
         }
         
         window.set_child(Some(&revealer));

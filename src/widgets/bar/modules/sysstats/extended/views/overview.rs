@@ -1,4 +1,4 @@
-use gtk4::prelude::*;
+use gtk::prelude::*;
 use futures_signals::signal::SignalExt as _;
 
 use crate::services::sysstats::SYS_STATS;
@@ -7,7 +7,7 @@ use crate::utils::unit::bytes_to_gib;
 use super::super::CompactStatRow;
 use super::super::super::SWAP_SHOW_THRESHOLD;
 
-pub fn overview() -> gtk4::Box {
+pub fn overview() -> gtk::Box {
     let cpu_stat_row = CompactStatRow::new("CPU", true);
     let mem_stat_row = CompactStatRow::new("RAM", true);
     let swap_stat_row = CompactStatRow::new("SWAP", true);
@@ -15,8 +15,8 @@ pub fn overview() -> gtk4::Box {
     let vram_stat_row = CompactStatRow::new("VRAM", true);
 
     view! {
-        widget = gtk4::Box {
-            set_orientation: gtk4::Orientation::Vertical,
+        widget = gtk::Box {
+            set_orientation: gtk::Orientation::Vertical,
             set_spacing: 8,
 
             append: &cpu_stat_row.container,

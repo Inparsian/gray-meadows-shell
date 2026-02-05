@@ -1,6 +1,6 @@
 use std::{rc::Rc, cell::RefCell};
 use futures_signals::signal::{Mutable, SignalExt as _};
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::color::models::Hsv;
 use crate::utils::gesture;
@@ -8,9 +8,9 @@ use crate::utils::gesture;
 #[derive(Debug, Clone)]
 pub struct HuePicker {
     pub hsv: Mutable<Hsv>,
-    pub widget: gtk4::Box,
-    pub trough: gtk4::Box,
-    trough_css_provider: gtk4::CssProvider
+    pub widget: gtk::Box,
+    pub trough: gtk::Box,
+    trough_css_provider: gtk::CssProvider
 }
 
 impl glib::clone::Downgrade for HuePicker {
@@ -29,9 +29,9 @@ impl glib::clone::Downgrade for HuePicker {
 #[derive(Debug, Clone)]
 pub struct HuePickerWeak {
     pub hsv: Mutable<Hsv>,
-    pub widget: glib::WeakRef<gtk4::Box>,
-    pub trough: glib::WeakRef<gtk4::Box>,
-    trough_css_provider: gtk4::CssProvider
+    pub widget: glib::WeakRef<gtk::Box>,
+    pub trough: glib::WeakRef<gtk::Box>,
+    trough_css_provider: gtk::CssProvider
 }
 
 impl glib::clone::Upgrade for HuePickerWeak {
@@ -49,18 +49,18 @@ impl glib::clone::Upgrade for HuePickerWeak {
 
 impl HuePicker {
     pub fn new(hsv: &Mutable<Hsv>) -> Self {
-        let trough_css_provider = gtk4::CssProvider::new();
+        let trough_css_provider = gtk::CssProvider::new();
 
-        let trough = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        let trough = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         trough.set_css_classes(&["color-picker-hue-trough"]);
 
-        let widget = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        let widget = gtk::Box::new(gtk::Orientation::Vertical, 0);
         widget.set_css_classes(&["color-picker-hue"]);
         widget.append(&trough);
 
         trough.style_context().add_provider(
             &trough_css_provider,
-            gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );
 
         let picker = Self {
@@ -148,7 +148,7 @@ impl HuePicker {
         "));
     }
 
-    pub fn get_widget(&self) -> &gtk4::Box {
+    pub fn get_widget(&self) -> &gtk::Box {
         &self.widget
     }
 }

@@ -7,7 +7,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::LazyLock;
 use freedesktop_desktop_entry::get_languages_from_env;
-use gtk4::prelude::*;
+use gtk::prelude::*;
 use regex::Regex;
 use urlencoding::encode;
 
@@ -31,18 +31,18 @@ static ALPHANUMERIC_SYMBOLIC_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new("^[a-zA-Z0-9 ~!@#$%^&*()_+\\-=\\[\\]{}|;':\",./<>?]+$").expect("Failed to compile alphanumeric symbolic regex")
 });
 
-fn generate_entry_box_icon_stack() -> gtk4::Stack {
-    let stack = gtk4::Stack::new();
+fn generate_entry_box_icon_stack() -> gtk::Stack {
+    let stack = gtk::Stack::new();
     stack.set_css_classes(&["entry-box-icon"]);
-    stack.set_transition_type(gtk4::StackTransitionType::SlideDown);
+    stack.set_transition_type(gtk::StackTransitionType::SlideDown);
     stack.set_transition_duration(500);
 
-    let default_label = gtk4::Label::new(Some("search"));
+    let default_label = gtk::Label::new(Some("search"));
     stack.add_titled(&default_label, Some("search"), "search");
     stack.set_visible_child_name("search");
 
     for module in MODULES.iter() {
-        let label = gtk4::Label::new(Some(module.icon()));
+        let label = gtk::Label::new(Some(module.icon()));
         stack.add_titled(&label, Some(module.icon()), module.icon());
     }
 
@@ -103,19 +103,19 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
     let recent_window = OverviewRecentWindow::new();
 
     view! {
-        entry_prompt_revealer = gtk4::Revealer {
-            set_transition_type: gtk4::RevealerTransitionType::Crossfade,
+        entry_prompt_revealer = gtk::Revealer {
+            set_transition_type: gtk::RevealerTransitionType::Crossfade,
             set_reveal_child: true,
 
-            gtk4::Label {
+            gtk::Label {
                 set_css_classes: &["entry-prompt-label"],
                 set_label: "Type to search, and stuff",
             }
         },
 
-        search_results_revealer = gtk4::Revealer {
+        search_results_revealer = gtk::Revealer {
             set_css_classes: &["overview-search-results-revealer"],
-            set_transition_type: gtk4::RevealerTransitionType::SlideDown,
+            set_transition_type: gtk::RevealerTransitionType::SlideDown,
             set_transition_duration: 250,
             set_reveal_child: false,
 
@@ -126,9 +126,9 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
             },
         },
 
-        windows_box = gtk4::Box {
+        windows_box = gtk::Box {
             set_css_classes: &["overview-windows-box"],
-            set_orientation: gtk4::Orientation::Horizontal,
+            set_orientation: gtk::Orientation::Horizontal,
             set_spacing: 8,
             set_hexpand: true,
             set_vexpand: true,
@@ -137,9 +137,9 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
             append: &recent_window.widget
         },
 
-        windows_revealer = gtk4::Revealer {
+        windows_revealer = gtk::Revealer {
             set_css_classes: &["overview-windows-revealer", "revealed"],
-            set_transition_type: gtk4::RevealerTransitionType::SlideDown,
+            set_transition_type: gtk::RevealerTransitionType::SlideDown,
             set_transition_duration: 250,
             set_reveal_child: true,
             set_child: Some(&windows_box)
@@ -147,14 +147,14 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
 
         entry_box_icon = generate_entry_box_icon_stack(),
 
-        entry_box = gtk4::Box {
+        entry_box = gtk::Box {
             set_css_classes: &["entry-box"],
-            set_orientation: gtk4::Orientation::Horizontal,
-            set_halign: gtk4::Align::Center,
+            set_orientation: gtk::Orientation::Horizontal,
+            set_halign: gtk::Align::Center,
             append: &entry_box_icon,
         },
 
-        entry = gtk4::Entry {
+        entry = gtk::Entry {
             set_css_classes: &["entry-prompt"],
             set_hexpand: true,
             set_has_frame: false,
@@ -167,17 +167,17 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
             ),
         },
 
-        entry_overlay = gtk4::Overlay {
+        entry_overlay = gtk::Overlay {
             set_hexpand: true,
             set_child: Some(&entry_prompt_revealer),
             add_overlay: &entry,
         },
 
-        overview_box = gtk4::Box {
-            set_orientation: gtk4::Orientation::Vertical,
+        overview_box = gtk::Box {
+            set_orientation: gtk::Orientation::Vertical,
             set_spacing: 0,
-            set_halign: gtk4::Align::Center,
-            set_valign: gtk4::Align::Center,
+            set_halign: gtk::Align::Center,
+            set_valign: gtk::Align::Center,
             set_hexpand: true,
 
             append: &entry_box,
@@ -214,7 +214,7 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
         move |val, _| if !entry.text().is_empty() && val.name() == Some("Down".into()) {
             let first_child = search_results.borrow().get_widget().first_child();
 
-            first_child.map(|child| child.downcast_ref::<gtk4::ListBoxRow>().map(|row| {
+            first_child.map(|child| child.downcast_ref::<gtk::ListBoxRow>().map(|row| {
                 row.grab_focus();
 
                 if let Some(button) = get_button_from_row(row) {
@@ -232,7 +232,7 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
             if val.name() == Some("Up".into()) {
                 let first_child = search_results_widget.first_child();
 
-                first_child.map(|child| child.downcast_ref::<gtk4::ListBoxRow>().map(|row| {
+                first_child.map(|child| child.downcast_ref::<gtk::ListBoxRow>().map(|row| {
                     let button = get_button_from_row(row);
 
                     if button.is_some_and(|b| b.has_focus()) {

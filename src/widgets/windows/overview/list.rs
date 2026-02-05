@@ -1,5 +1,5 @@
 use std::{cell::RefCell, rc::Rc, time::Duration};
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use super::item::{OverviewSearchItem, ITEM_ANIMATION_DURATION};
 
@@ -8,18 +8,18 @@ static LOCK_HOLD_DURATION: Duration = Duration::from_millis(1);
 #[derive(Debug, Clone)]
 pub struct OverviewSearchList {
     pub items: Vec<OverviewSearchItem>,
-    widget: gtk4::ListBox,
+    widget: gtk::ListBox,
     lock: Rc<RefCell<bool>> // To prevent race conditions when the user types too fast
 }
 
-pub fn get_button_from_row(row: &gtk4::ListBoxRow) -> Option<gtk4::Button> {
-    let mut current_widget: Option<gtk4::Widget> = Some(row.child()?);
+pub fn get_button_from_row(row: &gtk::ListBoxRow) -> Option<gtk::Button> {
+    let mut current_widget: Option<gtk::Widget> = Some(row.child()?);
     while let Some(widget) = current_widget {
-        if let Some(button) = widget.downcast_ref::<gtk4::Button>() {
+        if let Some(button) = widget.downcast_ref::<gtk::Button>() {
             return Some(button.clone());
         }
 
-        if let Some(container) = widget.downcast_ref::<gtk4::Revealer>() {
+        if let Some(container) = widget.downcast_ref::<gtk::Revealer>() {
             current_widget = container.child();
         } else {
             break;
@@ -31,8 +31,8 @@ pub fn get_button_from_row(row: &gtk4::ListBoxRow) -> Option<gtk4::Button> {
 
 impl OverviewSearchList {
     pub fn new() -> Self {
-        let widget = gtk4::ListBox::new();
-        widget.set_selection_mode(gtk4::SelectionMode::Single);
+        let widget = gtk::ListBox::new();
+        widget.set_selection_mode(gtk::SelectionMode::Single);
         widget.set_css_classes(&["overview-search-results"]);
 
         widget.connect_row_activated(|_, row| if let Some(button) = get_button_from_row(row) {
@@ -50,7 +50,7 @@ impl OverviewSearchList {
         }
     }
 
-    pub fn get_widget(&self) -> gtk4::ListBox {
+    pub fn get_widget(&self) -> gtk::ListBox {
         self.widget.clone()
     }
 

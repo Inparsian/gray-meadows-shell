@@ -1,6 +1,6 @@
 use std::rc::Rc;
 use std::cell::RefCell;
-use gtk4::prelude::*;
+use gtk::prelude::*;
 use futures_signals::signal::SignalExt as _;
 use chrono::Datelike as _;
 use relm4::RelmRemoveAllExt as _;
@@ -28,9 +28,9 @@ pub struct Calendar {
     pub weeks: Rc<RefCell<Vec<CalendarWeek>>>,
     pub month: Rc<RefCell<u32>>,
     pub year: Rc<RefCell<i32>>,
-    pub root: Rc<RefCell<Option<gtk4::Box>>>,
-    pub current_date_label: Rc<RefCell<Option<gtk4::Label>>>,
-    pub days_grid: Rc<RefCell<Option<gtk4::Box>>>,
+    pub root: Rc<RefCell<Option<gtk::Box>>>,
+    pub current_date_label: Rc<RefCell<Option<gtk::Label>>>,
+    pub days_grid: Rc<RefCell<Option<gtk::Box>>>,
 }
 
 impl Calendar {
@@ -104,22 +104,22 @@ impl Calendar {
         *self.weeks.borrow_mut() = weeks;
     }
 
-    pub fn make_widget(&self) -> gtk4::Box {
-        let root = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+    pub fn make_widget(&self) -> gtk::Box {
+        let root = gtk::Box::new(gtk::Orientation::Vertical, 0);
         root.set_css_classes(&["calendar-tab-calendar"]);
 
-        let header = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        let header = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         header.set_css_classes(&["calendar-header"]);
         root.append(&header);
 
-        let current_date_label = gtk4::Label::new(None);
+        let current_date_label = gtk::Label::new(None);
         current_date_label.set_css_classes(&["calendar-header-current-date"]);
         current_date_label.set_xalign(0.0);
         current_date_label.set_hexpand(true);
-        current_date_label.set_halign(gtk4::Align::Start);
+        current_date_label.set_halign(gtk::Align::Start);
         header.append(&current_date_label);
 
-        let prev_year_button = gtk4::Button::new();
+        let prev_year_button = gtk::Button::new();
         prev_year_button.set_css_classes(&["calendar-header-button"]);
         prev_year_button.set_label("keyboard_double_arrow_left");
         prev_year_button.connect_clicked(clone!(
@@ -131,7 +131,7 @@ impl Calendar {
         ));
         header.append(&prev_year_button);
 
-        let prev_month_button = gtk4::Button::new();
+        let prev_month_button = gtk::Button::new();
         prev_month_button.set_css_classes(&["calendar-header-button"]);
         prev_month_button.set_label("chevron_left");
         prev_month_button.connect_clicked(clone!(
@@ -143,7 +143,7 @@ impl Calendar {
         ));
         header.append(&prev_month_button);
 
-        let today_button = gtk4::Button::new();
+        let today_button = gtk::Button::new();
         today_button.set_css_classes(&["calendar-header-button"]);
         today_button.set_label("today");
         today_button.connect_clicked(clone!(
@@ -155,7 +155,7 @@ impl Calendar {
         ));
         header.append(&today_button);
 
-        let next_month_button = gtk4::Button::new();
+        let next_month_button = gtk::Button::new();
         next_month_button.set_css_classes(&["calendar-header-button"]);
         next_month_button.set_label("chevron_right");
         next_month_button.connect_clicked(clone!(
@@ -167,7 +167,7 @@ impl Calendar {
         ));
         header.append(&next_month_button);
 
-        let next_year_button = gtk4::Button::new();
+        let next_year_button = gtk::Button::new();
         next_year_button.set_css_classes(&["calendar-header-button"]);
         next_year_button.set_label("keyboard_double_arrow_right");
         next_year_button.connect_clicked(clone!(
@@ -179,22 +179,22 @@ impl Calendar {
         ));
         header.append(&next_year_button);
 
-        let calendar_body = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        let calendar_body = gtk::Box::new(gtk::Orientation::Vertical, 0);
         calendar_body.set_css_classes(&["calendar-body"]);
         root.append(&calendar_body);
 
-        let weekdays_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        let weekdays_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         weekdays_box.set_css_classes(&["calendar-body-weekdays-box"]);
         weekdays_box.set_homogeneous(true);
         calendar_body.append(&weekdays_box);
 
         for weekday_name in &["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"] {
-            let weekday_label = gtk4::Label::new(Some(weekday_name));
+            let weekday_label = gtk::Label::new(Some(weekday_name));
             weekday_label.set_css_classes(&["calendar-body-weekday-label"]);
             weekdays_box.append(&weekday_label);
         }
 
-        let days_grid = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        let days_grid = gtk::Box::new(gtk::Orientation::Vertical, 0);
         days_grid.set_css_classes(&["calendar-body-days-grid"]);
         calendar_body.append(&days_grid);
 
@@ -218,13 +218,13 @@ impl Calendar {
             days_grid.remove_all();
 
             for week in self.weeks.borrow().iter() {
-                let week_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+                let week_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
                 week_box.set_css_classes(&["calendar-grid-week-box"]);
                 week_box.set_homogeneous(true);
                 days_grid.append(&week_box);
 
                 for day in &week.days {
-                    let day_label = gtk4::Label::new(Some(&day.day.to_string()));
+                    let day_label = gtk::Label::new(Some(&day.day.to_string()));
                     day_label.set_css_classes(&["calendar-grid-day-label"]);
 
                     match day.marker {
@@ -291,8 +291,8 @@ fn get_month_days(month: u32, year: i32) -> u32 {
     }
 }
 
-pub fn new() -> gtk4::Box {
-    let root = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+pub fn new() -> gtk::Box {
+    let root = gtk::Box::new(gtk::Orientation::Vertical, 0);
     root.set_css_classes(&["calendar-tab-root"]);
 
     let calendar = Calendar::new();

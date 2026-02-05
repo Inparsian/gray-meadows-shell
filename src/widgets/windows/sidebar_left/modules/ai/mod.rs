@@ -4,66 +4,66 @@ mod input;
 
 use std::rc::Rc;
 use std::time::Duration;
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::services::ai::{self, SESSION, AiChannelMessage};
 use crate::services::ai::types::{AiConversationDelta, AiConversationItemPayload};
 use self::chat::{Chat, ChatMessage, ChatRole};
 
-pub fn conversation_control_button(icon: &str, label: &str) -> gtk4::Button {
-    let button = gtk4::Button::new();
+pub fn conversation_control_button(icon: &str, label: &str) -> gtk::Button {
+    let button = gtk::Button::new();
     button.set_css_classes(&["ai-chat-conversation-control-button"]);
-    button.set_valign(gtk4::Align::Start);
-    button.set_halign(gtk4::Align::End);
+    button.set_valign(gtk::Align::Start);
+    button.set_halign(gtk::Align::End);
 
-    let button_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 4);
+    let button_box = gtk::Box::new(gtk::Orientation::Horizontal, 4);
     button_box.set_css_classes(&["ai-chat-conversation-control-button-box"]);
     button.set_child(Some(&button_box));
 
-    let button_icon = gtk4::Label::new(Some(icon));
+    let button_icon = gtk::Label::new(Some(icon));
     button_icon.set_css_classes(&["ai-chat-conversation-control-button-icon"]);
     button_box.append(&button_icon);
 
-    let button_label = gtk4::Label::new(Some(label));
+    let button_label = gtk::Label::new(Some(label));
     button_label.set_css_classes(&["ai-chat-conversation-control-button-label"]);
     button_box.append(&button_label);
 
     button
 }
 
-pub fn conversation_ui_header_button(icon: &str, label: &str) -> gtk4::Button {
-    let button = gtk4::Button::new();
+pub fn conversation_ui_header_button(icon: &str, label: &str) -> gtk::Button {
+    let button = gtk::Button::new();
     button.set_css_classes(&["ai-chat-conversation-ui-header-button"]);
-    button.set_valign(gtk4::Align::Center);
-    button.set_halign(gtk4::Align::Center);
+    button.set_valign(gtk::Align::Center);
+    button.set_halign(gtk::Align::Center);
 
-    let button_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 4);
+    let button_box = gtk::Box::new(gtk::Orientation::Horizontal, 4);
     button_box.set_css_classes(&["ai-chat-conversation-ui-header-button-box"]);
     button.set_child(Some(&button_box));
 
-    let button_icon = gtk4::Label::new(Some(icon));
+    let button_icon = gtk::Label::new(Some(icon));
     button_icon.set_css_classes(&["ai-chat-conversation-ui-header-button-icon"]);
     button_box.append(&button_icon);
 
-    let button_label = gtk4::Label::new(Some(label));
+    let button_label = gtk::Label::new(Some(label));
     button_label.set_css_classes(&["ai-chat-conversation-ui-header-button-label"]);
     button_box.append(&button_label);
 
     button
 }
 
-pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
-    let widget = gtk4::Box::new(gtk4::Orientation::Vertical, 4);
+pub fn chat_ui(stack: &gtk::Stack) -> gtk::Box {
+    let widget = gtk::Box::new(gtk::Orientation::Vertical, 4);
     widget.set_css_classes(&["ai-chat-ui"]);
 
-    let conversation_controls = gtk4::Box::new(gtk4::Orientation::Horizontal, 4);
+    let conversation_controls = gtk::Box::new(gtk::Orientation::Horizontal, 4);
     conversation_controls.set_css_classes(&["ai-chat-conversation-controls"]);
     widget.append(&conversation_controls);
 
-    let conversation_title = gtk4::Label::new(Some("Untitled"));
+    let conversation_title = gtk::Label::new(Some("Untitled"));
     conversation_title.set_xalign(0.0);
     conversation_title.set_hexpand(true);
-    conversation_title.set_ellipsize(gtk4::pango::EllipsizeMode::End);
+    conversation_title.set_ellipsize(gtk::pango::EllipsizeMode::End);
     conversation_title.set_css_classes(&["ai-chat-conversation-title"]);
     conversation_controls.append(&conversation_title);
 
@@ -87,8 +87,8 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
     conversation_controls.append(&conversation_switch_button);
 
     let chat = Chat::default();
-    let chat_window = gtk4::ScrolledWindow::new();
-    chat_window.set_policy(gtk4::PolicyType::Automatic, gtk4::PolicyType::Automatic);
+    let chat_window = gtk::ScrolledWindow::new();
+    chat_window.set_policy(gtk::PolicyType::Automatic, gtk::PolicyType::Automatic);
     chat_window.set_vexpand(true);
     chat_window.set_hexpand(true);
     chat_window.set_child(Some(&chat.root));
@@ -277,11 +277,11 @@ pub fn chat_ui(stack: &gtk4::Stack) -> gtk4::Box {
     widget
 }
 
-pub fn conversations_ui(stack: &gtk4::Stack) -> gtk4::Box {
-    let widget = gtk4::Box::new(gtk4::Orientation::Vertical, 8);
+pub fn conversations_ui(stack: &gtk::Stack) -> gtk::Box {
+    let widget = gtk::Box::new(gtk::Orientation::Vertical, 8);
     widget.set_css_classes(&["ai-conversations-ui"]);
 
-    let header = gtk4::Box::new(gtk4::Orientation::Horizontal, 4);
+    let header = gtk::Box::new(gtk::Orientation::Horizontal, 4);
     header.set_css_classes(&["ai-conversations-ui-header"]);
     widget.append(&header);
 
@@ -301,8 +301,8 @@ pub fn conversations_ui(stack: &gtk4::Stack) -> gtk4::Box {
     header.append(&new_conversation_button);
 
     let conversations_list = conversations::ConversationsList::new();
-    let conversations_window = gtk4::ScrolledWindow::new();
-    conversations_window.set_policy(gtk4::PolicyType::Automatic, gtk4::PolicyType::Automatic);
+    let conversations_window = gtk::ScrolledWindow::new();
+    conversations_window.set_policy(gtk::PolicyType::Automatic, gtk::PolicyType::Automatic);
     conversations_window.set_vexpand(true);
     conversations_window.set_hexpand(true);
     conversations_window.set_child(Some(&conversations_list.root));
@@ -311,15 +311,15 @@ pub fn conversations_ui(stack: &gtk4::Stack) -> gtk4::Box {
     widget
 }
 
-pub fn new() -> gtk4::Box {
-    let widget = gtk4::Box::new(gtk4::Orientation::Vertical, 4);
+pub fn new() -> gtk::Box {
+    let widget = gtk::Box::new(gtk::Orientation::Vertical, 4);
     widget.set_css_classes(&["AiChat"]);
 
-    let ui_stack = gtk4::Stack::new();
+    let ui_stack = gtk::Stack::new();
     ui_stack.set_css_classes(&["ai-chat-ui-stack"]);
     ui_stack.set_vexpand(true);
     ui_stack.set_hexpand(true);
-    ui_stack.set_transition_type(gtk4::StackTransitionType::UnderRight);
+    ui_stack.set_transition_type(gtk::StackTransitionType::UnderRight);
     ui_stack.set_transition_duration(150);
     ui_stack.add_named(&chat_ui(&ui_stack), Some("chat_ui"));
     ui_stack.add_named(&conversations_ui(&ui_stack), Some("conversations_ui"));

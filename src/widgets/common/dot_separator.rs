@@ -1,10 +1,10 @@
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
-pub fn new() -> gtk4::Box {
+pub fn new() -> gtk::Box {
     view! {
-        widget = gtk4::Box {
+        widget = gtk::Box {
             set_css_classes: &["dot-separator"],
-            set_valign: gtk4::Align::Center,
+            set_valign: gtk::Align::Center,
             set_hexpand: false
         }
     }

@@ -3,8 +3,8 @@ pub mod notification;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::time::Duration;
-use gtk4::prelude::*;
-use gdk4::cairo::{Region, RectangleInt};
+use gtk::prelude::*;
+use cairo::{Region, RectangleInt};
 use gtk4_layer_shell::{Edge, Layer, LayerShell as _};
 
 use crate::{APP, APP_LOCAL};
@@ -18,22 +18,22 @@ const CRITICAL_NOTIF_DISPLAY_TIMEOUT: i32 = 5000; // ms
 #[derive(Clone)]
 pub struct NotificationsWindow {
     pub widgets: Rc<RefCell<Vec<NotificationWidget>>>,
-    pub window: gtk4::ApplicationWindow,
-    pub container: gtk4::Box,
+    pub window: gtk::ApplicationWindow,
+    pub container: gtk::Box,
 }
 
 impl NotificationsWindow {
-    pub fn new(application: &libadwaita::Application, monitor: &gdk4::Monitor) -> Self {
+    pub fn new(application: &libadwaita::Application, monitor: &gdk::Monitor) -> Self {
         view! {
-            container = gtk4::Box {
-                set_orientation: gtk4::Orientation::Vertical,
+            container = gtk::Box {
+                set_orientation: gtk::Orientation::Vertical,
                 set_spacing: 0,
-                set_halign: gtk4::Align::End,
-                set_valign: gtk4::Align::Start,
-                set_overflow: gtk4::Overflow::Visible,
+                set_halign: gtk::Align::End,
+                set_valign: gtk::Align::Start,
+                set_overflow: gtk::Overflow::Visible,
             },
 
-            window = gtk4::ApplicationWindow {
+            window = gtk::ApplicationWindow {
                 set_css_classes: &["notifications-window"],
                 set_application: Some(application),
                 init_layer_shell: (),

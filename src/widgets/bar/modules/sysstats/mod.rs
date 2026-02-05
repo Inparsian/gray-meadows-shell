@@ -1,7 +1,7 @@
 pub mod minimal;
 pub mod extended;
 
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::utils::gesture;
 use super::super::base::BarModule;

@@ -1,14 +1,14 @@
 mod master;
 mod streams;
 
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::ffi::astalwp::{WpEvent, ffi::EndpointType};
 use crate::services::wireplumber;
 use crate::widgets::common::tabs::{Tabs, TabSize};
 
-pub fn new() -> gtk4::Box {
-    let root = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+pub fn new() -> gtk::Box {
+    let root = gtk::Box::new(gtk::Orientation::Vertical, 0);
     root.set_css_classes(&["audio-tab-root"]);
 
     let streams = streams::AudioStreams::default();

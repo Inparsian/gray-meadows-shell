@@ -9,6 +9,7 @@ async-broadcast = "0.7.2"
 async-channel = "2.5.0"
 async-openai = { version = "0.32.4", features = ["full"] }
 base64 = "0.22.1"
+cairo-rs = "0.21.5"
 chrono = "0.4.43"
 cxx = "1.0.194"
 dbus = "0.9.10"
@@ -17,13 +18,13 @@ dbus-tokio = "0.7.6"
 freedesktop-desktop-entry = "0.8.1"
 futures = "0.3.31"
 futures-signals = "0.3.34"
-gdk4 = "0.10.3"
+gdk = { version = "0.10.3", package = "gdk4" }
 gemini-rust = "1.7.1"
 gio = "0.21.5"
 glib = "0.21.5"
 graphene-rs = "0.21.5"
-gsk4 = "0.10.3"
-gtk4 = { version = "0.10.3", features = ["v4_8"] }
+gsk = { version = "0.10.3", package = "gsk4" }
+gtk = { version = "0.10.3", features = ["v4_8"], package = "gtk4" }
 gtk4-layer-shell = "0.7.1"
 gtk4cmark = "0.0.4"
 hyprland = "0.4.0-beta.3"

@@ -1,5 +1,5 @@
 use futures_signals::signal::{Mutable, SignalExt as _};
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::services::hyprland;
 use crate::APP_LOCAL;
@@ -24,7 +24,7 @@ pub fn new() -> BarModule {
     let reveal_title = Mutable::new(false);
 
     view! {
-        reveal_title_gesture = gtk4::EventControllerMotion {
+        reveal_title_gesture = gtk::EventControllerMotion {
             connect_enter: clone!(
                 #[strong] reveal_title,
                 move |_, _, _| {
@@ -40,48 +40,48 @@ pub fn new() -> BarModule {
             ),
         },
 
-        icon = gtk4::Image {
+        icon = gtk::Image {
             set_icon_name: Some("emote-love"),
             set_pixel_size: 16,
             set_css_classes: &["bar-client-icon"],
         },
 
-        class = gtk4::Label {
+        class = gtk::Label {
             set_css_classes: &["bar-client-class"],
             set_label: "No active client",
-            set_ellipsize: gtk4::pango::EllipsizeMode::End,
+            set_ellipsize: gtk::pango::EllipsizeMode::End,
             set_max_width_chars: MAX_CLASS_WIDTH,
-            set_justify: gtk4::Justification::Left,
+            set_justify: gtk::Justification::Left,
             set_hexpand: true,
             set_xalign: 0.0
         },
 
-        title = gtk4::Label {
+        title = gtk::Label {
             set_css_classes: &["bar-client-title"],
             set_label: "No active client",
-            set_ellipsize: gtk4::pango::EllipsizeMode::End,
+            set_ellipsize: gtk::pango::EllipsizeMode::End,
             set_max_width_chars: MAX_TITLE_WIDTH,
-            set_justify: gtk4::Justification::Left,
+            set_justify: gtk::Justification::Left,
             set_hexpand: true,
             set_xalign: 0.0
         },
 
-        class_revealer = gtk4::Revealer {
-            set_transition_type: gtk4::RevealerTransitionType::SlideRight,
+        class_revealer = gtk::Revealer {
+            set_transition_type: gtk::RevealerTransitionType::SlideRight,
             set_transition_duration: 175,
             set_reveal_child: true,
             set_child: Some(&class)
         },
 
-        title_revealer = gtk4::Revealer {
-            set_transition_type: gtk4::RevealerTransitionType::SlideRight,
+        title_revealer = gtk::Revealer {
+            set_transition_type: gtk::RevealerTransitionType::SlideRight,
             set_transition_duration: 175,
             set_reveal_child: false,
             set_child: Some(&title)
         },
 
-        client_box = gtk4::Box {
-            set_orientation: gtk4::Orientation::Horizontal,
+        client_box = gtk::Box {
+            set_orientation: gtk::Orientation::Horizontal,
             set_spacing: 0,
 
             append: &icon,
@@ -89,18 +89,18 @@ pub fn new() -> BarModule {
             append: &class_revealer
         },
 
-        workspace_label = gtk4::Label {
+        workspace_label = gtk::Label {
             set_css_classes: &["bar-client-workspace"],
             set_label: "1",
             set_xalign: 0.0,
             set_hexpand: false
         },
         
-        workspace_box = gtk4::Box {
-            set_orientation: gtk4::Orientation::Horizontal,
+        workspace_box = gtk::Box {
+            set_orientation: gtk::Orientation::Horizontal,
             set_spacing: 0,
             
-            gtk4::Label {
+            gtk::Label {
                 set_css_classes: &["bar-client-workspace-icon"],
                 set_label: "square",
                 set_xalign: 0.0,
@@ -110,7 +110,7 @@ pub fn new() -> BarModule {
             append: &workspace_label,
         },
 
-        widget = gtk4::Box {
+        widget = gtk::Box {
             set_hexpand: false,
             append: &client_box,
             append: &workspace_box,
@@ -129,9 +129,9 @@ pub fn new() -> BarModule {
 
             // I hate GTK4
             let get_ellipsize = |s: String, max_len: i32| if s.chars().count() as i32 <= max_len {
-                gtk4::pango::EllipsizeMode::None
+                gtk::pango::EllipsizeMode::None
             } else {
-                gtk4::pango::EllipsizeMode::End
+                gtk::pango::EllipsizeMode::End
             };
 
             class.set_ellipsize(get_ellipsize(client.class, MAX_CLASS_WIDTH));

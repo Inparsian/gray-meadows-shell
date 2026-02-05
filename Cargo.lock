@@ -1562,6 +1562,7 @@ dependencies = [
  "async-channel",
  "async-openai",
  "base64",
+ "cairo-rs",
  "chrono",
  "cxx",
  "cxx-build",

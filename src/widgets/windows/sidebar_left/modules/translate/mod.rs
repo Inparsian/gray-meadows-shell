@@ -4,7 +4,7 @@ mod lang_select;
 use std::sync::{RwLock, LazyLock};
 use std::time::Duration;
 use async_broadcast::Receiver;
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::services::g_translate::languages::{self, Language};
 use crate::services::g_translate::result::GoogleTranslateResult;
@@ -95,10 +95,10 @@ async fn translate_future(text: String, autocorrect: bool) {
     }
 }
 
-pub fn new() -> gtk4::Box {
+pub fn new() -> gtk::Box {
     let timeout = Timeout::default();
-    let input_buffer = gtk4::TextBuffer::new(None);
-    let output_buffer = gtk4::TextBuffer::new(None);
+    let input_buffer = gtk::TextBuffer::new(None);
+    let output_buffer = gtk::TextBuffer::new(None);
 
     let source_language_buttons = LanguageButtons::new(LanguageButtonsKind::Source);
     let target_language_buttons = LanguageButtons::new(LanguageButtonsKind::Target);
@@ -106,45 +106,45 @@ pub fn new() -> gtk4::Box {
     let target_select_view = LanguageSelectView::new(LanguageSelectReveal::Target);
 
     view! {
-        input_text_view = gtk4::TextView {
-            set_wrap_mode: gtk4::WrapMode::WordChar,
+        input_text_view = gtk::TextView {
+            set_wrap_mode: gtk::WrapMode::WordChar,
             set_hexpand: true,
             set_css_classes: &["google-translate-text-view"],
             set_buffer: Some(&input_buffer)
         },
         
-        output_text_view = gtk4::TextView {
-            set_wrap_mode: gtk4::WrapMode::WordChar,
+        output_text_view = gtk::TextView {
+            set_wrap_mode: gtk::WrapMode::WordChar,
             set_hexpand: true,
             set_css_classes: &["google-translate-text-view"],
             set_buffer: Some(&output_buffer),
             set_editable: false
         },
 
-        main_ui = gtk4::Box {
-            set_orientation: gtk4::Orientation::Vertical,
+        main_ui = gtk::Box {
+            set_orientation: gtk::Orientation::Vertical,
             set_spacing: 0,
             set_hexpand: true,
             
             append: &source_language_buttons.container,
 
-            gtk4::ScrolledWindow {
+            gtk::ScrolledWindow {
                 set_vexpand: true,
                 set_child: Some(&input_text_view)
             },
             
             append: &target_language_buttons.container,
 
-            gtk4::ScrolledWindow {
+            gtk::ScrolledWindow {
                 set_vexpand: true,
                 set_child: Some(&output_text_view)
             },
 
-            gtk4::Box {
+            gtk::Box {
                 set_homogeneous: true,
                 set_spacing: 16,
 
-                gtk4::Button {
+                gtk::Button {
                     set_css_classes: &["google-translate-button"],
                     connect_clicked: clone!(
                         #[weak] input_buffer,
@@ -155,22 +155,22 @@ pub fn new() -> gtk4::Box {
                         }
                     ),
 
-                    gtk4::Box {
+                    gtk::Box {
                         set_spacing: 4,
-                        set_halign: gtk4::Align::Center,
+                        set_halign: gtk::Align::Center,
 
-                        gtk4::Label {
+                        gtk::Label {
                             set_css_classes: &["material-icons"],
                             set_text: "delete"
                         },
 
-                        gtk4::Label {
+                        gtk::Label {
                             set_text: "Clear"
                         }
                     }
                 },
 
-                gtk4::Button {
+                gtk::Button {
                     set_css_classes: &["google-translate-button"],
                     connect_clicked: clone!(
                         #[weak] input_buffer,
@@ -194,16 +194,16 @@ pub fn new() -> gtk4::Box {
                         }
                     ),
                             
-                    gtk4::Box {
+                    gtk::Box {
                         set_spacing: 4,
-                        set_halign: gtk4::Align::Center,
+                        set_halign: gtk::Align::Center,
 
-                        gtk4::Label {
+                        gtk::Label {
                             set_css_classes: &["material-icons"],
                             set_text: "swap_horiz"
                         },
 
-                        gtk4::Label {
+                        gtk::Label {
                             set_text: "Swap"
                         }
                     }
@@ -211,25 +211,25 @@ pub fn new() -> gtk4::Box {
             }
         },
 
-        select_ui_stack = gtk4::Stack {
+        select_ui_stack = gtk::Stack {
             set_hexpand: true,
-            set_transition_type: gtk4::StackTransitionType::SlideLeftRight,
+            set_transition_type: gtk::StackTransitionType::SlideLeftRight,
             set_transition_duration: 0,
 
             add_named: (source_select_view.get_widget(), Some("source")),
             add_named: (target_select_view.get_widget(), Some("target"))
         },
 
-        select_ui = gtk4::Box {
-            set_orientation: gtk4::Orientation::Vertical,
+        select_ui = gtk::Box {
+            set_orientation: gtk::Orientation::Vertical,
             set_spacing: 8,
             set_hexpand: true,
             append: &select_ui_stack
         },
 
-        ui_stack = gtk4::Stack {
+        ui_stack = gtk::Stack {
             set_hexpand: true,
-            set_transition_type: gtk4::StackTransitionType::SlideLeftRight,
+            set_transition_type: gtk::StackTransitionType::SlideLeftRight,
             set_transition_duration: 250,
 
             add_named: (&main_ui, Some("main")),
@@ -238,9 +238,9 @@ pub fn new() -> gtk4::Box {
             set_visible_child_name: "main"
         },
 
-        widget = gtk4::Box {
+        widget = gtk::Box {
             set_css_classes: &["GoogleTranslate"],
-            set_orientation: gtk4::Orientation::Vertical,
+            set_orientation: gtk::Orientation::Vertical,
             set_spacing: 8,
             set_hexpand: true,
 

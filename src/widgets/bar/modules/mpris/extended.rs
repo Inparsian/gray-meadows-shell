@@ -1,5 +1,5 @@
 use futures_signals::signal_vec::VecDiff;
-use gtk4::prelude::*;
+use gtk::prelude::*;
 use relm4::RelmIterChildrenExt as _;
 
 use crate::services::mpris::{self, MPRIS, mpris_player::PlaybackStatus, set_default_player};
@@ -34,12 +34,12 @@ fn get_background_css() -> Option<String> {
     }
 }
 
-fn default_mpris_player() -> gtk4::Box {
-    let background_style_provider = gtk4::CssProvider::new();
+fn default_mpris_player() -> gtk::Box {
+    let background_style_provider = gtk::CssProvider::new();
     let progress_bar = progress::ProgressBar::new();
 
     view! {
-        previous_button = gtk4::Button {
+        previous_button = gtk::Button {
             set_css_classes: &["bar-mpris-button"],
             set_label: "skip_previous",
             set_hexpand: false,
@@ -50,7 +50,7 @@ fn default_mpris_player() -> gtk4::Box {
             }
         },
 
-        play_pause_button = gtk4::Button {
+        play_pause_button = gtk::Button {
             set_css_classes: &["bar-mpris-button"],
             set_label: if mpris::get_default_player().is_some_and(|p| p.playback_status == PlaybackStatus::Playing) {
                 "pause"
@@ -69,7 +69,7 @@ fn default_mpris_player() -> gtk4::Box {
             }
         },
 
-        next_button = gtk4::Button {
+        next_button = gtk::Button {
             set_css_classes: &["bar-mpris-button"],
             set_label: "skip_next",
             set_hexpand: false,
@@ -80,7 +80,7 @@ fn default_mpris_player() -> gtk4::Box {
             }
         },
 
-        loop_button = gtk4::Button {
+        loop_button = gtk::Button {
             set_css_classes: &["bar-mpris-button"],
             set_label: "repeat",
             set_hexpand: false,
@@ -101,7 +101,7 @@ fn default_mpris_player() -> gtk4::Box {
             }
         },
 
-        shuffle_button = gtk4::Button {
+        shuffle_button = gtk::Button {
             set_css_classes: &["bar-mpris-button"],
             set_label: "shuffle",
             set_hexpand: false,
@@ -118,17 +118,17 @@ fn default_mpris_player() -> gtk4::Box {
             }
         },
 
-        background = gtk4::Box {
+        background = gtk::Box {
             set_css_classes: &["bar-mpris-extended-background"],
             set_hexpand: true,
             set_vexpand: true
         },
 
-        buttons = gtk4::Box {
-            set_orientation: gtk4::Orientation::Horizontal,
+        buttons = gtk::Box {
+            set_orientation: gtk::Orientation::Horizontal,
             set_spacing: 4,
-            set_halign: gtk4::Align::Start,
-            set_valign: gtk4::Align::End,
+            set_halign: gtk::Align::Start,
+            set_valign: gtk::Align::End,
 
             append: &previous_button,
             append: &play_pause_button,
@@ -137,46 +137,46 @@ fn default_mpris_player() -> gtk4::Box {
             append: &shuffle_button,
         },
 
-        progress = gtk4::Label {
+        progress = gtk::Label {
             set_css_classes: &["bar-mpris-extended-progress"],
             set_hexpand: true,
             set_xalign: 1.0,
             set_label: "0:00 / 0:00",
         },
 
-        controls = gtk4::CenterBox {
+        controls = gtk::CenterBox {
             set_css_classes: &["bar-mpris-extended-controls"],
-            set_orientation: gtk4::Orientation::Horizontal,
+            set_orientation: gtk::Orientation::Horizontal,
             set_hexpand: true,
 
             set_start_widget: Some(&buttons),
             set_end_widget: Some(&progress),
         },
 
-        metadata_artist = gtk4::Label {
+        metadata_artist = gtk::Label {
             set_css_classes: &["bar-mpris-extended-artist"],
             set_hexpand: true,
             set_xalign: 0.0,
-            set_ellipsize: gtk4::pango::EllipsizeMode::End,
+            set_ellipsize: gtk::pango::EllipsizeMode::End,
         },
 
-        metadata_title = gtk4::Label {
+        metadata_title = gtk::Label {
             set_css_classes: &["bar-mpris-extended-title"],
             set_hexpand: true,
             set_xalign: 0.0,
-            set_ellipsize: gtk4::pango::EllipsizeMode::End,
+            set_ellipsize: gtk::pango::EllipsizeMode::End,
         },
 
-        metadata_album = gtk4::Label {
+        metadata_album = gtk::Label {
             set_css_classes: &["bar-mpris-extended-album"],
             set_hexpand: true,
             set_xalign: 0.0,
-            set_ellipsize: gtk4::pango::EllipsizeMode::End,
+            set_ellipsize: gtk::pango::EllipsizeMode::End,
         },
 
-        metadata = gtk4::Box {
+        metadata = gtk::Box {
             set_css_classes: &["bar-mpris-extended-metadata"],
-            set_orientation: gtk4::Orientation::Vertical,
+            set_orientation: gtk::Orientation::Vertical,
             set_hexpand: true,
             set_vexpand: true,
 
@@ -185,9 +185,9 @@ fn default_mpris_player() -> gtk4::Box {
             append: &metadata_album,
         },
 
-        over = gtk4::Box {
+        over = gtk::Box {
             set_css_classes: &["bar-mpris-extended-box"],
-            set_orientation: gtk4::Orientation::Vertical,
+            set_orientation: gtk::Orientation::Vertical,
             set_hexpand: true,
 
             append: &metadata,
@@ -195,20 +195,20 @@ fn default_mpris_player() -> gtk4::Box {
             append: &controls,
         },
 
-        player_overlay = gtk4::Overlay {
+        player_overlay = gtk::Overlay {
             set_child: Some(&background),
-            set_overflow: gtk4::Overflow::Hidden,
+            set_overflow: gtk::Overflow::Hidden,
             add_overlay: &over,
         },
 
-        no_players_widget = gtk4::Label {
+        no_players_widget = gtk::Label {
             set_css_classes: &["bar-mpris-extended-no-players"],
             set_label: "No players",
             set_hexpand: true,
             set_xalign: 0.5
         },
 
-        widget = gtk4::Box {
+        widget = gtk::Box {
             set_css_classes: &["bar-mpris-extended-container"],
             set_hexpand: true,
 
@@ -217,7 +217,7 @@ fn default_mpris_player() -> gtk4::Box {
         },
     }
 
-    background.style_context().add_provider(&background_style_provider, gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION);
+    background.style_context().add_provider(&background_style_provider, gtk::STYLE_PROVIDER_PRIORITY_APPLICATION);
 
     progress.add_controller(gesture::on_vertical_scroll(|delta| {
         let Some(player) = mpris::get_default_player() else {
@@ -311,21 +311,21 @@ fn default_mpris_player() -> gtk4::Box {
     widget
 }
 
-fn players_list_item(player: &mpris::mpris_player::MprisPlayer, index: usize) -> gtk4::Button {
+fn players_list_item(player: &mpris::mpris_player::MprisPlayer, index: usize) -> gtk::Button {
     // <icon icon={player.get_bus_name().split(".")[player.get_bus_name().split(".").length - 1]}/>
     let identifier = player.bus.split('.').next_back().unwrap_or("emote-love");
 
     view! {
-        child = gtk4::Button {
+        child = gtk::Button {
             set_css_classes: &["bar-mpris-players-list-item"],
             set_hexpand: false,
             connect_clicked => move |_| set_default_player(index),
 
-            gtk4::Image {
+            gtk::Image {
                 set_css_classes: &["bar-mpris-players-list-item-icon"],
                 set_icon_name: Some(identifier),
                 set_pixel_size: 16,
-                set_halign: gtk4::Align::Center,
+                set_halign: gtk::Align::Center,
             },
         }
     }
@@ -333,8 +333,8 @@ fn players_list_item(player: &mpris::mpris_player::MprisPlayer, index: usize) ->
     child
 }
 
-fn players_list() -> gtk4::Box {
-    let bx = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+fn players_list() -> gtk::Box {
+    let bx = gtk::Box::new(gtk::Orientation::Horizontal, 0);
     bx.set_css_classes(&["bar-mpris-players-list"]);
     bx.set_hexpand(true);
 
@@ -397,11 +397,11 @@ fn players_list() -> gtk4::Box {
     bx
 }
 
-pub fn extended() -> gtk4::Box {
+pub fn extended() -> gtk::Box {
     view! {
-        widget = gtk4::Box {
+        widget = gtk::Box {
             set_css_classes: &["bar-mpris-extended"],
-            set_orientation: gtk4::Orientation::Vertical,
+            set_orientation: gtk::Orientation::Vertical,
             set_spacing: 0,
 
             append: &default_mpris_player(),

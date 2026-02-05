@@ -1,13 +1,13 @@
-use gdk4::prelude::{Cast as _, DisplayExt as _};
+use gdk::prelude::{Cast as _, DisplayExt as _};
 
-pub fn get_all_monitors(display: &gdk4::Display) -> Vec<gdk4::Monitor> {
-    let monitors = gdk4::Display::monitors(display);
+pub fn get_all_monitors(display: &gdk::Display) -> Vec<gdk::Monitor> {
+    let monitors = gdk::Display::monitors(display);
 
     monitors
         .into_iter()
         .filter_map(|monitor| {
             match monitor {
-                Ok(m) => m.downcast::<gdk4::Monitor>().ok(),
+                Ok(m) => m.downcast::<gdk::Monitor>().ok(),
                 Err(e) => {
                     warn!(?e, "Error iterating monitors");
                     None

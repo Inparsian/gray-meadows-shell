@@ -1,5 +1,5 @@
 use std::{cell::RefCell, rc::Rc};
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::pixbuf;
 use crate::scss;
@@ -54,9 +54,9 @@ pub struct OverviewSearchItem {
     pub action_text: String,
     pub action: Rc<RefCell<OverviewSearchItemAction>>,
     pub query: Option<String>,
-    row: gtk4::ListBoxRow,
-    widget: gtk4::Revealer,
-    title_label: gtk4::Label
+    row: gtk::ListBoxRow,
+    widget: gtk::Revealer,
+    title_label: gtk::Label
 }
 
 impl OverviewSearchItem {
@@ -73,27 +73,27 @@ impl OverviewSearchItem {
         let action = Rc::new(RefCell::new(action));
 
         view! {
-            title_label = gtk4::Label {
+            title_label = gtk::Label {
                 set_label: &title,
                 set_css_classes: &["overview-search-item-title"],
                 set_xalign: 0.0,
-                set_ellipsize: gtk4::pango::EllipsizeMode::End
+                set_ellipsize: gtk::pango::EllipsizeMode::End
             },
             
-            action_slide_revealer = gtk4::Revealer {
-                set_transition_type: gtk4::RevealerTransitionType::SlideLeft,
+            action_slide_revealer = gtk::Revealer {
+                set_transition_type: gtk::RevealerTransitionType::SlideLeft,
                 set_transition_duration: 175,
                 set_reveal_child: false,
 
-                gtk4::Label {
+                gtk::Label {
                     set_css_classes: &["overview-search-item-action"],
                     set_label: &action_text,
                     set_xalign: 1.0,
-                    set_ellipsize: gtk4::pango::EllipsizeMode::Start
+                    set_ellipsize: gtk::pango::EllipsizeMode::Start
                 }
             },
 
-            button = gtk4::Button {
+            button = gtk::Button {
                 set_css_classes: &["overview-search-item"],
 
                 connect_clicked: clone!(
@@ -108,28 +108,28 @@ impl OverviewSearchItem {
                     move |button| action_slide_revealer.set_reveal_child(button.has_focus())
                 ),
             
-                gtk4::Box {
+                gtk::Box {
                     set_css_classes: &["overview-search-item-box"],
-                    set_orientation: gtk4::Orientation::Horizontal,
+                    set_orientation: gtk::Orientation::Horizontal,
                     set_hexpand: true,
                 
-                    gtk4::Image {
+                    gtk::Image {
                         set_from_pixbuf: icon_pixbuf.as_ref(),
                         set_pixel_size: 24,
                         set_css_classes: &["overview-search-item-icon"],
                     },
                 
-                    gtk4::Box {
-                        set_orientation: gtk4::Orientation::Vertical,
-                        set_valign: gtk4::Align::Center,
+                    gtk::Box {
+                        set_orientation: gtk::Orientation::Vertical,
+                        set_valign: gtk::Align::Center,
                         set_hexpand: true,
                     
-                        gtk4::Label {
+                        gtk::Label {
                             set_label: subtitle.as_ref().unwrap_or(&String::new()).as_str(),
                             set_visible: subtitle.is_some(),
                             set_css_classes: &["overview-search-item-subtitle"],
                             set_xalign: 0.0,
-                            set_ellipsize: gtk4::pango::EllipsizeMode::End
+                            set_ellipsize: gtk::pango::EllipsizeMode::End
                         },
 
                         append: &title_label
@@ -139,15 +139,15 @@ impl OverviewSearchItem {
                 }
             },
 
-            widget = gtk4::Revealer {
-                set_transition_type: gtk4::RevealerTransitionType::SlideDown,
+            widget = gtk::Revealer {
+                set_transition_type: gtk::RevealerTransitionType::SlideDown,
                 set_css_classes: &["overview-search-item-revealer"],
                 set_transition_duration: ITEM_ANIMATION_DURATION,
                 set_reveal_child: false,
                 set_child: Some(&button)
             },
 
-            row = gtk4::ListBoxRow {
+            row = gtk::ListBoxRow {
                 set_child: Some(&widget),
                 set_css_classes: &["overview-search-item-row"]
             }
@@ -170,7 +170,7 @@ impl OverviewSearchItem {
         item
     }
 
-    pub fn get_row(&self) -> gtk4::ListBoxRow {
+    pub fn get_row(&self) -> gtk::ListBoxRow {
         self.row.clone()
     }
 

@@ -1,7 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::path::Path;
-use gtk4::prelude::*;
+use gtk::prelude::*;
 use relm4::RelmIterChildrenExt as _;
 
 use crate::USERNAME;
@@ -19,56 +19,56 @@ pub enum ChatRole {
 
 #[derive(Debug, Clone)]
 pub struct ChatThinkingBlock {
-    pub root: gtk4::Box,
+    pub root: gtk::Box,
     pub summary_root: gtk4cmark::MarkdownView,
     pub summary: Option<String>,
 }
 
 impl ChatThinkingBlock {
     pub fn new() -> Self {
-        let root = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        let root = gtk::Box::new(gtk::Orientation::Vertical, 0);
         root.set_css_classes(&["ai-chat-thinking-block"]);
 
-        let thinking_dropdown_button = gtk4::Button::new();
+        let thinking_dropdown_button = gtk::Button::new();
         thinking_dropdown_button.set_css_classes(&["ai-chat-thinking-dropdown-button"]);
-        thinking_dropdown_button.set_valign(gtk4::Align::Start);
+        thinking_dropdown_button.set_valign(gtk::Align::Start);
         thinking_dropdown_button.set_hexpand(true);
         root.append(&thinking_dropdown_button);
 
-        let thinking_dropdown_header = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        let thinking_dropdown_header = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         thinking_dropdown_header.set_css_classes(&["ai-chat-thinking-dropdown-header"]);
         thinking_dropdown_header.set_hexpand(true);
         thinking_dropdown_button.set_child(Some(&thinking_dropdown_header));
 
-        let thinking_dropdown_indicator = gtk4::Label::new(Some("lightbulb_2"));
+        let thinking_dropdown_indicator = gtk::Label::new(Some("lightbulb_2"));
         thinking_dropdown_indicator.set_css_classes(&["ai-chat-thinking-dropdown-indicator"]);
-        thinking_dropdown_indicator.set_halign(gtk4::Align::Start);
+        thinking_dropdown_indicator.set_halign(gtk::Align::Start);
         thinking_dropdown_indicator.set_xalign(0.0);
         thinking_dropdown_header.append(&thinking_dropdown_indicator);
 
-        let thinking_dropdown_label = gtk4::Label::new(Some("Thoughts"));
+        let thinking_dropdown_label = gtk::Label::new(Some("Thoughts"));
         thinking_dropdown_label.set_css_classes(&["ai-chat-thinking-dropdown-label"]);
-        thinking_dropdown_label.set_halign(gtk4::Align::Start);
+        thinking_dropdown_label.set_halign(gtk::Align::Start);
         thinking_dropdown_label.set_xalign(0.0);
         thinking_dropdown_header.append(&thinking_dropdown_label);
 
-        let thinking_dropdown_arrow = gtk4::Label::new(Some("stat_minus_1"));
+        let thinking_dropdown_arrow = gtk::Label::new(Some("stat_minus_1"));
         thinking_dropdown_arrow.set_css_classes(&["ai-chat-thinking-dropdown-arrow"]);
-        thinking_dropdown_arrow.set_halign(gtk4::Align::End);
+        thinking_dropdown_arrow.set_halign(gtk::Align::End);
         thinking_dropdown_arrow.set_hexpand(true);
         thinking_dropdown_arrow.set_xalign(1.0);
         thinking_dropdown_header.append(&thinking_dropdown_arrow);
 
-        let thinking_dropdown_revealer = gtk4::Revealer::new();
+        let thinking_dropdown_revealer = gtk::Revealer::new();
         thinking_dropdown_revealer.set_css_classes(&["ai-chat-thinking-dropdown-revealer"]);
-        thinking_dropdown_revealer.set_transition_type(gtk4::RevealerTransitionType::SlideDown);
+        thinking_dropdown_revealer.set_transition_type(gtk::RevealerTransitionType::SlideDown);
         thinking_dropdown_revealer.set_transition_duration(150);
         thinking_dropdown_revealer.set_reveal_child(false);
         root.append(&thinking_dropdown_revealer);
 
         let summary = gtk4cmark::MarkdownView::default();
         summary.set_css_classes(&["ai-chat-thinking-summary"]);
-        summary.set_overflow(gtk4::Overflow::Hidden);
+        summary.set_overflow(gtk::Overflow::Hidden);
         summary.set_vexpand(true);
         summary.set_hexpand(true);
         thinking_dropdown_revealer.set_child(Some(&summary));
@@ -107,18 +107,18 @@ pub struct ChatMessage {
     pub content: Option<String>,
     pub thinking: Option<ChatThinkingBlock>,
     pub attachments: Rc<RefCell<i64>>,
-    pub root: gtk4::Box,
+    pub root: gtk::Box,
     pub markdown: gtk4cmark::MarkdownView,
-    pub loading: gtk4::DrawingArea,
-    pub header: gtk4::Box,
-    pub footer: gtk4::Box,
+    pub loading: gtk::DrawingArea,
+    pub header: gtk::Box,
+    pub footer: gtk::Box,
 }
 
 impl ChatMessage {
-    fn default_assistant_icon() -> gtk4::Widget {
-        let sender_mui_icon = gtk4::Label::new(Some("robot"));
+    fn default_assistant_icon() -> gtk::Widget {
+        let sender_mui_icon = gtk::Label::new(Some("robot"));
         sender_mui_icon.set_css_classes(&["ai-chat-message-sender-mui-icon"]);
-        sender_mui_icon.set_halign(gtk4::Align::Start);
+        sender_mui_icon.set_halign(gtk::Align::Start);
         sender_mui_icon.set_xalign(0.0);
         sender_mui_icon.upcast()
     }
@@ -127,30 +127,30 @@ impl ChatMessage {
         let app_config = read_config();
         let id = Rc::new(RefCell::new(None));
         let attachments = Rc::new(RefCell::new(0));
-        let root = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        let root = gtk::Box::new(gtk::Orientation::Vertical, 0);
         root.set_css_classes(&["ai-chat-message"]);
-        root.set_valign(gtk4::Align::Start);
+        root.set_valign(gtk::Align::Start);
 
-        let header = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        let header = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         header.set_css_classes(&["ai-chat-message-header"]);
 
-        let sender_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        let sender_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         sender_box.set_css_classes(&["ai-chat-message-sender"]);
 
-        let sender_icon: gtk4::Widget = match role {
+        let sender_icon: gtk::Widget = match role {
             ChatRole::User => {
                 let face_path = format!("{}/.face", filesystem::get_home_directory());
                 if Path::new(&face_path).exists() {
-                    let sender_face = gtk4::Image::new();
+                    let sender_face = gtk::Image::new();
                     sender_face.set_css_classes(&["ai-chat-message-sender-icon"]);
                     sender_face.set_pixel_size(24);
-                    sender_face.set_halign(gtk4::Align::Start);
+                    sender_face.set_halign(gtk::Align::Start);
                     sender_face.set_from_file(Some(face_path));
                     sender_face.upcast()
                 } else {
-                    let sender_mui_icon = gtk4::Label::new(Some("person"));
+                    let sender_mui_icon = gtk::Label::new(Some("person"));
                     sender_mui_icon.set_css_classes(&["ai-chat-message-sender-mui-icon"]);
-                    sender_mui_icon.set_halign(gtk4::Align::Start);
+                    sender_mui_icon.set_halign(gtk::Align::Start);
                     sender_mui_icon.set_xalign(0.0);
                     sender_mui_icon.upcast()
                 }
@@ -159,10 +159,10 @@ impl ChatMessage {
             ChatRole::Assistant => app_config.ai.assistant_icon_path.as_ref().map_or_else(|| {
                 Self::default_assistant_icon()
             }, |icon_path| if Path::new(icon_path).exists() {
-                let assistant_icon = gtk4::Image::new();
+                let assistant_icon = gtk::Image::new();
                 assistant_icon.set_css_classes(&["ai-chat-message-sender-icon"]);
                 assistant_icon.set_pixel_size(24);
-                assistant_icon.set_halign(gtk4::Align::Start);
+                assistant_icon.set_halign(gtk::Align::Start);
                 assistant_icon.set_from_file(Some(icon_path));
                 assistant_icon.upcast()
             } else {
@@ -170,31 +170,31 @@ impl ChatMessage {
             }),
         };
 
-        let sender_label = gtk4::Label::new(Some(match role {
+        let sender_label = gtk::Label::new(Some(match role {
             ChatRole::User => &USERNAME,
             ChatRole::Assistant => app_config.ai.assistant_name.as_ref().map_or("AI Assistant", |name| name.as_str()),
         }));
         sender_label.set_css_classes(&["ai-chat-message-sender-label"]);
-        sender_label.set_halign(gtk4::Align::Start);
+        sender_label.set_halign(gtk::Align::Start);
         sender_label.set_xalign(0.0);
 
         sender_box.append(&sender_icon);
         sender_box.append(&sender_label);
         header.append(&sender_box);
 
-        let controls_revealer = gtk4::Revealer::new();
+        let controls_revealer = gtk::Revealer::new();
         controls_revealer.set_css_classes(&["ai-chat-message-controls-revealer"]);
-        controls_revealer.set_halign(gtk4::Align::End);
-        controls_revealer.set_valign(gtk4::Align::Start);
+        controls_revealer.set_halign(gtk::Align::End);
+        controls_revealer.set_valign(gtk::Align::Start);
         controls_revealer.set_hexpand(true);
-        controls_revealer.set_transition_type(gtk4::RevealerTransitionType::Crossfade);
+        controls_revealer.set_transition_type(gtk::RevealerTransitionType::Crossfade);
         controls_revealer.set_transition_duration(150);
 
-        let controls_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 6);
+        let controls_box = gtk::Box::new(gtk::Orientation::Horizontal, 6);
         controls_box.set_css_classes(&["ai-chat-message-controls-box"]);
         controls_revealer.set_child(Some(&controls_box));
 
-        let delete_button = gtk4::Button::new();
+        let delete_button = gtk::Button::new();
         delete_button.set_css_classes(&["ai-chat-message-control-button"]);
         delete_button.set_label("delete");
         delete_button.connect_clicked(clone!(
@@ -205,7 +205,7 @@ impl ChatMessage {
         ));
         controls_box.append(&delete_button);
 
-        let retry_button = gtk4::Button::new();
+        let retry_button = gtk::Button::new();
         retry_button.set_css_classes(&["ai-chat-message-control-button"]);
         retry_button.set_label("refresh");
         retry_button.connect_clicked(clone!(
@@ -233,18 +233,18 @@ impl ChatMessage {
 
         let markdown = gtk4cmark::MarkdownView::default();
         markdown.set_css_classes(&["ai-chat-message-content"]);
-        markdown.set_overflow(gtk4::Overflow::Hidden);
+        markdown.set_overflow(gtk::Overflow::Hidden);
         markdown.set_vexpand(true);
         markdown.set_hexpand(true);
 
         let loading = loading::new();
-        loading.set_halign(gtk4::Align::Start);
-        loading.set_valign(gtk4::Align::Start);
+        loading.set_halign(gtk::Align::Start);
+        loading.set_valign(gtk::Align::Start);
 
         // This will start out with empty content, to be filled in later
-        let footer = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        let footer = gtk::Box::new(gtk::Orientation::Vertical, 0);
         footer.set_css_classes(&["ai-chat-message-footer"]);
-        footer.set_valign(gtk4::Align::End);
+        footer.set_valign(gtk::Align::End);
 
         root.append(&header);
         root.append(&footer);
@@ -319,18 +319,18 @@ impl ChatMessage {
 #[derive(Debug, Clone)]
 pub struct Chat {
     pub messages: Rc<RefCell<Vec<ChatMessage>>>,
-    pub bx: gtk4::Box,
-    pub root: gtk4::Viewport,
+    pub bx: gtk::Box,
+    pub root: gtk::Viewport,
 }
 
 impl Default for Chat {
     fn default() -> Self {
-        let bx = gtk4::Box::new(gtk4::Orientation::Vertical, 8);
+        let bx = gtk::Box::new(gtk::Orientation::Vertical, 8);
         bx.set_css_classes(&["ai-chat-messages"]);
-        bx.set_valign(gtk4::Align::Start);
+        bx.set_valign(gtk::Align::Start);
 
-        let root = gtk4::Viewport::default();
-        root.set_vscroll_policy(gtk4::ScrollablePolicy::Natural);
+        let root = gtk::Viewport::default();
+        root.set_vscroll_policy(gtk::ScrollablePolicy::Natural);
         root.set_child(Some(&bx));
 
         Self {
@@ -407,17 +407,17 @@ impl Chat {
     pub fn append_tool_call_to_latest_message(&self, tool_name: &str, arguments: &str) {
         let mut messages = self.messages.borrow_mut();
         if let Some(latest_message) = messages.last_mut() {
-            let tool_call_box = gtk4::Box::new(gtk4::Orientation::Vertical, 4);
+            let tool_call_box = gtk::Box::new(gtk::Orientation::Vertical, 4);
             tool_call_box.set_css_classes(&["ai-chat-message-tool-call"]);
 
-            let tool_name_label = gtk4::Label::new(Some(tool_name));
+            let tool_name_label = gtk::Label::new(Some(tool_name));
             tool_name_label.set_css_classes(&["ai-chat-message-tool-call-name"]);
-            tool_name_label.set_halign(gtk4::Align::Start);
+            tool_name_label.set_halign(gtk::Align::Start);
             tool_name_label.set_xalign(0.0);
 
-            let arguments_label = gtk4::Label::new(Some(arguments));
+            let arguments_label = gtk::Label::new(Some(arguments));
             arguments_label.set_css_classes(&["ai-chat-message-tool-call-arguments"]);
-            arguments_label.set_halign(gtk4::Align::Start);
+            arguments_label.set_halign(gtk::Align::Start);
             arguments_label.set_xalign(0.0);
 
             tool_call_box.append(&tool_name_label);
@@ -441,24 +441,24 @@ impl Chat {
     pub fn append_image_to_latest_message(&self, uuid: &str) {
         let mut messages = self.messages.borrow_mut();
         if let Some(latest_message) = messages.last_mut() {
-            match gtk4::gdk::Texture::from_filename(uuid_to_file_path(uuid)) {
+            match gtk::gdk::Texture::from_filename(uuid_to_file_path(uuid)) {
                 Ok(texture) => {
                     let w_clamp = libadwaita::Clamp::new();
                     w_clamp.set_maximum_size(300);
                     w_clamp.set_unit(libadwaita::LengthUnit::Px);
-                    w_clamp.set_halign(gtk4::Align::Start);
-                    w_clamp.set_valign(gtk4::Align::Start);
+                    w_clamp.set_halign(gtk::Align::Start);
+                    w_clamp.set_valign(gtk::Align::Start);
                     
                     let h_clamp = libadwaita::Clamp::new();
                     h_clamp.set_maximum_size(300);
                     h_clamp.set_unit(libadwaita::LengthUnit::Px);
-                    h_clamp.set_orientation(gtk4::Orientation::Vertical);
+                    h_clamp.set_orientation(gtk::Orientation::Vertical);
                     w_clamp.set_child(Some(&h_clamp));
 
-                    let picture = gtk4::Picture::new();
+                    let picture = gtk::Picture::new();
                     picture.set_css_classes(&["ai-chat-message-image"]);
                     picture.set_paintable(Some(&texture));
-                    picture.set_content_fit(gtk4::ContentFit::ScaleDown);
+                    picture.set_content_fit(gtk::ContentFit::ScaleDown);
                     h_clamp.set_child(Some(&picture));
                     latest_message.footer.append(&w_clamp);
                     *latest_message.attachments.borrow_mut() += 1;

@@ -3,7 +3,7 @@ use std::rc::Rc;
 use std::cell::{Cell, RefCell};
 use glib::object::{IsA, ObjectExt as _};
 use glib::WeakRef;
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 #[derive(Debug, Clone, Copy)]
 pub struct AllocationWatcherOptions {
@@ -14,14 +14,14 @@ pub struct AllocationWatcherOptions {
     pub min_allocation_height: i32,
 }
 
-pub struct AllocationWatcher<W: IsA<gtk4::Widget>> {
+pub struct AllocationWatcher<W: IsA<gtk::Widget>> {
     pub options: AllocationWatcherOptions,
     pub widget: WeakRef<W>,
-    pub tick: Rc<RefCell<Option<gtk4::TickCallbackId>>>,
-    pub last_received_allocation: Rc<Cell<Option<gtk4::gdk::Rectangle>>>,
+    pub tick: Rc<RefCell<Option<gtk::TickCallbackId>>>,
+    pub last_received_allocation: Rc<Cell<Option<gtk::gdk::Rectangle>>>,
 }
 
-impl<W: IsA<gtk4::Widget>> AllocationWatcher<W> {
+impl<W: IsA<gtk::Widget>> AllocationWatcher<W> {
     pub fn new(widget: &W, options: AllocationWatcherOptions) -> Self {
         let weak = widget.downgrade();
 

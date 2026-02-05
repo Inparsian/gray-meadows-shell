@@ -3,7 +3,7 @@ pub mod keybinds;
 pub mod gamemode;
 
 use futures_signals::signal::Mutable;
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 #[derive(Clone)]
 pub struct QuickToggleMuiIcon {
@@ -21,10 +21,10 @@ impl QuickToggleMuiIcon {
 }
 
 pub struct QuickToggle {
-    pub button: gtk4::Button,
+    pub button: gtk::Button,
     pub toggled: Mutable<bool>,
     pub icon: QuickToggleMuiIcon,
-    pub label: Option<gtk4::Label>, // if icon is set then this should be as well
+    pub label: Option<gtk::Label>, // if icon is set then this should be as well
 }
 
 pub fn get_css_classes(toggled: bool) -> Vec<&'static str> {
@@ -36,15 +36,15 @@ pub fn get_css_classes(toggled: bool) -> Vec<&'static str> {
 }
 
 pub fn gen_button_with_mui_icon(
-    label: &gtk4::Label,
+    label: &gtk::Label,
     icon: &QuickToggleMuiIcon,
     toggled: Mutable<bool>,
     callback: Option<Box<dyn Fn(bool) -> bool>>
-) -> gtk4::Button {
-    let button = gtk4::Button::new();
+) -> gtk::Button {
+    let button = gtk::Button::new();
     button.set_css_classes(get_css_classes(false).as_slice());
-    button.set_halign(gtk4::Align::End);
-    button.set_valign(gtk4::Align::Center);
+    button.set_halign(gtk::Align::End);
+    button.set_valign(gtk::Align::Center);
     button.connect_clicked(clone!(
         #[weak] button,
         #[weak] label,
@@ -66,10 +66,10 @@ pub fn gen_button_with_mui_icon(
 impl QuickToggle {
     pub fn new_from_icon(icon: QuickToggleMuiIcon, callback: Option<Box<dyn Fn(bool) -> bool>>) -> Self {
         let toggled = Mutable::new(false);
-        let mui_icon_label = gtk4::Label::new(None);
+        let mui_icon_label = gtk::Label::new(None);
         mui_icon_label.set_label(&icon.enabled);
         mui_icon_label.set_xalign(0.5);
-        mui_icon_label.set_halign(gtk4::Align::Center);
+        mui_icon_label.set_halign(gtk::Align::Center);
 
         let button = gen_button_with_mui_icon(&mui_icon_label, &icon, toggled.clone(), callback);
 

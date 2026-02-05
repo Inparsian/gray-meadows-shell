@@ -1,7 +1,7 @@
 mod imp {
     use std::cell::{Cell, RefCell};
-    use gtk4::prelude::*;
-    use gtk4::subclass::prelude::*;
+    use gtk::prelude::*;
+    use gtk::subclass::prelude::*;
     use libadwaita::prelude::*;
     
     use super::{GEasing, AdwRevealerDirection};
@@ -10,7 +10,7 @@ mod imp {
     #[properties(wrapper_type = super::AdwRevealer)]
     pub struct AdwRevealer {
         #[property(get, set = Self::set_child, nullable)]
-        pub child: RefCell<Option<gtk4::Widget>>,
+        pub child: RefCell<Option<gtk::Widget>>,
         #[property(get, set = Self::set_reveal)]
         pub reveal: Cell<bool>,
         #[property(get, set)]
@@ -31,7 +31,7 @@ mod imp {
     impl ObjectSubclass for AdwRevealer {
         const NAME: &'static str = "AdwRevealer";
         type Type = super::AdwRevealer;
-        type ParentType = gtk4::Widget;
+        type ParentType = gtk::Widget;
     }
     
     #[glib::derived_properties]
@@ -48,20 +48,20 @@ mod imp {
     }
     
     impl WidgetImpl for AdwRevealer {
-        fn measure(&self, orientation: gtk4::Orientation, for_size: i32) -> (i32, i32, i32, i32) {
+        fn measure(&self, orientation: gtk::Orientation, for_size: i32) -> (i32, i32, i32, i32) {
             if let Some(child) = self.child.borrow().as_ref() && child.should_layout() {
-                fn get_scale(orientation: gtk4::Orientation, direction: AdwRevealerDirection, progress: f32) -> f32 {
+                fn get_scale(orientation: gtk::Orientation, direction: AdwRevealerDirection, progress: f32) -> f32 {
                     match (orientation, direction) {
-                        (gtk4::Orientation::Horizontal, AdwRevealerDirection::Right | AdwRevealerDirection::Left)
-                        | (gtk4::Orientation::Vertical, AdwRevealerDirection::Down | AdwRevealerDirection::Up) => progress,
+                        (gtk::Orientation::Horizontal, AdwRevealerDirection::Right | AdwRevealerDirection::Left)
+                        | (gtk::Orientation::Vertical, AdwRevealerDirection::Down | AdwRevealerDirection::Up) => progress,
                         _ => 1.0,
                     }
                 }
 
-                let opposite_orientation = if orientation == gtk4::Orientation::Horizontal {
-                    gtk4::Orientation::Vertical
+                let opposite_orientation = if orientation == gtk::Orientation::Horizontal {
+                    gtk::Orientation::Vertical
                 } else {
-                    gtk4::Orientation::Horizontal
+                    gtk::Orientation::Horizontal
                 };
 
                 let progress = self.progress.get() as f32;
@@ -99,18 +99,18 @@ mod imp {
 
                 // width & height are intentionally swapped, for_size is for the *opposite* orientation
                 let child_width = match direction {
-                    AdwRevealerDirection::Right | AdwRevealerDirection::Left => child.measure(gtk4::Orientation::Horizontal, height).1,
+                    AdwRevealerDirection::Right | AdwRevealerDirection::Left => child.measure(gtk::Orientation::Horizontal, height).1,
                     _ => width,
                 };
 
                 let child_height = match direction {
-                    AdwRevealerDirection::Down | AdwRevealerDirection::Up => child.measure(gtk4::Orientation::Vertical, width).1,
+                    AdwRevealerDirection::Down | AdwRevealerDirection::Up => child.measure(gtk::Orientation::Vertical, width).1,
                     _ => height,
                 };
 
                 let transform = match direction {
-                    AdwRevealerDirection::Right => Some(gsk4::Transform::new().translate(&graphene::Point::new((progress as f32 - 1.0) * child_width as f32, 0.0))),
-                    AdwRevealerDirection::Down => Some(gsk4::Transform::new().translate(&graphene::Point::new(0.0, (progress as f32 - 1.0) * child_height as f32))),
+                    AdwRevealerDirection::Right => Some(gsk::Transform::new().translate(&graphene::Point::new((progress as f32 - 1.0) * child_width as f32, 0.0))),
+                    AdwRevealerDirection::Down => Some(gsk::Transform::new().translate(&graphene::Point::new(0.0, (progress as f32 - 1.0) * child_height as f32))),
                     _ => None,
                 };
 
@@ -118,18 +118,18 @@ mod imp {
             }
         }
 
-        fn snapshot(&self, snapshot: &gtk4::Snapshot) {
+        fn snapshot(&self, snapshot: &gtk::Snapshot) {
             if let Some(child) = self.child.borrow().as_ref() && child.should_layout() {
                 let obj = self.obj();
                 let width = obj.width() as f32;
                 let height = obj.height() as f32;
 
                 if width > 0.0 && height > 0.0 {
-                    if obj.overflow() == gtk4::Overflow::Hidden {
+                    if obj.overflow() == gtk::Overflow::Hidden {
                         snapshot.push_clip(&graphene::Rect::new(0.0, 0.0, width, height));
                     }
                     obj.snapshot_child(child, snapshot);
-                    if obj.overflow() == gtk4::Overflow::Hidden {
+                    if obj.overflow() == gtk::Overflow::Hidden {
                         snapshot.pop();
                     }
                 }
@@ -138,16 +138,16 @@ mod imp {
         
         fn compute_expand(&self, hexpand: &mut bool, vexpand: &mut bool) {
             if let Some(child) = self.child.borrow().as_ref() {
-                *hexpand = child.compute_expand(gtk4::Orientation::Horizontal);
-                *vexpand = child.compute_expand(gtk4::Orientation::Vertical);
+                *hexpand = child.compute_expand(gtk::Orientation::Horizontal);
+                *vexpand = child.compute_expand(gtk::Orientation::Vertical);
             } else {
                 *hexpand = false;
                 *vexpand = false;
             }
         }
         
-        fn request_mode(&self) -> gtk4::SizeRequestMode {
-            self.child.borrow().as_ref().map_or(gtk4::SizeRequestMode::ConstantSize, |child| child.request_mode())
+        fn request_mode(&self) -> gtk::SizeRequestMode {
+            self.child.borrow().as_ref().map_or(gtk::SizeRequestMode::ConstantSize, |child| child.request_mode())
         }
         
         fn unmap(&self) {
@@ -161,7 +161,7 @@ mod imp {
     }
     
     impl AdwRevealer {
-        fn set_child(&self, widget: Option<&gtk4::Widget>) {
+        fn set_child(&self, widget: Option<&gtk::Widget>) {
             let mut stored = self.child.borrow_mut();
             if let Some(child) = stored.take() {
                 child.unparent();
@@ -215,7 +215,7 @@ mod imp {
     }
 }
 
-use gtk4::prelude::IsA;
+use gtk::prelude::IsA;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, glib::Enum, Default)]
 #[enum_type(name = "GEasing")]
@@ -314,8 +314,8 @@ pub enum AdwRevealerDirection {
 
 glib::wrapper! {
     pub struct AdwRevealer(ObjectSubclass<imp::AdwRevealer>)
-        @extends gtk4::Widget,
-        @implements gtk4::Accessible, gtk4::Buildable, gtk4::ConstraintTarget;
+        @extends gtk::Widget,
+        @implements gtk::Accessible, gtk::Buildable, gtk::ConstraintTarget;
 }
 
 impl Default for AdwRevealer {
@@ -326,8 +326,8 @@ impl Default for AdwRevealer {
 
 impl AdwRevealer {
     /// Helper function to avoid having to clone and/or upcast Widgets.
-    pub fn set_child_from<W: IsA<gtk4::Widget>>(&self, child: Option<&W>) {
-        let child: Option<&gtk4::Widget> = child.map(|w| w.as_ref());
+    pub fn set_child_from<W: IsA<gtk::Widget>>(&self, child: Option<&W>) {
+        let child: Option<&gtk::Widget> = child.map(|w| w.as_ref());
         self.set_child(child);
     }
     
@@ -344,12 +344,12 @@ impl AdwRevealerBuilder {
     fn new() -> Self {
         Self {
             builder: glib::Object::builder()
-                .property("overflow", gtk4::Overflow::Hidden),
+                .property("overflow", gtk::Overflow::Hidden),
         }
     }
 
-    pub fn child<W: IsA<gtk4::Widget>>(mut self, child: Option<&W>) -> Self {
-        let child: Option<&gtk4::Widget> = child.map(|w| w.as_ref());
+    pub fn child<W: IsA<gtk::Widget>>(mut self, child: Option<&W>) -> Self {
+        let child: Option<&gtk::Widget> = child.map(|w| w.as_ref());
         self.builder = self.builder.property("child", child);
         self
     }
@@ -359,7 +359,7 @@ impl AdwRevealerBuilder {
         self
     }
     
-    pub fn overflow(mut self, overflow: gtk4::Overflow) -> Self {
+    pub fn overflow(mut self, overflow: gtk::Overflow) -> Self {
         self.builder = self.builder.property("overflow", overflow);
         self
     }

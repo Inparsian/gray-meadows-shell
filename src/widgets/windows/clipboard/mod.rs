@@ -1,7 +1,7 @@
 mod data;
 mod entry;
 
-use gtk4::prelude::*;
+use gtk::prelude::*;
 use std::collections::HashSet;
 
 use crate::ipc;
@@ -78,17 +78,17 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
     let model = gio::ListStore::new::<ClipboardEntryData>();
     apply_filter_to_model(&model, "");
 
-    let factory = gtk4::SignalListItemFactory::new();
+    let factory = gtk::SignalListItemFactory::new();
     factory.connect_setup(move |_, item| {
         let clipboard_entry = ClipboardEntry::default();
-        let list_item = item.downcast_ref::<gtk4::ListItem>()
+        let list_item = item.downcast_ref::<gtk::ListItem>()
             .expect("Expected a ListItem");
 
         list_item.set_child(Some(&clipboard_entry));
     });
     factory.connect_bind(move |_, item| {
         let list_item = item
-            .downcast_ref::<gtk4::ListItem>()
+            .downcast_ref::<gtk::ListItem>()
             .expect("Expected a ListItem");
 
         let entry_data = list_item
@@ -106,8 +106,8 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
         clipboard_entry.refresh();
     });
 
-    let selection_model = gtk4::SingleSelection::new(Some(model.clone().upcast::<gio::ListModel>()));
-    let list_view = gtk4::ListView::builder()
+    let selection_model = gtk::SingleSelection::new(Some(model.clone().upcast::<gio::ListModel>()));
+    let list_view = gtk::ListView::builder()
         .model(&selection_model)
         .factory(&factory)
         .hexpand(true)
@@ -116,7 +116,7 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
         .build();
 
     view! {
-        scrollable = gtk4::ScrolledWindow {
+        scrollable = gtk::ScrolledWindow {
             set_vexpand: true,
             set_hexpand: true,
             set_min_content_width: 400,
@@ -124,7 +124,7 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
             set_child: Some(&list_view),
         },
 
-        entry = gtk4::Entry {
+        entry = gtk::Entry {
             set_css_classes: &["filter-entry-prompt"],
             set_placeholder_text: Some("Filter clipboard entries..."),
             set_hexpand: true,
@@ -135,26 +135,26 @@ pub fn new(application: &libadwaita::Application) -> FullscreenWindow {
             ),
         },
 
-        filter_entry_box = gtk4::Box {
+        filter_entry_box = gtk::Box {
             set_css_classes: &["filter-entry-box"],
-            set_orientation: gtk4::Orientation::Horizontal,
+            set_orientation: gtk::Orientation::Horizontal,
             set_hexpand: true,
 
-            gtk4::Label {
+            gtk::Label {
                 set_css_classes: &["filter-entry-icon"],
                 set_label: "search",
-                set_halign: gtk4::Align::Start,
+                set_halign: gtk::Align::Start,
             },
 
             append: &entry,
         },
 
-        child = gtk4::Box {
+        child = gtk::Box {
             set_css_classes: &["clipboard-window-content"],
-            set_orientation: gtk4::Orientation::Vertical,
+            set_orientation: gtk::Orientation::Vertical,
             set_spacing: 0,
-            set_halign: gtk4::Align::Center,
-            set_valign: gtk4::Align::Center,
+            set_halign: gtk::Align::Center,
+            set_valign: gtk::Align::Center,
 
             append: &filter_entry_box,
             append: &scrollable,

@@ -1,7 +1,7 @@
-use gdk4::gdk_pixbuf::Pixbuf;
+use gdk::gdk_pixbuf::Pixbuf;
 use gio::prelude::FileExt as _;
-use gtk4::TextDirection;
-use gtk4::gdk_pixbuf::InterpType;
+use gtk::TextDirection;
+use gtk::gdk_pixbuf::InterpType;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::Path;
@@ -47,7 +47,7 @@ pub fn get_pixbuf(icon_name: &str) -> Option<Pixbuf> {
             0, 
             1,
             TextDirection::Ltr,
-            gtk4::IconLookupFlags::empty()
+            gtk::IconLookupFlags::empty()
         ));
 
         if let Some(path) = icon_paintable.file().and_then(|f| f.path())

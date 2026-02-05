@@ -1,5 +1,5 @@
-use gdk4::cairo::Region;
-use gtk4::prelude::*;
+use gtk::prelude::*;
+use cairo::Region;
 use gtk4_layer_shell::{Edge, Layer, LayerShell as _};
 
 use self::imp::Osd;
@@ -7,22 +7,22 @@ use self::imp::Osd;
 pub mod imp;
 
 pub struct OsdWindow {
-    pub window: gtk4::ApplicationWindow,
-    pub container: gtk4::Box,
+    pub window: gtk::ApplicationWindow,
+    pub container: gtk::Box,
 }
 
 impl OsdWindow {
-    pub fn new(application: &libadwaita::Application, monitor: &gdk4::Monitor) -> Self {
+    pub fn new(application: &libadwaita::Application, monitor: &gdk::Monitor) -> Self {
         view! {
-            container = gtk4::Box {
+            container = gtk::Box {
                 set_css_classes: &["osd-container"],
-                set_orientation: gtk4::Orientation::Vertical,
+                set_orientation: gtk::Orientation::Vertical,
                 set_spacing: 0,
-                set_halign: gtk4::Align::Center,
-                set_valign: gtk4::Align::End,
+                set_halign: gtk::Align::Center,
+                set_valign: gtk::Align::End,
             },
 
-            window = gtk4::ApplicationWindow {
+            window = gtk::ApplicationWindow {
                 set_css_classes: &["osd-window"],
                 set_application: Some(application),
                 init_layer_shell: (),

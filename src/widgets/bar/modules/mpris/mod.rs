@@ -2,7 +2,7 @@ mod minimal;
 mod extended;
 mod progress;
 
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::services::mpris;
 use crate::utils::gesture;

@@ -1,7 +1,7 @@
 use std::time::Duration;
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
-use gtk4::prelude::*;
+use gtk::prelude::*;
 use relm4::RelmRemoveAllExt as _;
 
 use crate::services::notifications::close_notification_by_id;
@@ -44,12 +44,12 @@ pub struct NotificationWidget {
     pub notification: Rc<RefCell<Notification>>,
     pub expanded: Rc<RefCell<bool>>,
     pub destroying: Rc<RefCell<bool>>,
-    pub bx: gtk4::Box,
+    pub bx: gtk::Box,
     pub root: AdwRevealer,
-    pub summary: gtk4::Label,
-    pub body: gtk4::Label,
-    pub actions_box: gtk4::Box,
-    pub style_provider: gtk4::CssProvider,
+    pub summary: gtk::Label,
+    pub body: gtk::Label,
+    pub actions_box: gtk::Box,
+    pub style_provider: gtk::CssProvider,
 }
 
 impl glib::clone::Downgrade for NotificationWidget {
@@ -76,12 +76,12 @@ pub struct NotificationWidgetWeak {
     pub notification: Weak<RefCell<Notification>>,
     pub expanded: Weak<RefCell<bool>>,
     pub destroying: Weak<RefCell<bool>>,
-    pub bx: glib::WeakRef<gtk4::Box>,
+    pub bx: glib::WeakRef<gtk::Box>,
     pub root: glib::WeakRef<AdwRevealer>,
-    pub summary: glib::WeakRef<gtk4::Label>,
-    pub body: glib::WeakRef<gtk4::Label>,
-    pub actions_box: glib::WeakRef<gtk4::Box>,
-    pub style_provider: glib::WeakRef<gtk4::CssProvider>,
+    pub summary: glib::WeakRef<gtk::Label>,
+    pub body: glib::WeakRef<gtk::Label>,
+    pub actions_box: glib::WeakRef<gtk::Box>,
+    pub style_provider: glib::WeakRef<gtk::CssProvider>,
 }
 
 impl glib::clone::Upgrade for NotificationWidgetWeak {
@@ -107,8 +107,8 @@ impl NotificationWidget {
     fn make_action_button(
         notification: &Notification,
         action: &NotificationAction,
-    ) -> gtk4::Button {
-        let button = gtk4::Button::with_label(&action.localized_name);
+    ) -> gtk::Button {
+        let button = gtk::Button::with_label(&action.localized_name);
         button.set_css_classes(&["notification-action-button"]);
         button.connect_clicked({
             let notification_id = notification.id;
@@ -122,65 +122,65 @@ impl NotificationWidget {
     }
 
     pub fn new(notification: Notification) -> Self {
-        let style_provider = gtk4::CssProvider::new();
-        let drag_gesture = gtk4::GestureDrag::new();
+        let style_provider = gtk::CssProvider::new();
+        let drag_gesture = gtk::GestureDrag::new();
 
         view! {
-            summary = gtk4::Label {
+            summary = gtk::Label {
                 set_label: &notification.summary,
                 set_css_classes: &["notification-summary"],
                 set_xalign: 0.0,
                 set_hexpand: true,
-                set_ellipsize: gtk4::pango::EllipsizeMode::End,
+                set_ellipsize: gtk::pango::EllipsizeMode::End,
             },
 
-            body = gtk4::Label {
+            body = gtk::Label {
                 set_label: &notification.body,
                 set_css_classes: &["notification-body"],
                 set_xalign: 0.0,
                 set_hexpand: true,
-                set_ellipsize: gtk4::pango::EllipsizeMode::End,
-                set_wrap_mode: gtk4::pango::WrapMode::WordChar,
+                set_ellipsize: gtk::pango::EllipsizeMode::End,
+                set_wrap_mode: gtk::pango::WrapMode::WordChar,
                 set_wrap: false,
             },
 
-            actions_box = gtk4::Box {
+            actions_box = gtk::Box {
                 set_css_classes: &["notification-actions"],
-                set_orientation: gtk4::Orientation::Horizontal,
+                set_orientation: gtk::Orientation::Horizontal,
                 set_homogeneous: true,
                 set_spacing: 4,
             },
 
-            actions = gtk4::Revealer {
+            actions = gtk::Revealer {
                 set_reveal_child: false,
-                set_transition_type: gtk4::RevealerTransitionType::SlideDown,
+                set_transition_type: gtk::RevealerTransitionType::SlideDown,
                 set_transition_duration: 150,
                 set_child: Some(&actions_box),
             },
 
-            bx = gtk4::Box {
+            bx = gtk::Box {
                 set_css_classes: &["notification"],
-                set_orientation: gtk4::Orientation::Vertical,
+                set_orientation: gtk::Orientation::Vertical,
                 set_spacing: 0,
                 set_hexpand: true,
 
-                gtk4::Box {
+                gtk::Box {
                     set_css_classes: &["notification-content"],
-                    set_orientation: gtk4::Orientation::Vertical,
+                    set_orientation: gtk::Orientation::Vertical,
                     set_spacing: 4,
 
-                    gtk4::Box {
+                    gtk::Box {
                         set_css_classes: &["notification-header"],
-                        set_orientation: gtk4::Orientation::Horizontal,
+                        set_orientation: gtk::Orientation::Horizontal,
                         set_spacing: 4,
 
                         append: &summary,
 
-                        gtk4::Label {
+                        gtk::Label {
                             set_css_classes: &["notification-timestamp"],
                             set_label: &chrono::Local::now().format("%I:%M %p").to_string(),
                             set_xalign: 1.0,
-                            set_halign: gtk4::Align::End,
+                            set_halign: gtk::Align::End,
                             set_hexpand: true,
                         }
                     },
@@ -198,7 +198,7 @@ impl NotificationWidget {
                 set_hide_easing: GEasing::EaseOutExpo,
                 set_hexpand: true,
                 set_child_from: Some(&bx),
-                set_overflow: gtk4::Overflow::Visible,
+                set_overflow: gtk::Overflow::Visible,
             }
         }
 
@@ -288,7 +288,7 @@ impl NotificationWidget {
             }
         )));
 
-        me.bx.style_context().add_provider(&me.style_provider, gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION);
+        me.bx.style_context().add_provider(&me.style_provider, gtk::STYLE_PROVIDER_PRIORITY_APPLICATION);
 
         me.root.connect_map(move |revealer| {
             revealer.set_reveal(true);
@@ -297,8 +297,8 @@ impl NotificationWidget {
         me
     }
     
-    pub fn get_removal_operation_widgets(&self) -> (Option<gtk4::Widget>, Option<gtk4::Box>) {
-        let mut current_child = self.root.clone().upcast::<gtk4::Widget>();
+    pub fn get_removal_operation_widgets(&self) -> (Option<gtk::Widget>, Option<gtk::Box>) {
+        let mut current_child = self.root.clone().upcast::<gtk::Widget>();
         
         let mut recursion_depth = 0;
         while let Some(parent) = current_child.parent() {
@@ -308,7 +308,7 @@ impl NotificationWidget {
                 break;
             }
             
-            if let Some(bx) = parent.downcast_ref::<gtk4::Box>() {
+            if let Some(bx) = parent.downcast_ref::<gtk::Box>() {
                 return (Some(current_child), Some(bx.clone()));
             }
             
@@ -327,10 +327,10 @@ impl NotificationWidget {
     pub fn set_expand_state(&self, expanded: bool) {
         self.expanded.replace(expanded);
         if !expanded && !*self.destroying.borrow() {
-            self.body.set_ellipsize(gtk4::pango::EllipsizeMode::End);
+            self.body.set_ellipsize(gtk::pango::EllipsizeMode::End);
             self.body.set_wrap(false);
         } else {
-            self.body.set_ellipsize(gtk4::pango::EllipsizeMode::None);
+            self.body.set_ellipsize(gtk::pango::EllipsizeMode::None);
             self.body.set_wrap(true);
         }
     }

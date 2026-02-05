@@ -1,5 +1,5 @@
 use std::{cell::RefCell, error::Error, rc::Rc};
-use gtk4::prelude::*;
+use gtk::prelude::*;
 use relm4::RelmRemoveAllExt as _;
 
 use crate::services::g_translate::languages::{self, Language};
@@ -8,11 +8,11 @@ use super::super::translate::{self, LanguageSelectReveal, UiEvent};
 const BUTTONS_PER_ROW: usize = 3;
 const BUTTONS_PER_PAGE: usize = BUTTONS_PER_ROW * 12;
 
-fn get_page_boxes(reveal_type: &LanguageSelectReveal, filter: Option<&str>) -> Vec<gtk4::Box> {
+fn get_page_boxes(reveal_type: &LanguageSelectReveal, filter: Option<&str>) -> Vec<gtk::Box> {
     let mut i = 0;
-    let mut page_boxes: Vec<gtk4::Box> = Vec::new();
-    let mut boxes: Vec<gtk4::Box> = Vec::new();
-    let mut buttons: Vec<gtk4::Button> = Vec::new();
+    let mut page_boxes: Vec<gtk::Box> = Vec::new();
+    let mut boxes: Vec<gtk::Box> = Vec::new();
+    let mut buttons: Vec<gtk::Button> = Vec::new();
 
     let languages: Vec<Language> = if *reveal_type == LanguageSelectReveal::Source {
         languages::get_all_with_auto()
@@ -25,7 +25,7 @@ fn get_page_boxes(reveal_type: &LanguageSelectReveal, filter: Option<&str>) -> V
             continue;
         }
 
-        let button = gtk4::Button::new();
+        let button = gtk::Button::new();
         button.set_css_classes(&["google-translate-language-select-button"]);
         button.set_hexpand(true);
         button.connect_clicked(clone!(
@@ -42,13 +42,13 @@ fn get_page_boxes(reveal_type: &LanguageSelectReveal, filter: Option<&str>) -> V
             }
         ));
 
-        let button_label = gtk4::Label::new(Some(&lang.name));
-        button_label.set_ellipsize(gtk4::pango::EllipsizeMode::End);
+        let button_label = gtk::Label::new(Some(&lang.name));
+        button_label.set_ellipsize(gtk::pango::EllipsizeMode::End);
         button.set_child(Some(&button_label));
         buttons.push(button);
 
         if i % BUTTONS_PER_ROW == BUTTONS_PER_ROW - 1 {
-            boxes.push(gtk4::Box::new(gtk4::Orientation::Horizontal, 6));
+            boxes.push(gtk::Box::new(gtk::Orientation::Horizontal, 6));
             boxes.last().unwrap().set_homogeneous(true);
             boxes.last().unwrap().set_spacing(6);
             for button in &buttons {
@@ -58,7 +58,7 @@ fn get_page_boxes(reveal_type: &LanguageSelectReveal, filter: Option<&str>) -> V
         }
 
         if i % BUTTONS_PER_PAGE == BUTTONS_PER_PAGE - 1 {
-            page_boxes.push(gtk4::Box::new(gtk4::Orientation::Vertical, 6));
+            page_boxes.push(gtk::Box::new(gtk::Orientation::Vertical, 6));
             page_boxes.last().unwrap().set_spacing(6);
             for box_ in &boxes {
                 page_boxes.last().unwrap().append(box_);
@@ -70,7 +70,7 @@ fn get_page_boxes(reveal_type: &LanguageSelectReveal, filter: Option<&str>) -> V
     }
     
     if !buttons.is_empty() {
-        boxes.push(gtk4::Box::new(gtk4::Orientation::Horizontal, 6));
+        boxes.push(gtk::Box::new(gtk::Orientation::Horizontal, 6));
         boxes.last_mut().unwrap().set_homogeneous(true);
         boxes.last_mut().unwrap().set_spacing(6);
         for button in buttons {
@@ -80,7 +80,7 @@ fn get_page_boxes(reveal_type: &LanguageSelectReveal, filter: Option<&str>) -> V
 
     #[allow(clippy::needless_for_each)] // false positive
     if !boxes.is_empty() {
-        let page_box = gtk4::Box::new(gtk4::Orientation::Vertical, 6);
+        let page_box = gtk::Box::new(gtk::Orientation::Vertical, 6);
         page_box.set_css_classes(&["google-translate-language-select-page"]);
         page_box.set_spacing(6);
         page_box.set_vexpand(true);
@@ -93,17 +93,17 @@ fn get_page_boxes(reveal_type: &LanguageSelectReveal, filter: Option<&str>) -> V
         page_boxes
     } else {
         view! {
-            no_results_box = gtk4::Box {
+            no_results_box = gtk::Box {
                 set_css_classes: &["google-translate-language-select-page"],
-                set_orientation: gtk4::Orientation::Vertical,
+                set_orientation: gtk::Orientation::Vertical,
                 set_spacing: 6,
 
-                gtk4::Box {
+                gtk::Box {
                     set_css_classes: &["google-translate-language-select-row"],
                     set_homogeneous: true,
                     set_spacing: 6,
 
-                    gtk4::Label {
+                    gtk::Label {
                         set_label: "No languages found",
                         set_hexpand: true
                     }
@@ -119,12 +119,12 @@ fn get_page_boxes(reveal_type: &LanguageSelectReveal, filter: Option<&str>) -> V
 pub struct LanguageSelectView {
     reveal_type: LanguageSelectReveal,
     current_page: Rc<RefCell<usize>>,
-    page_boxes: Rc<RefCell<Vec<gtk4::Box>>>,
-    pages_stack: gtk4::Stack,
-    page_label: gtk4::Label,
-    filter_entry: gtk4::Entry,
-    filter_clear_button: gtk4::Button,
-    widget: gtk4::Box
+    page_boxes: Rc<RefCell<Vec<gtk::Box>>>,
+    pages_stack: gtk::Stack,
+    page_label: gtk::Label,
+    filter_entry: gtk::Entry,
+    filter_clear_button: gtk::Button,
+    widget: gtk::Box
 }
 
 impl LanguageSelectView {
@@ -133,15 +133,15 @@ impl LanguageSelectView {
             reveal_type,
             current_page: Rc::new(RefCell::new(0)),
             page_boxes: Rc::new(RefCell::new(Vec::new())),
-            pages_stack: gtk4::Stack::new(),
-            page_label: gtk4::Label::new(Some("Page 0 of 0")),
-            filter_clear_button: gtk4::Button::new(),
-            filter_entry: gtk4::Entry::new(),
-            widget: gtk4::Box::new(gtk4::Orientation::Vertical, 12)
+            pages_stack: gtk::Stack::new(),
+            page_label: gtk::Label::new(Some("Page 0 of 0")),
+            filter_clear_button: gtk::Button::new(),
+            filter_entry: gtk::Entry::new(),
+            widget: gtk::Box::new(gtk::Orientation::Vertical, 12)
         };
 
         view.pages_stack.set_css_classes(&["google-translate-language-select-stack"]);
-        view.pages_stack.set_transition_type(gtk4::StackTransitionType::SlideLeftRight);
+        view.pages_stack.set_transition_type(gtk::StackTransitionType::SlideLeftRight);
         view.pages_stack.set_transition_duration(250);
 
         view.page_label.set_css_classes(&["google-translate-language-select-page-label"]);
@@ -149,7 +149,7 @@ impl LanguageSelectView {
         view.filter_clear_button.set_css_classes(&["google-translate-language-select-filter-clear-button"]);
         view.filter_clear_button.set_visible(false);
         view.filter_clear_button.set_child(Some(&{
-            let label = gtk4::Label::new(Some("clear"));
+            let label = gtk::Label::new(Some("clear"));
             label.set_css_classes(&["google-translate-language-select-filter-clear-label"]);
             label
         }));
@@ -173,12 +173,12 @@ impl LanguageSelectView {
         view.widget.set_css_classes(&["google-translate-language-select-box"]);
         view.widget.set_hexpand(true);
         view.widget.append(&{
-            let bx = gtk4::CenterBox::builder()
-                .orientation(gtk4::Orientation::Horizontal)
+            let bx = gtk::CenterBox::builder()
+                .orientation(gtk::Orientation::Horizontal)
                 .hexpand(true)
                 .build();
             
-            let back_button = gtk4::Button::builder()
+            let back_button = gtk::Button::builder()
                 .css_classes(["google-translate-language-select-back-button"])
                 .label("arrow_back")
                 .build();
@@ -187,7 +187,7 @@ impl LanguageSelectView {
             });
             bx.set_start_widget(Some(&back_button));
             
-            let label = gtk4::Label::new(Some(if view.reveal_type == LanguageSelectReveal::Source {
+            let label = gtk::Label::new(Some(if view.reveal_type == LanguageSelectReveal::Source {
                 "Source Language"
             } else {
                 "Target Language"
@@ -198,7 +198,7 @@ impl LanguageSelectView {
         });
 
         view.widget.append(&{
-            let filter_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 6);
+            let filter_box = gtk::Box::new(gtk::Orientation::Horizontal, 6);
             filter_box.set_css_classes(&["google-translate-language-select-filter-box"]);
             filter_box.append(&view.filter_entry);
             filter_box.append(&view.filter_clear_button);
@@ -215,10 +215,10 @@ impl LanguageSelectView {
         });
 
         view.widget.append(&{
-            let nav_box = gtk4::Box::new(gtk4::Orientation::Horizontal, 6);
+            let nav_box = gtk::Box::new(gtk::Orientation::Horizontal, 6);
             nav_box.set_homogeneous(true);
             nav_box.append(&{
-                let prev_button = gtk4::Button::new();
+                let prev_button = gtk::Button::new();
                 prev_button.set_css_classes(&["google-translate-language-select-nav-button"]);
                 prev_button.set_label("Previous");
                 prev_button.connect_clicked(clone!(
@@ -233,7 +233,7 @@ impl LanguageSelectView {
             nav_box.append(&view.page_label);
 
             nav_box.append(&{
-                let next_button = gtk4::Button::new();
+                let next_button = gtk::Button::new();
                 next_button.set_css_classes(&["google-translate-language-select-nav-button"]);
                 next_button.set_label("Next");
                 next_button.connect_clicked(clone!(
@@ -268,7 +268,7 @@ impl LanguageSelectView {
         view
     }
 
-    pub fn get_widget(&self) -> &gtk4::Box {
+    pub fn get_widget(&self) -> &gtk::Box {
         &self.widget
     }
 

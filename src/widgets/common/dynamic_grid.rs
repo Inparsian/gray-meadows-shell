@@ -1,16 +1,16 @@
-use gtk4::prelude::*;
+use gtk::prelude::*;
 use relm4::RelmRemoveAllExt as _;
 
 pub struct DynamicGrid {
-    pub grid: gtk4::Grid,
-    pub items: Vec<gtk4::Widget>,
+    pub grid: gtk::Grid,
+    pub items: Vec<gtk::Widget>,
     pub rows: usize,
     pub columns: usize,
 }
 
 impl DynamicGrid {
     pub fn new(rows: usize) -> Self {
-        let grid = gtk4::Grid::new();
+        let grid = gtk::Grid::new();
         grid.set_row_homogeneous(true);
         grid.set_column_homogeneous(true);
         grid.set_row_spacing(8);
@@ -24,7 +24,7 @@ impl DynamicGrid {
         }
     }
 
-    pub fn append(&mut self, item: &impl IsA<gtk4::Widget>) {
+    pub fn append(&mut self, item: &impl IsA<gtk::Widget>) {
         self.items.push(item.as_ref().clone());
         self.update_grid();
     }

@@ -1,6 +1,6 @@
 use std::{cell::RefCell, rc::Rc};
 use futures_signals::signal::{Mutable, SignalExt as _};
-use gtk4::prelude::*;
+use gtk::prelude::*;
 
 use crate::color::models::{Hsv, ColorModel as _};
 use crate::utils::gesture;
@@ -8,10 +8,10 @@ use crate::utils::gesture;
 #[derive(Debug, Clone)]
 pub struct SaturationValuePicker {
     pub hsv: Mutable<Hsv>,
-    pub widget: gtk4::Box,
-    pub trough: gtk4::Box,
-    widget_css_provider: gtk4::CssProvider,
-    trough_css_provider: gtk4::CssProvider,
+    pub widget: gtk::Box,
+    pub trough: gtk::Box,
+    widget_css_provider: gtk::CssProvider,
+    trough_css_provider: gtk::CssProvider,
 }
 
 impl glib::clone::Downgrade for SaturationValuePicker {
@@ -31,10 +31,10 @@ impl glib::clone::Downgrade for SaturationValuePicker {
 #[derive(Debug, Clone)]
 pub struct SaturationValuePickerWeak {
     pub hsv: Mutable<Hsv>,
-    pub widget: glib::WeakRef<gtk4::Box>,
-    pub trough: glib::WeakRef<gtk4::Box>,
-    widget_css_provider: gtk4::CssProvider,
-    trough_css_provider: gtk4::CssProvider,
+    pub widget: glib::WeakRef<gtk::Box>,
+    pub trough: glib::WeakRef<gtk::Box>,
+    widget_css_provider: gtk::CssProvider,
+    trough_css_provider: gtk::CssProvider,
 }
 
 impl glib::clone::Upgrade for SaturationValuePickerWeak {
@@ -53,26 +53,26 @@ impl glib::clone::Upgrade for SaturationValuePickerWeak {
 
 impl SaturationValuePicker {
     pub fn new(hsv: &Mutable<Hsv>) -> Self {
-        let widget_css_provider = gtk4::CssProvider::new();
-        let trough_css_provider = gtk4::CssProvider::new();
+        let widget_css_provider = gtk::CssProvider::new();
+        let trough_css_provider = gtk::CssProvider::new();
 
-        let trough = gtk4::Box::new(gtk4::Orientation::Horizontal, 0);
+        let trough = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         trough.set_css_classes(&["color-picker-saturation-value-trough"]);
-        trough.set_halign(gtk4::Align::Start);
-        trough.set_valign(gtk4::Align::Start);
+        trough.set_halign(gtk::Align::Start);
+        trough.set_valign(gtk::Align::Start);
 
-        let widget = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        let widget = gtk::Box::new(gtk::Orientation::Vertical, 0);
         widget.set_css_classes(&["color-picker-saturation-value"]);
         widget.append(&trough);
 
         widget.style_context().add_provider(
             &widget_css_provider,
-            gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );
 
         trough.style_context().add_provider(
             &trough_css_provider,
-            gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );
 
         let picker = Self {
@@ -172,7 +172,7 @@ impl SaturationValuePicker {
         ));
     }
 
-    pub fn get_widget(&self) -> &gtk4::Box {
+    pub fn get_widget(&self) -> &gtk::Box {
         &self.widget
     }
 }

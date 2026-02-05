@@ -1,8 +1,8 @@
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
-use gtk4::prelude::*;
-use gtk4::{glib, gio};
+use gtk::prelude::*;
+use gtk::{glib, gio};
 use uuid::Uuid;
 use base64::Engine as _;
 use image::{ImageBuffer, Rgba};
@@ -20,7 +20,7 @@ struct ProcessedImage {
 }
 
 impl RawImage {
-    pub fn from_texture(texture: &gdk4::Texture) -> Option<Self> {
+    pub fn from_texture(texture: &gdk::Texture) -> Option<Self> {
         let width = texture.width();
         let height = texture.height();
         let stride = width * 4;
@@ -95,7 +95,7 @@ pub struct ImageAttachmentWidget {
     state: Rc<RefCell<AttachmentState>>,
     cancelled: Arc<AtomicBool>,
     uuid: String,
-    pub widget: gtk4::Box,
+    pub widget: gtk::Box,
 }
 
 impl ImageAttachmentWidget {
@@ -107,10 +107,10 @@ impl ImageAttachmentWidget {
         let cancelled = Arc::new(AtomicBool::new(false));
         let state = Rc::new(RefCell::new(AttachmentState::Loading));
         
-        let widget = gtk4::Box::new(gtk4::Orientation::Vertical, 0);
+        let widget = gtk::Box::new(gtk::Orientation::Vertical, 0);
         widget.set_size_request(100, 100);
         
-        let overlay = gtk4::Overlay::new();
+        let overlay = gtk::Overlay::new();
         widget.append(&overlay);
 
         let w_clamp = libadwaita::Clamp::new();
@@ -119,19 +119,19 @@ impl ImageAttachmentWidget {
         let h_clamp = libadwaita::Clamp::new();
         h_clamp.set_maximum_size(100);
         h_clamp.set_unit(libadwaita::LengthUnit::Px);
-        h_clamp.set_orientation(gtk4::Orientation::Vertical);
+        h_clamp.set_orientation(gtk::Orientation::Vertical);
         w_clamp.set_child(Some(&h_clamp));
         overlay.set_child(Some(&w_clamp));
 
-        let spinner = gtk4::Label::new(Some("progress_activity"));
+        let spinner = gtk::Label::new(Some("progress_activity"));
         spinner.set_css_classes(&["ai-chat-input-attachment-spinner"]);
         spinner.set_size_request(100, 100);
         h_clamp.set_child(Some(&spinner));
 
-        let remove_button = gtk4::Button::new();
+        let remove_button = gtk::Button::new();
         remove_button.set_css_classes(&["ai-chat-input-attachment-remove-button"]);
-        remove_button.set_halign(gtk4::Align::End);
-        remove_button.set_valign(gtk4::Align::Start);
+        remove_button.set_halign(gtk::Align::End);
+        remove_button.set_valign(gtk::Align::Start);
         remove_button.set_label("close");
         remove_button.connect_clicked(clone!(
             #[strong] uuid,
@@ -167,7 +167,7 @@ impl ImageAttachmentWidget {
             match result {
                 Ok(Ok(processed)) => {
                     let thumb_bytes = glib::Bytes::from_owned(processed.thumbnail_bytes);
-                    let thumbnail = gdk4::Texture::from_bytes(&thumb_bytes).ok();
+                    let thumbnail = gdk::Texture::from_bytes(&thumb_bytes).ok();
 
                     let attachment = ImageAttachment {
                         base64: processed.base64,
@@ -176,7 +176,7 @@ impl ImageAttachmentWidget {
                     *state.borrow_mut() = AttachmentState::Ready(attachment);
 
                     spinner.set_visible(false);
-                    let picture = gtk4::Picture::new();
+                    let picture = gtk::Picture::new();
                     picture.set_paintable(thumbnail.as_ref());
                     picture.set_width_request(100);
                     h_clamp.set_child(Some(&picture));
@@ -184,13 +184,13 @@ impl ImageAttachmentWidget {
                 Ok(Err(e)) => {
                     error!(%e, "Failed to process image");
                     spinner.set_visible(false);
-                    let label = gtk4::Label::new(Some("Error"));
+                    let label = gtk::Label::new(Some("Error"));
                     h_clamp.set_child(Some(&label));
                 }
                 Err(e) => {
                     error!(?e, "Background task failed");
                     spinner.set_visible(false);
-                    let label = gtk4::Label::new(Some("Error"));
+                    let label = gtk::Label::new(Some("Error"));
                     h_clamp.set_child(Some(&label));
                 }
             }
@@ -217,22 +217,22 @@ impl ImageAttachmentWidget {
 
 #[derive(Clone, glib::Downgrade)]
 pub struct ImageAttachments {
-    pub container: gtk4::Revealer,
-    pub bx: gtk4::Box,
+    pub container: gtk::Revealer,
+    pub bx: gtk::Box,
     attachments: Rc<RefCell<Vec<ImageAttachmentWidget>>>,
 }
 
 impl Default for ImageAttachments {
     fn default() -> Self {
-        let container = gtk4::Revealer::new();
-        container.set_transition_type(gtk4::RevealerTransitionType::SlideUp);
+        let container = gtk::Revealer::new();
+        container.set_transition_type(gtk::RevealerTransitionType::SlideUp);
         container.set_reveal_child(false);
 
-        let scrolled_window = gtk4::ScrolledWindow::new();
-        scrolled_window.set_policy(gtk4::PolicyType::Automatic, gtk4::PolicyType::Never);
+        let scrolled_window = gtk::ScrolledWindow::new();
+        scrolled_window.set_policy(gtk::PolicyType::Automatic, gtk::PolicyType::Never);
         container.set_child(Some(&scrolled_window));
 
-        let bx = gtk4::Box::new(gtk4::Orientation::Horizontal, 8);
+        let bx = gtk::Box::new(gtk::Orientation::Horizontal, 8);
         bx.add_css_class("ai-chat-input-attachments-box");
         scrolled_window.set_child(Some(&bx));
 
@@ -257,7 +257,7 @@ impl ImageAttachments {
         self.attachments.borrow().iter().all(|w| w.is_ready())
     }
 
-    pub fn push_texture(&self, texture: &gdk4::Texture) {
+    pub fn push_texture(&self, texture: &gdk::Texture) {
         if let Some(raw_image) = RawImage::from_texture(texture) {
             let widget = ImageAttachmentWidget::new_async(self.clone(), raw_image);
             self.bx.append(&widget.widget);

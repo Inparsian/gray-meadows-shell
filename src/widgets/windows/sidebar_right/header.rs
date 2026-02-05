@@ -1,5 +1,5 @@
 use std::path::Path;
-use gtk4::prelude::*;
+use gtk::prelude::*;
 use futures_signals::signal::SignalExt as _;
 
 use crate::USERNAME;
@@ -33,37 +33,37 @@ fn get_uptime_label_text(uptime: Option<u64>) -> String {
     )
 }
 
-pub fn new() -> gtk4::Box {
+pub fn new() -> gtk::Box {
     view! {
-        face = gtk4::Image {
+        face = gtk::Image {
             set_pixel_size: 40,
             set_css_classes: &["sidebar-right-header-icon", "generic"],
         },
 
-        uptime_label = gtk4::Label {
+        uptime_label = gtk::Label {
             set_label: &get_uptime_label_text(None),
             set_css_classes: &["sidebar-right-header-sublabel"],
             set_xalign: 0.0
         },
 
-        header = gtk4::Box {
+        header = gtk::Box {
             set_css_classes: &["right-sidebar-header"],
-            set_orientation: gtk4::Orientation::Horizontal,
+            set_orientation: gtk::Orientation::Horizontal,
             set_spacing: 12,
             set_hexpand: true,
             
-            gtk4::Box {
-                set_orientation: gtk4::Orientation::Horizontal,
+            gtk::Box {
+                set_orientation: gtk::Orientation::Horizontal,
                 set_hexpand: true,
-                set_halign: gtk4::Align::Start,
+                set_halign: gtk::Align::Start,
                 append: &face,
 
-                gtk4::Box {
-                    set_orientation: gtk4::Orientation::Vertical,
-                    set_valign: gtk4::Align::Center,
+                gtk::Box {
+                    set_orientation: gtk::Orientation::Vertical,
+                    set_valign: gtk::Align::Center,
                     set_spacing: 2,
 
-                    gtk4::Label {
+                    gtk::Label {
                         set_label: &USERNAME, 
                         set_css_classes: &["sidebar-right-header-label"],
                         set_xalign: 0.0
@@ -73,20 +73,20 @@ pub fn new() -> gtk4::Box {
                 }
             },
 
-            gtk4::Button {
+            gtk::Button {
                 set_css_classes: &["sidebar-button"],
-                set_halign: gtk4::Align::End,
-                set_valign: gtk4::Align::Center,
+                set_halign: gtk::Align::End,
+                set_valign: gtk::Align::Center,
                 connect_clicked: move |_| {
                     windows::hide("right_sidebar");
                     windows::toggle("session");
                 },
 
-                gtk4::Label {
+                gtk::Label {
                     set_css_classes: &["sidebar-button-label", "generic"],
                     set_label: "gtfo",
                     set_xalign: 0.5,
-                    set_halign: gtk4::Align::Center
+                    set_halign: gtk::Align::Center
                 }
             }
         }
