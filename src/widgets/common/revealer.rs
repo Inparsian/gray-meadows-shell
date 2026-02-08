@@ -169,6 +169,7 @@ mod imp {
             
             if let Some(widget) = widget {
                 widget.set_parent(&*self.obj());
+                widget.set_can_target(self.reveal.get());
                 stored.replace(widget.clone());
             }
         }
@@ -179,6 +180,10 @@ mod imp {
             }
             
             self.reveal.set(reveal);
+            
+            if let Some(child) = self.child.borrow().as_ref() {
+                child.set_can_target(reveal);
+            }
             
             let obj = self.obj();
             let start = self.progress.get();
@@ -320,7 +325,9 @@ glib::wrapper! {
 
 impl Default for AdwRevealer {
     fn default() -> Self {
-        glib::Object::new()
+        glib::Object::builder()
+            .property("overflow", gtk::Overflow::Hidden)
+            .build()
     }
 }
 

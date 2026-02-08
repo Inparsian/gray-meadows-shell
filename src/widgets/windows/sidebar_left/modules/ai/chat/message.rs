@@ -8,6 +8,7 @@ use crate::config::read_config;
 use crate::services::ai;
 use crate::utils::{filesystem, gesture};
 use crate::widgets::common::loading;
+use crate::widgets::common::revealer::{AdwRevealer, AdwRevealerDirection, GEasing};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ChatRole {
@@ -57,11 +58,13 @@ impl ChatThinkingBlock {
         thinking_dropdown_arrow.set_xalign(1.0);
         thinking_dropdown_header.append(&thinking_dropdown_arrow);
 
-        let thinking_dropdown_revealer = gtk::Revealer::new();
+        let thinking_dropdown_revealer = AdwRevealer::default();
         thinking_dropdown_revealer.set_css_classes(&["ai-chat-thinking-dropdown-revealer"]);
-        thinking_dropdown_revealer.set_transition_type(gtk::RevealerTransitionType::SlideDown);
-        thinking_dropdown_revealer.set_transition_duration(150);
-        thinking_dropdown_revealer.set_reveal_child(false);
+        thinking_dropdown_revealer.set_transition_direction(AdwRevealerDirection::Down);
+        thinking_dropdown_revealer.set_show_easing(GEasing::EaseOutExpo);
+        thinking_dropdown_revealer.set_hide_easing(GEasing::EaseOutExpo);
+        thinking_dropdown_revealer.set_transition_duration(500);
+        thinking_dropdown_revealer.set_reveal(false);
         root.append(&thinking_dropdown_revealer);
 
         let summary = gtk4cmark::MarkdownView::default();
@@ -69,13 +72,13 @@ impl ChatThinkingBlock {
         summary.set_overflow(gtk::Overflow::Hidden);
         summary.set_vexpand(true);
         summary.set_hexpand(true);
-        thinking_dropdown_revealer.set_child(Some(&summary));
+        thinking_dropdown_revealer.set_child_from(Some(&summary));
 
         thinking_dropdown_button.connect_clicked(clone!(
             #[weak] root,
             move |_| {
-                let currently_revealed = thinking_dropdown_revealer.reveals_child();
-                thinking_dropdown_revealer.set_reveal_child(!currently_revealed);
+                let currently_revealed = thinking_dropdown_revealer.reveal();
+                thinking_dropdown_revealer.set_reveal(!currently_revealed);
                 
                 if currently_revealed {
                     root.remove_css_class("expanded");
