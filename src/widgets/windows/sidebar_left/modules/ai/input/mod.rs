@@ -7,7 +7,8 @@ use crate::services::ai::{self, SESSION};
 use crate::services::ai::images::cache_image_data;
 use crate::widgets::windows;
 use crate::utils::allocation_watcher::{AllocationWatcher, AllocationWatcherOptions};
-use super::chat::{Chat, ChatMessage, ChatRole};
+use super::chat::Chat;
+use super::chat::message::{ChatMessage, ChatRole};
 use self::attachments::ImageAttachments;
 
 const MIN_INPUT_SCROLL_HEIGHT: i32 = 50;

@@ -8,7 +8,8 @@ use gtk::prelude::*;
 
 use crate::services::ai::{self, SESSION, AiChannelMessage};
 use crate::services::ai::types::{AiConversationDelta, AiConversationItemPayload};
-use self::chat::{Chat, ChatMessage, ChatRole};
+use self::chat::Chat;
+use self::chat::message::{ChatMessage, ChatRole};
 
 pub fn conversation_control_button(icon: &str, label: &str) -> gtk::Button {
     let button = gtk::Button::new();
