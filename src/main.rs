@@ -1,4 +1,4 @@
-#[macro_use(clone)]
+#[macro_use(clone, closure_local)]
 extern crate glib;
 #[macro_use(view)]
 extern crate relm4_macros;

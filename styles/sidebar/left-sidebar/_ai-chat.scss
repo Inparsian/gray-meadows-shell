@@ -170,6 +170,38 @@
                     border: 1px solid $background-color-quaternary;
                 }
             }
+            
+            .ai-chat-message-content-edit {
+                border: 1px solid $background-color-quaternary;
+                padding: 8px;
+                background-color: $background-color-tertiary;
+                color: $foreground-color-primary;
+                font-weight: 300;
+                margin-bottom: 8px;
+        
+                &:focus {
+                    outline: none;
+                }
+            }
+            
+            .ai-chat-message-content-edit-button {
+                @include tiny-text;
+                background: transparent;
+                font-weight: 300;
+                border: 0px;
+                color: $foreground-color-primary;
+                padding: 2px 10px;
+                border-radius: 0px;
+        
+                &:hover, &:focus {
+                    background: #ffffff0a;
+                    outline: none;
+                }
+        
+                &:active {
+                    background: #ffffff10;
+                }
+            }
 
             .ai-chat-message-tool-call {
                 margin-top: 12px;

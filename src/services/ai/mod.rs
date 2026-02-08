@@ -79,6 +79,46 @@ async fn write_item_payload(payload: AiConversationItemPayload) -> i64 {
     }
 }
 
+pub fn get_first_encountered_message_payload(from_item_id: i64) -> Option<(i64, AiConversationItemPayload)> {
+    let Some(session) = SESSION.get() else {
+        warn!("AI session not initialized");
+        return None;
+    };
+    
+    let items = session.items.read().unwrap();
+    for item in items.iter().skip_while(|item| item.id != from_item_id) {
+        if let AiConversationItemPayload::Message { .. } = &item.payload {
+            return Some((item.id, item.payload.clone()));
+        }
+    }
+    None
+}
+
+pub async fn update_item(item_id: i64, payload: AiConversationItemPayload) -> anyhow::Result<()> {
+    let Some(session) = SESSION.get() else {
+        warn!("AI session not initialized");
+        return Err(anyhow::anyhow!("AI session not initialized"));
+    };
+
+    match aichats::update_item(item_id, &payload).await {
+        Ok(()) => {
+            let mut items = session.items.write().unwrap();
+            let Some(item) = items.iter_mut().find(|item| item.id == item_id) else {
+                warn!("AI item not found");
+                return Err(anyhow::anyhow!("AI item not found"));
+            };
+                
+            item.payload = payload;
+            Ok(())
+        },
+        
+        Err(err) => {
+            error!(%err, "Failed to update AI item in database");
+            Err(anyhow::anyhow!("Failed to update AI item in database"))
+        },
+    }
+}
+
 pub async fn trim_items(down_to_item_id: i64) {
     if let Some(session) = SESSION.get() {
         let Some(conversation) = session.conversation.read().unwrap().clone() else {

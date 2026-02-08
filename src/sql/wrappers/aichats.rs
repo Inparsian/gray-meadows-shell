@@ -50,6 +50,20 @@ pub async fn add_item(item: &AiConversationItem) -> anyhow::Result<i64> {
     }).await?
 }
 
+/// Updates the payload of the specified AI chat item.
+pub async fn update_item(item_id: i64, payload: &AiConversationItemPayload) -> anyhow::Result<()> {
+    SQL_ACTOR.with({
+        let payload = serde_json::to_string(payload)?;
+        move |connection| {
+            connection.execute(
+                "UPDATE aichat_items SET payload = ?1 WHERE id = ?2",
+                (payload, item_id),
+            )?;
+            Ok(())
+        }
+    }).await?
+}
+
 /// Removes items down to the specified item ID in a conversation.
 pub async fn trim_items(conversation_id: i64, down_to_item_id: i64) -> anyhow::Result<()> {
     SQL_ACTOR.with(move |connection| {

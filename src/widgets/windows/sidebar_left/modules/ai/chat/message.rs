@@ -6,9 +6,11 @@ use gtk::prelude::*;
 use crate::USERNAME;
 use crate::config::read_config;
 use crate::services::ai;
+use crate::services::ai::types::AiConversationItemPayload;
 use crate::utils::{filesystem, gesture};
 use crate::widgets::common::loading;
 use crate::widgets::common::revealer::{AdwRevealer, AdwRevealerDirection, GEasing};
+use super::content::ChatMessageContent;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ChatRole {
@@ -109,7 +111,7 @@ pub struct ChatMessage {
     pub thinking: Option<ChatThinkingBlock>,
     pub attachments: Rc<RefCell<i64>>,
     pub root: gtk::Box,
-    pub markdown: gtk4cmark::MarkdownView,
+    pub view: ChatMessageContent,
     pub loading: gtk::DrawingArea,
     pub header: gtk::Box,
     pub footer: gtk::Box,
@@ -194,6 +196,28 @@ impl ChatMessage {
         let controls_box = gtk::Box::new(gtk::Orientation::Horizontal, 6);
         controls_box.set_css_classes(&["ai-chat-message-controls-box"]);
         controls_revealer.set_child(Some(&controls_box));
+        
+        let view = ChatMessageContent::new();
+        view.connect_closure("save-edit", false, closure_local!(
+            #[strong] id,
+            move |view: ChatMessageContent| {
+                let content = view.content();
+                if !ai::is_currently_in_cycle() && let Some(message_id) = *id.borrow() {
+                    let first_encountered_message = ai::get_first_encountered_message_payload(message_id);
+                    
+                    if let Some((item_id, AiConversationItemPayload::Message { id, role, thought_signature, .. })) = first_encountered_message {
+                        let payload = AiConversationItemPayload::Message {
+                            id,
+                            content,
+                            role,
+                            thought_signature,
+                        };
+                        
+                        tokio::spawn(ai::update_item(item_id, payload));
+                    }
+                }
+            }
+        ));
 
         let delete_button = gtk::Button::new();
         delete_button.set_css_classes(&["ai-chat-message-control-button"]);
@@ -205,6 +229,17 @@ impl ChatMessage {
             }
         ));
         controls_box.append(&delete_button);
+        
+        let edit_button = gtk::Button::new();
+        edit_button.set_css_classes(&["ai-chat-message-control-button"]);
+        edit_button.set_label("edit");
+        edit_button.connect_clicked(clone!(
+            #[weak] view,
+            move |_| if !ai::is_currently_in_cycle() {
+                view.set_editing(true);
+            }
+        ));
+        controls_box.append(&edit_button);
 
         let retry_button = gtk::Button::new();
         retry_button.set_css_classes(&["ai-chat-message-control-button"]);
@@ -231,13 +266,7 @@ impl ChatMessage {
         controls_box.append(&retry_button);
 
         header.append(&controls_revealer);
-
-        let markdown = gtk4cmark::MarkdownView::default();
-        markdown.set_css_classes(&["ai-chat-message-content"]);
-        markdown.set_overflow(gtk::Overflow::Hidden);
-        markdown.set_vexpand(true);
-        markdown.set_hexpand(true);
-
+        
         let loading = loading::new();
         loading.set_halign(gtk::Align::Start);
         loading.set_valign(gtk::Align::Start);
@@ -251,8 +280,8 @@ impl ChatMessage {
         root.append(&footer);
         
         if let Some(initial_content) = &content {
-            root.insert_child_after(&markdown, Some(&header));
-            markdown.set_markdown(initial_content.as_str());
+            root.insert_child_after(&view, Some(&header));
+            view.set_content(initial_content.as_str());
         } else {
             root.insert_child_after(&loading, Some(&header));
         }
@@ -275,7 +304,7 @@ impl ChatMessage {
             thinking: None,
             attachments,
             root,
-            markdown,
+            view,
             loading,
             header,
             footer,
@@ -290,14 +319,14 @@ impl ChatMessage {
         let was_none = self.content.is_none();
 
         self.content = Some(content.to_owned());
-        self.markdown.set_markdown(content);
+        self.view.set_content(content);
 
         if was_none {
             // If thinking is present, insert after that instead
             if let Some(thinking_block) = &self.thinking {
-                self.root.insert_child_after(&self.markdown, Some(&thinking_block.root));
+                self.root.insert_child_after(&self.view, Some(&thinking_block.root));
             } else {
-                self.root.insert_child_after(&self.markdown, Some(&self.header));
+                self.root.insert_child_after(&self.view, Some(&self.header));
             }
 
             self.root.remove(&self.loading);

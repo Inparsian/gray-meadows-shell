@@ -1,4 +1,5 @@
 pub mod message;
+pub mod content;
 
 use std::rc::Rc;
 use std::cell::RefCell;
