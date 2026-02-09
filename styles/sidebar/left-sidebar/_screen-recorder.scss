@@ -1,2 +1,36 @@
 .left-sidebar-window .left-sidebar-box .ScreenRecorder {
+    dropdown {
+        button {
+            @include normal-text;
+            background: $background-color-secondary;
+            border: 1px solid $border-color-primary;
+            border-radius: 0px;
+            color: $foreground-color-primary;
+            padding-top: 4px;
+            padding-bottom: 4px;
+            padding-left: 8px;
+            padding-right: 8px;
+            font-weight: normal;
+            
+            &:hover, &:focus {
+                background: $background-color-tertiary;
+                outline: none;
+            }
+    
+            &:active {
+                background: $background-color-quaternary;
+            }
+        }
+        
+        popover contents {
+            border-radius: 0px;
+            box-shadow: none;
+            background: $background-color-secondary;
+            border: 1px solid $border-color-primary;
+            
+            row {
+                border-radius: 0px;
+            }
+        }
+    }
 }
