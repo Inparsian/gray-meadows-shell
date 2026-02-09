@@ -120,7 +120,7 @@ fn config_path() -> String {
     format!("{}/{}", get_config_directory(), FILE_NAME)
 }
 
-fn save(config: &Config) -> Result<(), Box<dyn Error>> {
+pub fn save_config(config: &Config) -> Result<(), Box<dyn Error>> {
     std::fs::create_dir_all(get_config_directory())?;
     std::fs::write(
         config_path(),
@@ -133,7 +133,7 @@ fn save(config: &Config) -> Result<(), Box<dyn Error>> {
 fn read() -> Result<Config, Box<dyn Error>> {
     if !Path::new(&config_path()).exists() {
         let default = Config::default();
-        save(&default)?;
+        save_config(&default)?;
         Ok(default)
     } else {
         let toml = std::fs::read_to_string(config_path())?;
