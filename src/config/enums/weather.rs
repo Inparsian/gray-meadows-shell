@@ -1,33 +1,6 @@
 use serde::{Deserialize, Serialize};
 use strum::{EnumString, Display};
 
-#[derive(Debug, Clone, Serialize, Deserialize, EnumString)]
-#[strum(ascii_case_insensitive)]
-pub enum OpenAiServiceTier {
-    Flex,
-    Priority,
-    Default,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, EnumString)]
-#[strum(ascii_case_insensitive)]
-pub enum OpenAiReasoningEffort {
-    None,
-    Minimal,
-    Low,
-    Medium,
-    High,
-    Xhigh,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, EnumString)]
-#[strum(ascii_case_insensitive)]
-pub enum GeminiThinkingLevel {
-    Low,
-    High,
-    Budget,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize, EnumString, Display)]
 #[strum(ascii_case_insensitive)]
 pub enum WeatherTemperatureUnit {
@@ -57,11 +30,4 @@ pub enum WeatherPrecipitationUnit {
     Mm,
     #[strum(to_string = "inch", serialize = "in", serialize = "inches")]
     Inch,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, EnumString)]
-#[strum(ascii_case_insensitive)]
-pub enum AiService {
-    OpenAi,
-    Gemini,
 }

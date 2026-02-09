@@ -16,6 +16,13 @@ pub use enums::{
     WeatherSpeedUnit,
     WeatherPrecipitationUnit,
     AiService,
+    ScreenRecorderVideoContainer,
+    ScreenRecorderVideoQuality,
+    ScreenRecorderVideoCodec,
+    ScreenRecorderAudioCodec,
+    ScreenRecorderFramerateMode,
+    ScreenRecorderBitrateMode,
+    ScreenRecorderColorRange,
 };
 
 use structs::{
@@ -25,6 +32,7 @@ use structs::{
     AiFeatures,
     WeatherConfig,
     WeatherAlertsConfig,
+    ScreenRecorderConfig,
 };
 
 use crate::utils::filesystem::get_config_directory;
@@ -40,6 +48,7 @@ const FILE_NAME: &str = "config.toml";
 pub struct Config {
     pub ai: AiConfig,
     pub weather: WeatherConfig,
+    pub screen_recorder: ScreenRecorderConfig,
 }
 
 impl Default for Config {
@@ -83,6 +92,25 @@ impl Default for Config {
                     enabled: true,
                     refresh_interval: 30,
                 },
+            },
+            screen_recorder: ScreenRecorderConfig {
+                // TODO: get display 0 at runtime
+                capture_target: "portal".to_owned(),
+                replay_buffer_length_secs: 30,
+                recording_output_directory: "~/Videos".to_owned(),
+                replay_output_directory: "~/Videos".to_owned(),
+                video_container: ScreenRecorderVideoContainer::Mp4,
+                video_quality: ScreenRecorderVideoQuality::VeryHigh,
+                bitrate_kbps: 10000,
+                framerate: 60,
+                video_codec: ScreenRecorderVideoCodec::Auto,
+                framerate_mode: ScreenRecorderFramerateMode::Constant,
+                bitrate_mode: ScreenRecorderBitrateMode::ConstantQuality,
+                color_range: ScreenRecorderColorRange::Limited,
+                record_cursor: true,
+                audio_app_targets: vec![],
+                audio_device_targets: vec![],
+                audio_codec: ScreenRecorderAudioCodec::Auto,
             },
         }
     }

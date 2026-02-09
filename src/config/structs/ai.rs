@@ -1,12 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-use super::{
+use super::deserialize_insensitive;
+use super::super::enums::{
     OpenAiServiceTier,
     OpenAiReasoningEffort,
     GeminiThinkingLevel,
-    WeatherTemperatureUnit,
-    WeatherSpeedUnit,
-    WeatherPrecipitationUnit,
     AiService,
 };
 
@@ -48,36 +46,4 @@ pub struct AiConfig {
     pub openai: OpenAiConfig,
     pub gemini: GeminiConfig,
     pub features: AiFeatures,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WeatherAlertsConfig {
-    pub enabled: bool,
-    pub refresh_interval: u64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WeatherConfig {
-    pub enabled: bool,
-    pub latitude: f64,
-    pub longitude: f64,
-    pub timezone: String,
-    #[serde(deserialize_with = "deserialize_insensitive")]
-    pub temperature_unit: WeatherTemperatureUnit,
-    #[serde(deserialize_with = "deserialize_insensitive")]
-    pub speed_unit: WeatherSpeedUnit,
-    #[serde(deserialize_with = "deserialize_insensitive")]
-    pub precipitation_unit: WeatherPrecipitationUnit,
-    pub refresh_interval: u64,
-    pub alerts: WeatherAlertsConfig,
-}
-
-pub fn deserialize_insensitive<'de, T, D>(deserializer: D) -> Result<T, D::Error>
-where
-    T: std::str::FromStr,
-    T::Err: std::fmt::Display,
-    D: serde::Deserializer<'de>,
-{
-    let s = String::deserialize(deserializer)?;
-    T::from_str(&s).map_err(serde::de::Error::custom)
 }
