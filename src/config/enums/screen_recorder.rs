@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
-use strum::EnumString;
+use strum::{EnumString, Display};
 
-#[derive(Debug, Clone, Serialize, Deserialize, EnumString)]
+#[derive(Debug, Clone, Serialize, Deserialize, EnumString, Display)]
 #[strum(ascii_case_insensitive)]
 pub enum ScreenRecorderVideoContainer {
     #[strum(to_string = "mp4")]
@@ -18,7 +18,7 @@ pub enum ScreenRecorderVideoContainer {
     M3U8,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, EnumString)]
+#[derive(Debug, Clone, Serialize, Deserialize, EnumString, Display)]
 #[strum(ascii_case_insensitive)]
 pub enum ScreenRecorderVideoQuality {
     #[strum(to_string = "medium")]
@@ -31,7 +31,7 @@ pub enum ScreenRecorderVideoQuality {
     Ultra,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, EnumString)]
+#[derive(Debug, Clone, Serialize, Deserialize, EnumString, Display)]
 #[strum(ascii_case_insensitive)]
 pub enum ScreenRecorderVideoCodec {
     #[strum(to_string = "auto")]
@@ -42,7 +42,7 @@ pub enum ScreenRecorderVideoCodec {
     Hevc,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, EnumString)]
+#[derive(Debug, Clone, Serialize, Deserialize, EnumString, Display)]
 #[strum(ascii_case_insensitive)]
 pub enum ScreenRecorderAudioCodec {
     #[strum(to_string = "auto")]
@@ -53,7 +53,7 @@ pub enum ScreenRecorderAudioCodec {
     Flac,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, EnumString)]
+#[derive(Debug, Clone, Serialize, Deserialize, EnumString, Display)]
 #[strum(ascii_case_insensitive)]
 pub enum ScreenRecorderFramerateMode {
     #[strum(to_string = "cfr", serialize = "constant")]
@@ -62,7 +62,7 @@ pub enum ScreenRecorderFramerateMode {
     Variable,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, EnumString)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, EnumString, Display)]
 #[strum(ascii_case_insensitive)]
 pub enum ScreenRecorderBitrateMode {
     #[strum(to_string = "qp", serialize = "constantquality", serialize = "constant_quality")]
@@ -73,7 +73,7 @@ pub enum ScreenRecorderBitrateMode {
     ConstantBitrate,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, EnumString)]
+#[derive(Debug, Clone, Serialize, Deserialize, EnumString, Display)]
 #[strum(ascii_case_insensitive)]
 pub enum ScreenRecorderColorRange {
     #[strum(to_string = "limited")]

@@ -86,6 +86,41 @@ pub fn new() -> gtk::Box {
             set_hexpand: true,
             
             append: &capture_target_dropdown,
+            
+            // testing buttons
+            gtk::Box {
+                set_orientation: gtk::Orientation::Vertical,
+                set_spacing: 8,
+                set_hexpand: true,
+                
+                gtk::Button {
+                    set_label: "Start Recording",
+                    connect_clicked: move |_| if let Some(screen_recorder) = SCREEN_RECORDER.get() {
+                        screen_recorder.write().unwrap().start(false);
+                    }
+                },
+                
+                gtk::Button {
+                    set_label: "Start Replay",
+                    connect_clicked: move |_| if let Some(screen_recorder) = SCREEN_RECORDER.get() {
+                        screen_recorder.write().unwrap().start(true);
+                    }
+                },
+                
+                gtk::Button {
+                    set_label: "Stop",
+                    connect_clicked: move |_| if let Some(screen_recorder) = SCREEN_RECORDER.get() {
+                        screen_recorder.write().unwrap().stop();
+                    }
+                },
+                
+                gtk::Button {
+                    set_label: "Save Replay",
+                    connect_clicked: move |_| if let Some(screen_recorder) = SCREEN_RECORDER.get() {
+                        screen_recorder.write().unwrap().save_replay();
+                    }
+                },
+            }
         }
     };
 

@@ -52,6 +52,13 @@ pub fn kill_task_if_any(command: &str) {
         .output();
 }
 
+pub fn send_signal(pid: u32, signal: &str) {
+    let _ = std::process::Command::new("kill")
+        .arg(format!("-{}", signal))
+        .arg(pid.to_string())
+        .output();
+}
+
 pub fn launch(input: &str) {
     // Remove field codes from argv (including those that are deprecated), we won't be needing them...
     let argv: Vec<String> = if let Some(args) = shlex::split(input) {
