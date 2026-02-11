@@ -1,9 +1,19 @@
+use futures_signals::signal::{Mutable, SignalExt as _};
 use gtk::prelude::*;
 
 use crate::config::{read_config, save_config};
 use crate::services::screen_recorder::{SCREEN_RECORDER, ScreenRecorderCaptureOption, get_configured_capture_target};
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum ScreenRecorderState {
+    Record,
+    Replay,
+    Idle,
+}
+
 pub fn new() -> gtk::Box {
+    let state = Mutable::new(ScreenRecorderState::Idle);
+    
     let capture_target_model = gio::ListStore::new::<glib::BoxedAnyObject>();
     let capture_target_expression = gtk::ClosureExpression::new::<String>(
         &[] as &[gtk::Expression],
@@ -79,50 +89,99 @@ pub fn new() -> gtk::Box {
     ));
     
     view! {
+        start_recording_button = gtk::Button {
+            set_css_classes: &["screen-recorder-state-button"],
+            set_label: "Record",
+            set_hexpand: true,
+            connect_clicked: clone!(
+                #[strong] state,
+                move |_| if let Some(screen_recorder) = SCREEN_RECORDER.get() {
+                    screen_recorder.write().unwrap().start(false);
+                    state.set(ScreenRecorderState::Record);
+                }
+            )
+        },
+        
+        start_replay_button = gtk::Button {
+            set_css_classes: &["screen-recorder-state-button"],
+            set_label: "Replay",
+            set_hexpand: true,
+            connect_clicked: clone!(
+                #[strong] state,
+                move |_| if let Some(screen_recorder) = SCREEN_RECORDER.get() {
+                    screen_recorder.write().unwrap().start(true);
+                    state.set(ScreenRecorderState::Replay);
+                }
+            )
+        },
+        
+        stop_button = gtk::Button {
+            set_css_classes: &["screen-recorder-state-button"],
+            set_label: "Stop",
+            set_hexpand: true,
+            set_sensitive: false,
+            connect_clicked: clone!(
+                #[strong] state,
+                move |_| if let Some(screen_recorder) = SCREEN_RECORDER.get() {
+                    screen_recorder.write().unwrap().stop();
+                    state.set(ScreenRecorderState::Idle);
+                }
+            )
+        },
+        
+        save_button = gtk::Button {
+            set_css_classes: &["screen-recorder-state-button"],
+            set_label: "Save Replay",
+            set_hexpand: true,
+            set_sensitive: false,
+            connect_clicked: move |_| if let Some(screen_recorder) = SCREEN_RECORDER.get() {
+                screen_recorder.write().unwrap().save_replay();
+            }
+        },
+        
         widget = gtk::Box {
             set_css_classes: &["ScreenRecorder"],
             set_orientation: gtk::Orientation::Vertical,
             set_spacing: 8,
             set_hexpand: true,
             
-            append: &capture_target_dropdown,
+            gtk::Box {
+                set_css_classes: &["screen-recorder-state-buttons"],
+                set_orientation: gtk::Orientation::Horizontal,
+                set_spacing: 8,
+                set_hexpand: true,
+                
+                append: &start_recording_button,
+                append: &start_replay_button,
+                append: &stop_button,
+                append: &save_button,
+            },
             
-            // testing buttons
             gtk::Box {
                 set_orientation: gtk::Orientation::Vertical,
                 set_spacing: 8,
                 set_hexpand: true,
                 
-                gtk::Button {
-                    set_label: "Start Recording",
-                    connect_clicked: move |_| if let Some(screen_recorder) = SCREEN_RECORDER.get() {
-                        screen_recorder.write().unwrap().start(false);
-                    }
+                gtk::Label {
+                    set_css_classes: &["screen-recorder-field-label"],
+                    set_label: "Capture Target",
+                    set_xalign: 0.0,
+                    set_hexpand: true,
                 },
-                
-                gtk::Button {
-                    set_label: "Start Replay",
-                    connect_clicked: move |_| if let Some(screen_recorder) = SCREEN_RECORDER.get() {
-                        screen_recorder.write().unwrap().start(true);
-                    }
-                },
-                
-                gtk::Button {
-                    set_label: "Stop",
-                    connect_clicked: move |_| if let Some(screen_recorder) = SCREEN_RECORDER.get() {
-                        screen_recorder.write().unwrap().stop();
-                    }
-                },
-                
-                gtk::Button {
-                    set_label: "Save Replay",
-                    connect_clicked: move |_| if let Some(screen_recorder) = SCREEN_RECORDER.get() {
-                        screen_recorder.write().unwrap().save_replay();
-                    }
-                },
-            }
+                append: &capture_target_dropdown,
+            },
         }
     };
+    
+    glib::spawn_future_local(signal!(state, (new_state) {
+        let active = matches!(new_state, ScreenRecorderState::Record | ScreenRecorderState::Replay);
+        let idle = matches!(new_state, ScreenRecorderState::Idle);
+        
+        start_recording_button.set_sensitive(idle);
+        start_replay_button.set_sensitive(idle);
+        stop_button.set_sensitive(active);
+        save_button.set_sensitive(new_state == ScreenRecorderState::Replay);
+    }));
 
     widget
 }
