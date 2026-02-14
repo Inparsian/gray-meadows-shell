@@ -1,10 +1,11 @@
 use std::process::Stdio;
 use std::sync::{OnceLock, RwLock};
 use std::time::Duration;
-use futures_signals::signal::Mutable;
+use futures_signals::signal::{Mutable, SignalExt as _};
 use tokio::process::Child;
 
 use crate::config::{ScreenRecorderBitrateMode, read_config};
+use crate::services::notifications::client::NotificationBuilder;
 use crate::utils::process::{self, send_signal};
 
 pub static SCREEN_RECORDER: OnceLock<RwLock<ScreenRecorder>> = OnceLock::new();
@@ -48,12 +49,50 @@ pub enum ScreenRecorderState {
 #[derive(Default, Debug)]
 pub struct ScreenRecorder {
     pub state: Mutable<ScreenRecorderState>,
+    pub old_state: Option<ScreenRecorderState>,
     pub process: Option<Child>,
     pub capture_options: Vec<ScreenRecorderCaptureOption>,
     pub audio_devices: Vec<ScreenRecorderAudioDevice>,
 }
 
 impl ScreenRecorder {
+    pub fn new() -> Self {
+        let me = Self::default();
+        
+        tokio::spawn(signal!(me.state, (new_state) {
+            let (summary, body) = match new_state {
+                ScreenRecorderState::Record => {
+                    ("Recording Started", "Your recording has started.")
+                },
+                ScreenRecorderState::Replay => {
+                    ("Replay Started", "Your replay has started.")
+                },
+                ScreenRecorderState::Idle => {
+                    get_screen_recorder().read()
+                        .map_or(None, |s| s.old_state)
+                        .map_or(
+                            ("What", "You should not see this message, if you do, please report it."),
+                            |old_state| match old_state {
+                                ScreenRecorderState::Record => ("Recording Stopped", "Your recording has stopped."),
+                                ScreenRecorderState::Replay => ("Replay Stopped", "Your replay has stopped."),
+                                _ => ("What", "You should not see this message, if you do, please report it.")
+                            }
+                        )
+                },
+            };
+            
+            if !matches!(new_state, ScreenRecorderState::Idle) || get_screen_recorder().read().map_or(None, |s| s.old_state).is_some() {
+                let _ = NotificationBuilder::new()
+                    .app_name("gray-meadows-shell")
+                    .summary(summary)
+                    .body(body)
+                    .send();
+            }
+        }));
+        
+        me
+    }
+    
     pub fn find_capture_option(&self, name: &str) -> Option<(usize, ScreenRecorderCaptureOption)> {
         self.capture_options.iter()
             .cloned()
@@ -129,6 +168,12 @@ impl ScreenRecorder {
             .expect("failed to spawn gpu-screen-recorder");
         
         self.process = Some(child);
+        self.old_state = Some(self.state.get());
+        self.state.set(if replay {
+            ScreenRecorderState::Replay
+        } else {
+            ScreenRecorderState::Record
+        });
     }
     
     pub fn stop(&mut self) {
@@ -140,6 +185,11 @@ impl ScreenRecorder {
                     send_signal(pid, "SIGINT");
                     tokio::time::sleep(Duration::from_millis(100)).await;
                 }
+                
+                if let Ok(mut screen_recorder) = get_screen_recorder().write() {
+                    screen_recorder.old_state = Some(screen_recorder.state.get());
+                    screen_recorder.state.set(ScreenRecorderState::Idle);
+                }
             });
         }
     }
@@ -147,8 +197,23 @@ impl ScreenRecorder {
     pub fn save_replay(&self) {
         if let Some(pid) = self.process.as_ref().and_then(|p| p.id()) {
             send_signal(pid, "SIGUSR1");
+            
+            // Send the notification with a slight delay to ensure it doesn't show
+            // up on the replay
+            tokio::spawn(async {
+                tokio::time::sleep(Duration::from_millis(150)).await;
+                let _ = NotificationBuilder::new()
+                    .app_name("gray-meadows-shell")
+                    .summary("Replay Saved")
+                    .body("Your replay buffer has been saved.")
+                    .send();
+            });
         }
     }
+}
+
+pub fn get_screen_recorder<'a>() -> &'a RwLock<ScreenRecorder> {
+    SCREEN_RECORDER.get_or_init(|| RwLock::new(ScreenRecorder::new()))
 }
 
 pub fn activate() {
@@ -157,16 +222,13 @@ pub fn activate() {
         return;
     }
     
-    let _ = SCREEN_RECORDER.set(RwLock::new(ScreenRecorder::default()));
+    let _ = SCREEN_RECORDER.set(RwLock::new(ScreenRecorder::new()));
     
     tokio::spawn(async {
         let capture_options = query_capture_options().await;
         let audio_devices = query_audio_devices().await;
-        let mut recorder = SCREEN_RECORDER
-            .get_or_init(|| RwLock::new(ScreenRecorder::default()))
-            .write()
-            .unwrap();
         
+        let mut recorder = get_screen_recorder().write().unwrap();
         recorder.capture_options = capture_options;
         recorder.audio_devices = audio_devices;
     });
@@ -234,8 +296,7 @@ pub async fn query_audio_devices() -> Vec<ScreenRecorderAudioDevice> {
 pub fn get_configured_capture_target() -> Option<(usize, ScreenRecorderCaptureOption)> {
     let capture_target = read_config().screen_recorder.capture_target.clone();
     
-    SCREEN_RECORDER
-        .get_or_init(|| RwLock::new(ScreenRecorder::default()))
+    get_screen_recorder()
         .read()
         .unwrap()
         .find_capture_option(&capture_target)

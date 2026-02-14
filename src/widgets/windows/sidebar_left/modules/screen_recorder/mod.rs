@@ -3,7 +3,7 @@ use gtk::prelude::*;
 
 use crate::config::{read_config, save_config};
 use crate::services::screen_recorder::{
-    SCREEN_RECORDER,
+    get_screen_recorder,
     ScreenRecorderState,
     ScreenRecorderCaptureOption,
     get_configured_capture_target
@@ -36,8 +36,8 @@ pub fn new() -> gtk::Box {
         #[weak] capture_target_model,
         #[strong] capture_target_ignore_next_notify,
         async move {
-            let Some(capture_options) = SCREEN_RECORDER.get()
-                .map(|screen_recorder| screen_recorder.read().unwrap().capture_options.clone())
+            let Ok(capture_options) = get_screen_recorder().read()
+                .map(|screen_recorder| screen_recorder.capture_options.clone())
             else {
                 return;
             };
@@ -89,11 +89,8 @@ pub fn new() -> gtk::Box {
             set_css_classes: &["screen-recorder-state-button"],
             set_label: "Record",
             set_hexpand: true,
-            connect_clicked: move |_| {
-                if let Some(mut screen_recorder) = SCREEN_RECORDER.get().and_then(|s| s.write().ok()) {
-                    screen_recorder.start(false);
-                    screen_recorder.state.set(ScreenRecorderState::Record);
-                }
+            connect_clicked: move |_| if let Ok(mut screen_recorder) = get_screen_recorder().write() {
+                screen_recorder.start(false);
             }
         },
         
@@ -101,11 +98,8 @@ pub fn new() -> gtk::Box {
             set_css_classes: &["screen-recorder-state-button"],
             set_label: "Replay",
             set_hexpand: true,
-            connect_clicked: move |_| {
-                if let Some(mut screen_recorder) = SCREEN_RECORDER.get().and_then(|s| s.write().ok()) {
-                    screen_recorder.start(true);
-                    screen_recorder.state.set(ScreenRecorderState::Replay);
-                }
+            connect_clicked: move |_| if let Ok(mut screen_recorder) = get_screen_recorder().write() {
+                screen_recorder.start(true);
             }
         },
         
@@ -114,11 +108,8 @@ pub fn new() -> gtk::Box {
             set_label: "Stop",
             set_hexpand: true,
             set_sensitive: false,
-            connect_clicked: move |_| {
-                if let Some(mut screen_recorder) = SCREEN_RECORDER.get().and_then(|s| s.write().ok()) {
-                    screen_recorder.stop();
-                    screen_recorder.state.set(ScreenRecorderState::Idle);
-                }
+            connect_clicked: move |_| if let Ok(mut screen_recorder) = get_screen_recorder().write() {
+                screen_recorder.stop();
             }
         },
         
@@ -127,10 +118,8 @@ pub fn new() -> gtk::Box {
             set_label: "Save Replay",
             set_hexpand: true,
             set_sensitive: false,
-            connect_clicked: move |_| {
-                if let Some(screen_recorder) = SCREEN_RECORDER.get().and_then(|s| s.read().ok()) {
-                    screen_recorder.save_replay();
-                }
+            connect_clicked: move |_| if let Ok(screen_recorder) = get_screen_recorder().read() {
+                screen_recorder.save_replay();
             }
         },
         
@@ -168,7 +157,7 @@ pub fn new() -> gtk::Box {
         }
     };
     
-    if let Some(screen_recorder) = SCREEN_RECORDER.get().and_then(|s| s.read().ok()) {
+    if let Ok(screen_recorder) = get_screen_recorder().read() {
         glib::spawn_future_local(signal!(screen_recorder.state, (new_state) {
             let active = matches!(new_state, ScreenRecorderState::Record | ScreenRecorderState::Replay);
             let idle = matches!(new_state, ScreenRecorderState::Idle);
