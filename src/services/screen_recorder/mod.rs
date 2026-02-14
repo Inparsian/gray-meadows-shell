@@ -1,6 +1,7 @@
 use std::process::Stdio;
 use std::sync::{OnceLock, RwLock};
 use std::time::Duration;
+use futures_signals::signal::Mutable;
 use tokio::process::Child;
 
 use crate::config::{ScreenRecorderBitrateMode, read_config};
@@ -36,8 +37,17 @@ pub struct ScreenRecorderAudioDevice {
     pub localized: String,
 }
 
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ScreenRecorderState {
+    Record,
+    Replay,
+    #[default]
+    Idle,
+}
+
 #[derive(Default, Debug)]
 pub struct ScreenRecorder {
+    pub state: Mutable<ScreenRecorderState>,
     pub process: Option<Child>,
     pub capture_options: Vec<ScreenRecorderCaptureOption>,
     pub audio_devices: Vec<ScreenRecorderAudioDevice>,
