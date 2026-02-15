@@ -9,6 +9,7 @@ use crate::services::notifications::client::NotificationBuilder;
 use crate::utils::process::{self, send_signal};
 
 pub static SCREEN_RECORDER: OnceLock<RwLock<ScreenRecorder>> = OnceLock::new();
+const SIGINT_ATTEMPTS: u8 = 10;
 
 #[derive(Clone, Debug)]
 pub enum ScreenRecorderCaptureOption {
@@ -42,6 +43,7 @@ pub struct ScreenRecorderAudioDevice {
 pub enum ScreenRecorderState {
     Record,
     Replay,
+    Waiting,
     #[default]
     Idle,
 }
@@ -61,12 +63,9 @@ impl ScreenRecorder {
         
         tokio::spawn(signal!(me.state, (new_state) {
             let (summary, body) = match new_state {
-                ScreenRecorderState::Record => {
-                    ("Recording Started", "Your recording has started.")
-                },
-                ScreenRecorderState::Replay => {
-                    ("Replay Started", "Your replay has started.")
-                },
+                ScreenRecorderState::Record => ("Recording Started", "Your recording has started."),
+                ScreenRecorderState::Replay => ("Replay Started", "Your replay has started."),
+                ScreenRecorderState::Waiting => ("What", "You should not see this message, if you do, please report it."),
                 ScreenRecorderState::Idle => {
                     get_screen_recorder().read()
                         .map_or(None, |s| s.old_state)
@@ -81,7 +80,10 @@ impl ScreenRecorder {
                 },
             };
             
-            if !matches!(new_state, ScreenRecorderState::Idle) || get_screen_recorder().read().map_or(None, |s| s.old_state).is_some() {
+            if !matches!(new_state, ScreenRecorderState::Waiting)
+                && (!matches!(new_state, ScreenRecorderState::Idle)
+                    || get_screen_recorder().read().map_or(None, |s| s.old_state).is_some())
+            {
                 let _ = NotificationBuilder::new()
                     .app_name("gray-meadows-shell")
                     .summary(summary)
@@ -112,13 +114,19 @@ impl ScreenRecorder {
             .cloned()
     }
     
+    pub fn set_state_and_old_state(&mut self, new_state: ScreenRecorderState) {
+        self.old_state = Some(self.state.get());
+        self.state.set(new_state);
+    }
+    
     pub fn start(&mut self, replay: bool) {
         if self.process.is_some() {
             return;
         }
         
-        let config = read_config().screen_recorder.clone();
+        self.set_state_and_old_state(ScreenRecorderState::Waiting);
         
+        let config = read_config().screen_recorder.clone();
         let window = self.find_capture_option(&config.capture_target)
             .map_or("portal".to_owned(), |t| t.1.as_config_option());
         
@@ -168,7 +176,6 @@ impl ScreenRecorder {
             .expect("failed to spawn gpu-screen-recorder");
         
         self.process = Some(child);
-        self.old_state = Some(self.state.get());
         self.state.set(if replay {
             ScreenRecorderState::Replay
         } else {
@@ -178,16 +185,29 @@ impl ScreenRecorder {
     
     pub fn stop(&mut self) {
         if let Some(mut process) = self.process.take() && let Some(pid) = process.id() {
+            self.set_state_and_old_state(ScreenRecorderState::Waiting);
+            
             tokio::spawn(async move {
-                // it is possible that the process has not fully initialized yet
-                // so try_wait repeatedly until we get an exit status
-                while matches!(process.try_wait(), Ok(None)) {
+                // It is possible that the process has not fully initialized yet, so
+                // try_wait repeatedly until we get an exit status
+                // This also ensures that any notifications regarding screen recorder
+                // status updates won't show up on recording
+                for attempts in 1..=SIGINT_ATTEMPTS {
                     send_signal(pid, "SIGINT");
-                    tokio::time::sleep(Duration::from_millis(100)).await;
+                    
+                    if !matches!(process.try_wait(), Ok(None)) {
+                        break;
+                    }
+                    
+                    if attempts >= SIGINT_ATTEMPTS {
+                        warn!("Process is unresponsive, force-killing");
+                        let _ = process.start_kill();
+                    } else {
+                        tokio::time::sleep(Duration::from_millis(50)).await;
+                    }
                 }
                 
-                if let Ok(mut screen_recorder) = get_screen_recorder().write() {
-                    screen_recorder.old_state = Some(screen_recorder.state.get());
+                if let Ok(screen_recorder) = get_screen_recorder().read() {
                     screen_recorder.state.set(ScreenRecorderState::Idle);
                 }
             });
