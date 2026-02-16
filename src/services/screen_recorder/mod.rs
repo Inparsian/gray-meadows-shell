@@ -5,6 +5,7 @@ use futures_signals::signal::{Mutable, SignalExt as _};
 use tokio::process::Child;
 
 use crate::config::{ScreenRecorderBitrateMode, read_config};
+use crate::ipc;
 use crate::services::notifications::client::NotificationBuilder;
 use crate::utils::process::{self, send_signal};
 
@@ -251,6 +252,23 @@ pub fn activate() {
         let mut recorder = get_screen_recorder().write().unwrap();
         recorder.capture_options = capture_options;
         recorder.audio_devices = audio_devices;
+    });
+    
+    ipc::listen_for_messages_local(|message| {
+        let message = message.as_str();
+        if matches!(message, "screen_rec_start_recording"
+            | "screen_rec_start_replay"
+            | "screen_rec_save_replay"
+            | "screen_rec_stop"
+        ) && let Ok(mut screen_recorder) = get_screen_recorder().write() {
+            match message {
+                "screen_rec_start_recording" => screen_recorder.start(false),
+                "screen_rec_start_replay" => screen_recorder.start(true),
+                "screen_rec_save_replay" => screen_recorder.save_replay(),
+                "screen_rec_stop" => screen_recorder.stop(),
+                _ => unreachable!(),
+            }
+        }
     });
 }
 
