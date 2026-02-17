@@ -215,6 +215,15 @@ impl ScreenRecorder {
         }
     }
     
+    pub fn toggle(&mut self, replay: bool) {
+        match self.state.get() {
+            ScreenRecorderState::Record if !replay => self.stop(),
+            ScreenRecorderState::Replay if replay => self.stop(),
+            ScreenRecorderState::Idle if self.process.is_none() => self.start(replay),
+            _ => {},
+        }
+    }
+    
     pub fn save_replay(&self) {
         if let Some(pid) = self.process.as_ref().and_then(|p| p.id()) {
             send_signal(pid, "SIGUSR1");
@@ -258,12 +267,16 @@ pub fn activate() {
         let message = message.as_str();
         if matches!(message, "screen_rec_start_recording"
             | "screen_rec_start_replay"
+            | "screen_rec_toggle_recording"
+            | "screen_rec_toggle_replay"
             | "screen_rec_save_replay"
             | "screen_rec_stop"
         ) && let Ok(mut screen_recorder) = get_screen_recorder().write() {
             match message {
                 "screen_rec_start_recording" => screen_recorder.start(false),
                 "screen_rec_start_replay" => screen_recorder.start(true),
+                "screen_rec_toggle_recording" => screen_recorder.toggle(false),
+                "screen_rec_toggle_replay" => screen_recorder.toggle(true),
                 "screen_rec_save_replay" => screen_recorder.save_replay(),
                 "screen_rec_stop" => screen_recorder.stop(),
                 _ => unreachable!(),

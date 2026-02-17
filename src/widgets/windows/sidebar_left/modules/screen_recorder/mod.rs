@@ -54,7 +54,7 @@ pub fn new() -> gtk::Box {
                 capture_target_dropdown.set_selected(index as u32);
             } else {
                 // set to portal, which should be the last item
-                capture_target_dropdown.set_selected(capture_target_model.n_items() - 1);
+                capture_target_dropdown.set_selected(capture_target_model.n_items().saturating_sub(1));
             }
         }
     ));
