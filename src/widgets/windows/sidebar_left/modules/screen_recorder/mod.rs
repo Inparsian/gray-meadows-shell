@@ -1,3 +1,5 @@
+mod audio_targets;
+
 use futures_signals::signal::SignalExt as _;
 use gtk::prelude::*;
 
@@ -8,6 +10,7 @@ use crate::services::screen_recorder::{
     ScreenRecorderCaptureOption,
     get_configured_capture_target
 };
+use self::audio_targets::{AudioTargets, AudioTargetType};
 
 pub fn new() -> gtk::Box {
     let capture_target_model = gio::ListStore::new::<glib::BoxedAnyObject>();
@@ -126,7 +129,7 @@ pub fn new() -> gtk::Box {
         widget = gtk::Box {
             set_css_classes: &["ScreenRecorder"],
             set_orientation: gtk::Orientation::Vertical,
-            set_spacing: 8,
+            set_spacing: 24,
             set_hexpand: true,
             
             gtk::Box {
@@ -154,6 +157,9 @@ pub fn new() -> gtk::Box {
                 },
                 append: &capture_target_dropdown,
             },
+            
+            append: &AudioTargets::new(AudioTargetType::App).root,
+            append: &AudioTargets::new(AudioTargetType::Device).root,
         }
     };
     

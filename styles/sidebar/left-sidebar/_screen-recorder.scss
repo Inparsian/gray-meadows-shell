@@ -1,8 +1,4 @@
 .left-sidebar-window .left-sidebar-box .ScreenRecorder {
-    .screen-recorder-state-buttons {
-        margin-bottom: 16px;
-    }
-    
     button.screen-recorder-state-button {
         @include normal-text;
         background: $background-color-secondary;
@@ -22,6 +18,35 @@
     
         &:active {
             background: $background-color-quaternary;
+        }
+    }
+    
+    .audio-targets-list {
+        padding: 8px;
+        background: $background-color-secondary;
+        
+        .audio-target {
+            padding: 8px;
+            .audio-target-remove-button {
+                @include material-icons;
+                background: transparent;
+                border: 0px;
+                color: $foreground-color-quaternary;
+                padding: 0px;
+                margin: 0px;
+                min-width: 0px;
+                min-height: 0px;
+                font-weight: 900;
+
+                &:hover, &:focus {
+                    color: $foreground-color-tertiary;
+                    outline: none;
+                }
+
+                &:active {
+                    color: $foreground-color-secondary;
+                }
+            }
         }
     }
     
