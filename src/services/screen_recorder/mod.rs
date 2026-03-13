@@ -285,6 +285,17 @@ pub fn activate() {
     });
 }
 
+fn line_to_capture_option(line: &str) -> Option<ScreenRecorderCaptureOption> {
+    if line.trim() == "portal" {
+        Some(ScreenRecorderCaptureOption::Portal)
+    } else {
+        let parts: Vec<&str> = line.split('|').collect();
+        
+        (parts.len() == 2)
+            .then(|| ScreenRecorderCaptureOption::Monitor(parts[0].to_owned(), parts[1].to_owned()))
+    }
+}
+
 pub async fn query_capture_options() -> Vec<ScreenRecorderCaptureOption> {
     let result = tokio::process::Command::new("gpu-screen-recorder")
         .arg("--list-capture-options")
@@ -294,23 +305,46 @@ pub async fn query_capture_options() -> Vec<ScreenRecorderCaptureOption> {
         .map(|output| {
             String::from_utf8_lossy(&output.stdout)
                 .lines()
-                .filter_map(|line| if line.trim() == "portal" {
-                    Some(ScreenRecorderCaptureOption::Portal)
-                } else {
-                    let parts: Vec<&str> = line.split('|').collect();
-                    
-                    (parts.len() == 2)
-                        .then(|| ScreenRecorderCaptureOption::Monitor(parts[0].to_owned(), parts[1].to_owned()))
-                })
+                .filter_map(line_to_capture_option)
                 .collect()
         });
     
-    match result {
+    let mut results = match result {
         Ok(options) => options,
         Err(err) => {
             error!(%err, "Failed to list capture options");
             Vec::new()
         }
+    };
+    
+    // Fall back to --list-monitors if no monitors are in the list
+    if !results.iter().any(|opt| matches!(opt, ScreenRecorderCaptureOption::Monitor(_, _))) {
+        warn!("No monitors found in capture options, falling back to --list-monitors");
+        
+        let monitor_result = tokio::process::Command::new("gpu-screen-recorder")
+            .arg("--list-monitors")
+            .output()
+            .await
+            .map_err(|e| format!("Failed to list monitors: {}", e))
+            .map(|output| {
+                String::from_utf8_lossy(&output.stdout)
+                    .lines()
+                    .filter_map(line_to_capture_option)
+                    .collect::<Vec<_>>()
+            });
+        
+        match monitor_result {
+            Ok(monitors) => {
+                results.extend(monitors);
+                results
+            },
+            Err(err) => {
+                error!(%err, "Failed to list monitors");
+                Vec::new()
+            }
+        }
+    } else {
+        results
     }
 }
 
