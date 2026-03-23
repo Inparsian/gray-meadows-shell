@@ -208,14 +208,21 @@ impl MprisPlayer {
             }
         }
 
-        // Set metadata properties
+        // Set common metadata properties
         set_metadata_property!(String, "mpris:trackid", track_id);
-        set_metadata_property!(i64, "mpris:length", length);
         set_metadata_property!(String, "mpris:artUrl", art_url);
         set_metadata_property!(String, "xesam:album", album);
         set_metadata_property!(Vec<String>, "xesam:artist", artist);
         set_metadata_property!(String, "xesam:contentCreated", content_created);
         set_metadata_property!(String, "xesam:title", title);
+        
+        // some players (e.g. spotify) are not spec-complaint when it comes to mpris:length
+        // most use i64, some use u64
+        if let Ok(value) = self.get_metadata_property::<i64>("mpris:length") {
+            self.metadata.length = Some(value);
+        } else if let Ok(value) = self.get_metadata_property::<u64>("mpris:length") {
+            self.metadata.length = Some(value as i64);
+        }
     }
 
     pub fn properties_changed(&mut self, msg: &Message) {
