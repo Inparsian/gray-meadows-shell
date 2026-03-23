@@ -1,0 +1,87 @@
+.left-sidebar-window .left-sidebar-box .ScreenRecorder {
+    button.screen-recorder-state-button {
+        @include normal-text;
+        background: $background-color-secondary;
+        border: 1px solid $border-color-primary;
+        border-radius: 0px;
+        color: $foreground-color-primary;
+        padding-top: 2px;
+        padding-bottom: 2px;
+        padding-left: 8px;
+        padding-right: 8px;
+        font-weight: normal;
+        
+        &:hover, &:focus {
+            background: $background-color-tertiary;
+            outline: none;
+        }
+    
+        &:active {
+            background: $background-color-quaternary;
+        }
+    }
+    
+    .audio-targets-list {
+        padding: 8px;
+        background: $background-color-secondary;
+        
+        .audio-target {
+            padding: 8px;
+            .audio-target-remove-button {
+                @include material-icons;
+                background: transparent;
+                border: 0px;
+                color: $foreground-color-quaternary;
+                padding: 0px;
+                margin: 0px;
+                min-width: 0px;
+                min-height: 0px;
+                font-weight: 900;
+
+                &:hover, &:focus {
+                    color: $foreground-color-tertiary;
+                    outline: none;
+                }
+
+                &:active {
+                    color: $foreground-color-secondary;
+                }
+            }
+        }
+    }
+    
+    dropdown {
+        button {
+            @include normal-text;
+            background: $background-color-secondary;
+            border: 1px solid $border-color-primary;
+            border-radius: 0px;
+            color: $foreground-color-primary;
+            padding-top: 2px;
+            padding-bottom: 2px;
+            padding-left: 8px;
+            padding-right: 8px;
+            font-weight: normal;
+            
+            &:hover, &:focus {
+                background: $background-color-tertiary;
+                outline: none;
+            }
+    
+            &:active {
+                background: $background-color-quaternary;
+            }
+        }
+        
+        popover contents {
+            border-radius: 0px;
+            box-shadow: none;
+            background: $background-color-secondary;
+            border: 1px solid $border-color-primary;
+            
+            row {
+                border-radius: 0px;
+            }
+        }
+    }
+}

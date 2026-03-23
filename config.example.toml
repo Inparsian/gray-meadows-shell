@@ -102,3 +102,56 @@ enabled = true
 # How often to refresh the weather alerts, in seconds.
 # There is a minimum of 10 seconds to avoid excessive API usage.
 refresh_interval = 30
+
+[screen_recorder]
+# The content to capture.
+# "portal" will use the xdg desktop screencast portal w/ PipeWire.
+# Any other string will be interpreted as a monitor name.
+capture_target = "portal"
+
+# The length of the replay buffer, in seconds.
+replay_buffer_length_secs = 30
+
+# The absolute path to the output directory for recordings.
+recording_output_directory = "~/Videos"
+
+# The absolute path to the output directory for replays.
+replay_output_directory = "~/Videos"
+
+# The video container format to use, either 'mp4', 'flv', 'mkv', 'mov', 'ts', or 'm3u8'.
+video_container = "mp4"
+
+# Video quality, either 'medium', 'high', 'very_high', or 'ultra'.
+# 'very_high' is recommended for recording.
+# This is ignored when bitrate mode is set to constant bitrate.
+video_quality = "very_high"
+
+# The video bitrate in Kbp/s. This is ignored when bitrate mode is not set to constant bitrate.
+bitrate_kbps = 10000
+
+# Frame rate to record at.
+framerate = 60
+
+# Video codec to use, either 'auto', 'h264', or 'hevc'.
+video_codec = "auto"
+
+# Framerate mode, either 'constant' or 'variable'.
+framerate_mode = "constant"
+
+# Bitrate mode, either 'constant_quality', 'variable_bitrate', or 'constant_bitrate'.
+bitrate_mode = "constant_quality"
+
+# Color range, either 'limited' or 'full'.
+color_range = "limited"
+
+# Whether the cursor is captured.
+record_cursor = true
+
+# The names of applications to record the audio of.
+audio_app_targets = []
+
+# The names of devices to record the audio of.
+audio_device_targets = []
+
+# Audio codec, either 'auto', 'opus', or 'flac'.
+audio_codec = "auto"

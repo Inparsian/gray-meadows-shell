@@ -12,6 +12,7 @@ pub mod networkmanager;
 pub mod clipboard;
 pub mod ai;
 pub mod weather;
+pub mod screen_recorder;
 
 pub async fn activate_all() {
     date_time::activate();
@@ -28,4 +29,5 @@ pub async fn activate_all() {
     clipboard::activate();
     ai::activate().await;
     weather::activate();
+    screen_recorder::activate();
 }
