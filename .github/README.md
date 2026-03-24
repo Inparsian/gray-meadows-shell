@@ -73,6 +73,7 @@ I express my deep gratitude to the following sponsors for their generous support
   - Google Translate integration
   - Advanced color picker
   - Integrated AI assistant powered by OpenAI/Gemini
+  - gpu-screen-recorder integration
 
 ## 🤔 Why the name "Gray Meadows"?
 grayscale color scheme, first screenshot of the agsv2 version used a foggy forest wallpaper. was too lazy to come up with a better name
