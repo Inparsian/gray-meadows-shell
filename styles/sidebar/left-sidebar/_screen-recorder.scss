@@ -20,6 +20,30 @@
             background: $background-color-quaternary;
         }
     }
+
+    button.audio-target-add-button {
+        @include normal-text;
+        @include material-icons;
+        background: $background-color-secondary;
+        border: 1px solid $border-color-primary;
+        border-left: none;
+        border-radius: 0px;
+        color: $foreground-color-primary;
+        padding-top: 0px;
+        padding-bottom: 0px;
+        padding-left: 6px;
+        padding-right: 6px;
+        font-weight: normal;
+        
+        &:hover, &:focus {
+            background: $background-color-tertiary;
+            outline: none;
+        }
+    
+        &:active {
+            background: $background-color-quaternary;
+        }
+    }
     
     .audio-targets-list {
         padding: 8px;

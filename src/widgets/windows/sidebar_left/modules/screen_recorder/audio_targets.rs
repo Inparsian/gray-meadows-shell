@@ -7,6 +7,57 @@ use crate::ffi::astalwp::WpEvent;
 use crate::ffi::astalwp::ffi::EndpointType;
 use crate::services::wireplumber;
 
+fn make_list_item_factory(ellipsize: gtk::pango::EllipsizeMode) -> gtk::SignalListItemFactory {
+    let factory = gtk::SignalListItemFactory::new();
+
+    factory.connect_setup(move |_, list_item| {
+        let label = gtk::Label::builder()
+            .xalign(0.0)
+            .hexpand(true)
+            .ellipsize(ellipsize)
+            .build();
+
+        let Some(list_item) = list_item.downcast_ref::<gtk::ListItem>() else {
+            return;
+        };
+
+        list_item.set_child(Some(&label));
+    });
+
+    factory.connect_bind(|_, list_item| {
+        let Some(list_item) = list_item.downcast_ref::<gtk::ListItem>() else {
+            return;
+        };
+
+        let Some(obj) = list_item.item() else {
+            return;
+        };
+
+        let Ok(any_obj) = obj.downcast::<glib::BoxedAnyObject>() else {
+            return;
+        };
+
+        let borrowed = any_obj.borrow::<(String, Option<String>)>();
+        let text = if let Some(desc) = borrowed.1.as_ref() {
+            format!("{} ({})", borrowed.0, desc)
+        } else {
+            borrowed.0.clone()
+        };
+
+        let Some(child) = list_item.child() else {
+            return;
+        };
+
+        let Ok(label) = child.downcast::<gtk::Label>() else {
+            return;
+        };
+
+        label.set_label(&text);
+    });
+
+    factory
+}
+
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub enum AudioTargetType {
     App,
@@ -103,11 +154,25 @@ impl AudioTargets {
             }),
         );
 
+        let targets_dropdown_box = gtk::Box::builder()
+            .orientation(gtk::Orientation::Horizontal)
+            .build();
+
         let targets_dropdown = gtk::DropDown::builder()
             .model(&target_model)
             .expression(&target_expression)
+            .factory(&make_list_item_factory(gtk::pango::EllipsizeMode::End))
+            .list_factory(&make_list_item_factory(gtk::pango::EllipsizeMode::None))
             .selected(gtk::INVALID_LIST_POSITION)
+            .hexpand(true)
             .build();
+        targets_dropdown_box.append(&targets_dropdown);
+
+        let targets_dropdown_add = gtk::Button::builder()
+            .css_classes(["audio-target-add-button"])
+            .label("add")
+            .build();
+        targets_dropdown_box.append(&targets_dropdown_add);
 
         // add & remove nodes as we discover them
         glib::spawn_future_local(clone!(
@@ -196,7 +261,7 @@ impl AudioTargets {
             .build();
         
         root.append(&field_label);
-        root.append(&targets_dropdown);
+        root.append(&targets_dropdown_box);
         root.append(&targets_list_scrolled);
         
         let me = Self {
@@ -206,11 +271,43 @@ impl AudioTargets {
             root,
         };
         
+        targets_dropdown_add.connect_clicked(clone!(
+            #[strong] me,
+            #[weak] targets_dropdown,
+            #[weak] target_model,
+            move |_| {
+                if let Some(item) = target_model.item(targets_dropdown.selected()) {
+                    let obj = item
+                        .downcast::<glib::BoxedAnyObject>()
+                        .expect("DropDown model item must be a BoxedAnyObject");
+            
+                    let target = obj
+                        .borrow::<(String, Option<String>)>()
+                        .0
+                        .clone();
+        
+                    let mut config = read_config().clone();
+                    let targets = match type_ {
+                        AudioTargetType::App => &mut config.screen_recorder.audio_app_targets,
+                        AudioTargetType::Device => &mut config.screen_recorder.audio_device_targets,
+                    };
+        
+                    if !targets.iter().any(|t| t == &target)
+                        && !me.targets.borrow().iter().any(|t| t.name == target)
+                    {
+                        me.add_target(&target, true);
+                        targets.push(target);
+                        let _ = save_config(&config);
+                    }
+                }
+            }
+        ));
+        
         me.refresh();
         me
     }
     
-    pub fn add_target(&self, target_name: &str) {
+    pub fn add_target(&self, target_name: &str, change_config: bool) {
         let target = AudioTarget::new(
             self,
             self.type_,
@@ -219,6 +316,16 @@ impl AudioTargets {
         
         self.targets_list.append(&target.root);
         self.targets.borrow_mut().push(target);
+
+        if change_config {
+            let mut config = read_config().clone();
+            if self.type_ == AudioTargetType::App {
+                config.screen_recorder.audio_app_targets.push(target_name.to_owned());
+            } else {
+                config.screen_recorder.audio_device_targets.push(target_name.to_owned());
+            }
+            let _ = save_config(&config);
+        }
     }
     
     pub fn remove_target(&self, target_name: &str) {
@@ -230,8 +337,11 @@ impl AudioTargets {
             self.targets_list.remove(&target.root);
 
             let mut config = read_config().clone();
-            config.screen_recorder.audio_app_targets.retain(|t| t != target_name);
-            config.screen_recorder.audio_device_targets.retain(|t| t != target_name);
+            if self.type_ == AudioTargetType::App {
+                config.screen_recorder.audio_app_targets.retain(|t| t != target_name);
+            } else {
+                config.screen_recorder.audio_device_targets.retain(|t| t != target_name);
+            }
             let _ = save_config(&config);
         }
     }
@@ -244,7 +354,7 @@ impl AudioTargets {
         };
         
         for target in targets {
-            self.add_target(&target);
+            self.add_target(&target, false);
         }
     }
 }
