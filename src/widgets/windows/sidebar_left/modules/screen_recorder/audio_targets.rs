@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use gtk::prelude::*;
 
-use crate::config::read_config;
+use crate::config::{read_config, save_config};
 use crate::ffi::astalwp::WpEvent;
 use crate::ffi::astalwp::ffi::EndpointType;
 use crate::services::wireplumber;
@@ -228,6 +228,11 @@ impl AudioTargets {
             .map(|i| targets.remove(i))
         {
             self.targets_list.remove(&target.root);
+
+            let mut config = read_config().clone();
+            config.screen_recorder.audio_app_targets.retain(|t| t != target_name);
+            config.screen_recorder.audio_device_targets.retain(|t| t != target_name);
+            let _ = save_config(&config);
         }
     }
     
