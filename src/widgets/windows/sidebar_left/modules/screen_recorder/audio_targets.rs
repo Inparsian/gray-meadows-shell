@@ -3,6 +3,9 @@ use std::rc::Rc;
 use gtk::prelude::*;
 
 use crate::config::read_config;
+use crate::ffi::astalwp::WpEvent;
+use crate::ffi::astalwp::ffi::EndpointType;
+use crate::services::wireplumber;
 
 #[derive(PartialEq, Eq, Clone, Copy)]
 pub enum AudioTargetType {
@@ -80,6 +83,101 @@ impl AudioTargets {
             .xalign(0.0)
             .hexpand(true)
             .build();
+
+        let target_model = gio::ListStore::new::<glib::BoxedAnyObject>();
+        let target_expression = gtk::ClosureExpression::new::<String>(
+            &[] as &[gtk::Expression],
+            glib::closure!(|obj: glib::Object| {
+                let obj = obj
+                    .downcast::<glib::BoxedAnyObject>()
+                    .expect("DropDown model item must be a BoxedAnyObject");
+    
+                let borrowed = obj
+                    .borrow::<(String, Option<String>)>();
+
+                if let Some(desc) = borrowed.1.as_ref() {
+                    format!("{} ({})", borrowed.0, desc)
+                } else {
+                    borrowed.0.clone()
+                }
+            }),
+        );
+
+        let targets_dropdown = gtk::DropDown::builder()
+            .model(&target_model)
+            .expression(&target_expression)
+            .selected(gtk::INVALID_LIST_POSITION)
+            .build();
+
+        // add & remove nodes as we discover them
+        glib::spawn_future_local(clone!(
+            #[weak] target_model,
+            #[weak] targets_dropdown,
+            async move {
+                let mut receiver = wireplumber::subscribe();
+                while let Ok(event) = receiver.recv().await {
+                    let remove_from_model = |name: &str| {
+                        let mut i = 0;
+                        while i < target_model.n_items() {
+                            let Some(obj) = target_model.item(i) else {
+                                i += 1;
+                                continue;
+                            };
+
+                            let Ok(any_obj) = obj.downcast::<glib::BoxedAnyObject>() else {
+                                i += 1;
+                                continue;
+                            };
+
+                            let borrowed = any_obj.borrow::<(String, Option<String>)>();
+                            if borrowed.0 == name {
+                                target_model.remove(i);
+                                break;
+                            }
+
+                            i += 1;
+                        }
+                    };
+
+                    match event {
+                        WpEvent::CreateStream(node) if type_ == AudioTargetType::App => {
+                            target_model.append(&glib::BoxedAnyObject::new((node.description, Some("stream".to_owned()))));
+                        }
+                        
+                        WpEvent::CreateRecorder(node) if type_ == AudioTargetType::App => {
+                            target_model.append(&glib::BoxedAnyObject::new((node.description, Some("recorder".to_owned()))));
+                        }
+
+                        WpEvent::RemoveStream(node) | WpEvent::RemoveRecorder(node) if type_ == AudioTargetType::App => {
+                            remove_from_model(&node.description);
+                        }
+
+                        WpEvent::CreateMicrophone(endpoint) | WpEvent::CreateSpeaker(endpoint) if type_ == AudioTargetType::Device => {
+                            target_model.append(&glib::BoxedAnyObject::new((endpoint.node.description, match endpoint.type_ {
+                                EndpointType::Microphone => Some("microphone".to_owned()),
+                                EndpointType::Speaker => Some("speaker".to_owned()),
+                                _ => None,
+                            })));
+                        }
+
+                        WpEvent::RemoveMicrophone(endpoint) | WpEvent::RemoveSpeaker(endpoint) if type_ == AudioTargetType::Device => {
+                            remove_from_model(&endpoint.node.description);
+                        }
+
+                        _ => {}
+                    }
+
+                    // correct the selected property on the dropdown if > items in the model
+                    let n_items = target_model.n_items();
+                    let selected = targets_dropdown.selected();
+                    if n_items == 0 {
+                        targets_dropdown.set_selected(gtk::INVALID_LIST_POSITION);
+                    } else if selected == gtk::INVALID_LIST_POSITION || selected >= n_items {
+                        targets_dropdown.set_selected(0);
+                    }
+                }
+            }
+        ));
         
         let targets_list = gtk::Box::builder()
             .css_classes(["audio-targets-list"])
@@ -98,6 +196,7 @@ impl AudioTargets {
             .build();
         
         root.append(&field_label);
+        root.append(&targets_dropdown);
         root.append(&targets_list_scrolled);
         
         let me = Self {
