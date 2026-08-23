@@ -23,6 +23,26 @@
                 min-height: 24px;
                 padding-left: 6px;
                 padding-right: 6px;
+                
+                .screen-recorder-indicator {
+                    margin-left: 2px;
+                    margin-right: 2px;
+                    
+                    &.recording {
+                        animation: screen-recorder-pulse 2s ease-in-out infinite;
+
+                        @keyframes screen-recorder-pulse {
+                            0%, 100% {
+                                text-shadow: 0 0 4px $foreground-color-primary;
+                            }
+                            50% {
+                                text-shadow: 0 0 4px $foreground-color-primary,
+                                    0 0 8px $foreground-color-primary,
+                                    0 0 12px $foreground-color-primary;
+                            }
+                        }
+                    }
+                }
             }
             
             &:first-child {
