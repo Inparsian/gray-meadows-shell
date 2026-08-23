@@ -4,17 +4,21 @@ use crate::services::screen_recorder::{ScreenRecorderState, get_screen_recorder}
 use super::super::base::BarModule;
 use futures_signals::signal::SignalExt as _;
 
-const REPLAY_CHAR: &str = "⏮";
+const REPLAY_CHAR: &str = "○";
 const RECORDING_CHAR: &str = "⏺";
 
 pub fn new() -> BarModule {
     view! {
         replay_char_label = gtk::Label {
+            set_css_classes: &["screen-recorder-indicator", "replay"],
             set_label: REPLAY_CHAR,
+            set_visible: false,
         },
 
         recording_char_label = gtk::Label {
+            set_css_classes: &["screen-recorder-indicator", "recording"],
             set_label: RECORDING_CHAR,
+            set_visible: false,
         },
 
         widget = gtk::Box {
