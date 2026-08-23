@@ -38,7 +38,7 @@ pub enum UiEvent {
 }
 
 fn is_working() -> bool {
-    WORKING.try_read().map(|w| *w).unwrap_or(true)
+    WORKING.try_read().map_or(true, |w| *w)
 }
 
 pub fn subscribe_to_ui_events() -> Receiver<UiEvent> {

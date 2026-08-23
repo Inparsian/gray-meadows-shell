@@ -43,7 +43,7 @@ pub fn get_top_commands() -> Vec<DesktopRunsEntry> {
     let runs_guard = RUNS.read().unwrap();
     let mut runs_vec: Vec<DesktopRunsEntry> = runs_guard.values().cloned().collect();
 
-    runs_vec.sort_by(|a, b| b.runs.cmp(&a.runs));
+    runs_vec.sort_by_key(|b| std::cmp::Reverse(b.runs));
     runs_vec
 }
 

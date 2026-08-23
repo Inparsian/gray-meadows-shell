@@ -55,11 +55,11 @@ pub fn calculate_weight(entry: &DesktopEntry, query: &str) -> f32 {
     };
 
     if name.starts_with(query) || name.ends_with(query) {
-        weight += query.len() as f32 * 5.0;
+        weight = (query.len() as f32).mul_add(5.0, weight);
     }
 
     if name.contains(query) {
-        weight += query.len() as f32 * 4.0;
+        weight = (query.len() as f32).mul_add(4.0, weight);
     }
 
     // How many times has this entry been run?
