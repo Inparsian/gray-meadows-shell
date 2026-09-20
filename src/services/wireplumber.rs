@@ -1,7 +1,7 @@
 use std::sync::{RwLock, OnceLock};
 use async_broadcast::Receiver;
 
-use crate::ffi::astalwp::{CHANNEL, WpEvent, ffi};
+use crate::ffi::astalwp::{CHANNEL, WpEvent, ffi::{self, EndpointType}};
 
 static NODES: OnceLock<RwLock<Vec<ffi::Node>>> = OnceLock::new();
 static ENDPOINTS: OnceLock<RwLock<Vec<ffi::Endpoint>>> = OnceLock::new();
@@ -95,7 +95,13 @@ pub fn intercept_event(event: WpEvent) {
         
         WpEvent::UpdateDefaultMicrophone(id) | WpEvent::UpdateDefaultSpeaker(id) => {
             if let Some(endpoints) = ENDPOINTS.get() && let Ok(mut endpoints) = endpoints.write() {
-                for e in endpoints.iter_mut() {
+                let endpoint_type = if matches!(event, WpEvent::UpdateDefaultMicrophone(_)) {
+                    EndpointType::Microphone
+                } else {
+                    EndpointType::Speaker
+                };
+
+                for e in endpoints.iter_mut().filter(|e| e.type_ == endpoint_type) {
                     e.is_default = e.node.id == id;
                 }
             }
