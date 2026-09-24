@@ -62,6 +62,7 @@ impl Default for Config {
                 assistant_name: None,
                 assistant_icon_path: None,
                 openai: OpenAiConfig {
+                    api_base: String::new(),
                     api_key: "your-api-key-here".to_owned(),
                     model: "gpt-4.1".to_owned(),
                     service_tier: OpenAiServiceTier::Default,

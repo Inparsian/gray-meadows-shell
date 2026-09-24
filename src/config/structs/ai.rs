@@ -17,6 +17,7 @@ pub struct AiFeatures {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OpenAiConfig {
+    pub api_base: String,
     pub api_key: String,
     pub model: String,
     #[serde(deserialize_with = "deserialize_insensitive")]

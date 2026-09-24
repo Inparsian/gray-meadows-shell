@@ -20,7 +20,12 @@ assistant_name = ""
 assistant_icon_path = ""
 
 [ai.openai]
-# Your OpenAI API key. Required to access OpenAI services.
+# The API base URL to use for OpenAI-compatible services, such as OpenRouter.
+# Leave blank to use the official OpenAI API.
+api_base = ""
+
+# Your API key for the selected service. Required to access OpenAI services or external
+# OpenAI-compatible providers when api_base is set.
 api_key = "your-api-key-here"
 
 # The model to use for AI tasks.

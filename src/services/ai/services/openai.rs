@@ -36,8 +36,12 @@ pub struct OpenAiService {
 impl OpenAiService {
     fn make_client(&self) {
         let app_config = read_config();
-        let config = OpenAIConfig::new()
+        let mut config = OpenAIConfig::new()
             .with_api_key(app_config.ai.openai.api_key.as_str());
+
+        if !app_config.ai.openai.api_base.is_empty() {
+            config = config.with_api_base(app_config.ai.openai.api_base.as_str());
+        }
 
         self.client.write().unwrap().replace(Client::with_config(config));
     }
@@ -132,7 +136,8 @@ impl OpenAiService {
                         content: vec![OutputMessageContent::OutputText(OutputTextContent {
                             text: content,
                             annotations: vec![],
-                            logprobs: None,
+                            // external Responses APIs do not like logprobs being null apparently
+                            logprobs: Some(vec![]),
                         })],
                         role: AssistantRole::Assistant,
                         id,
