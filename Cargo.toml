@@ -55,6 +55,8 @@ tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "chrono"] }
 urlencoding = "2.1.3"
 uuid = { version = "1.25.0", features = ["v4"] }
+wayland-client = "0.31"
+wayland-protocols = { version = "0.32", features = ["client", "unstable"] }
 whirlpool = "0.10.4"
 
 [build-dependencies]

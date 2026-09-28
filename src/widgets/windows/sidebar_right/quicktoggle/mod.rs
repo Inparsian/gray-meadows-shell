@@ -1,6 +1,7 @@
 pub mod notifications;
 pub mod keybinds;
 pub mod gamemode;
+pub mod idle_inhibitor;
 
 use futures_signals::signal::Mutable;
 use gtk::prelude::*;

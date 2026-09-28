@@ -13,6 +13,7 @@ pub mod clipboard;
 pub mod ai;
 pub mod weather;
 pub mod screen_recorder;
+pub mod idle_inhibitor;
 
 pub async fn activate_all() {
     date_time::activate();
@@ -30,4 +31,5 @@ pub async fn activate_all() {
     ai::activate().await;
     weather::activate();
     screen_recorder::activate();
+    idle_inhibitor::activate().await;
 }

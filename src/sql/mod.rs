@@ -11,7 +11,8 @@ pub async fn init_database() {
                 id INTEGER PRIMARY KEY CHECK (id = 1),
                 source_lang_code TEXT NOT NULL DEFAULT 'en',
                 target_lang_code TEXT NOT NULL DEFAULT 'es',
-                do_not_disturb INTEGER NOT NULL DEFAULT 0
+                do_not_disturb INTEGER NOT NULL DEFAULT 0,
+                idle_inhibited INTEGER NOT NULL DEFAULT 0
             );
             
             INSERT OR IGNORE INTO state (id) 
@@ -76,7 +77,20 @@ pub async fn init_database() {
                 payload TEXT NOT NULL,
                 FOREIGN KEY(conversation_id) REFERENCES aichat_conversations(id) ON DELETE CASCADE
             );
-        ")
+        ")?;
+
+        // migration
+        let has_idle_inhibited: bool = connection.query_row(
+            "SELECT COUNT(*) FROM pragma_table_info('state') WHERE name = 'idle_inhibited'",
+            [],
+            |row| row.get::<_, i64>(0)
+        ).map(|count| count > 0)?;
+
+        if !has_idle_inhibited {
+            connection.execute("ALTER TABLE state ADD COLUMN idle_inhibited INTEGER NOT NULL DEFAULT 0", [])?;
+        }
+
+        Ok::<_, rusqlite::Error>(())
     }).await
         .expect("Failed to initialize database");
     

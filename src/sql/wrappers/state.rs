@@ -14,6 +14,20 @@ pub async fn set_do_not_disturb(dnd: bool) -> anyhow::Result<()> {
     }).await?
 }
 
+pub async fn get_idle_inhibited() -> anyhow::Result<bool> {
+    SQL_ACTOR.with(|connection| {
+        let row: i64 = connection.query_row("SELECT idle_inhibited FROM state WHERE id = 1", [], |row| row.get(0))?;
+        Ok(row > 0)
+    }).await?
+}
+
+pub async fn set_idle_inhibited(inhibited: bool) -> anyhow::Result<()> {
+    SQL_ACTOR.with(move |connection| {
+        connection.execute("UPDATE state SET idle_inhibited = ?1 WHERE id = 1", [inhibited as i32])?;
+        Ok(())
+    }).await?
+}
+
 pub async fn get_source_language() -> anyhow::Result<String> {
     SQL_ACTOR.with(|connection| {
         let row: String = connection.query_row("SELECT source_lang_code FROM state WHERE id = 1", [], |row| row.get(0))?;
