@@ -8,7 +8,7 @@ use crate::services::ai::images::cache_image_data;
 use crate::widgets::windows;
 use crate::utils::allocation_watcher::{AllocationWatcher, AllocationWatcherOptions};
 use super::chat::Chat;
-use super::chat::message::{ChatMessage, ChatRole};
+use super::chat::message::ChatRole;
 use self::attachments::ImageAttachments;
 
 const MIN_INPUT_SCROLL_HEIGHT: i32 = 50;
@@ -86,15 +86,13 @@ impl ChatInput {
                             *stop_flag = true;
                         }
                     } else if input_attachments.get_attachments().is_empty() || input_attachments.all_ready() {
+                        // A new user turn always starts its own message
+                        chat.close_latest();
+
                         #[allow(clippy::if_then_some_else_none)]
                         let text_sent = if !text.is_empty() {
                             let id = ai::send_user_message(&text).await;
-                            let message = ChatMessage::new(
-                                ChatRole::User,
-                                Some(text),
-                            );
-                            message.set_id(id);
-                            chat.add_message(message);
+                            chat.message_for(ChatRole::User, Some(id)).push_content(&text, Some(id));
     
                             input.buffer().set_text("");
                             Some(id)
@@ -110,8 +108,7 @@ impl ChatInput {
                         for attachment in &ready_attachments {
                             if let Ok(path) = cache_image_data(&attachment.base64) {
                                 let id = ai::send_user_image(&path).await;
-                                chat.assert_last_message_is_role(ChatRole::User, text_sent.or(Some(id)));
-                                chat.append_image_to_latest_message(&path);
+                                chat.message_for(ChatRole::User, Some(id)).push_image(&path);
                             }
                         }
     

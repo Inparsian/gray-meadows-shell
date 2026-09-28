@@ -95,7 +95,6 @@
             .ai-chat-thinking-block {
                 background: $background-color-primary;
                 border: 1px solid $border-color-primary;
-                margin-bottom: 12px;
 
                 .ai-chat-thinking-dropdown-button {
                     background: transparent;
@@ -204,7 +203,6 @@
             }
 
             .ai-chat-message-tool-call {
-                margin-top: 12px;
                 padding: 12px;
                 background: $background-color-primary;
                 border: 1px solid $border-color-primary;
@@ -220,8 +218,18 @@
                 }
             }
 
+            .ai-chat-message-web-call {
+                padding: 12px;
+                background: $background-color-primary;
+                border: 1px solid $border-color-primary;
+
+                .ai-chat-message-web-call-label {
+                    @include normal-text;
+                    color: $foreground-color-secondary;
+                }
+            }
+
             .ai-chat-message-image {
-                margin-top: 12px;
                 border: 1px solid $border-color-primary;
             }
         }

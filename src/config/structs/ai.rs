@@ -13,6 +13,7 @@ pub struct AiFeatures {
     pub power_control: bool,
     pub mpris_control: bool,
     pub weather_info: bool,
+    pub web_search: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

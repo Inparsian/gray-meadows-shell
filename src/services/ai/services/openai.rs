@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
 use futures::StreamExt as _;
@@ -6,18 +6,7 @@ use async_openai::Client;
 use async_openai::config::OpenAIConfig;
 use async_openai::error::OpenAIError;
 use async_openai::types::responses::{
-    AssistantRole,
-    CreateResponseArgs,
-    FunctionCallOutput, FunctionCallOutputItemParam, FunctionTool, FunctionToolCall,
-    InputContent, InputImageContent, InputMessage, InputRole, InputTextContent,
-    ImageDetail,
-    Item, MessageItem,
-    OutputContent, OutputItem, OutputMessage, OutputMessageContent, OutputStatus, OutputTextContent,
-    Reasoning, ReasoningEffort, ReasoningItem, ReasoningSummary,
-    ResponseStream, ResponseStreamEvent,
-    ServiceTier,
-    Summary, SummaryPart,
-    Tool
+    AssistantRole, CreateResponseArgs, FunctionCallOutput, FunctionCallOutputItemParam, FunctionTool, FunctionToolCall, ImageDetail, InputContent, InputImageContent, InputMessage, InputRole, InputTextContent, Item, MessageItem, OutputContent, OutputItem, OutputMessage, OutputMessageContent, OutputStatus, OutputTextContent, Reasoning, ReasoningEffort, ReasoningItem, ReasoningSummary, ResponseStream, ResponseStreamEvent, ServiceTierResponses, SummaryPart, SummaryTextContent, Tool, WebSearchCallStatus, WebSearchToolArgs, WebSearchToolCall
 };
 
 use crate::config::{AiService as AiConfigService, OpenAiReasoningEffort, OpenAiServiceTier, read_config};
@@ -63,14 +52,21 @@ impl OpenAiService {
             role: InputRole::Developer,
             content: vec![InputContent::InputText(InputTextContent {
                 text: transform_variables(&app_config.ai.prompt),
+                prompt_cache_breakpoint: None,
             })],
             status: None,
         })));
 
-        let tools = tools::get_tools()
+        let mut tools = tools::get_tools()
             .into_iter()
             .map(Self::transform_function_into_tool)
             .collect::<Vec<Tool>>();
+        if app_config.ai.features.web_search
+            && let Ok(web_search) = WebSearchToolArgs::default()
+                .build()
+        {
+            tools.push(Tool::WebSearch(web_search));
+        }
 
         let request = if !matches!(app_config.ai.openai.reasoning_effort, OpenAiReasoningEffort::None) {
             CreateResponseArgs::default()
@@ -78,9 +74,9 @@ impl OpenAiService {
                 .stream(true)
                 .model(app_config.ai.openai.model.as_str())
                 .service_tier(match app_config.ai.openai.service_tier {
-                    OpenAiServiceTier::Flex => ServiceTier::Flex,
-                    OpenAiServiceTier::Priority => ServiceTier::Priority,
-                    _ => ServiceTier::Default,
+                    OpenAiServiceTier::Flex => ServiceTierResponses::Flex,
+                    OpenAiServiceTier::Priority => ServiceTierResponses::Priority,
+                    _ => ServiceTierResponses::Default,
                 })
                 .reasoning(Reasoning {
                     effort: Some(match app_config.ai.openai.reasoning_effort {
@@ -92,6 +88,7 @@ impl OpenAiService {
                         _ => ReasoningEffort::None,
                     }),
                     summary: Some(ReasoningSummary::Auto),
+                    ..Default::default()
                 })
                 .tools(tools)
                 .input(native_items)
@@ -102,9 +99,9 @@ impl OpenAiService {
                 .stream(true)
                 .model(app_config.ai.openai.model.as_str())
                 .service_tier(match app_config.ai.openai.service_tier {
-                    OpenAiServiceTier::Flex => ServiceTier::Flex,
-                    OpenAiServiceTier::Priority => ServiceTier::Priority,
-                    _ => ServiceTier::Default,
+                    OpenAiServiceTier::Flex => ServiceTierResponses::Flex,
+                    OpenAiServiceTier::Priority => ServiceTierResponses::Priority,
+                    _ => ServiceTierResponses::Default,
                 })
                 .tools(tools)
                 .input(native_items)
@@ -142,18 +139,20 @@ impl OpenAiService {
                         role: AssistantRole::Assistant,
                         id,
                         status: OutputStatus::Completed,
+                        phase: None,
                     })));
                 } else {
                     user_parts.push(InputContent::InputText(InputTextContent {
                         text: content,
+                        prompt_cache_breakpoint: None,
                     }));
                 },
 
                 AiConversationItemPayload::Reasoning { id, summary, encrypted_content } => {
                     flush_user_parts(&mut user_parts, &mut native_items);
                     native_items.push(Item::Reasoning(ReasoningItem {
-                        id,
-                        summary: vec![SummaryPart::SummaryText(Summary {
+                        id: Some(id),
+                        summary: vec![SummaryPart::SummaryText(SummaryTextContent {
                             text: summary,
                         })],
                         content: None,
@@ -170,16 +169,22 @@ impl OpenAiService {
                         arguments,
                         call_id,
                         status: None,
+                        namespace: None,
+                        caller: None,
+                        r#async: None,
                     }));
                 },
 
                 AiConversationItemPayload::FunctionCallOutput { call_id, output, .. } => {
                     flush_user_parts(&mut user_parts, &mut native_items);
                     native_items.push(Item::FunctionCallOutput(FunctionCallOutputItemParam {
-                        call_id,
+                        call_id: Some(call_id),
                         output: FunctionCallOutput::Text(output),
                         id: None,
                         status: None,
+                        name: None,
+                        namespace: None,
+                        caller: None,
                     }));
                 },
 
@@ -188,8 +193,19 @@ impl OpenAiService {
                         detail: ImageDetail::Auto,
                         file_id: None,
                         image_url: Some(format!("data:image/png;base64,{}", base64_data)),
+                        ..Default::default()
                     }));
                 },
+
+                AiConversationItemPayload::WebSearchCall { id, .. } => {
+                    native_items.push(Item::WebSearchCall(WebSearchToolCall {
+                        action: None,
+                        id,
+                        status: WebSearchCallStatus::Completed,
+                    }));
+                },
+
+                AiConversationItemPayload::ResponseBoundary => {},
             }
         }
 
@@ -228,7 +244,7 @@ impl OpenAiService {
             },
 
             Item::Reasoning(reasoning) => Some(AiConversationItemPayload::Reasoning {
-                id: reasoning.id.clone(),
+                id: reasoning.id.unwrap_or_default(),
                 summary: reasoning.summary.iter().map(|part| {
                     let SummaryPart::SummaryText(summary) = part;
                     summary.text.clone()
@@ -245,12 +261,16 @@ impl OpenAiService {
             }),
 
             Item::FunctionCallOutput(func_output) => Some(AiConversationItemPayload::FunctionCallOutput {
-                call_id: func_output.call_id.clone(),
+                call_id: func_output.call_id.unwrap_or_default(),
                 output: match &func_output.output {
                     FunctionCallOutput::Text(text) => text.clone(),
                     _ => String::new(),
                 },
                 name: None,
+            }),
+
+            Item::WebSearchCall(search_call) => Some(AiConversationItemPayload::WebSearchCall {
+                id: search_call.id,
             }),
 
             _ => None,
@@ -263,6 +283,7 @@ impl OpenAiService {
             description: Some(func.description),
             strict: Some(func.strict),
             parameters: Some(func.schema),
+            ..Default::default()
         })
     }
 }
@@ -287,7 +308,8 @@ impl super::AiService for OpenAiService {
             };
 
             let mut should_request_more = true;
-            let mut new_items: HashMap<String, Item> = HashMap::new();
+            // Keyed by output index so items come out in the order the API produced them
+            let mut new_items: BTreeMap<u32, Item> = BTreeMap::new();
             let mut stream = service.create_stream(items).await?;
 
             channel.send(AiChannelMessage::StreamStart).await;
@@ -299,20 +321,24 @@ impl super::AiService for OpenAiService {
 
                 match event? {
                     ResponseStreamEvent::ResponseOutputItemAdded(event) => {
+                        let index = event.output_index;
                         match event.item {
                             OutputItem::Message(output_message) => {
                                 let id = output_message.id.clone();
-                                new_items.insert(id.clone(), Item::Message(MessageItem::Output(OutputMessage {
+                                channel.send(AiChannelMessage::StreamMessageAdded).await;
+                                new_items.insert(index, Item::Message(MessageItem::Output(OutputMessage {
                                     id,
                                     role: AssistantRole::Assistant,
                                     content: vec![],
                                     status: OutputStatus::InProgress,
+                                    phase: None,
                                 })));
                             },
 
                             OutputItem::Reasoning(output_reasoning) => {
                                 let id = output_reasoning.id.clone();
-                                new_items.insert(id.clone(), Item::Reasoning(ReasoningItem {
+                                channel.send(AiChannelMessage::StreamReasoningAdded).await;
+                                new_items.insert(index, Item::Reasoning(ReasoningItem {
                                     id,
                                     summary: vec![],
                                     content: None,
@@ -323,12 +349,28 @@ impl super::AiService for OpenAiService {
 
                             OutputItem::FunctionCall(output_function_call) => {
                                 let id = output_function_call.id.clone().unwrap_or_default();
-                                new_items.insert(id.clone(), Item::FunctionCall(FunctionToolCall {
+                                new_items.insert(index, Item::FunctionCall(FunctionToolCall {
                                     id: Some(id),
                                     name: output_function_call.name.clone(),
                                     arguments: output_function_call.arguments.clone(),
                                     call_id: output_function_call.call_id.clone(),
                                     status: Some(OutputStatus::InProgress),
+                                    namespace: None,
+                                    caller: None,
+                                    r#async: None,
+                                }));
+                            },
+
+                            OutputItem::WebSearchCall(output_web_search) => {
+                                let (action, id, status) = (
+                                    output_web_search.action.clone(),
+                                    output_web_search.id.clone(),
+                                    output_web_search.status.clone(),
+                                );
+                                new_items.insert(index, Item::WebSearchCall(WebSearchToolCall {
+                                    action,
+                                    id,
+                                    status,
                                 }));
                             },
 
@@ -337,10 +379,10 @@ impl super::AiService for OpenAiService {
                     },
 
                     ResponseStreamEvent::ResponseContentPartAdded(event) => {
-                        let id = event.item_id.clone();
+                        let index = event.output_index;
                         match event.part {
                             OutputContent::OutputText(content) => {
-                                if let Some(Item::Message(MessageItem::Output(output_message))) = new_items.get_mut(&id) {
+                                if let Some(Item::Message(MessageItem::Output(output_message))) = new_items.get_mut(&index) {
                                     output_message.content.push(OutputMessageContent::OutputText(OutputTextContent {
                                         text: content.text.clone(),
                                         annotations: vec![],
@@ -350,8 +392,8 @@ impl super::AiService for OpenAiService {
                             },
 
                             OutputContent::ReasoningText(content) => {
-                                if let Some(Item::Reasoning(reasoning_item)) = new_items.get_mut(&id) {
-                                    reasoning_item.summary.push(SummaryPart::SummaryText(Summary {
+                                if let Some(Item::Reasoning(reasoning_item)) = new_items.get_mut(&index) {
+                                    reasoning_item.summary.push(SummaryPart::SummaryText(SummaryTextContent {
                                         text: content.text.clone(),
                                     }));
                                 }
@@ -362,8 +404,8 @@ impl super::AiService for OpenAiService {
                     },
 
                     ResponseStreamEvent::ResponseOutputTextDelta(event) => {
-                        let id = event.item_id.clone();
-                        match new_items.get_mut(&id) {
+                        let index = event.output_index;
+                        match new_items.get_mut(&index) {
                             Some(Item::Message(MessageItem::Output(output_message))) => {
                                 if let Some(OutputMessageContent::OutputText(last_content)) = output_message.content.last_mut() {
                                     last_content.text.push_str(&event.delta);
@@ -382,7 +424,7 @@ impl super::AiService for OpenAiService {
                                 if let Some(SummaryPart::SummaryText(last_summary)) = reasoning_item.summary.last_mut() {
                                     last_summary.text.push_str(&event.delta);
                                 } else {
-                                    reasoning_item.summary.push(SummaryPart::SummaryText(Summary {
+                                    reasoning_item.summary.push(SummaryPart::SummaryText(SummaryTextContent {
                                         text: event.delta.clone(),
                                     }));
                                 }
@@ -393,8 +435,8 @@ impl super::AiService for OpenAiService {
                     },
 
                     ResponseStreamEvent::ResponseReasoningSummaryPartAdded(event) => {
-                        let id = event.item_id.clone();
-                        if let Some(Item::Reasoning(reasoning_item)) = new_items.get_mut(&id) {
+                        let index = event.output_index;
+                        if let Some(Item::Reasoning(reasoning_item)) = new_items.get_mut(&index) {
                             let SummaryPart::SummaryText(summary) = &event.part;
 
                             reasoning_item.summary.push(SummaryPart::SummaryText(summary.clone()));
@@ -404,12 +446,12 @@ impl super::AiService for OpenAiService {
                     }
 
                     ResponseStreamEvent::ResponseReasoningSummaryTextDelta(event) => {
-                        let id = event.item_id.clone();
-                        if let Some(Item::Reasoning(reasoning_item)) = new_items.get_mut(&id) {
+                        let index = event.output_index;
+                        if let Some(Item::Reasoning(reasoning_item)) = new_items.get_mut(&index) {
                             if let Some(SummaryPart::SummaryText(last_summary)) = reasoning_item.summary.last_mut() {
                                 last_summary.text.push_str(&event.delta);
                             } else {
-                                reasoning_item.summary.push(SummaryPart::SummaryText(Summary {
+                                reasoning_item.summary.push(SummaryPart::SummaryText(SummaryTextContent {
                                     text: event.delta.clone(),
                                 }));
                             }
@@ -419,14 +461,7 @@ impl super::AiService for OpenAiService {
                     },
 
                     ResponseStreamEvent::ResponseOutputItemDone(event) => {
-                        let id = match &event.item {
-                            OutputItem::Message(msg) => msg.id.clone(),
-                            OutputItem::Reasoning(reasoning) => reasoning.id.clone(),
-                            OutputItem::FunctionCall(func_call) => func_call.id.clone().unwrap_or_default(),
-                            _ => String::new(),
-                        };
-
-                        if let Some(item) = new_items.get_mut(&id) {
+                        if let Some(item) = new_items.get_mut(&event.output_index) {
                             match item {
                                 Item::Message(MessageItem::Output(output_message)) => {
                                     output_message.status = OutputStatus::Completed;
@@ -472,6 +507,10 @@ impl super::AiService for OpenAiService {
                                     )).await;
                                 },
 
+                                Item::WebSearchCall(_search_call) => {
+                                    channel.send(AiChannelMessage::WebSearchCall).await;
+                                }
+
                                 _ => {},
                             }
                         }
@@ -485,20 +524,9 @@ impl super::AiService for OpenAiService {
                 *stop_flag = false;
             }
 
-            let mut transformed_items = new_items.values()
-                .cloned()
+            let transformed_items = new_items.into_values()
                 .filter_map(Self::transform_native_into_item)
                 .collect::<Vec<AiConversationItemPayload>>();
-
-            // Ensure that this is properly sorted so the API does not yell at us later
-            transformed_items.sort_by_key(|payload| {
-                match payload {
-                    AiConversationItemPayload::Reasoning { .. } => 0,
-                    AiConversationItemPayload::Message { role, .. } if role == "assistant" => 1,
-                    AiConversationItemPayload::FunctionCall { .. } => 2,
-                    _ => 3,
-                }
-            });
 
             let has_tool_calls = transformed_items.iter().any(|payload| {
                 matches!(payload, AiConversationItemPayload::FunctionCall { .. })

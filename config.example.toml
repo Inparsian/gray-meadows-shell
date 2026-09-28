@@ -70,6 +70,9 @@ mpris_control = true
 # Whether the AI can get information from the weather service.
 weather_info = true
 
+# Whether the AI can perform web search grounding.
+web_search = true
+
 [weather]
 # Whether the weather service is enabled.
 # Toggling this requires a restart to take effect.

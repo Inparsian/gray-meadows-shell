@@ -63,6 +63,13 @@ pub enum AiConversationItemPayload {
         #[serde(skip_serializing_if = "Option::is_none")]
         name: Option<String>,
     },
+
+    WebSearchCall {
+        id: String,
+    },
+
+    // Marks the end of an assistant response. This is never sent to an AI provider.
+    ResponseBoundary,
 }
 
 #[derive(Debug, Clone)]

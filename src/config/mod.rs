@@ -78,6 +78,7 @@ impl Default for Config {
                     power_control: true,
                     mpris_control: true,
                     weather_info: true,
+                    web_search: true,
                 },
             },
             weather: WeatherConfig {

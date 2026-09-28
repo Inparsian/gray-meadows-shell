@@ -1,5 +1,5 @@
 use std::rc::Rc;
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::path::Path;
 use gtk::prelude::*;
 
@@ -9,8 +9,7 @@ use crate::services::ai;
 use crate::services::ai::types::AiConversationItemPayload;
 use crate::utils::{filesystem, gesture};
 use crate::widgets::common::loading;
-use crate::widgets::common::revealer::{AdwRevealer, AdwRevealerDirection, GEasing};
-use super::content::ChatMessageContent;
+use super::elements::{self, ChatContentElement, ChatElement, ChatThinkingBlock};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ChatRole {
@@ -19,102 +18,18 @@ pub enum ChatRole {
 }
 
 #[derive(Debug, Clone)]
-pub struct ChatThinkingBlock {
-    pub root: gtk::Box,
-    pub summary_root: gtk4cmark::MarkdownView,
-    pub summary: Option<String>,
-}
-
-impl ChatThinkingBlock {
-    pub fn new() -> Self {
-        let root = gtk::Box::new(gtk::Orientation::Vertical, 0);
-        root.set_css_classes(&["ai-chat-thinking-block"]);
-
-        let thinking_dropdown_button = gtk::Button::new();
-        thinking_dropdown_button.set_css_classes(&["ai-chat-thinking-dropdown-button"]);
-        thinking_dropdown_button.set_valign(gtk::Align::Start);
-        thinking_dropdown_button.set_hexpand(true);
-        root.append(&thinking_dropdown_button);
-
-        let thinking_dropdown_header = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-        thinking_dropdown_header.set_css_classes(&["ai-chat-thinking-dropdown-header"]);
-        thinking_dropdown_header.set_hexpand(true);
-        thinking_dropdown_button.set_child(Some(&thinking_dropdown_header));
-
-        let thinking_dropdown_indicator = gtk::Label::new(Some("lightbulb_2"));
-        thinking_dropdown_indicator.set_css_classes(&["ai-chat-thinking-dropdown-indicator"]);
-        thinking_dropdown_indicator.set_halign(gtk::Align::Start);
-        thinking_dropdown_indicator.set_xalign(0.0);
-        thinking_dropdown_header.append(&thinking_dropdown_indicator);
-
-        let thinking_dropdown_label = gtk::Label::new(Some("Thoughts"));
-        thinking_dropdown_label.set_css_classes(&["ai-chat-thinking-dropdown-label"]);
-        thinking_dropdown_label.set_halign(gtk::Align::Start);
-        thinking_dropdown_label.set_xalign(0.0);
-        thinking_dropdown_header.append(&thinking_dropdown_label);
-
-        let thinking_dropdown_arrow = gtk::Label::new(Some("stat_minus_1"));
-        thinking_dropdown_arrow.set_css_classes(&["ai-chat-thinking-dropdown-arrow"]);
-        thinking_dropdown_arrow.set_halign(gtk::Align::End);
-        thinking_dropdown_arrow.set_hexpand(true);
-        thinking_dropdown_arrow.set_xalign(1.0);
-        thinking_dropdown_header.append(&thinking_dropdown_arrow);
-
-        let thinking_dropdown_revealer = AdwRevealer::default();
-        thinking_dropdown_revealer.set_css_classes(&["ai-chat-thinking-dropdown-revealer"]);
-        thinking_dropdown_revealer.set_transition_direction(AdwRevealerDirection::Down);
-        thinking_dropdown_revealer.set_show_easing(GEasing::EaseOutExpo);
-        thinking_dropdown_revealer.set_hide_easing(GEasing::EaseOutExpo);
-        thinking_dropdown_revealer.set_transition_duration(500);
-        thinking_dropdown_revealer.set_reveal(false);
-        root.append(&thinking_dropdown_revealer);
-
-        let summary = gtk4cmark::MarkdownView::default();
-        summary.set_css_classes(&["ai-chat-thinking-summary"]);
-        summary.set_overflow(gtk::Overflow::Hidden);
-        summary.set_vexpand(true);
-        summary.set_hexpand(true);
-        thinking_dropdown_revealer.set_child_from(Some(&summary));
-
-        thinking_dropdown_button.connect_clicked(clone!(
-            #[weak] root,
-            move |_| {
-                let currently_revealed = thinking_dropdown_revealer.reveal();
-                thinking_dropdown_revealer.set_reveal(!currently_revealed);
-                
-                if currently_revealed {
-                    root.remove_css_class("expanded");
-                } else {
-                    root.add_css_class("expanded");
-                }
-            }
-        ));
-
-        Self {
-            root,
-            summary_root: summary,
-            summary: None,
-        }
-    }
-
-    pub fn set_summary(&mut self, content: &str) {
-        self.summary_root.set_markdown(content);
-        self.summary = Some(content.to_owned());
-    }
-}
-
-#[derive(Debug, Clone)]
 pub struct ChatMessage {
-    pub id: Rc<RefCell<Option<i64>>>,
+    pub id: Rc<Cell<Option<i64>>>,
+    pub last_item_id: Rc<Cell<Option<i64>>>,
     pub role: ChatRole,
-    pub content: Option<String>,
-    pub thinking: Option<ChatThinkingBlock>,
-    pub attachments: Rc<RefCell<i64>>,
+    pub closed: Rc<Cell<bool>>,
     pub root: gtk::Box,
-    pub view: ChatMessageContent,
-    pub loading: gtk::DrawingArea,
-    pub header: gtk::Box,
-    pub footer: gtk::Box,
+    pub elements: gtk::Box,
+    element_list: Rc<RefCell<Vec<ChatElement>>>,
+    loading: Rc<RefCell<Option<gtk::DrawingArea>>>,
+    // Whether the next streamed delta of a given kind should start a new element
+    pending_new_content: Rc<Cell<bool>>,
+    pending_new_thinking: Rc<Cell<bool>>,
 }
 
 impl ChatMessage {
@@ -126,16 +41,16 @@ impl ChatMessage {
         sender_mui_icon.upcast()
     }
 
-    pub fn new(role: ChatRole, content: Option<String>) -> Self {
+    pub fn new(role: ChatRole) -> Self {
         let app_config = read_config();
-        let id = Rc::new(RefCell::new(None));
-        let attachments = Rc::new(RefCell::new(0));
+        let id = Rc::new(Cell::new(None));
+        let last_item_id: Rc<Cell<Option<i64>>> = Rc::new(Cell::new(None));
         let root = gtk::Box::new(gtk::Orientation::Vertical, 0);
         root.set_css_classes(&["ai-chat-message"]);
         root.set_valign(gtk::Align::Start);
 
-        let header = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-        header.set_css_classes(&["ai-chat-message-header"]);
+        let top = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+        top.set_css_classes(&["ai-chat-message-header"]);
 
         let sender_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         sender_box.set_css_classes(&["ai-chat-message-sender"]);
@@ -183,7 +98,7 @@ impl ChatMessage {
 
         sender_box.append(&sender_icon);
         sender_box.append(&sender_label);
-        header.append(&sender_box);
+        top.append(&sender_box);
 
         let controls_revealer = gtk::Revealer::new();
         controls_revealer.set_css_classes(&["ai-chat-message-controls-revealer"]);
@@ -197,46 +112,30 @@ impl ChatMessage {
         controls_box.set_css_classes(&["ai-chat-message-controls-box"]);
         controls_revealer.set_child(Some(&controls_box));
         
-        let view = ChatMessageContent::new();
-        view.connect_closure("save-edit", false, closure_local!(
-            #[strong] id,
-            move |view: ChatMessageContent| {
-                let content = view.content();
-                if !ai::is_currently_in_cycle() && let Some(message_id) = *id.borrow() {
-                    let first_encountered_message = ai::get_first_encountered_message_payload(message_id);
-                    
-                    if let Some((item_id, AiConversationItemPayload::Message { id, role, thought_signature, .. })) = first_encountered_message {
-                        let payload = AiConversationItemPayload::Message {
-                            id,
-                            content,
-                            role,
-                            thought_signature,
-                        };
-                        
-                        tokio::spawn(ai::update_item(item_id, payload));
-                    }
-                }
-            }
-        ));
-
         let delete_button = gtk::Button::new();
         delete_button.set_css_classes(&["ai-chat-message-control-button"]);
         delete_button.set_label("delete");
         delete_button.connect_clicked(clone!(
             #[strong] id,
-            move |_| if !ai::is_currently_in_cycle() && let Some(message_id) = *id.borrow() {
+            move |_| if !ai::is_currently_in_cycle() && let Some(message_id) = id.get() {
                 glib::spawn_future_local(ai::trim_items(message_id));
             }
         ));
         controls_box.append(&delete_button);
-        
+
+        let element_list: Rc<RefCell<Vec<ChatElement>>> = Rc::new(RefCell::new(Vec::new()));
+
         let edit_button = gtk::Button::new();
         edit_button.set_css_classes(&["ai-chat-message-control-button"]);
         edit_button.set_label("edit");
         edit_button.connect_clicked(clone!(
-            #[weak] view,
+            #[strong] element_list,
             move |_| if !ai::is_currently_in_cycle() {
-                view.set_editing(true);
+                for element in element_list.borrow().iter() {
+                    if let ChatElement::Content(content) = element {
+                        content.start_editing();
+                    }
+                }
             }
         ));
         controls_box.append(&edit_button);
@@ -246,45 +145,34 @@ impl ChatMessage {
         retry_button.set_label("refresh");
         retry_button.connect_clicked(clone!(
             #[strong] id,
-            #[strong] attachments,
+            #[strong] last_item_id,
             #[strong] role,
-            move |_| if !ai::is_currently_in_cycle() && let Some(message_id) = *id.borrow() {
-                // Increase message_id by 1 if this is a user message to trim down to the
-                // assistant response directly after it
-                let message_id = if role == ChatRole::User {
-                    message_id + 1 + *attachments.borrow()
-                } else {
-                    message_id
+            move |_| if !ai::is_currently_in_cycle() {
+                // For user messages, trim down to the assistant response directly after it
+                let trim_to = match role {
+                    ChatRole::User => last_item_id.get().map(|last_id| last_id + 1),
+                    ChatRole::Assistant => id.get(),
                 };
 
-                tokio::spawn(async move {
-                    ai::trim_items(message_id).await;
-                    ai::start_request_cycle().await;
-                });
+                if let Some(trim_to) = trim_to {
+                    tokio::spawn(async move {
+                        ai::trim_items(trim_to).await;
+                        ai::start_request_cycle().await;
+                    });
+                }
             }
         ));
         controls_box.append(&retry_button);
 
-        header.append(&controls_revealer);
-        
-        let loading = loading::new();
-        loading.set_halign(gtk::Align::Start);
-        loading.set_valign(gtk::Align::Start);
+        top.append(&controls_revealer);
 
-        // This will start out with empty content, to be filled in later
-        let footer = gtk::Box::new(gtk::Orientation::Vertical, 0);
-        footer.set_css_classes(&["ai-chat-message-footer"]);
-        footer.set_valign(gtk::Align::End);
+        // Every item of this message lives here, in the order they are in inside of the database
+        let elements = gtk::Box::new(gtk::Orientation::Vertical, 12);
+        elements.set_css_classes(&["ai-chat-message-elements"]);
+        elements.set_valign(gtk::Align::Start);
 
-        root.append(&header);
-        root.append(&footer);
-        
-        if let Some(initial_content) = &content {
-            root.insert_child_after(&view, Some(&header));
-            view.set_content(initial_content.as_str());
-        } else {
-            root.insert_child_after(&loading, Some(&header));
-        }
+        root.append(&top);
+        root.append(&elements);
 
         root.add_controller(gesture::on_enter(clone!(
             #[weak] controls_revealer,
@@ -299,49 +187,130 @@ impl ChatMessage {
 
         Self {
             id,
+            last_item_id,
             role,
-            content,
-            thinking: None,
-            attachments,
+            closed: Rc::new(Cell::new(false)),
             root,
-            view,
-            loading,
-            header,
-            footer,
+            elements,
+            element_list,
+            loading: Rc::new(RefCell::new(None)),
+            pending_new_content: Rc::new(Cell::new(false)),
+            pending_new_thinking: Rc::new(Cell::new(false)),
         }
     }
 
-    pub fn set_id(&self, id: i64) {
-        *self.id.borrow_mut() = Some(id);
+    // Creates a message that shows a loading indicator until its first element is pushed
+    pub fn new_pending(role: ChatRole) -> Self {
+        let message = Self::new(role);
+        let loading = loading::new();
+        loading.set_halign(gtk::Align::Start);
+        loading.set_valign(gtk::Align::Start);
+        message.elements.append(&loading);
+        message.loading.replace(Some(loading));
+        message
     }
 
-    pub fn set_content(&mut self, content: &str) {
-        let was_none = self.content.is_none();
+    pub fn record_item(&self, id: i64) {
+        if self.id.get().is_none() {
+            self.id.set(Some(id));
+        }
 
-        self.content = Some(content.to_owned());
-        self.view.set_content(content);
+        if self.last_item_id.get().is_none_or(|last_id| id > last_id) {
+            self.last_item_id.set(Some(id));
+        }
+    }
 
-        if was_none {
-            // If thinking is present, insert after that instead
-            if let Some(thinking_block) = &self.thinking {
-                self.root.insert_child_after(&self.view, Some(&thinking_block.root));
-            } else {
-                self.root.insert_child_after(&self.view, Some(&self.header));
+    pub fn is_empty(&self) -> bool {
+        self.element_list.borrow().is_empty()
+    }
+
+    fn push(&self, element: ChatElement) {
+        if let Some(loading) = self.loading.take() {
+            self.elements.remove(&loading);
+        }
+
+        self.elements.append(&element.widget());
+        self.element_list.borrow_mut().push(element);
+    }
+
+    pub fn push_content(&self, content: &str, item_id: Option<i64>) {
+        self.push(ChatElement::Content(ChatContentElement::new(content, item_id)));
+    }
+
+    pub fn push_thinking(&self, summary: &str) {
+        let thinking_block = ChatThinkingBlock::new();
+        thinking_block.set_summary(summary);
+        self.push(ChatElement::Thinking(thinking_block));
+    }
+
+    pub fn push_tool_call(&self, tool_name: &str, arguments: &str) {
+        self.push(ChatElement::ToolCall(elements::tool_call(tool_name, arguments)));
+    }
+
+    pub fn push_web_search(&self) {
+        self.push(ChatElement::WebSearch(elements::web_search_call()));
+    }
+
+    pub fn push_image(&self, uuid: &str) {
+        if let Some(image) = elements::image(uuid) {
+            self.push(ChatElement::Image(image));
+        }
+    }
+
+    // The next content delta will start a new content element
+    pub fn begin_content(&self) {
+        self.pending_new_content.set(true);
+    }
+
+    // The next reasoning delta will start a new thinking block
+    pub fn begin_thinking(&self) {
+        self.pending_new_thinking.set(true);
+    }
+
+    pub fn append_content_delta(&self, delta: &str) {
+        if !self.pending_new_content.replace(false)
+            && let Some(ChatElement::Content(content)) = self.element_list.borrow().last()
+        {
+            content.append_content(delta);
+            return;
+        }
+
+        self.push_content(delta, None);
+    }
+
+    pub fn append_reasoning_delta(&self, delta: &str) {
+        if !self.pending_new_thinking.replace(false)
+            && let Some(ChatElement::Thinking(thinking)) = self.element_list.borrow().last()
+        {
+            thinking.append_summary(delta);
+            return;
+        }
+
+        self.push_thinking(delta);
+    }
+
+    pub fn reasoning_part_added(&self) {
+        if let Some(ChatElement::Thinking(thinking)) = self.element_list.borrow().last() {
+            thinking.new_part();
+        }
+    }
+
+    // Assigns database IDs to items that were streamed in before they were written
+    pub fn assign_item_ids(&self, items: &[(i64, AiConversationItemPayload)]) {
+        let element_list = self.element_list.borrow();
+        let mut unassigned_contents = element_list.iter().filter_map(|element| match element {
+            ChatElement::Content(content) if content.item_id.get().is_none() => Some(content),
+            _ => None,
+        });
+
+        for (id, payload) in items {
+            self.record_item(*id);
+
+            if matches!(payload, AiConversationItemPayload::Message { .. })
+                && let Some(content) = unassigned_contents.next()
+            {
+                content.item_id.set(Some(*id));
             }
-
-            self.root.remove(&self.loading);
-        }
-    }
-
-    pub fn set_thinking(&mut self, content: &str) {
-        let was_none = self.thinking.is_none();
-        if was_none {
-            let mut thinking_block = ChatThinkingBlock::new();
-            thinking_block.set_summary(content);
-            self.thinking = Some(thinking_block.clone());
-            self.root.insert_child_after(&thinking_block.root, Some(&self.header));
-        } else if let Some(thinking_block) = &mut self.thinking {
-            thinking_block.set_summary(content);
         }
     }
 }

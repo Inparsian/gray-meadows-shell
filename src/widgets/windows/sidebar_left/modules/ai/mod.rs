@@ -127,56 +127,46 @@ pub fn chat_ui(stack: &gtk::Stack) -> gtk::Box {
                         chat.clear_messages();
                         conversation_title.set_text(&conversation.title);
 
-                        let mut processed_reasoning = false;
                         for item in session.items.read().unwrap().iter() {
                             match &item.payload {
-                                AiConversationItemPayload::Message { role, content, .. } 
-                                if matches!(role.as_str(), "user" | "assistant") => {
-                                    // If we processed a reasoning payload before this one, modify the existing
-                                    // assistant message instead of adding a new one
-                                    if processed_reasoning {
-                                        if let Some(latest_message) = chat.messages.borrow_mut().last_mut()
-                                            && matches!(role.as_str(), "assistant")
-                                        {
-                                            latest_message.set_content(content);
-                                        }
-                                        processed_reasoning = false;
-                                    } else {
-                                        let message = ChatMessage::new(
-                                            match role.as_str() {
-                                                "user" => ChatRole::User,
-                                                "assistant" => ChatRole::Assistant,
-                                                _ => unreachable!(),
-                                            },
-                                            Some(content.clone()),
-                                        );
+                                AiConversationItemPayload::Message { role, content, .. } => match role.as_str() {
+                                    "user" => chat.message_for(ChatRole::User, Some(item.id))
+                                        .push_content(content, Some(item.id)),
 
-                                        message.set_id(item.id);
-                                        chat.add_message(message);
-                                    }
+                                    "assistant" => chat.message_for(ChatRole::Assistant, Some(item.id))
+                                        .push_content(content, Some(item.id)),
+
+                                    _ => {},
                                 },
 
-                                AiConversationItemPayload::Image { uuid, .. } => {
-                                    chat.assert_last_message_is_role(ChatRole::User, Some(item.id));
-                                    chat.append_image_to_latest_message(uuid);
+                                AiConversationItemPayload::Image { uuid } => {
+                                    chat.message_for(ChatRole::User, Some(item.id)).push_image(uuid);
                                 },
 
                                 AiConversationItemPayload::Reasoning { summary, .. } => {
-                                    chat.assert_last_message_is_role(ChatRole::Assistant, Some(item.id));
-                                    chat.append_thinking_block_to_latest_message(summary);
+                                    let message = chat.message_for(ChatRole::Assistant, Some(item.id));
 
-                                    // This DOES have to come before assistant messages, so we use this to
-                                    // indicate that a new one should not be added if we encounter an assistant
-                                    // message next.
-                                    processed_reasoning = true;
+                                    // Don't even bother adding this thinking block if the summary is empty
+                                    if !summary.is_empty() {
+                                        message.push_thinking(summary);
+                                    }
                                 },
 
                                 AiConversationItemPayload::FunctionCall { name, arguments, .. } => {
-                                    chat.assert_last_message_is_role(ChatRole::Assistant, Some(item.id));
-                                    chat.append_tool_call_to_latest_message(name, arguments);
+                                    chat.message_for(ChatRole::Assistant, Some(item.id)).push_tool_call(name, arguments);
                                 },
 
-                                _ => {},
+                                AiConversationItemPayload::FunctionCallOutput { .. } => {
+                                    chat.message_for(ChatRole::Assistant, Some(item.id));
+                                },
+
+                                AiConversationItemPayload::WebSearchCall { .. } => {
+                                    chat.message_for(ChatRole::Assistant, Some(item.id)).push_web_search();
+                                },
+
+                                AiConversationItemPayload::ResponseBoundary => {
+                                    chat.close_latest();
+                                },
                             }
                         }
                     },
@@ -197,74 +187,66 @@ pub fn chat_ui(stack: &gtk::Stack) -> gtk::Box {
                         input.set_send_button_running(true);
                     },
 
-                    AiChannelMessage::CycleFailed => {
-                        input.set_send_button_running(false);
-                        chat.remove_latest_message();
-                    },
-
-                    AiChannelMessage::CycleFinished => {
+                    AiChannelMessage::CycleFailed | AiChannelMessage::CycleFinished => {
                         input.set_send_button_running(false);
 
-                        if chat.messages.borrow().last().is_some_and(
-                            |latest| latest.content.is_none() && latest.thinking.is_none()
-                        ) {
+                        // Items that were already written before a failure are kept in the database,
+                        // so only drop the message if nothing made it into it
+                        if chat.latest_message().is_some_and(|latest| latest.role == ChatRole::Assistant && latest.is_empty()) {
                             chat.remove_latest_message();
+                        } else {
+                            chat.close_latest();
                         }
                     },
 
                     AiChannelMessage::StreamStart => {
-                        chat.add_message(ChatMessage::new(
-                            ChatRole::Assistant,
-                            None,
-                        ));
+                        // Keep using the same message across tool call round trips
+                        if !chat.latest_message().is_some_and(|latest| latest.role == ChatRole::Assistant && !latest.closed.get()) {
+                            chat.add_message(ChatMessage::new_pending(ChatRole::Assistant));
+                        }
                     },
 
-                    AiChannelMessage::StreamChunk(chunk) => {
+                    AiChannelMessage::StreamMessageAdded => {
+                        if let Some(latest_message) = chat.latest_message() {
+                            latest_message.begin_content();
+                        }
+                    },
+
+                    AiChannelMessage::StreamReasoningAdded => {
+                        if let Some(latest_message) = chat.latest_message() {
+                            latest_message.begin_thinking();
+                        }
+                    },
+
+                    AiChannelMessage::StreamChunk(chunk) => if let Some(latest_message) = chat.latest_message() {
                         match chunk {
-                            AiConversationDelta::Message(delta) => {
-                                if let Some(latest_message) = chat.messages.borrow_mut().last_mut() {
-                                    let new_content = format!("{}{}", latest_message.content.as_deref().unwrap_or_default(), delta);
-                                    latest_message.set_content(&new_content);
-                                }
-                            },
-
-                            AiConversationDelta::Reasoning(delta) => {
-                                if let Some(latest_message) = chat.messages.borrow_mut().last_mut() {
-                                    let new_content = if let Some(thinking) = &mut latest_message.thinking {
-                                        let current_summary = thinking.summary.as_deref().unwrap_or_default();
-                                        format!("{}{}", current_summary, delta)
-                                    } else {
-                                        delta
-                                    };
-
-                                    latest_message.set_thinking(&new_content);
-                                }
-                            },
+                            AiConversationDelta::Message(delta) => latest_message.append_content_delta(&delta),
+                            AiConversationDelta::Reasoning(delta) => latest_message.append_reasoning_delta(&delta),
                         }
                     },
 
                     AiChannelMessage::StreamReasoningSummaryPartAdded => {
-                        if let Some(latest_message) = chat.messages.borrow_mut().last_mut()
-                            && let Some(thinking) = &mut latest_message.thinking
-                        {
-                            let current_summary = thinking.summary.as_deref().unwrap_or_default();
-                            let new_content = if current_summary.is_empty() {
-                                String::new()
-                            } else {
-                                format!("{}\n\n", current_summary)
-                            };
-                            thinking.set_summary(&new_content);
+                        if let Some(latest_message) = chat.latest_message() {
+                            latest_message.reasoning_part_added();
                         }
                     },
 
-                    AiChannelMessage::StreamComplete(id) => {
-                        if let Some(latest_message) = chat.messages.borrow_mut().last_mut() {
-                            latest_message.set_id(id);
+                    AiChannelMessage::StreamComplete(items) => {
+                        if let Some(latest_message) = chat.latest_message() {
+                            latest_message.assign_item_ids(&items);
                         }
                     },
 
                     AiChannelMessage::ToolCall(tool_name, arguments) => {
-                        chat.append_tool_call_to_latest_message(&tool_name, &arguments);
+                        if let Some(latest_message) = chat.latest_message() {
+                            latest_message.push_tool_call(&tool_name, &arguments);
+                        }
+                    },
+
+                    AiChannelMessage::WebSearchCall => {
+                        if let Some(latest_message) = chat.latest_message() {
+                            latest_message.push_web_search();
+                        }
                     },
 
                     _ => {},

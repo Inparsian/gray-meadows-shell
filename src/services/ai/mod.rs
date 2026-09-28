@@ -28,10 +28,13 @@ pub const TIMESTAMP_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
 #[derive(Debug, Clone)]
 pub enum AiChannelMessage {
     StreamStart,
+    StreamMessageAdded,
+    StreamReasoningAdded,
     StreamChunk(AiConversationDelta),
-    StreamComplete(i64), // message ID
+    StreamComplete(Vec<(i64, AiConversationItemPayload)>), // (item ID, payload) in written order
     StreamReasoningSummaryPartAdded,
     ToolCall(String, String), // (tool name, arguments)
+    WebSearchCall,
     CycleStarted,
     CycleFailed,
     CycleFinished,
@@ -79,19 +82,16 @@ async fn write_item_payload(payload: AiConversationItemPayload) -> i64 {
     }
 }
 
-pub fn get_first_encountered_message_payload(from_item_id: i64) -> Option<(i64, AiConversationItemPayload)> {
+pub fn get_item_payload(item_id: i64) -> Option<AiConversationItemPayload> {
     let Some(session) = SESSION.get() else {
         warn!("AI session not initialized");
         return None;
     };
     
-    let items = session.items.read().unwrap();
-    for item in items.iter().skip_while(|item| item.id != from_item_id) {
-        if let AiConversationItemPayload::Message { .. } = &item.payload {
-            return Some((item.id, item.payload.clone()));
-        }
-    }
-    None
+    session.items.read().unwrap()
+        .iter()
+        .find(|item| item.id == item_id)
+        .map(|item| item.payload.clone())
 }
 
 pub async fn update_item(item_id: i64, payload: AiConversationItemPayload) -> anyhow::Result<()> {
@@ -200,6 +200,7 @@ pub async fn start_request_cycle() {
         .unwrap_or(&SERVICES[0]);
     
     let mut failed = false;
+    let mut wrote_items = false;
     loop {
         let items = session.items.read().unwrap()
             .clone()
@@ -215,12 +216,14 @@ pub async fn start_request_cycle() {
         let stop_cycle_flag = session.stop_cycle_flag.clone();
         match service.make_stream_request(items, channel, stop_cycle_flag).await {
             Ok(result) => {
-                for (index, item) in result.items.iter().enumerate() {
+                let mut written_items = Vec::with_capacity(result.items.len());
+                for item in &result.items {
                     let id = write_item_payload(item.clone()).await;
-                    if index == 0 {
-                        channel.send(AiChannelMessage::StreamComplete(id)).await;
-                    }
+                    written_items.push((id, item.clone()));
                 }
+
+                wrote_items |= !written_items.is_empty();
+                channel.send(AiChannelMessage::StreamComplete(written_items)).await;
 
                 // If this yielded any function calls, they must be processed
                 let handles = result.items.iter().filter_map(|payload| {
@@ -267,6 +270,11 @@ pub async fn start_request_cycle() {
                 break;
             },
         }
+    }
+
+    // Explicitly mark the end of this response
+    if wrote_items {
+        write_item_payload(AiConversationItemPayload::ResponseBoundary).await;
     }
 
     if failed {

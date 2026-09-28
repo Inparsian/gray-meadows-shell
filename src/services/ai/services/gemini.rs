@@ -16,13 +16,6 @@ use crate::services::ai::tools::gemini::add_gemini_tools;
 use super::super::variables::transform_variables;
 use super::super::{AiChannelMessage, AiConversationItem, AiConversationItemPayload, AiConversationDelta};
 
-#[derive(Default, Debug, Clone)]
-pub struct GeminiContext {
-    pub reasoning: Option<AiConversationItemPayload>,
-    pub response: Option<AiConversationItemPayload>,
-    pub tool_calls: Vec<AiConversationItemPayload>,
-}
-
 #[derive(Clone)]
 pub struct GeminiService;
 
@@ -147,6 +140,11 @@ impl GeminiService {
                         builder = new_builder;
                     }
                 },
+
+                AiConversationItemPayload::ResponseBoundary |
+                AiConversationItemPayload::WebSearchCall { .. } => {
+                    // TODO: we do nothing for the time being.
+                },
             }
         }
 
@@ -196,7 +194,8 @@ impl super::AiService for GeminiService {
             builder = add_gemini_tools(builder);
 
             let mut should_request_more = true;
-            let mut context = GeminiContext::default();
+            // Items in the order Gemini produced them
+            let mut items: Vec<AiConversationItemPayload> = vec![];
 
             channel.send(AiChannelMessage::StreamStart).await;
             let mut stream = builder.execute_stream().await?;
@@ -213,55 +212,43 @@ impl super::AiService for GeminiService {
                 for part in candidate_parts {
                     match part {
                         Part::Text { text, thought, thought_signature } => if thought == Some(true) {
-                            let reasoning_payload = AiConversationItemPayload::Reasoning {
-                                id: String::new(),
-                                summary: text.clone(),
-                                encrypted_content: thought_signature.clone().unwrap_or_default(),
-                            };
-
-                            if let Some(reasoning) = &mut context.reasoning {
-                                if let AiConversationItemPayload::Reasoning { summary, .. } = reasoning {
-                                    summary.push_str(&text);
+                            if let Some(AiConversationItemPayload::Reasoning { summary, encrypted_content, .. }) = items.last_mut() {
+                                summary.push_str(&text);
+                                if let Some(thought_signature) = thought_signature {
+                                    *encrypted_content = thought_signature;
                                 }
                             } else {
-                                context.reasoning = Some(reasoning_payload.clone());
+                                items.push(AiConversationItemPayload::Reasoning {
+                                    id: String::new(),
+                                    summary: text.clone(),
+                                    encrypted_content: thought_signature.unwrap_or_default(),
+                                });
+
+                                channel.send(AiChannelMessage::StreamReasoningAdded).await;
                             }
 
-                            channel.send(AiChannelMessage::StreamChunk(AiConversationDelta::Reasoning(text.clone()))).await;
+                            channel.send(AiChannelMessage::StreamChunk(AiConversationDelta::Reasoning(text))).await;
                         } else {
-                            let message_payload = AiConversationItemPayload::Message {
-                                id: String::new(),
-                                role: "assistant".to_owned(),
-                                content: text.clone(),
-                                thought_signature: thought_signature.clone(),
-                            };
-
-                            if let Some(response) = &mut context.response {
-                                if let AiConversationItemPayload::Message { content, .. } = response {
-                                    content.push_str(&text);
-                                }
-
-                                if let Some(thought_signature) = thought_signature.clone()
-                                    && let AiConversationItemPayload::Message { thought_signature: resp_thought_sig, .. } = response
-                                {
-                                    *resp_thought_sig = Some(thought_signature);
+                            if let Some(AiConversationItemPayload::Message { content, thought_signature: message_thought_signature, .. }) = items.last_mut() {
+                                content.push_str(&text);
+                                if thought_signature.is_some() {
+                                    *message_thought_signature = thought_signature;
                                 }
                             } else {
-                                context.response = Some(message_payload.clone());
+                                items.push(AiConversationItemPayload::Message {
+                                    id: String::new(),
+                                    role: "assistant".to_owned(),
+                                    content: text.clone(),
+                                    thought_signature,
+                                });
+
+                                channel.send(AiChannelMessage::StreamMessageAdded).await;
                             }
 
-                            channel.send(AiChannelMessage::StreamChunk(AiConversationDelta::Message(text.clone()))).await;
+                            channel.send(AiChannelMessage::StreamChunk(AiConversationDelta::Message(text))).await;
                         },
 
                         Part::FunctionCall { function_call, thought_signature } => {
-                            let function_call_payload = AiConversationItemPayload::FunctionCall {
-                                id: String::new(),
-                                name: function_call.name.clone(),
-                                arguments: function_call.args.to_string(),
-                                call_id: String::new(),
-                                thought_signature: thought_signature.clone(),
-                            };
-
                             // Do not request again if a power action is being performed
                             // Because users quite literally can not see AI responses if their
                             // system is powered off
@@ -269,7 +256,13 @@ impl super::AiService for GeminiService {
                                 should_request_more = false;
                             }
 
-                            context.tool_calls.push(function_call_payload.clone());
+                            items.push(AiConversationItemPayload::FunctionCall {
+                                id: String::new(),
+                                name: function_call.name.clone(),
+                                arguments: function_call.args.to_string(),
+                                call_id: String::new(),
+                                thought_signature,
+                            });
 
                             channel.send(AiChannelMessage::ToolCall(
                                 function_call.name.clone(),
@@ -286,25 +279,15 @@ impl super::AiService for GeminiService {
                 *stop_flag = false;
             }
 
-            // Flatten context into result items
-            let mut items: Vec<AiConversationItemPayload> = vec![];
-            if let Some(reasoning) = context.reasoning {
-                items.push(reasoning);
-            }
-
-            if let Some(response) = context.response {
-                items.push(response);
-            }
-
-            for tool_call in &context.tool_calls {
-                items.push(tool_call.clone());
-            }
-
             // Go for another request after tool execution, in case the AI wants to say
             // something after tool execution or perform more tool calls
+            let has_tool_calls = items.iter().any(|payload| {
+                matches!(payload, AiConversationItemPayload::FunctionCall { .. })
+            });
+
             Ok(super::AiServiceResult {
                 items,
-                should_request_more: !context.tool_calls.is_empty() && should_request_more,
+                should_request_more: has_tool_calls && should_request_more,
             })
         })
     }
