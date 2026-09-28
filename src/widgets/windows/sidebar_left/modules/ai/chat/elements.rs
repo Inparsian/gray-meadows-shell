@@ -175,35 +175,82 @@ impl ChatContentElement {
 }
 
 pub fn tool_call(tool_name: &str, arguments: &str) -> gtk::Box {
-    let tool_call_box = gtk::Box::new(gtk::Orientation::Vertical, 4);
-    tool_call_box.set_css_classes(&["ai-chat-message-tool-call"]);
+    let root = gtk::Box::new(gtk::Orientation::Vertical, 0);
+    root.set_css_classes(&["ai-chat-message-tool-call"]);
+
+    let tool_call_button = gtk::Button::new();
+    tool_call_button.set_css_classes(&["ai-chat-message-tool-call-button"]);
+    tool_call_button.set_halign(gtk::Align::Fill);
+    tool_call_button.set_hexpand(true);
+
+    let tool_call_header = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+    tool_call_header.set_hexpand(true);
+    tool_call_button.set_child(Some(&tool_call_header));
+
+    let tool_call_icon = gtk::Label::new(Some("build"));
+    tool_call_icon.set_css_classes(&["ai-chat-message-tool-call-icon"]);
+    tool_call_icon.set_halign(gtk::Align::Start);
+    tool_call_icon.set_xalign(0.0);
+    tool_call_header.append(&tool_call_icon);
 
     let tool_name_label = gtk::Label::new(Some(tool_name));
     tool_name_label.set_css_classes(&["ai-chat-message-tool-call-name"]);
     tool_name_label.set_halign(gtk::Align::Start);
     tool_name_label.set_xalign(0.0);
+    tool_call_header.append(&tool_name_label);
+
+    let tool_call_arrow = gtk::Label::new(Some("stat_minus_1"));
+    tool_call_arrow.set_css_classes(&["ai-chat-message-tool-call-arrow"]);
+    tool_call_arrow.set_halign(gtk::Align::End);
+    tool_call_arrow.set_hexpand(true);
+    tool_call_arrow.set_xalign(1.0);
+    tool_call_header.append(&tool_call_arrow);
+
+    let output_revealer = gtk::Revealer::new();
+    output_revealer.set_reveal_child(false);
 
     let arguments_label = gtk::Label::new(Some(arguments));
     arguments_label.set_css_classes(&["ai-chat-message-tool-call-arguments"]);
     arguments_label.set_halign(gtk::Align::Start);
     arguments_label.set_xalign(0.0);
+    output_revealer.set_child(Some(&arguments_label));
 
-    tool_call_box.append(&tool_name_label);
-    tool_call_box.append(&arguments_label);
-    tool_call_box
+    tool_call_button.connect_clicked(clone!(
+        #[weak] root,
+        #[weak] output_revealer,
+        move |_| {
+            let revealed = output_revealer.reveals_child();
+            output_revealer.set_reveal_child(!revealed);
+            if revealed {
+                root.remove_css_class("expanded");
+            } else {
+                root.add_css_class("expanded");
+            }
+        }
+    ));
+
+    root.append(&tool_call_button);
+    root.append(&output_revealer);
+    root
 }
 
 pub fn web_search_call() -> gtk::Box {
-    let web_call_box = gtk::Box::new(gtk::Orientation::Vertical, 4);
-    web_call_box.set_css_classes(&["ai-chat-message-web-call"]);
+    let root = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+    root.set_css_classes(&["ai-chat-message-web-call"]);
+
+    let web_call_icon = gtk::Label::new(Some("language"));
+    web_call_icon.set_css_classes(&["ai-chat-message-web-call-icon"]);
+    web_call_icon.set_halign(gtk::Align::Start);
+    web_call_icon.set_xalign(0.0);
 
     let web_call_label = gtk::Label::new(Some("Searching the web..."));
     web_call_label.set_css_classes(&["ai-chat-message-web-call-label"]);
     web_call_label.set_halign(gtk::Align::Start);
     web_call_label.set_xalign(0.0);
 
-    web_call_box.append(&web_call_label);
-    web_call_box
+    root.append(&web_call_icon);
+    root.append(&web_call_label);
+    root
 }
 
 pub fn image(uuid: &str) -> Option<gtk::Widget> {

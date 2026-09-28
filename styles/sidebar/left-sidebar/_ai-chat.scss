@@ -203,26 +203,71 @@
             }
 
             .ai-chat-message-tool-call {
-                padding: 12px;
                 background: $background-color-primary;
                 border: 1px solid $border-color-primary;
 
-                .ai-chat-message-tool-call-name {
-                    @include large-text;
-                    margin-bottom: 6px;
+                .ai-chat-message-tool-call-icon {
+                    @include material-icons;
+                    color: $foreground-color-secondary;
+                    font-size: 16px;
+                    margin-right: 8px;
                 }
 
                 .ai-chat-message-tool-call-arguments {
-                    @include normal-text;
+                    @include tiny-text;
+                    padding: 12px;
                     color: $foreground-color-secondary;
+                }
+
+                .ai-chat-message-tool-call-button {
+                    background: transparent;
+                    font-weight: normal;
+                    border-radius: 0px;
+                    padding: 6px 12px;
+
+                    .ai-chat-message-tool-call-arrow {
+                        @include material-icons;
+                        color: $foreground-color-primary;
+                        font-size: 20px;
+                        padding: 0px;
+                        margin-left: 8px;
+                        margin-right: -4px;
+                        padding-top: 3px;
+                        margin-top: -3px;
+                        transition: transform 0.5s cubic-bezier(0.19, 1.00, 0.22, 1.00);
+                    }
+                }
+
+                &.expanded .ai-chat-message-tool-call-button .ai-chat-message-tool-call-arrow {
+                    transform: rotate(180deg);
+                }
+
+                &:not(.expanded) {
+                    .ai-chat-message-tool-call-button {
+                        &:hover, &:focus {
+                            background: #ffffff04;
+                            outline: none;
+                        }
+
+                        &:active {
+                            background: #ffffff08;
+                        }
+                    }
                 }
             }
 
             .ai-chat-message-web-call {
-                padding: 12px;
+                padding: 8px 12px;
                 background: $background-color-primary;
                 border: 1px solid $border-color-primary;
 
+                .ai-chat-message-web-call-icon {
+                    @include material-icons;
+                    color: $foreground-color-secondary;
+                    font-size: 16px;
+                    margin-right: 8px;
+                }
+                
                 .ai-chat-message-web-call-label {
                     @include normal-text;
                     color: $foreground-color-secondary;
