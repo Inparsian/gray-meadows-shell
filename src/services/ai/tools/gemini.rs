@@ -2,6 +2,8 @@
 // so they are defined differently here. This is a temporary solution until
 // I can think of a better way to handle this edge case.
 
+#![allow(deprecated)]
+
 use gemini_rust::{ContentBuilder, FunctionDeclaration, Tool};
 use schemars::JsonSchema;
 use serde::{Serialize, Deserialize};

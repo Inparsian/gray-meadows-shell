@@ -1,12 +1,12 @@
+#![allow(deprecated)]
+
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
 use futures::StreamExt as _;
+use gemini_rust::tools::GoogleSearchConfig;
 use gemini_rust::{
-    Blob,
-    Content, ContentBuilder,
-    FunctionCall,
-    Gemini, Part, Role,
-    ThinkingConfig, ThinkingLevel,
+    Blob, Content, ContentBuilder, FunctionCall, Gemini, Part, Role,
+    ThinkingConfig, ThinkingLevel, Tool, ToolConfig,
 };
 
 use crate::config::{AiService as AiConfigService, GeminiThinkingLevel, read_config};
@@ -180,6 +180,11 @@ impl super::AiService for GeminiService {
 
             let mut builder = Self::transform_items_into_builder(items, &client)
                 .with_system_prompt(transform_variables(system_prompt.as_str()))
+                .with_tool_config(ToolConfig {
+                    function_calling_config: None,
+                    include_server_side_tool_invocations: Some(true),
+                    retrieval_config: None,
+                })
                 .with_thinking_config(ThinkingConfig {
                     thinking_budget: (!matches!(thinking_level, GeminiThinkingLevel::Low | GeminiThinkingLevel::High))
                         .then_some(thinking_budget),
@@ -192,6 +197,9 @@ impl super::AiService for GeminiService {
                 });
             
             builder = add_gemini_tools(builder);
+            builder = builder.with_tool(Tool::GoogleSearch {
+                google_search: GoogleSearchConfig {}
+            });
 
             let mut should_request_more = true;
             // Items in the order Gemini produced them
@@ -268,6 +276,26 @@ impl super::AiService for GeminiService {
                                 function_call.name.clone(),
                                 function_call.args.to_string(),
                             )).await;
+                        }
+
+                        Part::ToolCall { tool_call, .. } => {
+                            // TODO: perhaps args.queries can be used here in the future
+                            let json = serde_json::to_value(&tool_call)
+                                .unwrap_or(serde_json::Value::Null);
+
+                            let id = json.get("id")
+                                .and_then(serde_json::Value::as_str)
+                                .unwrap_or("")
+                                .to_owned();
+                            
+                            items.push(AiConversationItemPayload::WebSearchCall { id });
+
+                            if json.get("toolType")
+                                .and_then(serde_json::Value::as_str)
+                                == Some("GOOGLE_SEARCH_WEB")
+                            {
+                                channel.send(AiChannelMessage::WebSearchCall).await;
+                            }
                         }
 
                         _ => {}
