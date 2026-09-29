@@ -65,6 +65,7 @@ impl Default for Config {
                     api_base: String::new(),
                     api_key: "your-api-key-here".to_owned(),
                     model: "gpt-4.1".to_owned(),
+                    max_output_tokens: 2048,
                     service_tier: OpenAiServiceTier::Default,
                     reasoning_effort: OpenAiReasoningEffort::None,
                 },

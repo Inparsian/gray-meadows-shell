@@ -21,6 +21,7 @@ pub struct OpenAiConfig {
     pub api_base: String,
     pub api_key: String,
     pub model: String,
+    pub max_output_tokens: i64,
     #[serde(deserialize_with = "deserialize_insensitive")]
     pub service_tier: OpenAiServiceTier,
     #[serde(deserialize_with = "deserialize_insensitive")]

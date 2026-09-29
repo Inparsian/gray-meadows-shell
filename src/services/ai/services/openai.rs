@@ -70,7 +70,7 @@ impl OpenAiService {
 
         let request = if !matches!(app_config.ai.openai.reasoning_effort, OpenAiReasoningEffort::None) {
             CreateResponseArgs::default()
-                .max_output_tokens(2048_u32)
+                .max_output_tokens(app_config.ai.openai.max_output_tokens as u32) // ugh
                 .stream(true)
                 .model(app_config.ai.openai.model.as_str())
                 .service_tier(match app_config.ai.openai.service_tier {
@@ -95,7 +95,7 @@ impl OpenAiService {
                 .build()?
         } else {
             CreateResponseArgs::default()
-                .max_output_tokens(2048_u32)
+                .max_output_tokens(app_config.ai.openai.max_output_tokens as u32)
                 .stream(true)
                 .model(app_config.ai.openai.model.as_str())
                 .service_tier(match app_config.ai.openai.service_tier {

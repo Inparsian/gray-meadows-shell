@@ -31,6 +31,10 @@ api_key = "your-api-key-here"
 # The model to use for AI tasks.
 model = "gpt-4.1"
 
+# The maximum number of output tokens the model can generate per request.
+# Set to 0 to disable output token limiting.
+max_output_tokens = 2048
+
 # The service tier to use for AI tasks.
 # "flex" provides lower costs, in exchange for slower response times and occasional unavailability.
 # "default" is the default tier with the standard latency and cost.
