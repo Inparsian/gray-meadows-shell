@@ -26,6 +26,7 @@ use std::sync::LazyLock;
 use futures_signals::signal::Mutable;
 use gtk::prelude::*;
 use libadwaita::Application;
+use tracing::level_filters::LevelFilter;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::time::ChronoLocal;
 
@@ -122,56 +123,69 @@ async fn main() {
     if args.len() == 1 {
         tracing_subscriber::fmt()
             .with_line_number(true)
-            .with_env_filter(EnvFilter::from_default_env())
+            .with_env_filter(EnvFilter::from_default_env()
+                .add_directive(LevelFilter::INFO.into()))
             .with_timer(ChronoLocal::new("%H:%M:%S%.3f".to_owned()))
             .init();
 
         // Ensure that another instance of gray-meadows-shell is not running.
-        if ipc::client::get_stream().is_ok() {
-            error!("Another instance of gray-meadows-shell is already running.");
-            std::process::exit(1);
-        } else {
-            tokio::spawn(async {
-                if let Err(e) = ipc::server::start().await {
-                    error!(%e, "Failed to start IPC server");
+        // gray-meadows-shell can hold on to it's socket for a bit after exiting so we'll
+        // try multiple times, in case this is being restarted right after a SIGTERM
+        for i in 1..=5 {
+            if ipc::client::get_stream().is_ok() {
+                if i == 5 {
+                    error!("Looks like another instance of gray-meadows-shell is already running.");
                     std::process::exit(1);
                 }
-            });
 
-            sql::init_database().await;
-            APP.do_not_disturb.set(sql::wrappers::state::get_do_not_disturb().await.unwrap_or(false));
-
-            let _ = gtk::init();
-
-            gtk::style_context_add_provider_for_display(
-                &gdk::Display::default().expect("Failed to get default display"),
-                &APP_LOCAL.with(|app| app.provider.clone()),
-                gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
-            );
-
-            if let Some(settings) = gtk::Settings::default() {
-                let current_icon_theme = settings.property::<String>("gtk-icon-theme-name");
-                APP_LOCAL.with(|app| {
-                    app.icon_theme.set_theme_name(Some(&current_icon_theme));
-                });
+                warn!("Socket is taken, waiting for it to be released... ({}{} attempt)",
+                    i,
+                    if i == 1 { "st" } else if i == 2 { "nd" } else if i == 3 { "rd" } else { "th" }
+                );
+                tokio::time::sleep(std::time::Duration::from_millis(100)).await;
             }
-
-            scss::bundle_apply_scss();
-            scss::watch_scss();
-
-            services::activate_all().await;
-            windows::listen_for_ipc_messages();
-            bar::listen_for_ipc_messages();
-            config::watch();
-
-            let application = Application::new(
-                Some("sn.inpr.gray_meadows_shell"),
-                Default::default(),
-            );
-
-            application.connect_activate(activate);
-            application.run();
         }
+        
+        tokio::spawn(async {
+            if let Err(e) = ipc::server::start().await {
+                error!(%e, "Failed to start IPC server");
+                std::process::exit(1);
+            }
+        });
+
+        sql::init_database().await;
+        APP.do_not_disturb.set(sql::wrappers::state::get_do_not_disturb().await.unwrap_or(false));
+
+        let _ = gtk::init();
+
+        gtk::style_context_add_provider_for_display(
+            &gdk::Display::default().expect("Failed to get default display"),
+            &APP_LOCAL.with(|app| app.provider.clone()),
+            gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+        );
+
+        if let Some(settings) = gtk::Settings::default() {
+            let current_icon_theme = settings.property::<String>("gtk-icon-theme-name");
+            APP_LOCAL.with(|app| {
+                app.icon_theme.set_theme_name(Some(&current_icon_theme));
+            });
+        }
+
+        scss::bundle_apply_scss();
+        scss::watch_scss();
+
+        services::activate_all().await;
+        windows::listen_for_ipc_messages();
+        bar::listen_for_ipc_messages();
+        config::watch();
+
+        let application = Application::new(
+            Some("sn.inpr.gray_meadows_shell"),
+            Default::default(),
+        );
+
+        application.connect_activate(activate);
+        application.run();
     } else {
         let command = args[1..].join(" ");
 
