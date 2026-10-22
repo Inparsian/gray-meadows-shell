@@ -1,4 +1,5 @@
 use std::sync::{Arc, RwLock};
+use tokio::sync::watch;
 use serde::{Serialize, Deserialize};
 
 use super::TIMESTAMP_FORMAT;
@@ -7,7 +8,7 @@ pub struct AiSession {
     pub conversation: Arc<RwLock<Option<AiConversation>>>,
     pub items: Arc<RwLock<Vec<AiConversationItem>>>,
     pub currently_in_cycle: Arc<RwLock<bool>>,
-    pub stop_cycle_flag: Arc<RwLock<bool>>,
+    pub stop_cycle_signal: Arc<watch::Sender<bool>>,
 }
 
 #[derive(Debug, Clone)]

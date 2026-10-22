@@ -1,7 +1,8 @@
 #![allow(deprecated)]
 
 use std::pin::Pin;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
+use tokio::sync::watch;
 use futures::StreamExt as _;
 use gemini_rust::tools::GoogleSearchConfig;
 use gemini_rust::{
@@ -163,7 +164,7 @@ impl super::AiService for GeminiService {
         &self,
         items: Vec<AiConversationItem>,
         channel: &BroadcastChannel<AiChannelMessage>,
-        stop_cycle_flag: Arc<RwLock<bool>>,
+        stop_cycle_signal: Arc<watch::Sender<bool>>,
     ) -> Pin<Box<dyn Future<Output = anyhow::Result<super::AiServiceResult>> + 'static + Send>> {
         let channel = channel.clone();
         let config = read_config();
@@ -175,6 +176,7 @@ impl super::AiService for GeminiService {
         let thinking_level = config.ai.gemini.thinking_level.clone();
 
         Box::pin(async move {
+            let mut stop_cycle = stop_cycle_signal.subscribe();
             let client = Gemini::with_model(api_key, format!("models/{}", model))
                 .expect("Failed to create Gemini client");
 
@@ -205,12 +207,33 @@ impl super::AiService for GeminiService {
             // Items in the order Gemini produced them
             let mut items: Vec<AiConversationItemPayload> = vec![];
 
-            channel.send(AiChannelMessage::StreamStart).await;
-            let mut stream = builder.execute_stream().await?;
-            while let Some(chunk) = stream.next().await {
-                if *stop_cycle_flag.read().unwrap() {
-                    break;
+            if *stop_cycle.borrow() {
+                let _ = stop_cycle_signal.send(false);
+                return Ok(super::AiServiceResult {
+                    items: Vec::new(),
+                    should_request_more: false,
+                });
+            }
+
+            let mut stream = tokio::select! {
+                result = builder.execute_stream() => result?,
+                _ = stop_cycle.changed() => {
+                    let _ = stop_cycle_signal.send(false);
+                    return Ok(super::AiServiceResult {
+                        items: Vec::new(),
+                        should_request_more: false,
+                    });
                 }
+            };
+            channel.send(AiChannelMessage::StreamStart).await;
+            loop {
+                let next_chunk = tokio::select! {
+                    chunk = stream.next() => chunk,
+                    _ = stop_cycle.changed() => break,
+                };
+                let Some(chunk) = next_chunk else {
+                    break;
+                };
 
                 let result = chunk?;
                 let candidate_parts = result.candidates.first()
@@ -303,9 +326,7 @@ impl super::AiService for GeminiService {
                 }
             }
 
-            if let Ok(mut stop_flag) = stop_cycle_flag.write() {
-                *stop_flag = false;
-            }
+            let _ = stop_cycle_signal.send(false);
 
             // Go for another request after tool execution, in case the AI wants to say
             // something after tool execution or perform more tool calls

@@ -2,7 +2,8 @@ pub mod openai;
 pub mod gemini;
 
 use std::pin::Pin;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
+use tokio::sync::watch;
 
 use crate::config::AiService as AiConfigService;
 use crate::utils::broadcast::BroadcastChannel;
@@ -20,6 +21,6 @@ pub trait AiService: Send + Sync {
         &self,
         items: Vec<AiConversationItem>,
         channel: &BroadcastChannel<AiChannelMessage>,
-        stop_cycle_flag: Arc<RwLock<bool>>,
+        stop_cycle_signal: Arc<watch::Sender<bool>>,
     ) -> Pin<Box<dyn Future<Output = anyhow::Result<AiServiceResult>> + 'static + Send>>;
 }

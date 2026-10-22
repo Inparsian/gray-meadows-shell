@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
+use tokio::sync::watch;
 use futures::StreamExt as _;
 use async_openai::Client;
 use async_openai::config::OpenAIConfig;
@@ -297,12 +298,13 @@ impl super::AiService for OpenAiService {
         &self,
         items: Vec<AiConversationItem>,
         channel: &BroadcastChannel<AiChannelMessage>,
-        stop_cycle_flag: Arc<RwLock<bool>>,
+        stop_cycle_signal: Arc<watch::Sender<bool>>,
     ) -> Pin<Box<dyn Future<Output = anyhow::Result<super::AiServiceResult>> + 'static + Send>> {
         let channel = channel.clone();
         let client = self.client.clone();
 
         Box::pin(async move {
+            let mut stop_cycle = stop_cycle_signal.subscribe();
             let service = OpenAiService {
                 client
             };
@@ -310,14 +312,35 @@ impl super::AiService for OpenAiService {
             let mut should_request_more = true;
             // Keyed by output index so items come out in the order the API produced them
             let mut new_items: BTreeMap<u32, Item> = BTreeMap::new();
-            let mut stream = service.create_stream(items).await?;
+            if *stop_cycle.borrow() {
+                let _ = stop_cycle_signal.send(false);
+                return Ok(super::AiServiceResult {
+                    items: Vec::new(),
+                    should_request_more: false,
+                });
+            }
+
+            let mut stream = tokio::select! {
+                result = service.create_stream(items) => result?,
+                _ = stop_cycle.changed() => {
+                    let _ = stop_cycle_signal.send(false);
+                    return Ok(super::AiServiceResult {
+                        items: Vec::new(),
+                        should_request_more: false,
+                    });
+                }
+            };
 
             channel.send(AiChannelMessage::StreamStart).await;
 
-            while let Some(event) = stream.next().await {
-                if *stop_cycle_flag.read().unwrap() {
+            loop {
+                let next_event = tokio::select! {
+                    event = stream.next() => event,
+                    _ = stop_cycle.changed() => break,
+                };
+                let Some(event) = next_event else {
                     break;
-                }
+                };
 
                 match event? {
                     ResponseStreamEvent::ResponseOutputItemAdded(event) => {
@@ -520,9 +543,7 @@ impl super::AiService for OpenAiService {
                 }
             }
 
-            if let Ok(mut stop_flag) = stop_cycle_flag.write() {
-                *stop_flag = false;
-            }
+            let _ = stop_cycle_signal.send(false);
 
             let transformed_items = new_items.into_values()
                 .filter_map(Self::transform_native_into_item)

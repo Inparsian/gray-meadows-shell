@@ -80,10 +80,8 @@ impl ChatInput {
                     ).to_string();
 
                     if ai::is_currently_in_cycle() {
-                        if let Some(session) = SESSION.get()
-                            && let Ok(mut stop_flag) = session.stop_cycle_flag.write()
-                        {
-                            *stop_flag = true;
+                        if let Some(session) = SESSION.get() {
+                            let _ = session.stop_cycle_signal.send(true);
                         }
                     } else if input_attachments.get_attachments().is_empty() || input_attachments.all_ready() {
                         // A new user turn always starts its own message

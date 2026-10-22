@@ -6,6 +6,7 @@ pub mod types;
 pub mod conversation;
 
 use std::sync::{Arc, LazyLock, OnceLock, RwLock};
+use tokio::sync::watch;
 
 use crate::config::read_config;
 use crate::sql::wrappers::aichats;
@@ -157,7 +158,7 @@ pub async fn activate() {
         conversation: Arc::new(RwLock::new(None)),
         items: Arc::new(RwLock::new(Vec::new())),
         currently_in_cycle: Arc::new(RwLock::new(false)),
-        stop_cycle_flag: Arc::new(RwLock::new(false)),
+        stop_cycle_signal: Arc::new(watch::channel(false).0),
     };
 
     let _ = SESSION.set(session);
@@ -213,8 +214,8 @@ pub async fn start_request_cycle() {
             })
             .collect::<Vec<AiConversationItem>>();
 
-        let stop_cycle_flag = session.stop_cycle_flag.clone();
-        match service.make_stream_request(items, channel, stop_cycle_flag).await {
+        let stop_cycle_signal = session.stop_cycle_signal.clone();
+        match service.make_stream_request(items, channel, stop_cycle_signal).await {
             Ok(result) => {
                 let mut written_items = Vec::with_capacity(result.items.len());
                 for item in &result.items {
