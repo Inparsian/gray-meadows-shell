@@ -36,7 +36,7 @@ pub fn new() -> gtk::Button {
             glib::spawn_future_local(async move {
                 glib::timeout_future(std::time::Duration::from_millis(100)).await;
 
-                if let Some(message) = call_hyprctl("getoption animations:enabled") {
+                if let Some(message) = call_hyprctl(&["getoption", "animations:enabled"]) {
                     let hyprland_state = message.split('\n').next()
                         .and_then(|line| line.split("int: ").nth(1))
                         .is_some_and(|val| val == "0");

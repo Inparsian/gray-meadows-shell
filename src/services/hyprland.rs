@@ -20,9 +20,9 @@ pub static HYPRLAND: LazyLock<Hyprland> = LazyLock::new(Hyprland::default);
 
 /// For hyprctl operations that are not directly implemented into hyprland-rs (e.g. getting active submap),
 /// you may use this to invoke hyprctl directly.
-pub fn call_hyprctl(command: &str) -> Option<String> {
+pub fn call_hyprctl(args: &[&str]) -> Option<String> {
     let output = std::process::Command::new("hyprctl")
-        .arg(command)
+        .args(args)
         .output()
         .ok()?;
     output.status.success().then(|| String::from_utf8_lossy(&output.stdout).trim().to_owned())
@@ -61,7 +61,7 @@ fn refresh_workspaces() {
 fn refresh_submap(new_submap: Option<String>) {
     if let Some(submap) = new_submap {
         HYPRLAND.submap.set(Some(submap));
-    } else if let Some(submap) = call_hyprctl("submap") {
+    } else if let Some(submap) = call_hyprctl(&["submap"]) {
         HYPRLAND.submap.set((!submap.is_empty() && submap != "default").then_some(submap));
     }
 }

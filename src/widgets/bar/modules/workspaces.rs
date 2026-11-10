@@ -1,8 +1,6 @@
 use std::sync::{Mutex, LazyLock};
 use futures_signals::signal::SignalExt as _;
 use gtk::prelude::*;
-use ::hyprland::dispatch;
-use ::hyprland::dispatch::WorkspaceIdentifierWithSpecial;
 
 use crate::scss;
 use crate::services::hyprland;
@@ -56,13 +54,19 @@ pub fn new() -> BarModule {
                 && let Some(active_workspace) = hyprland::HYPRLAND.active_workspace.get_cloned()
             {
                 let clamped = ((active_workspace.id - 1) / 10) * 10 + ws;
-                let _ = dispatch!(Workspace, WorkspaceIdentifierWithSpecial::Id(clamped));
+                // CURRENTLY BROKEN POST-0.57
+                // uncomment if you are on pre-0.57
+                //let _ = dispatch!(Workspace, WorkspaceIdentifierWithSpecial::Id(clamped));
+                hyprland::call_hyprctl(&["dispatch", &format!("hl.dsp.focus({{ workspace = {clamped} }})")]);
             }
         }),
 
         workspaces_scroll_gesture = gesture::on_vertical_scroll(|dy| {
             let delta = if dy < 0.0 { -1 } else { 1 };
-            let _ = dispatch!(Workspace, WorkspaceIdentifierWithSpecial::RelativeMonitorIncludingEmpty(delta));
+            // CURRENTLY BROKEN POST-0.57
+            //let _ = dispatch!(Workspace, WorkspaceIdentifierWithSpecial::RelativeMonitorIncludingEmpty(delta));
+            let selector = format!("r{delta:+}");
+            hyprland::call_hyprctl(&["dispatch", &format!("hl.dsp.focus({{ workspace = '{selector}' }})")]);
         }),
 
         workspaces_drawing_area = gtk::DrawingArea {
