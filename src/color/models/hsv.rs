@@ -1,7 +1,7 @@
 use std::sync::LazyLock;
 use regex::Regex;
 
-use crate::FLOAT_TOLERANCE;
+use super::{Rgba, rgba::NormalizedRgba};
 
 pub static HSV_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^hsv\(\s*(\d{1,3}(?:\.\d+)?)\s*,\s*(\d{1,3}(?:\.\d+)?)%\s*,\s*(\d{1,3}(?:\.\d+)?)%\s*\)$").unwrap()
@@ -15,32 +15,14 @@ pub struct Hsv {
 }
 
 impl super::ColorModel for Hsv {
-    fn from_hex(hex: &str) -> Self {
-        let rgba = super::Rgba::from_hex(hex);
-
-        let max = rgba.red.max(rgba.green).max(rgba.blue) as f64;
-        let min = rgba.red.min(rgba.green).min(rgba.blue) as f64;
+    fn from_rgba(rgba: Rgba) -> Self {
+        let nrgba = rgba.into_normalized();
+        let (max, min) = (nrgba.max_rgb(), nrgba.min_rgb());
         let delta = max - min;
+        let hue = if delta > 0.0 { nrgba.hue_degrees(delta) } else { 0.0 };
+        let saturation = if max > 0.0 { (delta / max) * 100.0 } else { 0.0 };
 
-        let hue = if delta == 0.0 {
-            0.0
-        } else if (max - rgba.red as f64).abs() < FLOAT_TOLERANCE {
-            ((rgba.green as f64 - rgba.blue as f64) / delta + (if rgba.green < rgba.blue { 6.0 } else { 0.0 })) * 60.0
-        } else if (max - rgba.green as f64).abs() < FLOAT_TOLERANCE {
-            ((rgba.blue as f64 - rgba.red as f64) / delta + 2.0) * 60.0
-        } else {
-            ((rgba.red as f64 - rgba.green as f64) / delta + 4.0) * 60.0
-        };
-
-        let saturation = if max == 0.0 {
-            0.0
-        } else {
-            (delta / max) * 100.0
-        };
-
-        let value = (max / 255.0) * 100.0;
-
-        Self { hue, saturation, value }
+        Self { hue, saturation, value: max * 100.0 }
     }
 
     fn from_string(s: &str) -> Option<Self> {
@@ -52,35 +34,18 @@ impl super::ColorModel for Hsv {
         Some(Self { hue, saturation, value })
     }
 
-    fn into_hex(self) -> String {
-        let chroma = (self.value / 100.0) * (self.saturation / 100.0);
-        let intermediate = chroma * (1.0 - ((self.hue / 60.0) % 2.0 - 1.0).abs());
-        let match_value = (self.value / 100.0) - chroma;
-
-        let (red_prime, green_prime, blue_prime) = if self.hue < 60.0 {
-            (chroma, intermediate, 0.0)
-        } else if self.hue < 120.0 {
-            (intermediate, chroma, 0.0)
-        } else if self.hue < 180.0 {
-            (0.0, chroma, intermediate)
-        } else if self.hue < 240.0 {
-            (0.0, intermediate, chroma)
-        } else if self.hue < 300.0 {
-            (intermediate, 0.0, chroma)
-        } else {
-            (chroma, 0.0, intermediate)
+    fn into_rgba(self) -> Rgba {
+        // this alternative formula simplifies the polygonal piecewise functions using
+        // min & max values as well as a channel function
+        // see https://en.wikipedia.org/wiki/HSL_and_HSV#HSV_to_RGB_alternative
+        let (value_ratio, saturation_ratio) = (self.value / 100.0, self.saturation / 100.0);
+        let h = self.hue.rem_euclid(360.0) / 60.0;
+        let f = |n: f64| -> f64 {
+            let k = (n + h).rem_euclid(6.0);
+            let factor = -0.0_f64.max(k.min(4.0 - k).min(1.0));
+            (value_ratio * saturation_ratio).mul_add(factor, value_ratio)
         };
-
-        let rr = (red_prime + match_value) * 255.0;
-        let gg = (green_prime + match_value) * 255.0;
-        let bb = (blue_prime + match_value) * 255.0;
-
-        format!(
-            "#{:02x}{:02x}{:02x}",
-            rr.round() as u8,
-            gg.round() as u8,
-            bb.round() as u8
-        )
+        NormalizedRgba::from_nsrgb(f(5.0), f(3.0), f(1.0)).into_rgba()
     }
     
     fn into_string(self) -> String {

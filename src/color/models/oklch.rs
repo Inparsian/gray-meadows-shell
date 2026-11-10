@@ -1,6 +1,8 @@
 use std::sync::LazyLock;
 use regex::Regex;
 
+use super::{Rgba, Oklab};
+
 pub static OKLCH_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^oklch\(\s*(\d{1,3}(?:\.\d+)?)\s+(\d{1,3}(?:\.\d+)?)\s+(\d{1,3}(?:\.\d+)?)\s*\)$").unwrap()
 });
@@ -13,8 +15,8 @@ pub struct Oklch {
 }
 
 impl super::ColorModel for Oklch {
-    fn from_hex(hex: &str) -> Self {
-        let oklab = super::Oklab::from_hex(hex);
+    fn from_rgba(rgba: Rgba) -> Self {
+        let oklab = Oklab::from_rgba(rgba);
         let chroma = oklab.a.hypot(oklab.b);
         let hue = if chroma == 0.0 {
             0.0
@@ -39,15 +41,15 @@ impl super::ColorModel for Oklch {
     }
 
     fn into_string(self) -> String {
-        format!("oklch({:.3} {:.3} {:.2})", self.lightness, self.chroma, self.hue)
+        format!("oklch({:.4} {:.4} {:.2})", self.lightness, self.chroma, self.hue)
     }
 
-    fn into_hex(self) -> String {
+    fn into_rgba(self) -> Rgba {
         let hue_rad = self.hue.to_radians();
-        super::Oklab {
+        Oklab {
             lightness: self.lightness,
             a: self.chroma * hue_rad.cos(),
             b: self.chroma * hue_rad.sin(),
-        }.into_hex()
+        }.into_rgba()
     }
 }

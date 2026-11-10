@@ -1,6 +1,8 @@
 use std::sync::LazyLock;
 use regex::Regex;
 
+use super::Rgba;
+
 pub static OKLAB_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^oklab\(\s*(\d{1,3}(?:\.\d+)?)\s+(\-?\d{1,3}(?:\.\d+)?)\s+(\-?\d{1,3}(?:\.\d+)?)\s*\)$").unwrap()
 });
@@ -13,8 +15,7 @@ pub struct Oklab {
 }
 
 impl super::ColorModel for Oklab {
-    fn from_hex(hex: &str) -> Self {
-        let rgba = super::Rgba::from_hex(hex);
+    fn from_rgba(rgba: Rgba) -> Self {
         let linear_rgba = rgba.into_linear();
 
         // Linear RGB -> Cube-rooted LMS
@@ -52,24 +53,24 @@ impl super::ColorModel for Oklab {
     }
 
     fn into_string(self) -> String {
-        format!("oklab({:.3} {:.3} {:.3})", self.lightness, self.a, self.b)
+        format!("oklab({:.4} {:.4} {:.4})", self.lightness, self.a, self.b)
     }
 
-    fn into_hex(self) -> String {
+    fn into_rgba(self) -> Rgba {
         // Oklab -> Cubed LMS
         let lms_l = 0.215_803_757_3_f64.mul_add(self.b, 0.396_337_777_4_f64.mul_add(self.a, self.lightness)).powi(3);
         let lms_m = 0.063_854_172_8_f64.mul_add(-self.b, 0.105_561_345_8_f64.mul_add(-self.a, self.lightness)).powi(3);
         let lms_s = 1.291_485_548_0_f64.mul_add(-self.b, 0.089_484_177_5_f64.mul_add(-self.a, self.lightness)).powi(3);
         
         // Cubed LMS -> Linear RGB
-        let lrgb = super::LinearRgba {
+        let lrgb = super::rgba::LinearRgba {
             red: 0.230_969_929_2_f64.mul_add(lms_s, 4.076_741_662_1_f64.mul_add(lms_l, -(3.307_711_591_3 * lms_m))),
             green: 0.341_319_396_5_f64.mul_add(-lms_s, (-1.268_438_004_6_f64).mul_add(lms_l, 2.609_757_401_1 * lms_m)),
             blue: 1.707_614_701_0_f64.mul_add(lms_s, (-0.004_196_086_3_f64).mul_add(lms_l, -(0.703_418_614_7 * lms_m))),
             alpha: 1.0
         };
 
-        // Linear RGB -> sRGBA -> Hex
-        lrgb.into_rgba().into_hex()
+        // Linear RGB -> sRGBA
+        lrgb.into_rgba()
     }
 }

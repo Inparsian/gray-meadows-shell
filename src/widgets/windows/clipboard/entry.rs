@@ -42,7 +42,7 @@ mod imp {
 
 use gtk::prelude::*;
 
-use crate::color;
+use crate::color::{self, models::ColorModel as _};
 use crate::services::clipboard;
 use crate::widgets::common::loading;
 
@@ -120,9 +120,9 @@ impl ClipboardEntry {
                     }
                 }
             ));
-        } else if let Some(hex) = color::parse_color_into_hex(&preview) {
+        } else if let Some(rgba) = color::parse_string_into_rgba(&preview) {
             let color_style_provider = gtk::CssProvider::new();
-            let color_style = format!(".color-preview-box {{ background-color: {}; }}", hex);
+            let color_style = format!(".color-preview-box {{ background-color: {}; }}", rgba.into_string());
             color_style_provider.load_from_data(&color_style);
     
             let color_box = gtk::Box::new(gtk::Orientation::Vertical, 0);

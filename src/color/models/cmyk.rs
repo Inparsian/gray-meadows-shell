@@ -1,6 +1,8 @@
 use std::sync::LazyLock;
 use regex::Regex;
 
+use super::Rgba;
+
 pub static CMYK_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^cmyk\(\s*(\d{1,3})%\s*,\s*(\d{1,3})%\s*,\s*(\d{1,3})%\s*,\s*(\d{1,3})%\s*\)$").unwrap()
 });
@@ -14,21 +16,17 @@ pub struct Cmyk {
 }
 
 impl super::ColorModel for Cmyk {
-    fn from_hex(hex: &str) -> Self {
-        let rgba = super::Rgba::from_hex(hex);
-        let r_normalized = rgba.red as f64 / 255.0;
-        let g_normalized = rgba.green as f64 / 255.0;
-        let b_normalized = rgba.blue as f64 / 255.0;
-
-        let black = 1.0 - r_normalized.max(g_normalized).max(b_normalized);
-        let cyan = (1.0 - r_normalized - black) / (1.0 - black);
-        let magenta = (1.0 - g_normalized - black) / (1.0 - black);
-        let yellow = (1.0 - b_normalized - black) / (1.0 - black);
+    fn from_rgba(rgba: Rgba) -> Self {
+        let nrgba = rgba.into_normalized();
+        let black = 1.0 - nrgba.max_rgb();
+        let convert = |component: f64| -> u8 {
+            (((1.0 - component - black) / (1.0 - black)) * 100.0).round() as u8
+        };
 
         Self {
-            cyan: (cyan * 100.0).round() as u8,
-            magenta: (magenta * 100.0).round() as u8,
-            yellow: (yellow * 100.0).round() as u8,
+            cyan: convert(nrgba.red),
+            magenta: convert(nrgba.green),
+            yellow: convert(nrgba.blue),
             black: (black * 100.0).round() as u8
         }
     }
@@ -47,16 +45,12 @@ impl super::ColorModel for Cmyk {
         format!("cmyk({}%, {}%, {}%, {}%)", self.cyan, self.magenta, self.yellow, self.black)
     }
 
-    fn into_hex(self) -> String {
-        let cdiv = self.cyan as f64 / 100.0;
-        let mdiv = self.magenta as f64 / 100.0;
-        let ydiv = self.yellow as f64 / 100.0;
-        let kdiv = self.black as f64 / 100.0;
+    fn into_rgba(self) -> Rgba {
+        let k_ratio = self.black as f64 / 100.0;
+        let convert = |component: u8| -> u8 {
+            ((1.0 - (component as f64 / 100.0)).mul_add(1.0 - k_ratio, k_ratio) * 255.0).round() as u8
+        };
 
-        let r = (1.0 - cdiv.mul_add(1.0 - kdiv, kdiv)) * 255.0;
-        let g = (1.0 - mdiv.mul_add(1.0 - kdiv, kdiv)) * 255.0;
-        let b = (1.0 - ydiv.mul_add(1.0 - kdiv, kdiv)) * 255.0;
-
-        format!("#{:02x}{:02x}{:02x}", r.round() as u8, g.round() as u8, b.round() as u8)
+        Rgba::from_srgb(convert(self.cyan), convert(self.magenta), convert(self.yellow))
     }
 }

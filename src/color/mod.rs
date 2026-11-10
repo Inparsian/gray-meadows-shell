@@ -31,16 +31,19 @@ pub fn get_int_color(int_str: &str) -> Option<u32> {
     int_str.trim().parse::<u32>().ok().filter(|&value| value <= 0xFFFFFF)
 }
 
-pub fn parse_color_into_hex(string: &str) -> Option<String> {
+pub fn parse_string_into_rgba(string: &str) -> Option<Rgba> {
     [
-        |s: &str| (s.starts_with('#') && is_valid_hex_color(s)).then(|| s.to_owned()),
-        |s: &str| get_int_color(s).map(int_to_hex),
-        |s: &str| Rgba::from_string(s).map(|rgba| rgba.into_hex()),
-        |s: &str| Hsv::from_string(s).map(|hsv| hsv.into_hex()),
-        |s: &str| Hsl::from_string(s).map(|hsl| hsl.into_hex()),
-        |s: &str| Cmyk::from_string(s).map(|cmyk| cmyk.into_hex()),
-        |s: &str| Oklab::from_string(s).map(|oklab| oklab.into_hex()),
-        |s: &str| Oklch::from_string(s).map(|oklch| oklch.into_hex()),
+        |s: &str| (s.starts_with('#') && is_valid_hex_color(s)).then(|| Rgba::from_hex(s)),
+        |s: &str| {
+            let hex = get_int_color(s).map(int_to_hex)?;
+            Some(Rgba::from_hex(&hex))
+        },
+        |s: &str| Rgba::from_string(s),
+        |s: &str| Hsv::from_string(s).map(|color| color.into_rgba()),
+        |s: &str| Hsl::from_string(s).map(|color| color.into_rgba()),
+        |s: &str| Cmyk::from_string(s).map(|color| color.into_rgba()),
+        |s: &str| Oklab::from_string(s).map(|color| color.into_rgba()),
+        |s: &str| Oklch::from_string(s).map(|color| color.into_rgba()),
     ]
     .iter().find_map(|parse| parse(string))
 }

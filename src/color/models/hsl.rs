@@ -1,7 +1,7 @@
 use std::sync::LazyLock;
 use regex::Regex;
 
-use crate::FLOAT_TOLERANCE;
+use super::{Rgba, rgba::NormalizedRgba};
 
 pub static HSL_PATTERN: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^hsl\(\s*(\d{1,3}(?:\.\d+)?)\s*,\s*(\d{1,3}(?:\.\d+)?)%\s*,\s*(\d{1,3}(?:\.\d+)?)%\s*\)$").unwrap()
@@ -15,43 +15,18 @@ pub struct Hsl {
 }
 
 impl super::ColorModel for Hsl {
-    fn from_hex(hex: &str) -> Self {
-        let rgba = super::Rgba::from_hex(hex);
-
-        let r_normalized = rgba.red as f64 / 255.0;
-        let g_normalized = rgba.green as f64 / 255.0;
-        let b_normalized = rgba.blue as f64 / 255.0;
-
-        let max = r_normalized.max(g_normalized).max(b_normalized);
-        let min = r_normalized.min(g_normalized).min(b_normalized);
-        let delta = max - min;
-
-        let hue = if delta == 0.0 {
-            0.0
-        } else if (max - r_normalized).abs() < FLOAT_TOLERANCE {
-            ((g_normalized - b_normalized) / delta + (if g_normalized < b_normalized { 6.0 } else { 0.0 })) * 60.0
-        } else if (max - g_normalized).abs() < FLOAT_TOLERANCE {
-            ((b_normalized - r_normalized) / delta + 2.0) * 60.0
-        } else {
-            ((r_normalized - g_normalized) / delta + 4.0) * 60.0
-        };
-
+    fn from_rgba(rgba: Rgba) -> Self {
+        let nrgba = rgba.into_normalized();
+        let (max, min) = (nrgba.max_rgb(), nrgba.min_rgb());
+        let (sum, delta) = (max + min, max - min);
         let lightness = f64::midpoint(max, min);
-
-        let saturation = if delta > 0.0 {
-            delta / if lightness <= 0.5 {
-                max + min
-            } else {
-                2.0 - max - min
-            }
-        } else {
-            0.0
-        };
+        let hue = if delta > 0.0 { nrgba.hue_degrees(delta) } else { 0.0 };
+        let saturation = if delta > 0.0 { delta / if lightness <= 0.5 { sum } else { 2.0 - sum } } else { 0.0 };
 
         Self {
             hue,
             saturation: (saturation * 100.0).round(),
-            lightness: (lightness * 100.0).round()
+            lightness: (lightness * 100.0).round(),
         }
     }
 
@@ -68,27 +43,18 @@ impl super::ColorModel for Hsl {
         format!("hsl({:.2}, {:.2}%, {:.2}%)", self.hue, self.saturation, self.lightness)
     }
 
-    fn into_hex(self) -> String {
-        let chroma = (1.0 - 2.0_f64.mul_add(self.lightness / 100.0, -1.0).abs()) * (self.saturation / 100.0);
-        let intermediate = chroma * (1.0 - ((self.hue / 60.0) % 2.0 - 1.0).abs());
-        let match_value = (self.lightness / 100.0) - (chroma / 2.0);
-
-        let normalize = |value: f64| ((value + match_value) * 255.0).round() as u8;
-        let (rr, gg, bb) = if self.hue < 60.0 {
-            (chroma, intermediate, 0.0)
-        } else if self.hue < 120.0 {
-            (intermediate, chroma, 0.0)
-        } else if self.hue < 180.0 {
-            (0.0, chroma, intermediate)
-        } else if self.hue < 240.0 {
-            (0.0, intermediate, chroma)
-        } else if self.hue < 300.0 {
-            (intermediate, 0.0, chroma)
-        } else {
-            (chroma, 0.0, intermediate)
+    fn into_rgba(self) -> Rgba {
+        // this alternative formula simplifies the polygonal piecewise functions using
+        // min & max values as well as a channel function
+        // see https://en.wikipedia.org/wiki/HSL_and_HSV#HSL_to_RGB_alternative
+        let (lightness_ratio, saturation_ratio) = (self.lightness / 100.0, self.saturation / 100.0);
+        let h = self.hue.rem_euclid(360.0) / 30.0;
+        let a = saturation_ratio * lightness_ratio.min(1.0 - lightness_ratio);
+        let f = |n: f64| -> f64 {
+            let k = (n + h).rem_euclid(12.0);
+            lightness_ratio - a * (-1.0_f64).max((k - 3.0).min((9.0 - k).min(1.0)))
         };
-
-        format!("#{:02x}{:02x}{:02x}", normalize(rr), normalize(gg), normalize(bb))
+        NormalizedRgba::from_nsrgb(f(0.0), f(8.0), f(4.0)).into_rgba()
     }
 }
 

@@ -7,7 +7,7 @@ use std::time::Duration;
 use futures_signals::signal::{Mutable, SignalExt as _};
 use gtk::{Adjustment, prelude::*};
 
-use crate::color::{parse_color_into_hex, int_to_hex};
+use crate::color::{parse_string_into_rgba, int_to_hex};
 use crate::color::models::{Rgba, Hsv, Hsl, Cmyk, Oklab, Oklch, ColorModel as _};
 use crate::ipc;
 use crate::services::clipboard;
@@ -158,12 +158,12 @@ pub fn new() -> gtk::Box {
     });
 
     let mut oklch_fields = Fields::new();
-    create_spin_field!(oklch_fields, 3, 0.033, Adjustment::new(0.0, 0.0, 100.0, 0.033, 0.033, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
+    create_spin_field!(oklch_fields, 4, 0.033, Adjustment::new(0.0, 0.0, 100.0, 0.033, 0.033, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
         let mut oklch_value = Oklch::from_model(hsv.get());
         oklch_value.lightness = value;
         Hsv::from_model(oklch_value)
     });
-    create_spin_field!(oklch_fields, 3, 0.033, Adjustment::new(0.0, 0.0, 100.0, 0.033, 0.033, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
+    create_spin_field!(oklch_fields, 4, 0.033, Adjustment::new(0.0, 0.0, 100.0, 0.033, 0.033, 0.0), hsv, |hsv: &Mutable<Hsv>, value| {
         let mut oklch_value = Oklch::from_model(hsv.get());
         oklch_value.chroma = value;
         Hsv::from_model(oklch_value)
@@ -235,8 +235,8 @@ pub fn new() -> gtk::Box {
                         return;
                     };
                     
-                    if let Some(hex) = parse_color_into_hex(&clipboard_text) {
-                        hsv.set(Hsv::from_hex(&hex));
+                    if let Some(rgba) = parse_string_into_rgba(&clipboard_text) {
+                        hsv.set(Hsv::from_rgba(rgba));
                     } else {
                         paste_from_clipboard_label.set_text("No valid color in clipboard!");
         
