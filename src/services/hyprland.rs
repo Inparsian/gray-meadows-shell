@@ -91,7 +91,7 @@ fn refresh_submap(new_submap: Option<String>) {
 }
 
 pub fn activate() {
-    refresh_active_client();
+    refresh_active_monitor();
     refresh_active_client();
     refresh_active_workspace();
     refresh_workspaces();
