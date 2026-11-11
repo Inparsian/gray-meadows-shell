@@ -16,12 +16,11 @@ mod imp {
         pub expanded_widget: RefCell<Option<gtk::Widget>>,
         #[property(get, set = Self::set_expanded)]
         pub expanded: Cell<bool>,
+        pub background_widget: RefCell<Option<gtk::Widget>>,
         
         // Animation state
         pub progress: Cell<f64>,
         pub animation: RefCell<Option<libadwaita::Animation>>,
-        
-        background_widget: RefCell<Option<gtk::Widget>>,
     }
     
     #[glib::object_subclass]
@@ -330,7 +329,8 @@ mod imp {
     }
 }
 
-use gtk::prelude::IsA;
+use glib::subclass::types::ObjectSubclassIsExt as _;
+use gtk::prelude::*;
 
 use crate::APP_LOCAL;
 
@@ -358,6 +358,19 @@ impl BarModule {
     
     pub fn builder() -> BarModuleBuilder {
         BarModuleBuilder::new()
+    }
+
+    pub fn set_background_widget<W: IsA<gtk::Widget>>(&self, widget: &W) {
+        let mut background = self.imp().background_widget.borrow_mut();
+        if let Some(old_background) = background.take() {
+            old_background.unparent();
+        }
+
+        widget.add_css_class("bar-module-background");
+        widget.set_can_target(false);
+        widget.set_parent(self);
+        background.replace(widget.clone().upcast());
+        self.queue_resize();
     }
 }
 

@@ -82,4 +82,21 @@ fn main() {
     println!("cargo:rerun-if-changed=src/ffi/astalwp/event.cc");
     println!("cargo:rerun-if-changed=src/ffi/astalwp/main.h");
     println!("cargo:rerun-if-changed=src/ffi/astalwp/main.cc");
+
+    println!("cargo:rerun-if-env-changed=CARGO_FEATURE_CAVA");
+    if std::env::var_os("CARGO_FEATURE_CAVA").is_some() {
+        // Build FFI bindings for astal-cava
+        cxx_build::bridge("src/ffi/astalcava.rs")
+            .file("src/ffi/astalcava/main.cc")
+            .include("src/ffi/astalcava")
+            .include("/usr/include/astal")
+            .include("/usr/include/glib-2.0")
+            .include("/usr/lib/glib-2.0/include")
+            .compile("astalcava_ffi");
+
+        println!("cargo:rustc-link-lib=astal-cava");
+        println!("cargo:rerun-if-changed=src/ffi/astalcava.rs");
+        println!("cargo:rerun-if-changed=src/ffi/astalcava/main.h");
+        println!("cargo:rerun-if-changed=src/ffi/astalcava/main.cc");
+    }
 }

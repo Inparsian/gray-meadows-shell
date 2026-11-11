@@ -1,6 +1,7 @@
 mod minimal;
 mod extended;
 mod progress;
+mod cava;
 
 use gtk::prelude::*;
 
@@ -13,6 +14,7 @@ const VOLUME_STEP: f64 = 0.05;
 pub fn new() -> BarModule {
     let module = BarModule::with_widgets(&minimal::minimal(), &extended::extended());
     module.add_css_class("bar-mpris");
+    module.set_background_widget(&cava::new(0.225));
 
     module.add_controller(gesture::on_middle_down(clone!(
         #[weak] module,

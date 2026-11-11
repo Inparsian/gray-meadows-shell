@@ -3,6 +3,10 @@ name = "gray-meadows-shell"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+default = []
+cava = []
+
 [dependencies]
 anyhow = "1.0.104"
 async-broadcast = "0.7.2"

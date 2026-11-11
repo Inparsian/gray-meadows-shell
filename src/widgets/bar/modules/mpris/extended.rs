@@ -4,7 +4,7 @@ use relm4::RelmIterChildrenExt as _;
 
 use crate::services::mpris::{self, MPRIS, mpris_player::PlaybackStatus, set_default_player};
 use crate::utils::gesture;
-use super::progress;
+use super::{cava, progress};
 
 pub static SEEK_STEP_MICROSECONDS: i64 = 5_000_000;
 
@@ -36,6 +36,7 @@ fn get_background_css() -> Option<String> {
 
 fn default_mpris_player() -> gtk::Box {
     let background_style_provider = gtk::CssProvider::new();
+    let cava = cava::new(0.5);
     let progress_bar = progress::ProgressBar::new();
 
     view! {
@@ -198,6 +199,7 @@ fn default_mpris_player() -> gtk::Box {
         player_overlay = gtk::Overlay {
             set_child: Some(&background),
             set_overflow: gtk::Overflow::Hidden,
+            add_overlay: &cava,
             add_overlay: &over,
         },
 
