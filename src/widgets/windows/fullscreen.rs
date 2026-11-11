@@ -14,7 +14,7 @@ pub struct FullscreenWindow {
 impl GmsWindow for FullscreenWindow {
     fn show(&self) {
         hide_all_fullscreen_windows();
-        let monitor = hyprland::get_active_monitor();
+        let monitor = hyprland::get_active_monitor_gdk();
         self.window.set_monitor(monitor.as_ref());
         self.window.show();
     }
@@ -52,7 +52,7 @@ impl FullscreenWindow {
         classes: &[&str],
         child: &impl IsA<gtk::Widget>
     ) -> Self {
-        let monitor = hyprland::get_active_monitor();
+        let monitor = hyprland::get_active_monitor_gdk();
         let window = gtk::ApplicationWindow::new(application);
         
         window.set_css_classes(classes);

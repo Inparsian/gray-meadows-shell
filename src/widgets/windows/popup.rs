@@ -36,7 +36,7 @@ pub struct PopupOptions {
 impl GmsWindow for PopupWindow {
     fn show(&self) {
         hide_all_popups();
-        let monitor = hyprland::get_active_monitor();
+        let monitor = hyprland::get_active_monitor_gdk();
         self.window.set_monitor(monitor.as_ref());
         self.set_clickthrough(false);
         self.window.add_css_class("visible");
@@ -91,7 +91,7 @@ impl PopupWindow {
             .chain(classes.iter().copied())
             .collect::<Vec<&str>>();
 
-        let monitor = hyprland::get_active_monitor();
+        let monitor = hyprland::get_active_monitor_gdk();
         let window = gtk::ApplicationWindow::new(application);
         window.set_css_classes(&window_classes);
         window.init_layer_shell();

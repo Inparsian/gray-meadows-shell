@@ -1,16 +1,26 @@
 use std::sync::LazyLock;
 use futures_signals::signal::Mutable;
 use gdk::prelude::MonitorExt as _;
-use hyprland::data::{Client, Monitor, Workspace, Workspaces};
+use hyprland::data::{Client, Workspace, Workspaces};
 use hyprland::event_listener::AsyncEventListener;
 use hyprland::shared::{HyprData as _, HyprDataActive as _, HyprDataActiveOptional as _};
 
 use crate::utils::display;
 
 // Wrapper structs to work with Hyprland data reactively
+#[derive(Debug, Clone, serde::Deserialize)]
+pub struct HyprlandMonitor {
+    pub focused: bool,
+    pub width: u32,
+    pub height: u32,
+    pub x: i32,
+    pub y: i32,
+}
+
 #[derive(Default)]
 pub struct Hyprland {
     pub active_client: Mutable<Option<Client>>,
+    pub active_monitor: Mutable<Option<HyprlandMonitor>>,
     pub active_workspace: Mutable<Option<Workspace>>,
     pub workspaces: Mutable<Option<Workspaces>>,
     pub submap: Mutable<Option<String>>
@@ -54,6 +64,20 @@ fn refresh_active_workspace() {
     refresh_active_client();
 }
 
+fn refresh_active_monitor() {
+    let Some(json) = call_hyprctl(&["-j", "monitors"]) else {
+        HYPRLAND.active_monitor.set(None);
+        return;
+    };
+
+    let Ok(monitors) = serde_json::from_str::<Vec<HyprlandMonitor>>(&json) else {
+        HYPRLAND.active_monitor.set(None);
+        return;
+    };
+
+    HYPRLAND.active_monitor.set(monitors.into_iter().find(|monitor| monitor.focused));
+}
+
 fn refresh_workspaces() {
     HYPRLAND.workspaces.set(Workspaces::get().ok());
 }
@@ -67,6 +91,7 @@ fn refresh_submap(new_submap: Option<String>) {
 }
 
 pub fn activate() {
+    refresh_active_client();
     refresh_active_client();
     refresh_active_workspace();
     refresh_workspaces();
@@ -85,15 +110,15 @@ pub fn activate() {
         event_listener.add_workspace_deleted_handler(|_| Box::pin(async { refresh_workspaces() }));
         event_listener.add_workspace_moved_handler(|_| Box::pin(async { refresh_workspaces() }));
         event_listener.add_workspace_changed_handler(|_| Box::pin(async { refresh_active_workspace() }));
-        event_listener.add_active_monitor_changed_handler(|_| Box::pin(async { refresh_active_workspace() }));
+        event_listener.add_active_monitor_changed_handler(|_| Box::pin(async { refresh_active_monitor(); refresh_active_workspace() }));
         event_listener.add_sub_map_changed_handler(|new_submap| Box::pin(async { refresh_submap(Some(new_submap)) }));
         
         let _ = event_listener.start_listener_async().await;
     });
 }
 
-pub fn get_active_monitor() -> Option<gdk::Monitor> {
-    if let Ok(monitor) = Monitor::get_active() {
+pub fn get_active_monitor_gdk() -> Option<gdk::Monitor> {
+    if let Some(monitor) = HYPRLAND.active_monitor.get_cloned() {
         // Get the gdk::Monitor from the display.
         let monitors = display::get_all_monitors(&gdk::Display::default()?);
 
@@ -109,6 +134,5 @@ pub fn get_active_monitor() -> Option<gdk::Monitor> {
             }
         }
     }
-
     None
 }

@@ -185,7 +185,7 @@ impl BarWindow {
 }
 
 pub fn toggle_module_by_name(name: &str) {
-    let Some(monitor) = hyprland::get_active_monitor() else {
+    let Some(monitor) = hyprland::get_active_monitor_gdk() else {
         return;
     };
 
