@@ -21,7 +21,8 @@ pub struct Mpris {
 pub static MPRIS: LazyLock<Mpris> = LazyLock::new(Mpris::default);
 
 fn assert_default_player() {
-    if MPRIS.default_player.get() > MPRIS.players.lock_ref().len() - 1 {
+    let players = MPRIS.players.lock_ref();
+    if players.is_empty() || MPRIS.default_player.get() > players.len() - 1 {
         set_default_player(0);
     }
 }
