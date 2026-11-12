@@ -23,6 +23,7 @@
             min-height: 160px;
             background-size: cover;
             background-position: center;
+            background: $background-color-primary;
             filter: blur(4px);
             transform: scale(1.075);
         }
@@ -100,6 +101,8 @@
         }
 
         .bar-mpris-players-list {
+            background: $background-color-primary;
+            
             .bar-mpris-players-list-item {
                 border: 0px;
                 padding-top: 4px;

@@ -104,7 +104,8 @@ where
 
                 glib::source::idle_add_local_once(move || {
                     assert_default_player();
-                    callback(difference, MPRIS.players.lock_ref().len() - 1);
+                    let players = MPRIS.players.lock_ref();
+                    callback(difference, if players.is_empty() { 0 } else { players.len() - 1 });
                 });
             };
 
