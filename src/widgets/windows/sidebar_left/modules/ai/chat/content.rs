@@ -17,6 +17,7 @@ mod imp {
         
         // inner widgets
         pub(super) markdown_view: Rc<RefCell<Option<gtk4cmark::MarkdownView>>>,
+        pub(super) link_labels: RefCell<Vec<gtk::Label>>,
         pub(super) edit_view: Rc<RefCell<Option<gtk::TextView>>>,
         pub(super) edit_box: Rc<RefCell<Option<gtk::Box>>>,
     }
@@ -127,11 +128,7 @@ mod imp {
                 let end = buffer.end_iter();
                 let content = buffer.text(&start, &end, false).to_string();
                 
-                self.content.replace(content.clone());
-                
-                if let Some(markdown_view) = self.markdown_view.borrow().as_ref() {
-                    markdown_view.set_markdown(content);
-                }
+                self.set_content(&content);
             }
             
             self.obj().emit_by_name::<()>("save-edit", &[]);
@@ -159,6 +156,42 @@ mod imp {
             
             if let Some(markdown_view) = self.markdown_view.borrow().as_ref() {
                 markdown_view.set_markdown(content);
+                self.connect_markdown_links(markdown_view);
+            }
+        }
+
+        fn connect_markdown_links(&self, markdown_view: &gtk4cmark::MarkdownView) {
+            let mut connected_labels = self.link_labels.borrow_mut();
+            connected_labels.retain(|label| label.is_ancestor(markdown_view));
+
+            let mut pending = vec![markdown_view.clone().upcast::<gtk::Widget>()];
+            while let Some(widget) = pending.pop() {
+                if let Ok(label) = widget.clone().downcast::<gtk::Label>()
+                    && !connected_labels.iter().any(|connected| connected == &label)
+                {
+                    label.connect_activate_link(|_, uri| {
+                        let uri = uri.to_owned();
+                        let uri_for_log = uri.clone();
+                        gio::AppInfo::launch_default_for_uri_async(
+                            &uri,
+                            None::<&gio::AppLaunchContext>,
+                            None::<&gio::Cancellable>,
+                            move |result| {
+                                if let Err(error) = result {
+                                    tracing::warn!(%error, uri = %uri_for_log, "Failed to open chat link");
+                                }
+                            },
+                        );
+                        glib::Propagation::Stop
+                    });
+                    connected_labels.push(label);
+                }
+
+                let mut child = widget.first_child();
+                while let Some(child_widget) = child {
+                    child = child_widget.next_sibling();
+                    pending.push(child_widget);
+                }
             }
         }
         
