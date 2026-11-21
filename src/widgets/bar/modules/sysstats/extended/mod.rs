@@ -1,11 +1,13 @@
 mod views {
     pub mod overview;
+    pub mod swap;
 }
 
 use gtk::prelude::*;
 
 use crate::widgets::common::tabs::{Tabs, TabSize};
 use self::views::overview::overview;
+use self::views::swap::swap;
 
 #[derive(Clone)]
 pub struct CompactStatRow {
@@ -57,6 +59,7 @@ pub fn extended() -> gtk::Box {
     let tabs = Tabs::new(TabSize::Normal, true, Some("bar-sysstats-extended-tabs-stack"));
     tabs.set_current_tab(Some("overview"));
     tabs.add_tab("overview", "overview", Some("overview"), &overview());
+    tabs.add_tab("swap", "swap", Some("swap_horiz"), &swap());
     tabs.group()
         .spacing(8)
         .class_name("bar-sysstats-extended")

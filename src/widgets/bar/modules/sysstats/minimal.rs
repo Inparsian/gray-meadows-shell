@@ -25,6 +25,24 @@ fn get_detailed_memory_usage_label_text(memory: &MemoryInfo) -> String {
     )
 }
 
+fn get_zram_usage_percentage(data: u64, size: u64) -> f64 {
+    if size == 0 {
+        0.0
+    } else {
+        data as f64 / size as f64 * 100.0
+    }
+}
+
+fn get_detailed_zram_usage_label_text(size: u64, data: u64, compr: u64, total: u64) -> String {
+    format!(
+        "({:.1}/{:.1}GiB DATA/DISK, {:.1} COMPR, {:.1} TOTAL)",
+        bytes_to_gib(data),
+        bytes_to_gib(size),
+        bytes_to_gib(compr),
+        bytes_to_gib(total)
+    )
+}
+
 fn get_temperature_label_text(cpu_temp: f64) -> String {
     format!("({:.1}°C)", cpu_temp)
 }
@@ -108,11 +126,46 @@ pub fn minimal() -> gtk::Box {
         detailed_ram_usage_label.set_label(&get_detailed_memory_usage_label_text(&memory));
     }));
 
-    glib::spawn_future_local(signal!(SYS_STATS.swap, (swap) {
-        swap_usage_label.set_label(&format_percentage(swap.usage_percentage()));
-        detailed_swap_usage_label.set_label(&get_detailed_memory_usage_label_text(&swap));
-        swap_usage_box.set_visible(swap.usage_percentage() > SWAP_SHOW_THRESHOLD);
-    }));
+    glib::spawn_future_local({
+        let swap_usage_label = swap_usage_label.clone();
+        let detailed_swap_usage_label = detailed_swap_usage_label.clone();
+        let swap_usage_box = swap_usage_box.clone();
+        signal!(SYS_STATS.swap, (swap) {
+            if !SYS_STATS.zram_devices.lock_ref().any_active() {
+                swap_usage_label.set_label(&format_percentage(swap.usage_percentage()));
+                detailed_swap_usage_label.set_label(&get_detailed_memory_usage_label_text(&swap));
+                swap_usage_box.set_visible(swap.usage_percentage() > SWAP_SHOW_THRESHOLD);
+            }
+        })
+    });
+
+    glib::spawn_future_local(
+        SYS_STATS.zram_devices.signal_ref(|devices| {
+            let aggregate = devices.aggregate();
+            (
+                devices.any_active(),
+                aggregate.size,
+                aggregate.data,
+                aggregate.compr,
+                aggregate.used,
+            )
+        }).for_each(move |(active, size, data, compr, total)| {
+            if active {
+                let usage_percentage = get_zram_usage_percentage(data, size);
+                swap_usage_label.set_label(&format_percentage(usage_percentage));
+                detailed_swap_usage_label.set_label(
+                    &get_detailed_zram_usage_label_text(size, data, compr, total)
+                );
+                swap_usage_box.set_visible(usage_percentage > SWAP_SHOW_THRESHOLD);
+            } else {
+                let swap = SYS_STATS.swap.get();
+                swap_usage_label.set_label(&format_percentage(swap.usage_percentage()));
+                detailed_swap_usage_label.set_label(&get_detailed_memory_usage_label_text(&swap));
+                swap_usage_box.set_visible(swap.usage_percentage() > SWAP_SHOW_THRESHOLD);
+            }
+            async {}
+        })
+    );
 
     glib::spawn_future_local(signal!(SYS_STATS.global_cpu_usage, (global_cpu_usage) {
         cpu_usage_label.set_label(&format_percentage(global_cpu_usage));
