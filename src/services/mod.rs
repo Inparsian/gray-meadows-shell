@@ -26,7 +26,7 @@ pub async fn activate_all() {
     calculator::activate();
     g_translate::activate();
     notifications::activate();
-    //networkmanager::activate();
+    networkmanager::activate();
     clipboard::activate();
     ai::activate().await;
     weather::activate();

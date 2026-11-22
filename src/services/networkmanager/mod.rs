@@ -5,12 +5,12 @@ pub mod bus;
 
 use dbus::message::{MatchRule, MessageType};
 
-#[allow(dead_code)]
+use crate::dbus::start_monitoring;
+
 pub fn handle_nm_signal_message(_msg: &dbus::Message) {
-    todo!("Handle NetworkManager signal messages here");
+    // TODO: handle NetworkManager signal messages here
 }
 
-#[allow(dead_code, unused_variables)]
 pub fn activate() {
     // DBus client proxy testing
     let connection = dbus::blocking::Connection::new_system()
@@ -34,7 +34,7 @@ pub fn activate() {
 
                 let device_type = <dyn proxy::device::OrgFreedesktopNetworkManagerDevice>::device_type(&device_proxy);
                 let driver = <dyn proxy::device::OrgFreedesktopNetworkManagerDevice>::driver(&device_proxy);
-                debug!(?device_type, ?driver, "NetworkManager device");
+                info!(?device_type, ?driver, "NetworkManager device");
             }
         }
         Err(e) => {
@@ -46,5 +46,5 @@ pub fn activate() {
     let rule = MatchRule::new()
         .with_type(MessageType::Signal);
 
-    //start_monitoring(rule, true, handle_nm_signal_message);
+    start_monitoring(rule, true, handle_nm_signal_message);
 }
